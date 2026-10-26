@@ -1,10 +1,10 @@
 # Access Modifiers: Examples and Edge Cases
 
-> October 20, 2026 update: the [module contract](modules.md) changes access boundaries: unmodified declarations belong to their source file, `public` to their module, and `external` allows other modules. The text below preserves the A–G model before this change; its cross-module examples and plan require adaptation. The new rules take precedence; the loader and `external` are not implemented here yet.
+> The [module contract](modules.md) defines the implemented boundaries: unmodified declarations belong to their source file, `public` to their module, and `external` allows other modules. `private`/`protected` retain their object-domain rules. Exporting an object does not recursively export its fields.
 
 [Contents](index.md) · [Русский](../ru/access-control-examples.md) · [Rules](appendix-i-access-control.md) · [Plan](access-control-implementation-plan.md)
 
-These examples describe the agreed design. Stages A–G implement declarations, VM access checks, and clone/flat method and capture adaptation; observation filtering is implemented in F; G diagnoses proven denial while the VM checks unknown cases; module loading remains #154. Each example is independent; results are described in prose, and `print` calls do not imply automatic newlines. Negative cases are checked separately, both statically and with dynamically unknown receivers. All examples use the standard built-in `clone` and `flat`, not user overrides.
+These examples describe the access model implemented by the analyzer and VM. Proven denials are diagnosed before execution; unknown cases retain runtime checks. Each example is independent; results are described in prose, and `print` calls do not imply automatic newlines. Negative cases are checked separately, both statically and with dynamically unknown receivers. All examples use the standard built-in `clone` and `flat`, not user overrides.
 
 <a id="ac-01"></a>
 
@@ -52,16 +52,16 @@ The first two print calls produce 42. The final access is forbidden, as is obj.x
 ## AC-04. An outside function gains no privilege
 
 ```goat
-const external = func() { return this.x; };
+const outside = func() { return this.x; };
 var obj = {
     private var x = 10;
-    public read = external;
+    public read = outside;
 };
 var copy = obj.clone();
 print(copy.read());
 ```
 
-Access error. Neither storing external in a property nor cloning grants rights to private x. The same result is expected with flat().
+Access error. Neither storing outside in a property nor cloning grants rights to private x. The same result is expected with flat().
 
 <a id="ac-05"></a>
 
@@ -70,16 +70,17 @@ Access error. Neither storing external in a property nor cloning grants rights t
 ```goat
 var a = {
     private var x = 10;
-    public read = func() { return this.x; };
+    public read = func(other) { return other.x; };
 };
 var b = {
     private var x = 20;
 };
+print(a.read(a));
 b.read = a.read;
-print(b.read());
+print(b.read(b));
 ```
 
-Access to b's private x is denied. Moving a method reference does not adapt its rights. This differs from the special method adaptation performed by clone/flat.
+The first call returns 10; the last call is denied access to b's private x. Moving a method reference does not adapt its rights. This differs from the special method adaptation performed by clone/flat. The explicit argument matters: `this` denotes a lexical/call scope, not a Java/JS receiver that changes when the function is stored in b.
 
 <a id="ac-06"></a>
 
@@ -459,20 +460,21 @@ The original array contains [1, 2]. Field privacy does not prevent modifying an 
 
 ## AC-25. Factory and object module ownership
 
-Module A:
+Module A (`main.goat` of module `a@1`):
 
 ```goat
-public make = func() {
+external make = func() {
     return {
-        public var x = 1;
+        external var x = 1;
         var internal = 7;
     };
 };
 ```
 
-Module B:
+Module B (`main.goat`):
 
 ```goat
+const A = import "a@1";
 var obj = A.make();
 obj.x = 2;
 var copy = obj.clone();
@@ -480,47 +482,49 @@ copy.extra = 3;
 var child = obj -> { var own = 4; };
 ```
 
-The first block is module A; the second is module B. Assume B already has a public reference A; no import syntax is specified. obj belongs to A, so a separate obj.extra = 3 attempt is forbidden. copy and child belong to B. B cannot read obj.internal or copy.internal: the field's declaring module remains A.
+Build A first and place its archive at `modules/a/1.gbin` beside B’s `.gmod` (or in a repository supplied through `GOAT_MODULE_PATH`). `obj` belongs to A, so a separate `obj.extra = 3` attempt is forbidden. `copy` and `child` belong to B. B cannot read `obj.internal` or `copy.internal`: the unmodified field retains its declaring file in A. Replacing its declaration with `public var internal = 7` would allow A's other files, but still not B.
 
 <a id="ac-26"></a>
 
 ## AC-26. A copied method retains its module
 
-Module A:
+Module A (`main.goat` of module `a@1`):
 
 ```goat
-public obj = {
+external obj = {
     var internal = 7;
-    public read = func() { return internal; };
+    external read = func() { return internal; };
 };
 ```
 
-Module B:
+Module B (`main.goat`):
 
 ```goat
+const A = import "a@1";
 var copy = A.obj.flat();
 copy.extra = 1;
 print(copy.read());
 ```
 
-read() yields 7. The result belongs to B, but transferred read remains code from module A and can read the transferred field declared in A. External copy.internal in B remains forbidden. Changing object ownership does not change the module of its functions or every field.
+read() yields 7. The result belongs to B, but transferred read retains its source file and module A and can read the transferred file-local field. External copy.internal in B remains forbidden. Changing object ownership does not change the module of its functions or every field.
 
 <a id="ac-27"></a>
 
 ## AC-27. Protected access across module boundaries
 
-Module A:
+Module A (`main.goat` of module `a@1`):
 
 ```goat
-public Base = {
+external Base = {
     protected var x = 10;
     private var secret = 20;
 };
 ```
 
-Module B:
+Module B (`main.goat`):
 
 ```goat
+const A = import "a@1";
 var child = A.Base -> {
     public read = func() { return A.Base.x; };
 };
@@ -533,18 +537,19 @@ print(child.read());
 
 ## AC-28. Public access does not remove constness
 
-Module A:
+Module A (`main.goat` of module `a@1`):
 
 ```goat
-public obj = {
-    public var writable = 1;
-    public fixed = 2;
+external obj = {
+    external var writable = 1;
+    external fixed = 2;
 };
 ```
 
-Module B:
+Module B (`main.goat`):
 
 ```goat
+const A = import "a@1";
 A.obj.writable = 3;
 print(A.obj.fixed);
 ```
@@ -584,4 +589,18 @@ For programs containing modifiers, optimization currently folds only closed scal
 
 The native contract includes an `access` blocker. Proven scalar local operations, including modified local declarations, and proven string receivers can execute natively. Accesses needing VM rights remain in the VM; unknown user objects never gain an unchecked native path. With no safe functions, `--native required` reports `Access checks require VM execution`. This mode requires a native implementation in the program, not native execution of every call. Copied functions do not reuse original native descriptors; method calls retain the existing VM path.
 
-Checks include static rejection, dynamic equivalents, English/Russian diagnostics, both optimization levels, regenerated source and bytecode, safe native calls, and required-mode rejection. Compiler-unavailable fallback and VM retry after the native depth limit are tested: side-effecting argument expressions run once, and closed fields remain closed after calls. The module loader and multi-file scenarios remain #154.
+Checks include static rejection, dynamic equivalents, English/Russian diagnostics, both optimization levels, regenerated source and bytecode, safe native calls, and required-mode rejection. Compiler-unavailable fallback and VM retry after the native depth limit are tested: side-effecting argument expressions run once, and closed fields remain closed after calls. The multi-file suite below exercises the same rules through the source compiler, verified archives, `include`, and `import`; it does not substitute synthetic scope identities for loading.
+
+## Real file/module coverage (#218)
+
+For AC-01–AC-24, `public` in a snippet means access from another file **of the same module**, not from an importer. A minimal file split uses `public obj = { ... };` in `objects.goat`, then `const objects = include "objects.goat";` and `objects.obj` in the consumer. Across `import`, both the outer binding and every accessed nested field must permit `external` access (unless a separate private/protected right applies). AC-25–AC-28 show that boundary explicitly. Each module uses a `.gmod` descriptor with `formatVersion: 1`, its name/version, and `main: "main.goat"`; A's descriptor names `a`, version `1`.
+
+The executable acceptance entry point is [`scripts/check_module_multifile_access.py`](../../../scripts/check_module_multifile_access.py), using the existing module execution harness:
+
+| Examples | Fixtures | Focus |
+| --- | --- | --- |
+| AC-01–AC-10 | `module_access_basic_cases.py` | Declarations, analyzer rejection, dynamic denial, closures, private/protected domains, lookup barriers |
+| AC-11–AC-22 | `module_access_copy_cases.py` | Real-file/module clone/flat, independent and shared cells, shallow copies, method identity, prototype graphs |
+| AC-23–AC-28 | `module_access_boundary_cases.py` | Observer context, arrays, factories, copied method origin, protected cross-module access, constness and extension |
+
+These complement the existing function-provenance/re-export and assignment-access suites. A denial must remain a denial after a file/module boundary or copying; positive cases must preserve their values, identity, and side effects. Returning or re-exporting a function retains its declaration context, not the caller's rights.

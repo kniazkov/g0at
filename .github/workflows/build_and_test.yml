@@ -130,6 +130,7 @@ jobs:
           python3 scripts/check_module_context_constants.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
           python3 scripts/check_module_function_provenance.py build/${{ matrix.compiler }}/module_import_execution_testing
           python3 scripts/check_module_assignment_access.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
+          python3 scripts/check_module_multifile_access.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
           python3 scripts/check_module_imports.py build/${{ matrix.compiler }}/module_imports_testing
           python3 scripts/check_module_files.py build/${{ matrix.compiler }}/module_files_testing
           python3 scripts/test_module_access.py build/${{ matrix.compiler }}/module_access_testing
@@ -265,6 +266,10 @@ jobs:
           name: goat-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: build/release-${{ matrix.compiler }}/packages/*.tar.gz
           if-no-files-found: error
+      - name: Check release multifile access
+        run: |
+          cmake --build build/release-${{ matrix.compiler }} --target module_import_execution_testing
+          python3 scripts/check_module_multifile_access.py build/release-${{ matrix.compiler }}/module_import_execution_testing build/release-${{ matrix.compiler }}/goat
       - name: Smoke test release
         run: ./goat example/hello_world.goat
       - name: Compare release native modes
@@ -396,6 +401,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_context_constants.py build/module_import_execution_testing.exe build/goat.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_function_provenance.py build/module_import_execution_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_assignment_access.py build/module_import_execution_testing.exe build/goat.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_multifile_access.py build/module_import_execution_testing.exe build/goat.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_imports.py build/module_imports_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_files.py build/module_files_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/test_module_access.py build/module_access_testing.exe
@@ -521,6 +527,13 @@ jobs:
           name: goat-Windows-${{ matrix.msystem }}
           path: build/release/packages/*.zip
           if-no-files-found: error
+      - name: Check release multifile access
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: |
+          cmake --build build/release --target module_import_execution_testing
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_multifile_access.py build/release/module_import_execution_testing.exe build/release/goat.exe
       - name: Compare release native modes
         shell: msys2 {0}
         run: bash scripts/check_native_modes.sh build/release/goat.exe build/functional_testing.exe "build/native modes release"

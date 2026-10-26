@@ -73,7 +73,7 @@
 - [x] 57. [#222](https://github.com/kniazkov/g0at/issues/222) — Конфликты информационных метаданных при goat-merge ([API и проверки](module-information-api.md))
 - [x] 58. [#215](https://github.com/kniazkov/g0at/issues/215) — goat-merge: объединение вариантов ([CLI и публикация](module-merge-api.md))
 - [x] 59. [#224](https://github.com/kniazkov/g0at/issues/224) — Проверка графа inspect и автономность merge
-- [ ] 60. [#218](https://github.com/kniazkov/g0at/issues/218) — Многофайловые тесты модели доступа
+- [x] 60. [#218](https://github.com/kniazkov/g0at/issues/218) — Многофайловые тесты модели доступа ([AC-01–AC-28](book/ru/access-control-examples.md#проверки-на-реальных-файлах-и-модулях-218))
 - [ ] 61. [#219](https://github.com/kniazkov/g0at/issues/219) — Сквозные тесты сборки и поставки
 - [ ] 62. [#220](https://github.com/kniazkov/g0at/issues/220) — Актуализация русской и английской книги
 
