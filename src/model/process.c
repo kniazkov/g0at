@@ -13,14 +13,25 @@
 #include "object_list.h"
 #include "thread.h"
 
+#include <assert.h>
+#include <stdatomic.h>
 #include <string.h>
 
 /** @brief ID of the last created process. */
-static uint64_t last_process_id = 0;
+static atomic_uint_fast64_t last_process_id;
 
 process_t *create_process() {
     process_t *process = (process_t *)CALLOC(sizeof(process_t));
-    process->id = ++last_process_id;
+    if (create_os_recursive_mutex(&process->execution_mutex) != OS_THREAD_OK
+        || create_os_recursive_mutex(&process->initialization_mutex) != OS_THREAD_OK
+        || create_os_condition(&process->threads_changed) != OS_THREAD_OK) {
+        destroy_os_condition(process->threads_changed);
+        destroy_os_mutex(process->initialization_mutex);
+        destroy_os_mutex(process->execution_mutex);
+        FREE(process);
+        return NULL;
+    }
+    process->id = atomic_fetch_add(&last_process_id, 1) + 1;
     process->module = create_module_identity();
     init_object_list(&process->objects);
     init_object_list(&process->integers);
@@ -58,6 +69,9 @@ void destroy_process(process_t *process) {
     FREE(process->string_cache);
     FREE(process->gc_roots);
     release_module_identity(process->module);
+    destroy_os_condition(process->threads_changed);
+    destroy_os_mutex(process->initialization_mutex);
+    destroy_os_mutex(process->execution_mutex);
     FREE(process);
 }
 
@@ -84,4 +98,28 @@ bool prepare_process_launch(process_t *process,
     process->launch_module = retain_module_identity(module);
     process->launch_file = file_id;
     return true;
+}
+
+void process_execution_enter(process_t *process) {
+    os_thread_status_t status = lock_os_mutex(process->execution_mutex);
+    assert(status == OS_THREAD_OK);
+    (void)status;
+}
+
+void process_execution_leave(process_t *process) {
+    os_thread_status_t status = unlock_os_mutex(process->execution_mutex);
+    assert(status == OS_THREAD_OK);
+    (void)status;
+}
+
+size_t process_execution_suspend(process_t *process) {
+    size_t depth = os_mutex_depth(process->execution_mutex);
+    for (size_t i = 0; i < depth; ++i)
+        process_execution_leave(process);
+    return depth;
+}
+
+void process_execution_resume(process_t *process, size_t depth) {
+    for (size_t i = 0; i < depth; ++i)
+        process_execution_enter(process);
 }

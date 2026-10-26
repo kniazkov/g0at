@@ -34,7 +34,7 @@ Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazk
 | Arrays | No | No complete user-facing path | Domain element exists | No |
 | for | Yes | Scoped loop, nested statements | Widened invariant; bounded passes | Proven numeric bodies; resource fallback |
 | while, do/while, break, continue, imports | No | No path from such source syntax | No complete mechanism | No |
-| User threads | No | Internal process/thread structures exist | Not a user-threading model | No interface |
+| User threads | `spawn` / `join` builtins | OS-backed `thread_t`; equal lifetime, serialized initialization | Dynamic initialization restrictions checked at runtime | Shared invocation/provenance rules |
 
 <a id="section-g-2"></a>
 

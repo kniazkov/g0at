@@ -4511,3 +4511,42 @@ same mapping and explicitly mark `[native entry]`: the status-only ABI supplies
 the callee body-entry location, not an exact failing expression. No source text or
 absolutized build path is serialized. The component runner uses the shared API;
 full CLI integration follows in #191. See [API and checks](../../module-source-diagnostics-api.md).
+
+
+## Serialized initialization and equal execution threads (#217)
+
+Included/imported initializers share one process-wide recursive initialization
+mutex. The initializing thread may reenter a cyclic include and obtain the same
+partial scope; another thread waits and observes the completed scope or the exact
+saved exception and original trace. Independent initializers cannot overlap.
+Normal calls into ready files do not acquire this initialization mutex.
+
+A separate recursive execution mutex protects shared runtime state, including
+publication of declaration readiness, values, file states and retained failures.
+It is released at VM instruction boundaries and around blocking thread waits and
+supported blocking I/O. Releasing this mutex does **not** release an initializer's
+mutex or clear its dynamic restrictions. Internal loader waits are not user joins;
+initialization has no language timeout. Subsequent user read-modify-write sequences
+are not promised to be atomic.
+
+`spawn(callable, ...arguments)` starts an OS-backed execution using the existing
+VM `thread_t` model and returns a positive, process-local integer thread ID.
+`join(id)` waits for that execution and returns its result or propagates its
+original exception. Both operations raise `Exceptions.INVALID_OPERATION` while
+the caller's dynamic included/imported initialization depth is nonzero, including
+calls through functions from otherwise ready files. Nested initialization restores
+the previous depth on success and failure. Already ready includes/imports do not
+start a new initialization context.
+
+The directly launched entry file uses `initialize_module_file_direct`, not the
+ordinary included/imported gate. Its top-level execution holds no initialization
+mutex: already published functions and variables are available to other threads,
+while access to a pending declaration throws without waiting for the entire file.
+Its ordinary functions can therefore spawn a thread and join it before the entry
+file finishes. File/module state, snapshots, caches and native support remain alive
+until **all** program threads finish, including threads created by other surviving
+threads. Completion of the entry execution does not terminate the VM.
+
+See [the implementation API](../../module-serialization-api.md). These rules do not
+introduce user mutexes or complete the separate bounded `exit`/cleanup protocol
+tracked by #230.

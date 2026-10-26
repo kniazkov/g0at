@@ -1,0 +1,4 @@
+public marker = 0;
+const work = func(n) { if (n <= 0) return 0; return work(n - 1) + 1; };
+var hits = 199;
+println(work(++hits));

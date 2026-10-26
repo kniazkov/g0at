@@ -1,0 +1,8 @@
+var shared = 1;
+const worker = func() { shared = 9; };
+const start = spawn;
+const id = start(worker);
+shared = 2;
+const observed = shared;
+const read = func() { return shared; };
+read();

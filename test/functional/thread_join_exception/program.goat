@@ -1,0 +1,6 @@
+var work = func() { throw "original"; };
+var handle = spawn(work);
+try { join(handle); } catch(e) { print(e); }
+print(":");
+try { join(handle); } catch(e) { print(e); }
+print(":done");

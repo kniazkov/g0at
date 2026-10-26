@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "lib/os_thread.h"
 #include "object_list.h"
 
 #include <stdint.h>
@@ -16,11 +17,22 @@ typedef struct module_t module_t;
 
 /** @brief A process in Goat. */
 struct process_t {
+    /** @brief Short recursive model lock; never retained across user blocking waits. */
+    os_mutex_t *execution_mutex;
+    /** @brief One recursive initializer lock for all files in this VM. */
+    os_mutex_t *initialization_mutex;
+    /** @brief Program-thread completion notification, guarded by execution_mutex. */
+    os_condition_t *threads_changed;
+    size_t active_threads; /**< Unfinished program executions, including descendants. */
+    /** @brief Loader waiters, guarded by execution_mutex, for lifecycle diagnostics. */
+    size_t initialization_waiters;
+    struct vm_execution_t *execution; /**< Borrowed while the VM owns execution. */
+
     /** @brief Owned identity of the single program module until module loading is added. */
     module_t *module;
     /** @brief Owned per-module file scopes/images, destroyed after managed objects. */
     struct module_files_t *module_files;
-    /** @brief Borrowed top of the single-thread file initialization stack. */
+    /** @brief Borrowed top of the serialized included-file initialization stack. */
     struct module_file_t *initializing_file;
     /** @brief Frozen direct-entry identity and shared directory, outside immutable images. */
     module_t *launch_module;
@@ -83,3 +95,10 @@ bool prepare_process_launch(process_t *process,
                             module_t *module,
                             uint32_t file_id,
                             const char *canonical_path);
+
+/** @brief Protect model operations shared by OS-backed VM threads. */
+void process_execution_enter(process_t *process);
+void process_execution_leave(process_t *process);
+/** @brief Drop all execution-lock recursion before a blocking wait; restore exactly afterward. */
+size_t process_execution_suspend(process_t *process);
+void process_execution_resume(process_t *process, size_t depth);

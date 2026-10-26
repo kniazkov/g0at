@@ -6,14 +6,17 @@
 #include "analysis/lattice.h"
 #include "lib/file_system.h"
 #include "lib/io.h"
+#include "model/process.h"
 #include "model/thread.h"
 #include "registry.h"
 
 #include <stdio.h>
 
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
+    size_t depth = process_execution_suspend(thread->process);
     FFLUSH(stdout);
     string_value_t line = read_input_line(stdin);
+    process_execution_resume(thread->process, depth);
     if (!line.data)
         return operation_exception(get_exception_invalid_operation());
     return operation_success(create_string_object(thread->process, line));

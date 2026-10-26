@@ -1,0 +1,10 @@
+var ready_value = 41;
+var ready_function = func() { return ready_value + 1; };
+var worker = func() {
+    print(ready_function());
+    try { print(pending_value); } catch(e) { print(":pending-read"); }
+    try { pending_value = 9; } catch(e) { print(":pending-write"); }
+};
+join(spawn(worker));
+var pending_value = 7;
+print(":"); print(pending_value);

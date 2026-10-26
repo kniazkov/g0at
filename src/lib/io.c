@@ -12,6 +12,7 @@
 #include "string_ext.h"
 
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,8 +25,8 @@
 #    include <unistd.h>
 #endif
 
-/** @brief Whether the cursor on stdout is currently at the start of a line. */
-static bool stdout_line_start = true;
+/** @brief Atomic line-start hint; concurrent output ordering remains unspecified. */
+static atomic_bool stdout_line_start = ATOMIC_VAR_INIT(true);
 
 bool init_io(void) {
     // platform-specific GPIO initialization...

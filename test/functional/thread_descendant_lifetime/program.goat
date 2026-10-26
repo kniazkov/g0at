@@ -1,0 +1,4 @@
+var ready = func(x) { return x + 1; };
+var third = func() { print(ready(41)); };
+var second = func() { spawn(third); };
+spawn(second);

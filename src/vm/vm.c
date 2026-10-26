@@ -13,6 +13,7 @@
 #include "lib/split64.h"
 #include "model/common_methods.h"
 #include "model/context.h"
+#include "model/module_file_declarations.h"
 #include "model/module_files.h"
 #include "model/thread.h"
 
@@ -40,6 +41,14 @@ typedef struct {
  * instruction (`true`), or halt (`false`).
  */
 typedef bool (*instr_executor_t)(runtime_t *runtime, instruction_t instr, thread_t *thread);
+
+/** @brief Shared lifetime state; all executing threads have their own runtime_t. */
+struct vm_execution_t {
+    bytecode_t *entry_code;
+    object_t *entry_scope; /**< Retained standalone entry scope until all threads complete. */
+    uint32_t entry_file;
+    bool reservations_done;
+};
 
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule);
@@ -271,11 +280,16 @@ static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = pop_object_from_stack(thread->data_stack);
-    model_status_t result = create_accessible_property(&thread->context->access,
-                                                       thread->context->data,
-                                                       key,
-                                                       value,
-                                                       false);
+    field_cell_t *cell = get_own_field_cell(thread->context->data, key);
+    bool reserved = cell && cell->pending_initialization && !cell->declaration_id
+                    && cell->binding_unit == runtime->code->declaration_unit
+                    && cell->is_constant == false;
+    model_status_t result = reserved ? initialize_field_cell(thread->context->data, cell, value)
+                                     : create_accessible_property(&thread->context->access,
+                                                                  thread->context->data,
+                                                                  key,
+                                                                  value,
+                                                                  false);
     DECREF(value);
     if (result != MSTAT_OK)
         return dispatch_exception(
@@ -299,11 +313,16 @@ static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = pop_object_from_stack(thread->data_stack);
-    model_status_t result = create_accessible_property(&thread->context->access,
-                                                       thread->context->data,
-                                                       key,
-                                                       value,
-                                                       true);
+    field_cell_t *cell = get_own_field_cell(thread->context->data, key);
+    bool reserved = cell && cell->pending_initialization && !cell->declaration_id
+                    && cell->binding_unit == runtime->code->declaration_unit
+                    && cell->is_constant == true;
+    model_status_t result = reserved ? initialize_field_cell(thread->context->data, cell, value)
+                                     : create_accessible_property(&thread->context->access,
+                                                                  thread->context->data,
+                                                                  key,
+                                                                  value,
+                                                                  true);
     DECREF(value);
     if (result != MSTAT_OK)
         return dispatch_exception(
@@ -994,7 +1013,7 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
     if (!exception.trace)
         exception.trace = capture_exception_trace(thread->context, thread->instr_id);
     if (exception.value == get_exception_uninitialized_declaration()
-        && thread->process->initializing_file) {
+        && module_initialization_active(thread->process)) {
         string_value_t chain = module_initialization_chain(thread->process, NULL);
         string_builder_t builder;
         init_string_builder(&builder, 0);
@@ -1335,12 +1354,15 @@ static instr_executor_t executors[] = {
     // Additional opcodes can be added here in the future...
 };
 
-/** @brief Nested file execution never schedules another thread mid-initializer. */
+/** @brief Executes one thread; releases the model lock between instructions. */
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule) {
+    (void)schedule;
     bool flag = true;
     while (flag && !thread->process->exit_requested) {
         /* Calls, returns, callbacks and exception unwinds all change lexical
            context. Resolve the image here rather than guessing at each edge. */
+        if (thread->program_worker && thread->instr_id == BAD_INSTR_INDEX)
+            break;
         runtime->files = find_module_files(thread->process, thread->context->module);
         runtime->code =
             runtime->files ? module_files_bytecode(runtime->files) : runtime->entry_code;
@@ -1354,9 +1376,155 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
         thread->context->instruction = thread->instr_id;
         instruction_t instr = runtime->code->instructions[thread->instr_id];
         flag = executors[instr.opcode](runtime, instr, thread);
-        if (schedule)
-            thread = thread->next;
+        /* The initializer retains its own reentrant gate, not the model lock.
+           Suspend all recursive entries, including an enclosing include handler. */
+        size_t depth = process_execution_suspend(thread->process);
+        process_execution_resume(thread->process, depth);
     }
+}
+
+/** @brief Completes one equal program thread, with the model lock held. */
+static void complete_program_thread(thread_t *thread, int status) {
+    thread->execution_status = status;
+    thread->finished = true;
+    assert(thread->process->active_threads);
+    --thread->process->active_threads;
+    broadcast_os_condition(thread->process->threads_changed);
+}
+
+/** @brief OS worker bootstrap reuses ordinary VM/native function dispatch. */
+static void *program_thread_entry(void *data) {
+    thread_t *thread = data;
+    process_t *process = thread->process;
+    process_execution_enter(process);
+    runtime_t runtime = {.code = process->execution->entry_code,
+                         .entry_code = process->execution->entry_code};
+    /* A normal CALL increments or saves PC+1. This sentinel is the worker's
+       ordinary function-return boundary, independent of the entry file. */
+    thread->instr_id = BAD_INSTR_INDEX - 1;
+    object_t *function = thread->start_function;
+    thread->start_function = NULL;
+    bool started = !process->exit_requested
+                   && call_object(function, thread->start_argument_count, NULL, thread);
+    DECREF(function);
+    if (started)
+        execute_instructions(&runtime, thread, false);
+    else if (!process->exit_requested) {
+        if (!thread->exception.value && !thread->native_status)
+            thread->exception.value = get_exception_invalid_operation();
+        runtime.status = 1;
+    }
+    complete_program_thread(thread, runtime.status);
+    process_execution_leave(process);
+    return NULL;
+}
+
+operation_result_t spawn_program_thread(thread_t *caller,
+                                        object_t *callable,
+                                        object_t *const *arguments,
+                                        uint16_t count) {
+    process_t *process = caller->process;
+    if (caller->initialization_depth || !process->execution || process->exit_requested)
+        return operation_exception(get_exception_invalid_operation());
+    if (!callable || callable->vtbl->call == stub_call || (count && !arguments))
+        return operation_exception(get_exception_invalid_argument());
+    struct vm_execution_t *execution = process->execution;
+    if (execution->entry_scope && !execution->reservations_done) {
+        /* No competing program thread exists before this publication point.
+           Preserve legacy single-thread declaration/shadowing behavior while
+           ensuring the first observer sees every pending entry-file cell. */
+        if (!prepare_remaining_file_scope_declarations(execution->entry_code,
+                                                       execution->entry_file,
+                                                       execution->entry_scope))
+            return operation_exception(get_exception_invalid_operation());
+        execution->reservations_done = true;
+    }
+    thread_t *thread = create_thread(process, create_context(process, get_root_context(), NULL));
+    thread->program_worker = true;
+    thread->start_function = callable;
+    INCREF(callable);
+    thread->start_argument_count = count;
+    for (uint16_t i = 0; i < count; ++i) {
+        INCREF(arguments[i]);
+        push_object_onto_stack(thread->data_stack, arguments[i]);
+    }
+    ++process->active_threads;
+    if (create_os_thread(&thread->worker, program_thread_entry, thread, 0) != OS_THREAD_OK) {
+        --process->active_threads;
+        destroy_thread(thread);
+        return operation_exception(get_exception_invalid_operation());
+    }
+    return operation_success(create_integer_object(process, (int64_t)thread->id));
+}
+
+operation_result_t join_program_thread(thread_t *caller, uint64_t id) {
+    process_t *process = caller->process;
+    if (caller->initialization_depth || !process->execution)
+        return operation_exception(get_exception_invalid_operation());
+    thread_t *target = process->main_thread;
+    do {
+        if (target->id == id)
+            break;
+        target = target->next;
+    } while (target != process->main_thread);
+    if (target->id != id)
+        return operation_exception(get_exception_invalid_argument());
+    for (thread_t *cursor = target; cursor; cursor = cursor->waiting_for)
+        if (cursor == caller)
+            return operation_exception(get_exception_invalid_operation());
+    caller->waiting_for = target;
+    while (!target->finished && !process->exit_requested)
+        wait_os_condition(process->threads_changed, process->execution_mutex);
+    caller->waiting_for = NULL;
+    if (process->exit_requested)
+        return operation_success(get_null_object());
+    if (target->exception.value) {
+        target->failure_observed = true;
+        INCREF(target->exception.value);
+        return (operation_result_t){target->exception.value, true, target->exception.trace};
+    }
+    if (target->execution_status || target->native_status)
+        return operation_exception(get_exception_invalid_operation());
+    object_t *value = target->data_stack->size ? peek_object_from_stack(target->data_stack, 0)
+                                               : get_null_object();
+    INCREF(value);
+    return operation_success(value);
+}
+
+/** @brief Wait for the last program thread, including descendants created meanwhile.
+ * Records stay in the existing circular list for GC, diagnostics and join results.
+ */
+static int finish_program_threads(process_t *process, thread_t *entry, int status) {
+    complete_program_thread(entry, status);
+    while (process->active_threads)
+        wait_os_condition(process->threads_changed, process->execution_mutex);
+    if (entry->failure_observed && entry->exception.value && !entry->native_status)
+        status = 0;
+    thread_t *thread = process->main_thread;
+    do {
+        bool participated = thread == entry || thread->worker != NULL;
+        if (thread->worker) {
+            size_t depth = process_execution_suspend(process);
+            join_os_thread(thread->worker, NULL);
+            destroy_os_thread(thread->worker);
+            process_execution_resume(process, depth);
+            thread->worker = NULL;
+        }
+        if (participated && thread != entry
+            && (thread->native_status
+                || ((thread->execution_status || thread->exception.value)
+                    && !thread->failure_observed))) {
+            status = 1;
+            if (!entry->exception.value && thread->exception.value) {
+                entry->exception = retain_exception(thread->exception);
+                thread->failure_observed = true;
+            }
+        }
+        thread = thread->next;
+    } while (thread != process->main_thread);
+    DECREFIF(process->execution->entry_scope);
+    process->execution = NULL;
+    return status;
 }
 
 /** @brief Standalone-image fallback cache; module images own separate caches. */
@@ -1376,15 +1544,35 @@ static void finish_string_cache(process_t *proc) {
 }
 
 int run(process_t *proc, bytecode_t *code) {
+    process_execution_enter(proc);
+    if (proc->execution) {
+        process_execution_leave(proc);
+        return 1;
+    }
+    struct vm_execution_t execution = {.entry_code = code};
+    proc->execution = &execution;
+    proc->active_threads = 1;
+    proc->main_thread->finished = false;
+    proc->main_thread->failure_observed = false;
+    proc->main_thread->execution_status = 0;
     runtime_t runtime = {.code = code, .entry_code = code};
     prepare_string_cache(proc, code);
     thread_t *thread = proc->main_thread;
     if (thread->context->file_initialization_boundary)
         thread->context->unwinding_index =
             thread->data_stack->size ? thread->data_stack->size - 1 : BAD_STACK_INDEX;
+    if (proc->launch_module == thread->context->module
+        && proc->launch_file == thread->context->access.file_id && code->file_count) {
+        execution.entry_scope = thread->context->data;
+        execution.entry_file = proc->launch_file;
+        INCREF(execution.entry_scope);
+    }
     execute_instructions(&runtime, thread, true);
+    int status = finish_program_threads(proc, thread, runtime.status);
     finish_string_cache(proc);
-    return proc->exit_requested ? proc->exit_code : runtime.status;
+    int result = proc->exit_requested ? proc->exit_code : status;
+    process_execution_leave(proc);
+    return result;
 }
 
 int run_module_file(process_t *proc, module_file_t *file) {
@@ -1392,20 +1580,38 @@ int run_module_file(process_t *proc, module_file_t *file) {
         return 1;
     if (proc->exit_requested)
         return proc->exit_code;
+    process_execution_enter(proc);
+    if (proc->execution) {
+        process_execution_leave(proc);
+        return 1;
+    }
     bytecode_t *code = module_file_bytecode(file);
+    struct vm_execution_t program = {.entry_code = code};
+    proc->execution = &program;
+    proc->active_threads = 1;
+    proc->main_thread->finished = false;
+    proc->main_thread->failure_observed = false;
+    proc->main_thread->execution_status = 0;
     runtime_t runtime = {.code = code, .entry_code = code};
     thread_t *thread = proc->main_thread;
     file_execution_t execution = {&runtime, thread, true};
     object_t *scope = NULL;
     exception_t failure = {0};
-    module_initialize_status_t status = initialize_module_file(file,
-                                                               thread->context,
-                                                               execute_module_file,
-                                                               &execution,
-                                                               &scope,
-                                                               &failure);
+    module_files_t *launch = find_module_files(proc, proc->launch_module);
+    bool direct = launch && module_files_get(launch, proc->launch_file) == file;
+    module_initialize_status_t status =
+        (direct ? initialize_module_file_direct : initialize_module_file)(file,
+                                                                          thread->context,
+                                                                          execute_module_file,
+                                                                          &execution,
+                                                                          &scope,
+                                                                          &failure);
     clear_exception(&thread->exception);
     thread->exception = failure;
+    int result = finish_program_threads(proc, thread, status == MODULE_INITIALIZE_OK ? 0 : 1);
     finish_string_cache(proc);
-    return proc->exit_requested ? proc->exit_code : status == MODULE_INITIALIZE_OK ? 0 : 1;
+    if (proc->exit_requested)
+        result = proc->exit_code;
+    process_execution_leave(proc);
+    return result;
 }

@@ -599,3 +599,11 @@ top_level_return_catch
 top_level_return_cleanup
 top_level_return_expression
 top_level_return_uncaught
+
+thread_join_result
+thread_descendant_lifetime
+thread_join_exception
+thread_invalid_arguments
+
+thread_entry_readiness
+thread_shared_spin_visibility

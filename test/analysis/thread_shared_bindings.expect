@@ -1,0 +1,4 @@
+one write 5 1 shared int=2
+one write 6 6 observed top
+one function 7 0 - analyzed:top
+one c-support 7 0 - unsupported

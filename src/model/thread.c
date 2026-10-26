@@ -12,15 +12,16 @@
 #include "object_stack.h"
 #include "process.h"
 
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 
 /** @brief ID of the last created thread. */
-static uint64_t last_thread_id = 0;
+static atomic_uint_fast64_t last_thread_id = 0;
 
 thread_t *create_thread(process_t *process, context_t *context) {
     thread_t *thread = (thread_t *)CALLOC(sizeof(thread_t));
-    thread->id = ++last_thread_id;
+    thread->id = atomic_fetch_add(&last_thread_id, 1) + 1;
     thread->process = process;
     if (process->main_thread == NULL) {
         thread->previous = thread;
@@ -44,6 +45,8 @@ void destroy_thread(thread_t *thread) {
     } else {
         thread->previous->next = thread->next;
         thread->next->previous = thread->previous;
+        if (thread->process->main_thread == thread)
+            thread->process->main_thread = thread->next;
     }
     context_t *root_context = get_root_context();
     context_t *context = thread->context;
@@ -51,6 +54,7 @@ void destroy_thread(thread_t *thread) {
         context = destroy_context(context);
     }
     clear_exception(&thread->exception);
+    DECREFIF(thread->start_function);
     destroy_object_stack(thread->data_stack);
     FREE(thread);
 }

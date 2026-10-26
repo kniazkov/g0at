@@ -10,6 +10,8 @@
  * duplicate names return false; valid bytecode is never changed. Core OOM is fatal.
  */
 bool prepare_module_file_declarations(module_file_t *file);
+/** @brief Same reservations for a directly executed standalone image's existing scope. */
+bool prepare_file_scope_declarations(bytecode_t *code, uint32_t file_id, object_t *scope);
 
 /** Callback receives a borrowed declaration and its DVAR/DCONST instruction. */
 typedef bool (*module_declaration_visitor_t)(const bytecode_t *code,
@@ -26,3 +28,7 @@ bool visit_module_file_declarations(const bytecode_t *code,
                                     bool syntactic,
                                     module_declaration_visitor_t visitor,
                                     void *context);
+
+/** @brief Publish remaining standalone entry declarations before its first worker starts.
+ * Already existing cells are preserved; this is a once-only transition to concurrent access. */
+bool prepare_remaining_file_scope_declarations(bytecode_t *code, uint32_t file_id, object_t *scope);

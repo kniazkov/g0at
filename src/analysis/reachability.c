@@ -49,6 +49,7 @@ void mark_unreachable_code(node_t *root, arena_t *arena, analysis_collector_t *c
     restore_graph(root);
     set_subtree_flag(root, false);
     abstract_state_t *state = create_abstract_state(arena);
+    state->concurrent_bindings = requires_concurrency_safe_optimization(root);
     visit_reachable_node(root, &state, collector);
     destroy_abstract_state(state);
 }

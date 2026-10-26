@@ -1,0 +1,10 @@
+var ready = false;
+var value = 0;
+const thread = spawn(func() {
+    while (!ready) {}
+    value = 42;
+});
+ready = true;
+while (value == 0) {}
+println(value);
+join(thread);

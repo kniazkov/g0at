@@ -1,0 +1,6 @@
+try { spawn(); } catch(e) { print("missing:"); }
+try { spawn(42); } catch(e) { print("callable:"); }
+try { join(); } catch(e) { print("arity:"); }
+try { join("1"); } catch(e) { print("type:"); }
+try { join(-1); } catch(e) { print("range:"); }
+try { join(999999999); } catch(e) { print("unknown"); }

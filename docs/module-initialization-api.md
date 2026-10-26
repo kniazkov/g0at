@@ -13,8 +13,8 @@ initializing, creates an isolated file context, and invokes the supplied executo
 The executor receives the actual file and uses `module_file_entry` in its one
 shared bytecode image; `main` selects a file, not instruction zero. For import,
 pass `module_files_main` of the already preflighted dependency. For direct launch,
-pass the root main file; the caller remains responsible for the different dynamic
-execution mode specified for `exit` (#207).
+use `initialize_module_file_direct` on the root main file; it preserves once-only
+state without the included/imported initialization mutex or dynamic restrictions.
 
 The callback must complete synchronously, restore its nested contexts and return
 true only on normal completion. The gate owns and destroys its supplied context.
@@ -36,10 +36,10 @@ escaped function calls propagate this value. Function provenance survives clonin
 and flattening, and the call guard runs before native selection. A scope cannot be
 copied while uninitialized/initializing, so a premature copy cannot bypass a later
 failure. Ordinary escaped values are not revoked. A failed prototype blocks access
-when traversal reaches it, not access to a descendant's own fields. This API is not an OS
-thread lock; the scheduler's serialization policy is #217.
+when traversal reaches it, not access to a descendant's own fields. The gate now serializes included/imported initialization with the process-wide
+recursive mutex described in [the concurrency API](module-serialization-api.md).
 
-A recursive include of an initializing file returns the same borrowed scope
+A recursive include by the initializing thread returns the same borrowed scope
 without calling the executor. Completed files likewise return the same current
 scope and mutable state. Files and module versions have independent state.
 Import cycles still fail whole-graph preflight before any runtime is prepared;
@@ -80,8 +80,9 @@ images. Language operator dispatch and complete CLI routing remain #194/#195 and
 файла и вызывается переданный исполнитель. Он использует `module_file_entry` в
 общем байткоде. `main` выбирает логический файл, а не нулевую инструкцию; import
 использует `module_files_main` заранее проверенной зависимости. Для прямого
-запуска выбирается главный файл корня. Различие динамического режима прямого
-запуска и импорта для `exit` сохраняется и подключается в #207.
+запуска используется `initialize_module_file_direct` для главного файла корня:
+однократность сохраняется, но мьютекс и динамические ограничения include/import
+не включаются.
 
 Исполнитель синхронно завершает работу, восстанавливает вложенные контексты и
 возвращает true только при нормальном завершении. Переданный контекст принадлежит
@@ -94,8 +95,8 @@ images. Language operator dispatch and complete CLI routing remain #194/#195 and
 предыдущую ссылку нужно освободить либо передать дальше до повторного использования.
 False без исключения означает INVALID_OPERATION; true вместе с исключением также
 не считается успехом. Goat null допустим как исключение, C NULL означает его
-отсутствие. Не используется неявный слот главного потока; сериализация потоков
-относится к #217.
+отсутствие. Не используется неявный слот главного потока. Сериализация через
+рекурсивный мьютекс процесса описана в [API конкурентного исполнения](module-serialization-api.md).
 
 Файл удерживает исходное значение как корень GC, не копирует и не замораживает его.
 Изменения обычного объекта ошибки видны при повторном выбросе. Внутренние функции
@@ -107,7 +108,7 @@ False без исключения означает INVALID_OPERATION; true вм�
 не отзываются. Неудачный прототип блокирует только обращение, дошедшее до него,
 а не собственные поля потомка.
 
-Повторный вход в уже выполняющийся файл при цикле include сразу возвращает ту же
+Повторный вход владеющего потока при цикле include сразу возвращает ту же
 область без повторного вызова исполнителя. После успешного завершения возвращается
 та же область с текущими значениями. Файлы и версии модулей имеют независимые
 состояния. Циклический import по-прежнему отклоняется до исполнения общим preflight.

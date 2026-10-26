@@ -127,7 +127,7 @@ typedef enum {
     MODULE_INITIALIZE_FAILED
 } module_initialize_status_t;
 
-/** @brief Synchronous, single-thread initialization gate for include/import consumers.
+/** @brief Synchronous, serialized initialization gate for include/import consumers.
  * First entry reserves declarations and calls execute exactly once. Reentrant
  * cycles and completed files return the same borrowed scope without executing.
  * An escaping failure is terminal, never retried. Invalid arguments clear scope
@@ -139,7 +139,10 @@ typedef enum {
  * There is no initialization timeout, polling watchdog or elapsed-time failure:
  * INITIALIZING lasts until the synchronous executor returns. External process
  * termination is outside this contract and does not produce a cached timeout.
- * This is not a scheduler: cross-thread serialization belongs to #217.
+ * The executor runs under the recursive process execution lock. It may suspend
+ * that lock around blocking I/O; the separate global initializer lock remains held.
+ * Other OS threads wait without retaining the execution lock. Ready files bypass
+ * the initializer lock. Ordinary model operations require the execution lock.
  */
 module_initialize_status_t initialize_module_file(module_file_t *file,
                                                   context_t *caller,
@@ -153,3 +156,14 @@ module_initialize_status_t initialize_module_file(module_file_t *file,
  * Capture while the executor is active, before unwinding its frame.
  */
 string_value_t module_initialization_chain(process_t *process, const module_file_t *target);
+
+/** @brief Direct program entry excludes the initializer lock and publishes declarations
+ * individually. Only the launch path may use this API, never include/import. */
+module_initialize_status_t initialize_module_file_direct(module_file_t *file,
+                                                         context_t *caller,
+                                                         module_file_executor_t execute,
+                                                         void *data,
+                                                         object_t **scope,
+                                                         exception_t *failure);
+/** @brief Whether this OS execution thread has an active file diagnostic chain. */
+bool module_initialization_active(process_t *process);
