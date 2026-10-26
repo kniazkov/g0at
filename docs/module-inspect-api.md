@@ -51,19 +51,19 @@ native-варианта; `1` — ошибка чтения, валидации, 
 
 ### Граница реализации
 
-Полный согласованный контракт inspect остаётся в книге. В последовательности
-чеклиста #223 реализует окончательную версионированную JSON-схему и машиночитаемый
-отчёт; сейчас `--json` явно отвергается с кодом `2`, временная схема не вводится.
-#214 добавит изолированную пробную загрузку. Пока отчёт всегда явно сообщает
-`Loading: not checked`; успешная проверка метаданных не выдаётся за успешную пробу.
-`--no-probe` не поддерживается. `--probe-timeout` уже проверяет положительное целое
-число секунд с контролем переполнения (будущее значение по умолчанию — 5), но на
-этом этапе не запускает процесс пробы и не ограничивает исполнение программы.
+Полный согласованный контракт inspect остаётся в книге. Этап #223 добавляет
+`--json`: один отчёт `reportVersion: 1`, включая штатные ошибки и справку/версию.
+Его полная [схема и каталог кодов](module-inspect-report-v1.md) фиксируют типы,
+недоступные сведения, невыполненные проверки и отделение метаданных от результата
+загрузки. JSON не содержит отдельного списка причин несовместимости; они остаются
+в тексте. `--probe-timeout` проверяет положительное целое число секунд с контролем
+переполнения (по умолчанию 5). #214 добавит изолированную пробную загрузку; пока
+оба формата честно сообщают `not_checked`, без выдуманных захватов вывода.
+`--no-probe` не поддерживается.
 
 Проверка CLI: `python3 scripts/check_module_inspect.py build/goat-inspect`.
 Общие наборы проверки native и валидации дополнительно покрывают причины
-несовместимости и безопасный metadata callback. Настоящие JSON-отчёты и OS-пробы
-не объявляются проверенными этим набором.
+несовместимости и безопасный metadata callback. JSON проверяется по полной схеме; OS-пробы остаются задачей #214.
 
 ## English
 
@@ -117,16 +117,15 @@ before opening the archive. `--help` and `--version` return `0`. The common
 
 ### Implementation boundary
 
-The complete agreed inspect contract remains in the book. The checklist assigns
-the final versioned JSON schema and machine-readable renderer to #223. Until
-then, `--json` explicitly returns `2`; no temporary report schema is invented.
-Isolated native load probing belongs to #214. Current reports always state
-`Loading: not checked`, never presenting metadata validation as a successful
-probe. `--no-probe` is unsupported. `--probe-timeout` already validates positive
-integer seconds with overflow checks (the future default is 5), but this stage
-starts no probe and imposes no program-execution timeout.
+The complete agreed inspect contract remains in the book. Step #223 adds
+`--json`: one `reportVersion: 1` report, including handled errors and help/version.
+Its complete [schema and code catalog](module-inspect-report-v1.md) define types,
+unavailable information, skipped checks, and metadata versus loading results.
+JSON has no separate incompatibility-reason list; those explanations remain in
+text. `--probe-timeout` validates positive integer seconds with overflow checks
+(default 5). Isolated loading belongs to #214; both current formats honestly
+report `not_checked`, with no invented captured streams. `--no-probe` is unsupported.
 
 Run `python3 scripts/check_module_inspect.py build/goat-inspect` for CLI coverage.
 The shared native/validation suites additionally cover compatibility explanations
-and safe metadata callbacks. This coverage does not claim JSON reports or OS
-probes have been implemented or tested.
+and safe metadata callbacks. JSON coverage validates the full report schema; OS probes remain #214.

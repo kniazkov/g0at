@@ -4,6 +4,7 @@
  */
 #include "inspect.h"
 
+#include "inspect_report.h"
 #include "lib/allocate.h"
 #include "lib/file_system.h"
 #include "module/module_native.h"
@@ -13,12 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef struct metadata_record {
-    char *archive;
-    yyjson_doc *doc;
-    struct metadata_record *next;
-} metadata_record_t;
 
 typedef struct {
     metadata_record_t *records;
@@ -267,26 +262,72 @@ static bool timeout_valid(const char *text) {
     return value != 0;
 }
 
-static void help(void) {
-    fputs("Usage: goat-inspect [--module-dir DIR] [--target PROFILE.json]\n"
-          "                    [--probe-timeout SECONDS] ARCHIVE\n"
-          "Inspect metadata and the entire dependency graph without executing code.\n"
-          "Paths are literal; no suffix is added. -- ends option parsing.\n"
-          "This stage provides text metadata inspection only. JSON reporting and\n"
-          "isolated native probing are not implemented yet. No loading is claimed.\n"
-          "--probe-timeout validates a future probe budget (default 5 seconds).\n"
-          "--help, --version: display information without opening archives.\n",
-          stdout);
+static const char *help_text =
+    "Usage: goat-inspect [--module-dir DIR] [--target PROFILE.json]\n"
+    "                    [--json] [--probe-timeout SECONDS] ARCHIVE\n"
+    "Inspect metadata and the entire dependency graph without executing code.\n"
+    "Paths are literal; no suffix is added. -- ends option parsing.\n"
+    "Text and JSON report v1 describe metadata. Isolated native probing\n"
+    "is not implemented yet. No loading is claimed.\n"
+    "--probe-timeout validates a future probe budget (default 5 seconds).\n"
+    "--help, --version: display information without opening archives.\n";
+
+bool inspect_wants_json(int argc, char **argv) {
+    for (int i = 1; i < argc; ++i) {
+        if (!strcmp(argv[i], "--"))
+            break;
+        if (!strcmp(argv[i], "--json"))
+            return true;
+        if (!strcmp(argv[i], "--target") || !strcmp(argv[i], "--module-dir")
+            || !strcmp(argv[i], "--probe-timeout"))
+            ++i;
+    }
+    return false;
+}
+
+static int early_result(bool json,
+                        int result,
+                        const char *input,
+                        const goat_native_environment *target,
+                        bool explicit_target,
+                        const char *code,
+                        const char *message) {
+    if (json) {
+        if (!write_inspect_json(input,
+                                target,
+                                explicit_target,
+                                NULL,
+                                NULL,
+                                0,
+                                NULL,
+                                result,
+                                code,
+                                message,
+                                NULL,
+                                NULL))
+            return 1;
+    } else
+        fprintf(stderr, "%s\n", message);
+    return result;
 }
 
 int inspect_module_command(int argc, char **argv) {
     const char *archive = NULL, *directory = NULL, *profile = NULL, *timeout = NULL;
     bool positional = false, show_help = false, show_version = false;
+    bool json = inspect_wants_json(argc, argv), json_seen = false;
     const char *error = NULL;
     for (int i = 1; i < argc; ++i) {
         const char *arg = argv[i];
         if (!positional && strcmp(arg, "--") == 0) {
             positional = true;
+            continue;
+        }
+        if (!positional && !strcmp(arg, "--json")) {
+            if (json_seen) {
+                error = "Repeated --json option.";
+                break;
+            }
+            json_seen = true;
             continue;
         }
         if (!positional && (!strcmp(arg, "--help") || !strcmp(arg, "-h"))) {
@@ -311,8 +352,7 @@ int inspect_module_command(int argc, char **argv) {
             continue;
         }
         if (!positional && arg[0] == '-') {
-            error = !strcmp(arg, "--json") ? "JSON reporting is not implemented yet (#223)."
-                                           : "Unknown option.";
+            error = "Unknown option.";
             break;
         }
         if (archive || !arg[0]) {
@@ -326,14 +366,43 @@ int inspect_module_command(int argc, char **argv) {
     if (!error && !show_help && !show_version && !archive)
         error = "Exactly one archive path is required.";
     if (error) {
-        fprintf(stderr, "%s\n", error);
-        return 2;
+        return early_result(json, 2, archive, NULL, false, "INVALID_ARGUMENT", error);
     }
     if (show_help) {
-        help();
+        if (json)
+            return write_inspect_json(archive,
+                                      NULL,
+                                      false,
+                                      NULL,
+                                      NULL,
+                                      0,
+                                      NULL,
+                                      0,
+                                      NULL,
+                                      NULL,
+                                      "help",
+                                      help_text)
+                       ? 0
+                       : 1;
+        fputs(help_text, stdout);
         return 0;
     }
     if (show_version) {
+        if (json)
+            return write_inspect_json(archive,
+                                      NULL,
+                                      false,
+                                      NULL,
+                                      NULL,
+                                      0,
+                                      NULL,
+                                      0,
+                                      NULL,
+                                      NULL,
+                                      "version",
+                                      "goat-inspect 1 (module format v1)")
+                       ? 0
+                       : 1;
         fputs("goat-inspect 1 (module format v1)\n", stdout);
         return 0;
     }
@@ -344,54 +413,71 @@ int inspect_module_command(int argc, char **argv) {
         void *bytes = NULL;
         size_t size = 0;
         if (!read_fs_regular_file(profile, SIZE_MAX - 1, &bytes, &size, &fs)) {
-            fprintf(stderr,
-                    "Cannot read target profile: %s\n",
-                    fs.operation ? fs.operation : "I/O error");
+            int result = early_result(json,
+                                      2,
+                                      archive,
+                                      NULL,
+                                      true,
+                                      "TARGET_IO",
+                                      "Cannot read target profile.");
             clear_fs_error(&fs);
-            return 2;
+            return result;
         }
         goat_module_json_error parsed = goat_native_environment_read(bytes, size, &target);
         FREE(bytes);
         clear_fs_error(&fs);
         if (parsed) {
-            fprintf(stderr, "Invalid target profile: %s\n", goat_module_json_error_string(parsed));
-            return 2;
+            return early_result(json,
+                                2,
+                                archive,
+                                NULL,
+                                true,
+                                "TARGET_INVALID",
+                                goat_module_json_error_string(parsed));
         }
     }
-    const char *os_names[] = {"unknown", "linux", "windows"};
-    const char *arch_names[] = {"unknown", "x86", "x86_64", "aarch64"};
-    const char *runtime_names[] = {"unknown", "glibc", "musl", "msvcrt", "ucrt"};
-    printf("Target: %s; OS=%s architecture=%s bits=%u endian=%s runtime=%s\n",
-           profile ? "explicit profile" : "current environment",
-           os_names[target.os],
-           arch_names[target.architecture],
-           target.bits,
-           target.little_endian ? "little" : "big",
-           runtime_names[target.runtime]);
-    printf("  OS version: %s %u.%u.%u.%u; runtime version: %s %u.%u.%u.%u\n",
-           target.os_version.known ? "known" : "unknown",
-           target.os_version.components[0],
-           target.os_version.components[1],
-           target.os_version.components[2],
-           target.os_version.components[3],
-           target.runtime_version.known ? "known" : "unknown",
-           target.runtime_version.components[0],
-           target.runtime_version.components[1],
-           target.runtime_version.components[2],
-           target.runtime_version.components[3]);
-    fputs("  CPU:", stdout);
-    for (uint64_t bit = 1; bit <= GOAT_CPU_SVE2; bit <<= 1)
-        if (target.cpu_features & bit)
-            printf(" %s", goat_native_cpu_feature_name(bit));
-    putchar('\n');
+    if (!json) {
+        const char *os_names[] = {"unknown", "linux", "windows"};
+        const char *arch_names[] = {"unknown", "x86", "x86_64", "aarch64"};
+        const char *runtime_names[] = {"unknown", "glibc", "musl", "msvcrt", "ucrt"};
+        printf("Target: %s; OS=%s architecture=%s bits=%u endian=%s runtime=%s\n",
+               profile ? "explicit profile" : "current environment",
+               os_names[target.os],
+               arch_names[target.architecture],
+               target.bits,
+               target.little_endian ? "little" : "big",
+               runtime_names[target.runtime]);
+        printf("  OS version: %s %u.%u.%u.%u; runtime version: %s %u.%u.%u.%u\n",
+               target.os_version.known ? "known" : "unknown",
+               target.os_version.components[0],
+               target.os_version.components[1],
+               target.os_version.components[2],
+               target.os_version.components[3],
+               target.runtime_version.known ? "known" : "unknown",
+               target.runtime_version.components[0],
+               target.runtime_version.components[1],
+               target.runtime_version.components[2],
+               target.runtime_version.components[3]);
+        fputs("  CPU:", stdout);
+        for (uint64_t bit = 1; bit <= GOAT_CPU_SVE2; bit <<= 1)
+            if (target.cpu_features & bit)
+                printf(" %s", goat_native_cpu_feature_name(bit));
+        putchar('\n');
+    }
     module_search_t *search = NULL;
     module_search_error_t search_error = {0};
     if (prepare_module_search_from_environment(archive, directory, &search, &search_error)) {
         char *message = format_module_search_error(&search_error, NULL, NULL, archive);
-        printf("Inspection: failed\n%s\n", message ? message : "Cannot open archive/search paths.");
+        int result = early_result(json,
+                                  1,
+                                  archive,
+                                  &target,
+                                  profile != NULL,
+                                  "ARCHIVE_IO",
+                                  !json && message ? message : "Cannot open archive/search paths.");
         FREE(message);
         clear_module_search_error(&search_error);
-        return 1;
+        return result;
     }
     inspection_t inspection = {0};
     module_validation_options_t options = {.max_archive = SIZE_MAX,
@@ -406,16 +492,32 @@ int inspect_module_command(int argc, char **argv) {
     for (size_t i = 0; i < count; ++i)
         nodes[i] = module_graph_node(graph, i);
     qsort(nodes, count, sizeof(*nodes), node_compare);
-    for (size_t i = 0; i < count; ++i)
-        module_text(nodes[i], &inspection, &target);
-    FREE(nodes);
-    char *diagnostics = format_module_graph_diagnostics(graph);
-    if (diagnostics && *diagnostics)
-        printf("Diagnostics:\n%s", diagnostics);
-    FREE(diagnostics);
     bool success = status == MODULE_GRAPH_OK && !inspection.failed;
-    printf("Inspection: %s\n",
-           success ? "passed (metadata and graph only; loading not checked)" : "failed");
+    bool written = true;
+    if (json) {
+        written = write_inspect_json(archive,
+                                     &target,
+                                     profile != NULL,
+                                     graph,
+                                     nodes,
+                                     count,
+                                     inspection.records,
+                                     success ? 0 : 1,
+                                     inspection.failed || !graph ? "REPORT_FAILED" : NULL,
+                                     "Inspection could not retain its report data.",
+                                     NULL,
+                                     NULL);
+    } else {
+        for (size_t i = 0; i < count; ++i)
+            module_text(nodes[i], &inspection, &target);
+        char *diagnostics = format_module_graph_diagnostics(graph);
+        if (diagnostics && *diagnostics)
+            printf("Diagnostics:\n%s", diagnostics);
+        FREE(diagnostics);
+        printf("Inspection: %s\n",
+               success ? "passed (metadata and graph only; loading not checked)" : "failed");
+    }
+    FREE(nodes);
     free_module_graph(graph);
     free_module_search(search);
     clear_module_search_error(&search_error);
@@ -426,7 +528,7 @@ int inspect_module_command(int argc, char **argv) {
         FREE(inspection.records);
         inspection.records = next;
     }
-    if (ferror(stdout) || fflush(stdout))
+    if (!written || ferror(stdout) || fflush(stdout))
         return 1;
     return success ? 0 : 1;
 }

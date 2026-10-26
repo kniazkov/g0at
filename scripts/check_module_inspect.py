@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2026 Ivan Kniazkov
-"""Metadata-only goat-inspect integration, using independent portable fixtures."""
+"""Text/JSON goat-inspect integration, using independent portable fixtures."""
+import base64
 import copy
 import hashlib
 import io
@@ -86,6 +87,95 @@ def put(path, content):
     return path
 
 
+def schema_check(item, spec, document, directory, path='$'):
+    """Validate the published schema with the stdlib, including external refs."""
+    if '$ref' in spec:
+        filename, _, fragment = spec['$ref'].partition('#')
+        if filename:
+            document = json.loads((directory / filename).read_text(encoding='utf-8'))
+        target = document
+        for part in fragment.split('/')[1:]:
+            target = target[part.replace('~1', '/').replace('~0', '~')]
+        schema_check(item, target, document, directory, path)
+    for requirement in spec.get('allOf', []):
+        schema_check(item, requirement, document, directory, path)
+    if 'if' in spec:
+        try:
+            schema_check(item, spec['if'], document, directory, path)
+            matched = True
+        except AssertionError:
+            matched = False
+        schema_check(item, spec.get('then' if matched else 'else', {}), document, directory, path)
+    if 'anyOf' in spec:
+        errors = []
+        for choice in spec['anyOf']:
+            try:
+                schema_check(item, choice, document, directory, path)
+                break
+            except AssertionError as error:
+                errors.append(str(error))
+        else:
+            raise AssertionError((path, 'anyOf', errors))
+    if 'oneOf' in spec:
+        matches = 0
+        for choice in spec['oneOf']:
+            try:
+                schema_check(item, choice, document, directory, path)
+                matches += 1
+            except AssertionError:
+                pass
+        assert matches == 1, (path, 'oneOf', matches)
+    kinds = {'null': lambda v: v is None, 'boolean': lambda v: type(v) is bool,
+             'integer': lambda v: type(v) is int,
+             'number': lambda v: type(v) in (int, float),
+             'string': lambda v: isinstance(v, str),
+             'array': lambda v: isinstance(v, list),
+             'object': lambda v: isinstance(v, dict)}
+    if 'type' in spec:
+        types = spec['type'] if isinstance(spec['type'], list) else [spec['type']]
+        assert any(kinds[k](item) for k in types), (path, types, item)
+    if 'const' in spec:
+        assert type(item) is type(spec['const']) and item == spec['const'], (path, item)
+    if 'enum' in spec:
+        assert any(type(item) is type(v) and item == v for v in spec['enum']), (path, item)
+    if isinstance(item, dict):
+        assert set(spec.get('required', [])) <= item.keys(), (path, 'required', item)
+        properties = spec.get('properties', {})
+        extra = spec.get('additionalProperties', True)
+        for key, value in item.items():
+            if key in properties:
+                schema_check(value, properties[key], document, directory, path + '.' + key)
+            elif extra is False:
+                raise AssertionError((path, 'unknown property', key))
+            elif isinstance(extra, dict):
+                schema_check(value, extra, document, directory, path + '.' + key)
+            if 'propertyNames' in spec:
+                schema_check(key, spec['propertyNames'], document, directory, path)
+    if isinstance(item, list):
+        assert len(item) >= spec.get('minItems', 0), (path, item)
+        assert len(item) <= spec.get('maxItems', len(item)), (path, item)
+        if spec.get('uniqueItems'):
+            assert len({json.dumps(x, sort_keys=True) for x in item}) == len(item), (path, item)
+        for index, value in enumerate(item):
+            schema_check(value, spec.get('items', {}), document, directory, f'{path}[{index}]')
+    if isinstance(item, str):
+        assert len(item) >= spec.get('minLength', 0), (path, item)
+        assert len(item) <= spec.get('maxLength', len(item)), (path, item)
+        if 'pattern' in spec:
+            assert re.search(spec['pattern'], item), (path, item, spec['pattern'])
+    if type(item) in (int, float):
+        assert item >= spec.get('minimum', item), (path, item)
+        assert item <= spec.get('maximum', item), (path, item)
+
+
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        assert key not in result, ('duplicate report key', key)
+        result[key] = value
+    return result
+
+
 with tempfile.TemporaryDirectory(prefix='goat-inspect-') as temporary:
     root = Path(temporary)
     cwd = root / 'unrelated'
@@ -135,7 +225,7 @@ with tempfile.TemporaryDirectory(prefix='goat-inspect-') as temporary:
     run('--help', contains=('goat-inspect',))
     run('--version', contains=('goat-inspect',))
     for args in [(), (main, main), ('--unknown', main), ('--no-probe', main),
-                 ('--json', main), ('--module-dir',), ('--target',),
+                 ('--module-dir',), ('--target',),
                  ('--module-dir', root, '--module-dir', cwd, main)]:
         run(*args, status=2)
     # Parameter failure precedes any attempt to open this missing archive/target.
@@ -337,5 +427,281 @@ __attribute__((constructor)) static void initialize(void) { mark(); }
     put(root / 'modules/cycle-b/1.gbin', cycle_b)
     put(main, archive(dict(metadata('cycle-a'), dependencies=[b_identity]))[0])
     run(main, status=1, contains=('cycle-a', 'cycle-b'))
+
+    # The machine report is a separate closed, versioned contract, not module.json.
+    schema_path = ROOT / 'docs/module-format-v1/inspect-report.schema.json'
+    report_schema = json.loads(schema_path.read_text(encoding='utf-8'))
+
+    def run_json(*args, status=0, env=None, json_last=False):
+        global COUNT
+        current = dict(base_env)
+        current.update(env or {})
+        arguments = [arg if isinstance(arg, bytes) else str(arg) for arg in args]
+        command = ([EXE, *arguments, '--json'] if json_last
+                   else [EXE, '--json', *arguments])
+        result = subprocess.run(command, cwd=cwd, env=current,
+                                capture_output=True, timeout=30)
+        COUNT += 1
+        assert result.returncode == status, (COUNT, args, result.returncode,
+                                             result.stdout, result.stderr)
+        assert not result.stderr, (COUNT, 'JSON diagnostic leaked to stderr', result.stderr)
+        text = result.stdout.decode('utf-8')
+        report = json.loads(text, object_pairs_hook=unique_object)
+        schema_check(report, report_schema, report_schema, schema_path.parent)
+        assert report['reportVersion'] == 1 and type(report['reportVersion']) is int
+        assert report['exitCode'] == status and report['success'] == (status == 0), report
+        if status:
+            assert any(d['severity'] == 'error' for d in report['diagnostics']), report
+        for diagnostic in report['diagnostics']:
+            if 'entryBase64' in diagnostic:
+                decoded = base64.b64decode(diagnostic['entryBase64'], validate=True)
+                assert base64.b64encode(decoded).decode('ascii') == diagnostic['entryBase64']
+        for module in report['modules']:
+            if module['metadata'] is None:
+                assert module['exports'] is None and module['native'] is None, module
+            else:
+                assert [x['name'] for x in module['exports']] == sorted(
+                    module['metadata'].get('externals', {})), module
+                for entry in module['exports']:
+                    source = module['metadata']['externals'][entry['name']]
+                    assert entry['mutable'] == source['mutable'], entry
+                    assert ('type' in entry) == ('type' in source), entry
+                    if 'type' in source:
+                        assert entry['type'] == source['type'], entry
+                for native in module['native']:
+                    assert set(native['compatibility']) == {'state'}, native
+                    assert native['loading']['state'] == 'not_checked', native
+                    assert set(native['loading']) == {'state', 'reason'}, native
+        return report, text
+
+    def codes(report, severity=None):
+        return [d['code'] for d in report['diagnostics']
+                if severity is None or d['severity'] == severity]
+
+    def root_module(report):
+        return next(m for m in report['modules'] if Path(m['archive']).resolve() == main.resolve())
+
+    put(main, binary)
+    success, serialized = run_json(main)
+    assert run_json(main)[1] == serialized, 'JSON bytes must be deterministic'
+    versioned = metadata(version='2026-special')
+    put(main, archive(versioned)[0])
+    version_report, _ = run_json(main)
+    assert version_report['reportVersion'] == 1
+    assert root_module(version_report)['metadata']['version'] == '2026-special'
+    put(main, binary)
+    current_target = success['target']
+    assert current_target['source'] == 'current', current_target
+    assert type(current_target['littleEndian']) is bool, current_target
+    assert 'reportVersion' not in root_module(success)['metadata'], success
+    assert root_module(success)['metadata']['mainHash'] == identity['hash'], success
+    assert root_module(success)['validation'] == 'passed', success
+    assert root_module(success)['exports'] == [] and root_module(success)['native'] == [], success
+    assert 'NO_NATIVE_VARIANT' in codes(success, 'warning'), success
+    assert main.read_bytes() == binary, 'JSON inspection changed input archive'
+
+    for name in ['json.literal', 'json-no-extension', 'JSON-кириллица-😀/данные']:
+        location = put(root / name, binary)
+        report, _ = run_json(location)
+        assert report['modules'][0]['metadata']['mainHash'] == identity['hash'], report
+    put(cwd / '--json', binary)
+    run_json('--', '--json')
+    missing, _ = run_json(root / 'absent-json', status=1)
+    assert 'ARCHIVE_IO' in codes(missing), missing
+    put(root / 'absent-json.gbin', binary)
+    assert run_json(root / 'absent-json', status=1)[0] == missing
+    assert not missing['modules'], missing
+
+    for args in [(), (main, main), ('--unknown', main), ('--no-probe', main),
+                 ('--module-dir',), ('--target',), ('--probe-timeout', '0', main)]:
+        report, _ = run_json(*args, status=2)
+        assert 'INVALID_ARGUMENT' in codes(report), report
+        assert not report['modules'], 'argument error opened archive'
+    report, _ = run_json('--unknown', main, status=2, json_last=True)
+    assert 'INVALID_ARGUMENT' in codes(report), report
+    if os.name != 'nt':
+        for last in (False, True):
+            report, _ = run_json(b'invalid-utf8-\xff', status=2, json_last=last)
+            assert codes(report, 'error') == ['INVALID_ARGUMENT'], report
+            assert report['input'] is None and not report['modules'], report
+    if os.name != 'nt':
+        report, _ = run_json(main, status=1, env={'GOAT_MODULE_PATH': b'invalid-utf8-\xff'})
+        assert codes(report, 'error') == ['ARCHIVE_IO'], report
+        assert not report['modules'], report
+    for flag in ['--help', '--version']:
+        report, _ = run_json(flag)
+        assert report['information']['kind'] == flag[2:], report
+        assert report['information']['text'] and not report['modules'], report
+    report, _ = run_json(main, '--target', root / 'missing-target', status=2)
+    assert 'TARGET_IO' in codes(report), report
+    for value in ['{', '{}', json.dumps(dict(TARGET, illegal=True))]:
+        invalid_profile = put(root / 'invalid-target.json', value)
+        report, _ = run_json(main, '--target', invalid_profile, status=2)
+        assert 'TARGET_INVALID' in codes(report) and not report['modules'], report
+
+    # All optional information survives exactly; empties normalize, never trim.
+    doc = metadata('information-json')
+    doc.update(description='Описание\n\x1b\u009b 😀', license='MIT', homepage='https://example.test/',
+               authors=[{'name': 'Имя 😀', 'email': ''}, {'name': 'Second', 'email': 'x@y.test'}],
+               producers=[{'name': 'Z', 'version': '3', 'buildId': 'zzz'},
+                          {'name': 'A', 'version': '1', 'buildId': 'aaa'}],
+               externals={'unknown': {'mutable': True},
+                          'known': {'mutable': False, 'type': 'integer'},
+                          'control\n\x1b': {'mutable': False}})
+    put(main, archive(doc)[0])
+    report, serialized = run_json(main)
+    retained = root_module(report)['metadata']
+    for field in ['description', 'license', 'homepage']:
+        assert retained[field] == doc[field], (field, retained)
+    assert retained['authors'] == [{'name': 'Имя 😀'}, {'name': 'Second', 'email': 'x@y.test'}]
+    assert sorted(retained['producers'], key=lambda p: p['name']) == sorted(
+        doc['producers'], key=lambda p: p['name']), retained
+    assert '\x1b' not in serialized, 'raw ASCII terminal escape in JSON'
+    doc['producers'].reverse()
+    doc['externals'] = dict(reversed(list(doc['externals'].items())))
+    put(main, archive(doc)[0])
+    assert run_json(main)[1] == serialized, 'unordered metadata reordered JSON report'
+    for field, empty in [('description', ''), ('license', ''), ('homepage', ''), ('authors', [])]:
+        empty_doc = dict(metadata(), **{field: empty})
+        put(main, archive(empty_doc)[0])
+        empty_report, _ = run_json(main)
+        assert field not in root_module(empty_report)['metadata'], empty_report
+    large = dict(metadata(), externals={'exact': dict(mutable=False, type='integer',
+                                                     value=9007199254740993)})
+    put(main, archive(large)[0])
+    large_report, _ = run_json(main)
+    assert root_module(large_report)['metadata']['externals']['exact']['value'] == 9007199254740993
+    spaces = dict(metadata(), description=' ', authors=[{'name': 'N', 'email': ' '}])
+    put(main, archive(spaces)[0])
+    spaces_report, _ = run_json(main)
+    assert root_module(spaces_report)['metadata']['description'] == ' '
+    assert root_module(spaces_report)['metadata']['authors'][0]['email'] == ' '
+    for invalid in [dict(description=None), dict(authors=[{'name': ''}]),
+                    dict(authors=[{'name': 'N', 'email': None}])]:
+        put(main, archive(dict(metadata(), **invalid), rehash=False)[0])
+        invalid_report, _ = run_json(main, status=1)
+        assert root_module(invalid_report)['metadata'] is None, invalid_report
+
+    # Failed independent checks and skipped prerequisites remain distinguishable.
+    bad = dict(metadata('retained-json'), mainHash='0' * 64)
+    put(main, archive(bad, rehash=False)[0])
+    retained_report, stable = run_json(main, status=1)
+    assert 'MAIN_HASH_MISMATCH' in codes(retained_report), retained_report
+    assert root_module(retained_report)['metadata']['name'] == 'retained-json'
+    assert root_module(retained_report)['validation'] == 'failed'
+    assert run_json(main, status=1)[1] == stable
+    english = codes(run_json(main, status=1, env={'LANG': 'C', 'LC_ALL': 'C'})[0])
+    russian = codes(run_json(main, status=1, env={'LANG': 'ru_RU.UTF-8', 'LC_ALL': 'ru_RU.UTF-8'})[0])
+    assert english == russian, 'stable diagnostic code depended on message locale'
+    bad = dict(metadata(), name=1, version=False)
+    put(main, archive(bad, rehash=False)[0])
+    fields, _ = run_json(main, status=1)
+    assert {'/name', '/version'} <= {d.get('field') for d in fields['diagnostics']}, fields
+    assert sum(d['severity'] == 'error' for d in fields['diagnostics']) >= 2, fields
+    for raw in [b'{', b'{"name":1,']:
+        put(main, archive(raw=raw)[0])
+        broken, _ = run_json(main, status=1)
+        assert 'JSON_INVALID' in codes(broken), broken
+        assert 'MAIN_HASH_MISMATCH' not in codes(broken), broken
+        assert root_module(broken)['metadata'] is None, broken
+        skipped = [d for d in broken['diagnostics'] if d['severity'] == 'skipped']
+        assert skipped and all('prerequisite' in d for d in skipped), broken
+    for raw in [b'', b'garbage', binary[:20], binary[:-20]]:
+        put(main, raw)
+        broken, _ = run_json(main, status=1)
+        assert any(c in codes(broken) for c in ['ZIP_INVALID', 'CONTAINER_INVALID']), broken
+        assert not any(m['metadata'] is not None for m in broken['modules']), broken
+        assert 'MAIN_HASH_MISMATCH' not in codes(broken), broken
+
+    # Compatibility is not loading, and JSON has no text-only mismatch-reason list.
+    profile = put(root / 'json-target.json', json.dumps(TARGET))
+    doc = dict(metadata('json-native'), native=[variant(), variant(library='native/other.so', abi=999)])
+    put(main, archive(doc)[0])
+    native_report, _ = run_json(main, '--target', profile)
+    assert native_report['target']['source'] == 'explicit'
+    assert native_report['target']['os'] == TARGET['os']
+    assert native_report['target']['architecture'] == TARGET['architecture']
+    assert native_report['target']['bits'] == TARGET['bits']
+    native_entries = {n['library']: n for n in root_module(native_report)['native']}
+    assert native_entries['native/test.so']['compatibility']['state'] == 'compatible'
+    assert native_entries['native/other.so']['compatibility']['state'] == 'incompatible'
+    assert len(root_module(native_report)['metadata']['native']) == 2
+    assert root_module(native_report)['metadata']['native'][0]['cCompiler']['version'] == '17.4 fixture'
+    for entry in doc['native']:
+        del entry['cCompiler']
+    put(main, archive(doc)[0])
+    no_compiler, _ = run_json(main, '--target', profile)
+    assert all('cCompiler' not in n for n in root_module(no_compiler)['metadata']['native'])
+    put(main, archive(doc, payload=b'corrupt native')[0])
+    failed_native, _ = run_json(main, '--target', profile, status=1)
+    assert 'NATIVE_HASH_MISMATCH' in codes(failed_native), failed_native
+    assert all(n['compatibility']['state'] == 'not_checked'
+               for n in root_module(failed_native)['native']), failed_native
+
+    put(main, archive(metadata('json-no-execution'), code=looping)[0])
+    run_json(main)
+    doc = metadata('json-no-constructor')
+    doc['native'] = [variant(target, library_name)]
+    doc['native'][0]['hash'] = hashlib.sha256(payload).hexdigest()
+    put(main, archive(doc, payload=payload)[0])
+    profile = put(root / 'json-constructor-target.json', json.dumps(target))
+    run_json(main, '--target', profile, env={'GOAT_INSPECT_MARKER': str(marker)})
+    assert not marker.exists(), 'JSON inspection called native constructor'
+    doc['native'][0]['hash'] = '0' * 64
+    put(main, archive(doc, payload=payload)[0])
+    run_json(main, '--target', profile, status=1, env={'GOAT_INSPECT_MARKER': str(marker)})
+    assert not marker.exists(), 'invalid archive caused native constructor execution'
+
+    # Graph shares one node but keeps every path to an error deterministically.
+    put(leaf, dep_bytes)
+    _, json_left = archive(dict(metadata('left'), dependencies=[dep]))
+    _, json_right = archive(dict(metadata('right'), dependencies=[dep]))
+    graph = dict(metadata('json-graph'), dependencies=[json_right, json_left])
+    put(main, archive(graph)[0])
+    shared_report, stable = run_json(main)
+    names = [m['metadata']['name'] for m in shared_report['modules']]
+    assert names == sorted(names) and names.count('shared') == 1, names
+    graph['dependencies'].reverse()
+    put(main, archive(graph)[0])
+    assert run_json(main)[1] == stable
+    leaf.unlink()
+    missing_dep, stable = run_json(main, status=1)
+    assert 'DEPENDENCY_NOT_FOUND' in codes(missing_dep), missing_dep
+    paths = [d['path'] for d in missing_dep['diagnostics'] if d['code'] == 'DEPENDENCY_NOT_FOUND']
+    assert len(paths) == 2 and paths[0] != paths[1], missing_dep
+    assert run_json(main, status=1)[1] == stable
+    put(leaf, dep_bytes)
+    graph['dependencies'][0]['hash'] = 'f' * 64
+    put(main, archive(graph)[0])
+    hash_report, _ = run_json(main, status=1)
+    assert 'DEPENDENCY_HASH_MISMATCH' in codes(hash_report), hash_report
+    put(main, archive(dict(metadata('cycle-a'), dependencies=[b_identity]))[0])
+    cycle_report, _ = run_json(main, status=1)
+    assert 'DEPENDENCY_CYCLE' in codes(cycle_report), cycle_report
+    doc = dict(metadata('json-reference'), dependencies=[dep, dep_two],
+               externals={'alias': dict(mutable=False, type='function',
+                   functionRef=dict(module='shared', version='2', functionId=2))})
+    put(main, archive(doc)[0])
+    reference_report, _ = run_json(main, status=1)
+    assert 'REFERENCE_INVALID' in codes(reference_report), reference_report
+
+    # Missing/invalid edges suppress reference resolution without inventing errors.
+    doc['externals']['alias']['functionRef']['functionId'] = 1
+    for broken_edge in ('missing', 'hash'):
+        doc['dependencies'] = [dep, copy.deepcopy(dep_two)]
+        if broken_edge == 'missing':
+            (root / 'modules/shared/2.gbin').unlink()
+        else:
+            put(root / 'modules/shared/2.gbin', version_two)
+            doc['dependencies'][1]['hash'] = 'f' * 64
+        put(main, archive(doc)[0])
+        skipped_report, _ = run_json(main, status=1)
+        skipped = [d for d in skipped_report['diagnostics']
+                   if d['code'] == 'REFERENCE_SKIPPED']
+        assert skipped and all(d['severity'] == 'skipped' and
+            d['check'] == 'references' and 'prerequisite' not in d for d in skipped), skipped_report
+        assert 'REFERENCE_INVALID' not in codes(skipped_report), skipped_report
+        assert ('DEPENDENCY_NOT_FOUND' if broken_edge == 'missing' else
+                'DEPENDENCY_HASH_MISMATCH') in codes(skipped_report), skipped_report
 
 print(f'Module inspect checks passed: {COUNT}')
