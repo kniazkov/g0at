@@ -61,3 +61,10 @@ size_t module_snapshot_import(const module_snapshot_t *snapshot,
                               size_t consumer,
                               const char *name,
                               const char *version);
+
+/** Internal ownership slot used by the lazy loader. Set once before execution;
+ * destroy runs after all process objects/bindings, before immutable graph bytes. */
+bool set_module_snapshot_native_state(module_snapshot_t *snapshot,
+                                      void *state,
+                                      void (*destroy)(void *));
+void *module_snapshot_native_state(module_snapshot_t *snapshot);

@@ -97,6 +97,8 @@ jobs:
           python3 scripts/check_native_cleanup.py build/${{ matrix.compiler }}/native_cleanup_testing ${{ matrix.compiler }}
           python3 scripts/check_module_native_values.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/module_native_values_testing ${{ matrix.compiler }}
           python3 scripts/check_module_build.py build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }}
+          python3 scripts/check_module_library.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/module_library_testing ${{ matrix.compiler }}
+          python3 scripts/check_module_loading.py build/${{ matrix.compiler }}/module_loading_testing build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }}
           python3 scripts/check_module_dispatch.py build/${{ matrix.compiler }}/module_dispatch_testing
           python3 scripts/check_module_consistency.py build/${{ matrix.compiler }}/module_consistency_testing
           python3 scripts/check_module_validation.py build/${{ matrix.compiler }}/module_validation_testing
@@ -354,6 +356,8 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_cleanup.py build/native_cleanup_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_native_values.py build/module_import_execution_testing.exe build/module_native_values_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_build.py build/module_import_execution_testing.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_library.py build/module_import_execution_testing.exe build/module_library_testing.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_loading.py build/module_loading_testing.exe build/module_import_execution_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_dispatch.py build/module_dispatch_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_consistency.py build/module_consistency_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_validation.py build/module_validation_testing.exe

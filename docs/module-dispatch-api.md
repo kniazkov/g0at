@@ -20,8 +20,8 @@
 ещё при привязке. Неприменимость одного вызова не отключает следующие вызовы.
 
 Только после единственного совпадения вызывается хостовый resolver. Он возвращает
-адаптер и проверку читаемых неизменяемых диапазонов библиотеки. Это точка подключения
-ленивого загрузчика #210, не реализация OS-загрузки. В required отсутствие
+адаптер и проверку читаемых неизменяемых диапазонов библиотеки. Через эту точку подключён
+[ленивый загрузчик #210](module-loading-api.md); сам диспетчер не выполняет OS loading. В required отсутствие
 применимой специализации допускает VM; ошибка загрузки выбранного варианта — нет.
 В auto неудачная загрузка отключает эту библиотеку, но не чужие модули.
 
@@ -52,8 +52,8 @@ production resolver API. Сценарии 91–100 проверяются вме
 
 Предварительное требование собственной совместимой специализации главного модуля,
 извлечение/загрузка DLL/SO, проверка mapped ranges и фактического описания библиотеки
-остаются #210. Выпуск ABI-v1 native-вариантов из `.gmod` — #211; общая CLI-интеграция —
-#191. Этот этап не утверждает их готовность и не использует legacy query ABI вместо v1.
+реализованы отдельным слоем #210. Выпуск ABI-v1 native-вариантов из `.gmod` — #211.
+Общая CLI-интеграция остаётся #191; legacy query ABI не подменяет модульный ABI v1.
 
 ## English
 
@@ -74,8 +74,8 @@ Multiple matches are an error, never first-record priority. Detectable overlap i
 rejected at binding. An inapplicable call does not disable subsequent calls.
 
 Only a unique match invokes the host resolver, which returns an adapter and a
-readability check for immutable library ranges. This is the integration seam for
-lazy loader #210, not OS loading itself. Required permits VM when no specialization
+readability check for immutable library ranges. This is the integration seam used by
+the [lazy loader #210](module-loading-api.md), not OS loading in the dispatcher itself. Required permits VM when no specialization
 applies, but not when loading a selected variant fails. Auto disables that failed
 library, not unrelated modules.
 
@@ -105,6 +105,6 @@ The new suite runs in all Linux/ARM and Windows jobs. Actual pass results are
 verified per PR, not inferred merely from having test code.
 
 Root-module required preflight, DLL/SO extraction/loading, mapped-range validation
-and actual library descriptor matching remain #210. Producing ABI-v1 native
-variants from `.gmod` remains #211; full CLI integration remains #191. This step
-does not claim those features or substitute the legacy query ABI for module v1.
+and actual library descriptor matching are implemented by the separate #210 layer.
+Producing ABI-v1 native variants from `.gmod` is provided by #211; full CLI integration
+remains #191. The legacy query ABI never substitutes for module v1.

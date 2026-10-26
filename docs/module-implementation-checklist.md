@@ -64,7 +64,7 @@
 - [x] 48. [#217](https://github.com/kniazkov/g0at/issues/217) — Сериализация инициализации между потоками ([API и проверки](module-serialization-api.md))
 - [x] 49. [#232](https://github.com/kniazkov/g0at/issues/232) — Проверка нативных специализаций по каждому вызову ([API и проверки](module-dispatch-api.md))
 - [x] 50. [#211](https://github.com/kniazkov/g0at/issues/211) — Интеграция нативной сборки с .gmod ([API и проверки](module-build-api.md))
-- [ ] 51. [#210](https://github.com/kniazkov/g0at/issues/210) — Ленивая загрузка нативных библиотек
+- [x] 51. [#210](https://github.com/kniazkov/g0at/issues/210) — Ленивая загрузка нативных библиотек ([API и проверки](module-loading-api.md))
 - [ ] 52. [#191](https://github.com/kniazkov/g0at/issues/191) — Интеграция сборки .gmod в CLI
 - [ ] 53. [#230](https://github.com/kniazkov/g0at/issues/230) — Полная семантика exit и очистки
 - [ ] 54. [#212](https://github.com/kniazkov/g0at/issues/212) — goat-inspect: просмотр метаданных

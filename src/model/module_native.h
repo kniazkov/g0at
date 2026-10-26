@@ -15,6 +15,9 @@ typedef struct module_native_entry_t {
     goat_module_adapter_v1 adapter;
     goat_module_readable readable;
     void *readable_state;
+    bool integrity_failed;      /**< Corruption is terminal even in auto mode. */
+    const char *failure_reason; /**< Borrowed stable resolver diagnostic on failure. */
+    bool failure_reported;      /**< Resolver already emitted its once-only failure diagnostic. */
 } module_native_entry_t;
 
 /** Called only for a unique applicable specialization, never while testing guards.
