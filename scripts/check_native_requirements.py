@@ -78,7 +78,8 @@ def main():
             run = subprocess.run([executable, str(path), str(directory), target],
                                  capture_output=True, text=True, timeout=10)
             assert (run.returncode == 0) == succeeds, (run.returncode, run.stderr)
-            assert contains is None or contains in run.stdout + run.stderr, (run.stdout, run.stderr)
+            assert contains is None or all(value in run.stdout + run.stderr
+                for value in ((contains,) if isinstance(contains, str) else contains)), (run.stdout, run.stderr)
             count += 1
         check(elf(), contains="3.2.0.0 2.9.0.0")
         (directory / "dependency.so").write_bytes(elf("GLIBC_2.28"))
@@ -104,6 +105,24 @@ def main():
         check(data, target="msvcrt")
         data = pe(); data[1794:1803] = b"__p__iob\0"
         check(data, target="msvcrt")
+        for symbol in ("GetCPInfo", "GetStringTypeW", "MultiByteToWideChar", "WideCharToMultiByte"):
+            data = pe(); encoded = symbol.encode() + b"\0"
+            data[1858:1858 + len(encoded)] = encoded
+            check(data, target="msvcrt")
+        for symbol in ("_create_locale", "_free_locale", "_strtod_l", "_vsnprintf_l"):
+            data = pe("ucrtbase.dll"); encoded = symbol.encode() + b"\0"
+            data[1794:1794 + len(encoded)] = encoded
+            check(data, target="ucrt")
+        data = pe(); data[1794:1801] = b"future\0"
+        data[1858:1866] = b"Unknown\0"
+        check(data, False, target="msvcrt", contains=("msvcrt.dll!future", "KERNEL32.dll!Unknown"))
+        data = pe()
+        # Many bounded import entries must fail with an explicit bounded inventory.
+        for index in range(30):
+            struct.pack_into("<Q", data, 1536 + index * 8, 0x1500)
+        struct.pack_into("<Q", data, 1536 + 30 * 8, 0)
+        data[1794:1995] = b"x" * 200 + b"\0"
+        check(data, False, target="msvcrt", contains="[inventory truncated]")
         check(pe("ucrtbase.dll"), target="ucrt")
         check(pe("api-ms-win-crt-runtime-l1-1-0.dll"), target="ucrt")
         check(pe(), False, target="ucrt")

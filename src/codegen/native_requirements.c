@@ -25,7 +25,7 @@ typedef struct {
     char *paths[DEPENDENCY_LIMIT];
     size_t count;
     const char *error;
-    char detail[512];
+    char detail[4096];
 } inspection_t;
 
 static bool range(image_t image, uint64_t offset, uint64_t length) {
@@ -274,6 +274,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                                  "EnterCriticalSection",
                                                  "ExitProcess",
                                                  "FreeLibrary",
+                                                 "GetCPInfo",
                                                  "GetCommandLineA",
                                                  "GetCommandLineW",
                                                  "GetCurrentProcess",
@@ -286,6 +287,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                                  "GetProcessHeap",
                                                  "GetStartupInfoA",
                                                  "GetStartupInfoW",
+                                                 "GetStringTypeW",
                                                  "GetSystemTimeAsFileTime",
                                                  "GetSystemTimePreciseAsFileTime",
                                                  "GetTickCount",
@@ -298,6 +300,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                                  "LeaveCriticalSection",
                                                  "LoadLibraryA",
                                                  "LoadLibraryW",
+                                                 "MultiByteToWideChar",
                                                  "QueryPerformanceCounter",
                                                  "RtlAddFunctionTable",
                                                  "RtlDeleteFunctionTable",
@@ -314,6 +317,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                                  "UnhandledExceptionFilter",
                                                  "VirtualProtect",
                                                  "VirtualQuery",
+                                                 "WideCharToMultiByte",
                                                  NULL};
     static const char *const crt_symbols[] = {"__acrt_iob_func",
                                               "__dllonexit",
@@ -334,6 +338,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                               "_cexit",
                                               "_commode",
                                               "_configure_narrow_argv",
+                                              "_create_locale",
                                               "_crt_atexit",
                                               "_endthreadex",
                                               "_errno",
@@ -341,6 +346,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                               "_exit",
                                               "_fmode",
                                               "_fpreset",
+                                              "_free_locale",
                                               "_get_initial_narrow_environment",
                                               "_initialize_narrow_environment",
                                               "_initialize_onexit_table",
@@ -351,7 +357,9 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                               "_onexit",
                                               "_register_onexit_function",
                                               "_set_app_type",
+                                              "_strtod_l",
                                               "_unlock",
+                                              "_vsnprintf_l",
                                               "abort",
                                               "acos",
                                               "acosh",
@@ -478,7 +486,8 @@ static bool pe(inspection_t *state, image_t image) {
     uint64_t offset = pe_offset(image, table, count, imports, size);
     if (!imports || size < 20 || offset == UINT64_MAX)
         return failure(state, "PE runtime import metadata is unavailable");
-    bool crt = false, terminated = false;
+    bool crt = false, terminated = false, unsupported = false, truncated = false;
+    size_t detail_size = 0;
     for (uint64_t i = 0; i + 20 <= size; i += 20) {
         uint64_t entry = offset + i;
         uint64_t name_rva = number(image, entry + 12, 4);
@@ -525,13 +534,34 @@ static bool pe(inspection_t *state, image_t image) {
             const char *function = location == UINT64_MAX
                                        ? NULL
                                        : string_at(image, location + 2, image.size - location - 2);
-            if (!function || !known_pe_symbol(function, !msvcrt && !ucrt)) {
-                snprintf(state->detail,
-                         sizeof(state->detail),
-                         "PE import symbol is outside the Windows 10 CRT profile: %.128s!%.256s",
-                         name,
-                         function ? function : "<invalid>");
-                return failure(state, state->detail);
+            if (!function)
+                return failure(state, "Invalid PE import symbol name");
+            if (!known_pe_symbol(function, !msvcrt && !ucrt)) {
+                if (!unsupported) {
+                    detail_size = (size_t)snprintf(
+                        state->detail,
+                        sizeof(state->detail),
+                        "PE import symbols are outside the Windows 10 CRT profile: ");
+                    unsupported = true;
+                }
+                /* Retain a bounded inventory, not just the first missing profile entry. */
+                if (!truncated) {
+                    size_t remaining = sizeof(state->detail) - detail_size;
+                    int written = snprintf(state->detail + detail_size,
+                                           remaining - 32,
+                                           "%s!%s; ",
+                                           name,
+                                           function);
+                    if (written < 0 || (size_t)written >= remaining - 32) {
+                        detail_size += strlen(state->detail + detail_size);
+                        snprintf(state->detail + detail_size,
+                                 sizeof(state->detail) - detail_size,
+                                 "... [inventory truncated]");
+                        truncated = true;
+                    } else {
+                        detail_size += (size_t)written;
+                    }
+                }
             }
         }
         if (!symbols_end)
@@ -539,6 +569,8 @@ static bool pe(inspection_t *state, image_t image) {
     }
     if (!terminated || !crt)
         return failure(state, "PE CRT identity cannot be established");
+    if (unsupported)
+        return failure(state, state->detail);
     /* The audited import profile is supplied by the Windows 10 OS/family contract.
      * No additional CRT file-version floor is required: MSVCRT file versions do
      * not track Windows major versions. Zero is the schema's explicit no-extra-floor. */
