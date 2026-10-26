@@ -102,6 +102,8 @@ def main():
         check(pe(), target="msvcrt", contains="10.0.0.0 0.0.0.0")
         data = pe(); data[1794:1801] = b"_iob\0\0\0"
         check(data, target="msvcrt")
+        data = pe(); data[1794:1803] = b"__p__iob\0"
+        check(data, target="msvcrt")
         check(pe("ucrtbase.dll"), target="ucrt")
         check(pe("api-ms-win-crt-runtime-l1-1-0.dll"), target="ucrt")
         check(pe(), False, target="ucrt")

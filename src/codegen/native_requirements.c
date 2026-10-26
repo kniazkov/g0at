@@ -322,6 +322,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                               "__p___argv",
                                               "__p__commode",
                                               "__p__fmode",
+                                              "__p__iob",
                                               "__p__environ",
                                               "__p__wcmdln",
                                               "__setusermatherr",

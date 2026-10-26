@@ -124,7 +124,14 @@ with tempfile.TemporaryDirectory(prefix='goat-native-cleanup-данные-') as 
                               '--save-native', report, source])
                 assert owner.line() == 'READY'
                 cleaner = owner.watch('cleaner.pid')
-                assert list(owner.root.glob('goat-run-*/native*/*'))
+                artifacts = list(owner.root.glob('goat-run-*/native*/*'))
+                if not artifacts:
+                    # READY is user output, not proof that auto selected native code.
+                    # Finish the blocked program to expose a useful preparation diagnostic.
+                    owner.continue_run()
+                    error = owner.end(23 if explicit_exit else 0)
+                    raise AssertionError(('native workspace missing', str(owner.root), error,
+                                          report.read_text() if report.exists() else 'no report'))
                 cleaner.kill()
                 cleaner.wait()
                 owner.continue_run()
