@@ -61,16 +61,19 @@ with tempfile.TemporaryDirectory(prefix='goat-module-interface-') as temporary:
         external sibling = func(value) { return value; };
         external var replaceable = sibling;
         include "other.goat";
-    ''', files={'other.goat': 'const sibling = func() { return 9; }; sibling();'})
+        include "last.goat";
+    ''', files={'other.goat': 'const sibling = func() { return 9; }; sibling();',
+               'last.goat': 'const factory = func(x) { return func() { return x + 1; }; }; '
+                            'factory(8)();'})
     doc = metadata(artifact)
-    assert [f['functionId'] for f in doc['functions']] == [1, 2, 3, 4], doc
-    assert [f['file'] for f in doc['functions']] == [0, 0, 0, 1], doc
+    assert [f['functionId'] for f in doc['functions']] == [1, 2, 3, 4, 5, 6], doc
+    assert [f['file'] for f in doc['functions']] == [0, 0, 0, 1, 2, 2], doc
     assert doc['externals']['factory']['functionId'] == 1
     assert doc['externals']['again']['functionId'] == 1
     assert doc['externals']['sibling']['functionId'] == 3
     assert doc['externals']['replaceable'] == {'mutable': True}
     assert [f['parameters'] for f in doc['functions']] == [
-        [{'name': 'x'}], [], [{'name': 'value'}], []]
+        [{'name': 'x'}], [], [{'name': 'value'}], [], [{'name': 'x'}], []]
     p.run('const m = import "identity@1"; const a = m.factory(11); '
           'const b = m.factory(22); println(a()); println(b()); '
           'm.replaceable = func(x) { return "replacement"; }; println(m.replaceable(3));',

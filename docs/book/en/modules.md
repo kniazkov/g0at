@@ -4550,3 +4550,15 @@ threads. Completion of the entry execution does not terminate the VM.
 See [the implementation API](../../module-serialization-api.md). These rules do not
 introduce user mutexes or complete the separate bounded `exit`/cleanup protocol
 tracked by #230.
+
+
+### Per-call native specialization checks implemented (#232)
+
+The VM dispatches module ABI v1 after ordinary access and declaring-file checks.
+Guards are retested against already evaluated arguments without user code; no
+match permits VM, including required mode. Ambiguity and post-entry ABI violations
+are errors, never permission to repeat execution. Binding uses the exact module
+instance and its own functionId; clone/flat capture redirection does not inherit
+the original native implementation's safety. [API and tests](../../module-dispatch-api.md)
+separate this dispatch mechanism from native production #211, lazy loading #210
+and full CLI integration #191.

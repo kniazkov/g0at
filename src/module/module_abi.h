@@ -44,8 +44,8 @@ bool goat_module_value_valid(const goat_module_value_v1 *value,
 bool goat_module_context_valid(const goat_module_context_v1 *context);
 
 /** Invoke exactly once; any failure after entry is terminal, never VM fallback.
- * Guards/VM conversion are #232. Arguments must already be the formal slots.
- * Result is zeroed before entry and cleared on every failure. native_status reports
+ * Model module_native dispatch supplies guards and VM conversion. Arguments must already be the
+ * formal slots. Result is zeroed before entry and cleared on every failure. native_status reports
  * the raw adapter status (including unknown codes), or UINT32_MAX before entry.
  * Result must not overlap arguments. Host service tables and the stated argument
  * array must be valid accessible objects supplied by the trusted caller.

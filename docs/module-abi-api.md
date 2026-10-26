@@ -56,7 +56,7 @@ Exit не является самостоятельным C exit: общий м�
 библиотеке проверяет загрузчик #210 до копирования. Сравнение встроенного описания
 с выбранной записью архива выполняет #233. Runtime-выбор всех применимых
 специализаций, защита от неоднозначности при вызове, преобразование VM-аргументов,
-сохранение/потеря привязки clone/flat — #232. Эта задача не объявляет их готовыми.
+сохранение/потеря привязки clone/flat реализованы в [#232](module-dispatch-api.md).
 
 `python3 scripts/check_module_abi.py build/<config>/module_abi_testing` проверяет
 описания, повреждённые значения, границы условий и реальную библиотеку с экспортом
@@ -110,8 +110,8 @@ as in the reference format. A mismatch returns false without invoking VM/native.
 The descriptor parser accepts an **already safely copied snapshot**. It is not a
 probe of arbitrary OS memory: #210 verifies mapped ranges belong to the loaded
 library before copying. #233 compares embedded and archive metadata. Runtime
-ambiguity checks, VM argument conversion and clone/flat binding retention belong
-to #232, not this interface step. The old runtime remains separate.
+ambiguity checks, VM argument conversion and clone/flat binding retention are
+implemented in [#232](module-dispatch-api.md). The legacy runtime remains separate.
 
 Run `python3 scripts/check_module_abi.py build/<config>/module_abi_testing` for
 malformed envelopes/values, guard boundaries and a real shared library exporting

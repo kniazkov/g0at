@@ -716,6 +716,12 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
                                closure,
                                get_bytecode_native_function(runtime->code, thread->instr_id),
                                thread->context->native_disabled);
+    for (size_t i = 0; i < runtime->code->function_count; i++) {
+        if (runtime->code->functions[i].instruction == thread->instr_id) {
+            set_function_code_identity(function, runtime->code->functions[i].id);
+            break;
+        }
+    }
     inherit_function_access(get_function_access(function), &thread->context->access);
     push_object_onto_stack(thread->data_stack, function);
     thread->args_count = 0;
@@ -730,6 +736,12 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
     bool result = call_object(func, instr.arg0, NULL, thread);
     // The ID of the following instruction was set inside the call method
     DECREF(func);
+    if (thread->native_status) {
+        thread->process->native_failed = true;
+        broadcast_os_condition(thread->process->threads_changed);
+        runtime->status = 1;
+        return false;
+    }
     if (!result && thread->exception.value) {
         exception_t exception = thread->exception;
         thread->exception = (exception_t){0};
@@ -749,6 +761,12 @@ static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread
     // The ID of the following instruction was set inside the call method
     DECREF(func);
     DECREF(receiver);
+    if (thread->native_status) {
+        thread->process->native_failed = true;
+        broadcast_os_condition(thread->process->threads_changed);
+        runtime->status = 1;
+        return false;
+    }
     if (!result && thread->exception.value) {
         exception_t exception = thread->exception;
         thread->exception = (exception_t){0};
@@ -1229,7 +1247,8 @@ execute_module_file(module_file_t *file, context_t *frame, void *data, exception
     execute_instructions(runtime, thread, false);
     if (initializer)
         thread->initialization_depth--;
-    bool success = runtime->status == 0 && !thread->exception.value;
+    bool success =
+        runtime->status == 0 && !thread->exception.value && !thread->process->native_failed;
     *failure = thread->exception;
     thread->exception = saved;
     while (thread->context != frame)
@@ -1260,6 +1279,13 @@ static bool execute_file_link(runtime_t *runtime, thread_t *thread, module_file_
                                                                &execution,
                                                                &scope,
                                                                &failure);
+    if (thread->native_status || thread->process->native_failed) {
+        clear_exception(&thread->exception);
+        thread->exception = failure;
+        thread->process->native_failed = true;
+        runtime->status = 1;
+        return false;
+    }
     if (status != MODULE_INITIALIZE_OK) {
         if (!failure.value)
             failure.value = get_exception_invalid_operation();
@@ -1358,7 +1384,7 @@ static instr_executor_t executors[] = {
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule) {
     (void)schedule;
     bool flag = true;
-    while (flag && !thread->process->exit_requested) {
+    while (flag && !thread->process->exit_requested && !thread->process->native_failed) {
         /* Calls, returns, callbacks and exception unwinds all change lexical
            context. Resolve the image here rather than guessing at each edge. */
         if (thread->program_worker && thread->instr_id == BAD_INSTR_INDEX)
@@ -1404,9 +1430,13 @@ static void *program_thread_entry(void *data) {
     thread->instr_id = BAD_INSTR_INDEX - 1;
     object_t *function = thread->start_function;
     thread->start_function = NULL;
-    bool started = !process->exit_requested
+    bool started = !process->exit_requested && !process->native_failed
                    && call_object(function, thread->start_argument_count, NULL, thread);
     DECREF(function);
+    if (thread->native_status) {
+        process->native_failed = true;
+        broadcast_os_condition(process->threads_changed);
+    }
     if (started)
         execute_instructions(&runtime, thread, false);
     else if (!process->exit_requested) {
@@ -1424,7 +1454,8 @@ operation_result_t spawn_program_thread(thread_t *caller,
                                         object_t *const *arguments,
                                         uint16_t count) {
     process_t *process = caller->process;
-    if (caller->initialization_depth || !process->execution || process->exit_requested)
+    if (caller->initialization_depth || !process->execution || process->exit_requested
+        || process->native_failed)
         return operation_exception(get_exception_invalid_operation());
     if (!callable || callable->vtbl->call == stub_call || (count && !arguments))
         return operation_exception(get_exception_invalid_argument());
@@ -1473,9 +1504,11 @@ operation_result_t join_program_thread(thread_t *caller, uint64_t id) {
         if (cursor == caller)
             return operation_exception(get_exception_invalid_operation());
     caller->waiting_for = target;
-    while (!target->finished && !process->exit_requested)
+    while (!target->finished && !process->exit_requested && !process->native_failed)
         wait_os_condition(process->threads_changed, process->execution_mutex);
     caller->waiting_for = NULL;
+    if (process->native_failed)
+        return operation_success(get_null_object());
     if (process->exit_requested)
         return operation_success(get_null_object());
     if (target->exception.value) {
@@ -1522,6 +1555,8 @@ static int finish_program_threads(process_t *process, thread_t *entry, int statu
         }
         thread = thread->next;
     } while (thread != process->main_thread);
+    if (process->native_failed)
+        status = 1;
     DECREFIF(process->execution->entry_scope);
     process->execution = NULL;
     return status;
@@ -1545,7 +1580,7 @@ static void finish_string_cache(process_t *proc) {
 
 int run(process_t *proc, bytecode_t *code) {
     process_execution_enter(proc);
-    if (proc->execution) {
+    if (proc->execution || proc->native_failed) {
         process_execution_leave(proc);
         return 1;
     }
@@ -1555,6 +1590,9 @@ int run(process_t *proc, bytecode_t *code) {
     proc->main_thread->finished = false;
     proc->main_thread->failure_observed = false;
     proc->main_thread->execution_status = 0;
+    proc->main_thread->native_status = 0;
+    FREE(proc->main_thread->native_diagnostic);
+    proc->main_thread->native_diagnostic = NULL;
     runtime_t runtime = {.code = code, .entry_code = code};
     prepare_string_cache(proc, code);
     thread_t *thread = proc->main_thread;
@@ -1570,18 +1608,18 @@ int run(process_t *proc, bytecode_t *code) {
     execute_instructions(&runtime, thread, true);
     int status = finish_program_threads(proc, thread, runtime.status);
     finish_string_cache(proc);
-    int result = proc->exit_requested ? proc->exit_code : status;
+    int result = proc->native_failed ? 1 : proc->exit_requested ? proc->exit_code : status;
     process_execution_leave(proc);
     return result;
 }
 
 int run_module_file(process_t *proc, module_file_t *file) {
-    if (!proc || !file || module_file_process(file) != proc)
+    if (!proc || !file || module_file_process(file) != proc || proc->native_failed)
         return 1;
     if (proc->exit_requested)
         return proc->exit_code;
     process_execution_enter(proc);
-    if (proc->execution) {
+    if (proc->execution || proc->native_failed) {
         process_execution_leave(proc);
         return 1;
     }
@@ -1592,6 +1630,9 @@ int run_module_file(process_t *proc, module_file_t *file) {
     proc->main_thread->finished = false;
     proc->main_thread->failure_observed = false;
     proc->main_thread->execution_status = 0;
+    proc->main_thread->native_status = 0;
+    FREE(proc->main_thread->native_diagnostic);
+    proc->main_thread->native_diagnostic = NULL;
     runtime_t runtime = {.code = code, .entry_code = code};
     thread_t *thread = proc->main_thread;
     file_execution_t execution = {&runtime, thread, true};
@@ -1610,7 +1651,9 @@ int run_module_file(process_t *proc, module_file_t *file) {
     thread->exception = failure;
     int result = finish_program_threads(proc, thread, status == MODULE_INITIALIZE_OK ? 0 : 1);
     finish_string_cache(proc);
-    if (proc->exit_requested)
+    if (proc->native_failed)
+        result = 1;
+    else if (proc->exit_requested)
         result = proc->exit_code;
     process_execution_leave(proc);
     return result;

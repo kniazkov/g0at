@@ -47,6 +47,8 @@ struct thread_t {
 
     /** @brief Backend failure status; independent of Goat exceptions. */
     uint32_t native_status;
+    /** @brief Owned precise module-v1 backend failure, or NULL. */
+    char *native_diagnostic;
 
     /** @brief Observable backend outcomes for integration tests and diagnostics. */
     size_t native_attempts;

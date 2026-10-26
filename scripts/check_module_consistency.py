@@ -220,19 +220,23 @@ run([archive(multiple)], mode='descriptor', descriptor=envelope(descriptor(norma
 run([archive(multiple)], 5, 'descriptor', envelope(descriptor(normalized, 0)), index=1)
 
 # The existing standalone producer must preserve nested/anonymous identities
-# across native selection; complete multi-file .gmod compilation remains #191.
+# across native selection. The standalone producer uses its existing query ABI;
+# .gmod ABI-v1 native production remains #211, rather than being asserted here.
 goat = Path(EXE).with_name('goat.exe' if Path(EXE).suffix == '.exe' else 'goat')
 with tempfile.TemporaryDirectory(prefix='goat-consistency-') as directory:
     source = Path(directory) / 'identities.goat'
     source.write_text('const outer = func(x) { const same = func(y) { return y + 1; }; '
                       'return same(x); }; const same = func(x) { return x * 2; }; '
-                      'println(outer(20) + same(10));\n')
+                      'const maker = func(value) { return func() { return value; }; }; '
+                      'const unavailable = func(object) { return object.unknown; }; '
+                      'println(outer(20) + same(10)); println(maker(3)()); println(unavailable);\n')
     tables = []
     original = source.read_text()
-    for mode in ('off', 'auto'):
-        source = Path(directory) / f'{mode}.goat'
+    for optimization, mode in [('none', 'off'), ('all', 'off'),
+                               ('all', 'auto'), ('all', 'required')]:
+        source = Path(directory) / f'{optimization}-{mode}.goat'
         source.write_text(original)
-        subprocess.run([str(goat), '--compile', '--optimize', 'all', '--native', mode, str(source)],
+        subprocess.run([str(goat), '--compile', '--optimize', optimization, '--native', mode, str(source)],
                        check=True, capture_output=True, timeout=60)
         code = source.with_suffix('.gbin').read_bytes()
         if code[:8] == b'GOATPG01':
@@ -241,7 +245,13 @@ with tempfile.TemporaryDirectory(prefix='goat-consistency-') as directory:
         count = struct.unpack_from('<I', code, 32)[0]
         offset = struct.unpack_from('<I', code, 52)[0]
         tables.append([struct.unpack_from('<8I', code, offset + i*32)[:6] for i in range(count)])
-    assert tables[0] == tables[1] and len(tables[0]) == 3, tables
-    assert [f[0] for f in tables[0]] == [1, 2, 3], tables
-    COUNT += 1
+    assert all(table == tables[0] for table in tables) and len(tables[0]) == 6, tables
+    assert [f[0] for f in tables[0]] == list(range(1, 7)), tables
+    # A closure capturing a scalar and an uncalled object operation still own IDs
+    # even though neither has a supported native implementation.
+    generated = subprocess.run([str(goat), '--print-c', str(source)], check=True,
+                               capture_output=True, timeout=60).stdout.decode('utf-8')
+    assert 'g_f2_i_' in generated and 'g_f3_i_' in generated, generated
+    assert 'g_f4_' not in generated and 'g_f5_' not in generated and 'g_f6_' not in generated
+    COUNT += len(tables)
 print(f'{COUNT} module consistency checks passed')
