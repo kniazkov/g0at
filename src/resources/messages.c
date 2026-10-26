@@ -12,15 +12,25 @@
 
 /** @brief The message structure for English language. */
 static messages_t english = {
+    .native_targets_available = U"Available native targets:\n",
+    .native_targets_none = U"No native target passed the compiler probe.\n",
+    .native_targets_failed = U"Failed compiler checks:\n",
+    .native_targets_selected = U" [automatic choice]",
+
     .help = U"Usage: goat [options] <input_file> [script arguments...]\n"
             U"\n"
+            U"Commands: build <module.gmod>, run <input_file>\n"
             U"Options:\n"
+            U"  --module-dir <directory>     Module repository and build output directory\n"
+            U"  --native-target <target>     Override .gmod native build target\n"
+            U"  --list-native-targets        List targets verified by compiler probes\n"
+            U"  --                          End options; keep following script arguments literal\n"
             U"  --compile                    Save <name>.gbin without execution\n"
             U"  --run                        Execute a .gbin without compiling (native: auto)\n"
             U"  --optimize <none|all>         Optimization level (default: all)\n"
             U"  --cc <path>                  Use only the specified C compiler\n"
             U"  --native-probe-timeout <seconds>  Compiler probe budget (default: 10)\n"
-            U"  --native <off|auto|required>  Native execution (default: off)\n"
+            U"  --native <off|auto|required>  Native mode (source: off, module/binary: auto)\n"
             U"  --print-native               Print native execution counters\n"
             U"  --save-native <file>         Save native execution counters\n"
             U"  --print-analysis              Print analysis observations\n"
@@ -133,29 +143,40 @@ static messages_t english = {
 
 /** @brief The message structure for Russian language. */
 static messages_t russian = {
-    .help = U"Использование: goat [параметры] <входной_файл> [аргументы скрипта...]\n"
-            U"\n"
-            U"Параметры:\n"
-            U"  --compile                    Сохранить <имя>.gbin без выполнения\n"
-            U"  --run                        Выполнить .gbin без компиляции (native: auto)\n"
-            U"  --optimize <none|all>         Уровень оптимизаций (по умолчанию: all)\n"
-            U"  --cc <путь>                  Использовать только указанный C-компилятор\n"
-            U"  --native-probe-timeout <секунды>  Срок проверки компилятора (по умолчанию: 10)\n"
-            U"  --native <off|auto|required>  Нативное исполнение (по умолчанию: off)\n"
-            U"  --print-native               Напечатать счётчики нативных вызовов\n"
-            U"  --save-native <file>         Сохранить счётчики нативных вызовов\n"
-            U"  --print-analysis              Вывести события анализа\n"
-            U"  --save-analysis <file>      Сохранить события анализа в UTF-8\n"
-            U"  --print-c                    Вывести C-модуль без исполнения программы\n"
-            U"  --save-c                     Сохранить C-модуль рядом с исходником в <имя>.c\n"
-            U"  --save-library               Собрать <имя>.so/.dll без исполнения (CC)\n"
-            U"  --print-bytecode              Вывести сгенерированный байткод\n"
-            U"  --print-source-code           Вывести восстановленный исходный код Goat\n"
-            U"  --save-graph <file.png|svg>  Сгенерировать изображение AST-графа\n"
-            U"  -l, --lang, --language <lang> Выбрать язык сообщений\n"
-            U"  -w, --enable-warnings         Включить предупреждения компилятора\n"
-            U"  -i, --interactive             Выполнять команды построчно из консоли\n"
-            U"  -h, --help, /?                Показать эту справку\n",
+    .native_targets_available = U"Доступные нативные цели:\n",
+    .native_targets_none = U"Ни одна нативная цель не прошла проверку компилятора.\n",
+    .native_targets_failed = U"Неудачные проверки компиляторов:\n",
+    .native_targets_selected = U" [автоматический выбор]",
+
+    .help =
+        U"Использование: goat [параметры] <входной_файл> [аргументы скрипта...]\n"
+        U"\n"
+        U"Команды: build <модуль.gmod>, run <входной_файл>\n"
+        U"Параметры:\n"
+        U"  --module-dir <каталог>       Каталог модулей и результата сборки\n"
+        U"  --native-target <цель>       Переопределить нативную цель .gmod\n"
+        U"  --list-native-targets        Список целей с успешной пробой компилятора\n"
+        U"  --                          Конец параметров; далее буквальные аргументы скрипта\n"
+        U"  --compile                    Сохранить <имя>.gbin без выполнения\n"
+        U"  --run                        Выполнить .gbin без компиляции (native: auto)\n"
+        U"  --optimize <none|all>         Уровень оптимизаций (по умолчанию: all)\n"
+        U"  --cc <путь>                  Использовать только указанный C-компилятор\n"
+        U"  --native-probe-timeout <секунды>  Срок проверки компилятора (по умолчанию: 10)\n"
+        U"  --native <off|auto|required>  Нативный режим (исходник: off, модуль/байткод: auto)\n"
+        U"  --print-native               Напечатать счётчики нативных вызовов\n"
+        U"  --save-native <file>         Сохранить счётчики нативных вызовов\n"
+        U"  --print-analysis              Вывести события анализа\n"
+        U"  --save-analysis <file>      Сохранить события анализа в UTF-8\n"
+        U"  --print-c                    Вывести C-модуль без исполнения программы\n"
+        U"  --save-c                     Сохранить C-модуль рядом с исходником в <имя>.c\n"
+        U"  --save-library               Собрать <имя>.so/.dll без исполнения (CC)\n"
+        U"  --print-bytecode              Вывести сгенерированный байткод\n"
+        U"  --print-source-code           Вывести восстановленный исходный код Goat\n"
+        U"  --save-graph <file.png|svg>  Сгенерировать изображение AST-графа\n"
+        U"  -l, --lang, --language <lang> Выбрать язык сообщений\n"
+        U"  -w, --enable-warnings         Включить предупреждения компилятора\n"
+        U"  -i, --interactive             Выполнять команды построчно из консоли\n"
+        U"  -h, --help, /?                Показать эту справку\n",
     .native_compile_failed = U"Ошибка нативной компиляции (%s): компилятор '%a', файл '%a', "
                              U"код %ld, сигнал %d, системная ошибка %a, ошибка очистки %a, ошибка "
                              U"Win32 %u, очистка Win32 %u",

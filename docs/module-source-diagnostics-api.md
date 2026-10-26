@@ -36,8 +36,8 @@ a catchable Goat exception, change pure resource-limit retry policy, or execute
 a failed body again. Normal VM exceptions retain their exact throwing instruction;
 failed initialization retries keep the original trace, not a later caller's site.
 
-The source/compiled-module component runner prints this shared diagnostic. Full
-`.gmod`/`.gbin` CLI integration remains checklist task #191.
+The source/compiled-module component runner and the module CLI (#191) print this
+shared diagnostic. See [CLI commands and checks](module-cli-api.md).
 
 Verification: `check_source_include.py` covers producer names, nested/anonymous
 identities, empty locations, builder growth and relocation. The new

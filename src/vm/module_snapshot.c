@@ -35,19 +35,13 @@ void free_module_snapshot(module_snapshot_t *snapshot) {
     free(snapshot);
 }
 
-module_graph_status_t load_module_snapshot(const char *archive,
-                                           const module_search_t *search,
-                                           const module_validation_options_t *options,
-                                           module_snapshot_t **out,
-                                           module_graph_t **diagnostics) {
-    if (out)
-        *out = NULL;
-    if (diagnostics)
-        *diagnostics = NULL;
-    if (!out || !archive || !search)
-        return MODULE_GRAPH_ARGUMENT;
-    module_graph_t *graph = NULL;
-    module_graph_status_t status = validate_module_graph(archive, search, options, &graph);
+/* Consume a fully validated graph through the same all-or-nothing constructor
+ * for file and memory roots. Diagnostic ownership on failure is identical. */
+static module_graph_status_t create_snapshot(module_graph_t *graph,
+                                             module_graph_status_t status,
+                                             const module_search_t *search,
+                                             module_snapshot_t **out,
+                                             module_graph_t **diagnostics) {
     if (status) {
         if (diagnostics)
             *diagnostics = graph;
@@ -143,6 +137,41 @@ module_graph_status_t load_module_snapshot(const char *archive,
     }
     *out = snapshot;
     return MODULE_GRAPH_OK;
+}
+
+module_graph_status_t load_module_snapshot(const char *archive,
+                                           const module_search_t *search,
+                                           const module_validation_options_t *options,
+                                           module_snapshot_t **out,
+                                           module_graph_t **diagnostics) {
+    if (out)
+        *out = NULL;
+    if (diagnostics)
+        *diagnostics = NULL;
+    if (!out || !archive || !search)
+        return MODULE_GRAPH_ARGUMENT;
+    module_graph_t *graph = NULL;
+    module_graph_status_t status = validate_module_graph(archive, search, options, &graph);
+    return create_snapshot(graph, status, search, out, diagnostics);
+}
+
+module_graph_status_t load_module_snapshot_memory(const void *data,
+                                                  size_t size,
+                                                  const char *label,
+                                                  const module_search_t *search,
+                                                  const module_validation_options_t *options,
+                                                  module_snapshot_t **out,
+                                                  module_graph_t **diagnostics) {
+    if (out)
+        *out = NULL;
+    if (diagnostics)
+        *diagnostics = NULL;
+    if (!out || !label || !search || (!data && size))
+        return MODULE_GRAPH_ARGUMENT;
+    module_graph_t *graph = NULL;
+    module_graph_status_t status =
+        validate_module_graph_memory(data, size, label, search, options, &graph);
+    return create_snapshot(graph, status, search, out, diagnostics);
 }
 
 process_t *module_snapshot_process(module_snapshot_t *snapshot) {

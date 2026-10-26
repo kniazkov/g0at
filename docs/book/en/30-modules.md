@@ -293,3 +293,39 @@ threads. Completion of the entry execution does not terminate the VM.
 See [the implementation API](../../module-serialization-api.md). These rules do not
 introduce user mutexes or complete the separate bounded `exit`/cleanup protocol
 tracked by #230.
+
+
+## Module command line (#191)
+
+Build a named module without executing it:
+
+```sh
+goat build app.gmod --native off
+```
+
+The result is `modules/<name>/<version>.gbin` beside the real description file.
+`--module-dir ./output` selects a different output root relative to the initial
+working directory. Existing output is replaced atomically only after full graph
+validation. The description is completely validated before CLI overrides; invalid
+fields cannot be repaired with `--native off` or `--native-target`.
+
+`goat app.gmod` or `goat run app.gmod` builds an in-memory snapshot and runs it
+without publishing an archive. `goat app.gbin` or `goat run app.gbin` runs a ready
+module without compiling C. `--compile app.gmod` is the build-only spelling.
+Legacy direct `.goat`, separate compilation and `--run` binary execution remain;
+include/import sources use the common multifile pipeline. A standalone source's
+imports require exact versions; it is not a substitute for a named `.gmod`.
+
+Module descriptions default to auto/host; explicit native options override their
+settings independently. Ready ZIP modules default to auto. Use `--native off`
+for VM-only execution; metadata and hashes of all variants are still validated.
+`--list-native-targets` reports only successfully probed toolchains, marks automatic
+selection and shows failures separately. At least one success yields status 0.
+`--cc` selects one compiler, and `--native-probe-timeout` sets a positive integer
+probe budget in seconds, not a user-program build deadline.
+
+Options can follow the input path. `--` separates literal program arguments.
+Compiler provenance is stable across packaging and excluded from mainHash.
+Build and execution share one cleanup service and its one-warning fallback policy.
+See [commands, paths and verification](../../module-cli-api.md). Bounded exit and
+the separate inspect/merge tools remain subsequent checklist tasks.

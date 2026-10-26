@@ -255,3 +255,21 @@ const char *goat_native_status_string(goat_native_status status) {
     }
     return "unknown native selection error";
 }
+
+size_t goat_module_native_function_count(const yyjson_val *variant) {
+    yyjson_val *specs = yyjson_obj_get((yyjson_val *)variant, "specializations");
+    size_t count = 0;
+    for (size_t j = 0; j < yyjson_arr_size(specs); ++j) {
+        int64_t id = 0;
+        goat_json_integer(yyjson_obj_get(yyjson_arr_get(specs, j), "functionId"), &id);
+        bool first = true;
+        for (size_t k = 0; k < j && first; ++k) {
+            int64_t previous = 0;
+            goat_json_integer(yyjson_obj_get(yyjson_arr_get(specs, k), "functionId"), &previous);
+            first = previous != id;
+        }
+        if (first)
+            count++;
+    }
+    return count;
+}

@@ -71,14 +71,17 @@ main identity. The search chooses the first candidate as one complete archive;
 only that archive's verified native payloads are retained. No later copy is read
 to supplement missing or incompatible variants. Changing search order can select
 a different complete copy for a new launch, but not augment an existing instance.
-Native selection/required mode remain separate; the [lazy initialization gate](module-initialization-api.md) now owns one-time entry. This registry supplies a single persistent state owner, not a second
+Native selection/required mode are supplied by [lazy loading](module-loading-api.md); the [lazy initialization gate](module-initialization-api.md) now owns one-time entry. This registry supplies a single persistent state owner, not a second
 initialization mechanism.
 
-This is the shared loader/runtime preparation API, not completed CLI or language
-`import` execution. Saved failures, the `include`/`import` executors,
-cross-module VM calls and CLI routing remain their ordered tasks
-#197/#194/#195/#191/#218. The tests execute already prepared file bytecode
-through the existing VM API without claiming those later features.
+This shared loader/runtime preparation API is composed with the include/import
+executors and [public CLI](module-cli-api.md), not a second execution mechanism.
+`load_module_snapshot_memory` accepts completed archive bytes and a diagnostic
+label, applying the same graph preflight and all-or-nothing snapshot constructor.
+The snapshot owns its validated bytes after return; the caller can release its
+input buffer. The root label is not reopened. The supplied search set still fixes
+launch identity and dependency paths. CLI build-and-run needs no temporary
+bytecode archive or cleanup process when native is off.
 
 # Снимок запуска в памяти (#192)
 
@@ -153,15 +156,17 @@ API, а не import и не разрешение доступа к чужой з
 идентичность. Выбирается первый найденный архив целиком, сохраняются только его
 проверенные нативные части. Поздняя копия не читается для дополнения отсутствующих
 или неподходящих вариантов. Новый запуск с другим порядком поиска может выбрать
-другую полную копию, но не дополнить уже созданный экземпляр. Нативный выбор,
-required остаются отдельными задачами; [машина ленивой инициализации](module-initialization-api.md) уже управляет однократным входом; реестр задаёт
+другую полную копию, но не дополнить уже созданный экземпляр. Нативный выбор и required реализованы [ленивой загрузкой](module-loading-api.md); [машина ленивой инициализации](module-initialization-api.md) уже управляет однократным входом; реестр задаёт
 единого владельца постоянного состояния, а не дублирует механизм инициализации.
 
-Это общий API подготовки загрузчика и runtime, а не готовое исполнение `import`
-или CLI. Сохранение ошибок, исполнители `include`/`import`, межмодульные
-вызовы VM и маршрутизация CLI остаются последовательным задачам
-#197/#194/#195/#191/#218. Тесты исполняют уже подготовленный байткод файлов
-через существующий API VM, не объявляя последующие возможности готовыми.
+Этот общий API подготовки используется исполнителями include/import и
+[публичным CLI](module-cli-api.md), а не вводит второй механизм исполнения.
+`load_module_snapshot_memory` принимает готовые байты архива и диагностическую
+метку, используя тот же preflight графа и атомарный конструктор снимка. После
+возврата снимок владеет проверенными байтами; исходный буфер можно освободить.
+Корень не перечитывается по метке. Переданный поиск по-прежнему фиксирует
+идентичность запуска и пути зависимостей. Сборка-запуск CLI при native off
+не требует временного архива байткода или процесса уборки.
 
 ## Automated checks / Автоматические проверки
 

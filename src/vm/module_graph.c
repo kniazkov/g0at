@@ -393,13 +393,16 @@ static module_graph_status_t finish(module_graph_t *graph,
     return graph->issue_count ? MODULE_GRAPH_INVALID : MODULE_GRAPH_OK;
 }
 
-module_graph_status_t validate_module_graph(const char *archive,
-                                            const module_search_t *search,
-                                            const module_validation_options_t *options,
-                                            module_graph_t **out) {
+static module_graph_status_t validate_root(const char *archive,
+                                           const void *bytes,
+                                           size_t length,
+                                           bool from_memory,
+                                           const module_search_t *search,
+                                           const module_validation_options_t *options,
+                                           module_graph_t **out) {
     if (out)
         *out = NULL;
-    if (!archive || !*archive || !search || !out)
+    if (!archive || !*archive || !search || !out || (from_memory && !bytes && length))
         return MODULE_GRAPH_ARGUMENT;
     module_graph_t *graph = CALLOC(sizeof(*graph));
     add_node(graph, NULL, NULL);
@@ -413,12 +416,18 @@ module_graph_status_t validate_module_graph(const char *archive,
     if (options && options->max_archive < limit)
         limit = options->max_archive;
     validated_module_t *snapshot = NULL;
-    if (!read_fs_regular_file(archive, limit, &data, &size, &node->search.filesystem)) {
+    bool readable =
+        from_memory || read_fs_regular_file(archive, limit, &data, &size, &node->search.filesystem);
+    if (!readable) {
         node->search.status = MODULE_SEARCH_IO;
     } else {
         validation_capture_t capture = {graph, 0, options};
         module_validation_options_t captured = capture_options(&capture);
-        node->search.validation = validate_module(data, size, archive, &captured, &snapshot);
+        node->search.validation = validate_module(from_memory ? bytes : data,
+                                                  from_memory ? length : size,
+                                                  archive,
+                                                  &captured,
+                                                  &snapshot);
         if (node->search.validation.status != MODULE_VALIDATION_OK)
             node->search.status = MODULE_SEARCH_INVALID_MODULE;
     }
@@ -439,6 +448,22 @@ module_graph_status_t validate_module_graph(const char *archive,
         expand(graph, 0);
     }
     return finish(graph, search, options, out);
+}
+
+module_graph_status_t validate_module_graph(const char *archive,
+                                            const module_search_t *search,
+                                            const module_validation_options_t *options,
+                                            module_graph_t **out) {
+    return validate_root(archive, NULL, 0, false, search, options, out);
+}
+
+module_graph_status_t validate_module_graph_memory(const void *data,
+                                                   size_t size,
+                                                   const char *label,
+                                                   const module_search_t *search,
+                                                   const module_validation_options_t *options,
+                                                   module_graph_t **out) {
+    return validate_root(label, data, size, true, search, options, out);
 }
 
 module_graph_status_t validate_source_graph(const module_imports_t *imports,

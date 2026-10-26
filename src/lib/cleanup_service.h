@@ -66,3 +66,6 @@ void destroy_cleanup_service(cleanup_service_t *service);
  * Host returns *exit_code immediately. Protocol arguments are internal, not a user command.
  */
 bool cleanup_service_main(int argc, char **argv, int *exit_code);
+
+/** @brief Observe a completed startup attempt without starting a service. */
+bool cleanup_service_startup_result(cleanup_service_t *service, cleanup_status_t *status);

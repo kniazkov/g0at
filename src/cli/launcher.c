@@ -23,7 +23,9 @@
 #include "model/object.h"
 #include "model/process.h"
 #include "model/thread.h"
+#include "module_program.h"
 #include "native_execution.h"
+#include "native_targets.h"
 #include "parser/parser.h"
 #include "resources/messages.h"
 #include "scanner/scanner.h"
@@ -32,6 +34,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /** @brief Prints linked compilation diagnostics to stderr in chronological order. */
 static void print_compilation_errors(compilation_error_t *error, unsigned int line_offset) {
@@ -333,7 +336,13 @@ static int go_prepared(options_t *opt) {
         return status;
     }
 
-    if (opt->run_binary) {
+    bool module_handled = false;
+    int module_status = try_module_program(opt, &module_handled);
+    if (module_handled)
+        return module_status;
+
+    if (opt->run_binary
+        || (opt->input_file->extension && !strcasecmp(opt->input_file->extension, "gbin"))) {
         int status = run_binary_program(opt);
         if (get_allocated_memory_size() != previously_allocated) {
             FPRINTF(stderr, "Memory leak after compiled execution.\n");
@@ -529,6 +538,11 @@ static int go_prepared(options_t *opt) {
 }
 
 int go(options_t *opt) {
+    if (opt->list_native_targets) {
+        if (opt->language)
+            set_language(opt->language);
+        return list_native_targets(opt);
+    }
     if (opt->interactive)
         return go_prepared(opt);
     char *canonical = canonical_fs_path(opt->input_file->full_path, NULL);

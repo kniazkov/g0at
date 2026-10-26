@@ -309,6 +309,7 @@ module_loading_result_t prepare_module_snapshot_native(module_snapshot_t *snapsh
         yyjson_val *variant =
             yyjson_arr_get(yyjson_obj_get(yyjson_doc_get_root(module->metadata), "native"),
                            module->variant);
+        module->statistics.bound_functions = goat_module_native_function_count(variant);
         if (!bind_module_files_native(module_snapshot_files(snapshot, i),
                                       variant,
                                       options->mode == NATIVE_REQUIRED,

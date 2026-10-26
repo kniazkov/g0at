@@ -61,12 +61,25 @@ module_graph_status_t validate_module_graph(const char *archive,
                                             const module_search_t *search,
                                             const module_validation_options_t *options,
                                             module_graph_t **out);
+/** As validate_module_graph, with borrowed root archive bytes instead of root
+ * file I/O. The nonempty label is diagnostic only and need not exist. Success
+ * owns validated copies; caller may release bytes immediately after return.
+ * Dependencies use the same fixed search, and all root identity/hash/cycle and
+ * reference checks are unchanged. No temporary root archive is created.
+ */
+module_graph_status_t validate_module_graph_memory(const void *data,
+                                                   size_t size,
+                                                   const char *label,
+                                                   const module_search_t *search,
+                                                   const module_validation_options_t *options,
+                                                   module_graph_t **out);
 /** imports are the complete syntax-collected direct imports (including includes
  * and unreachable code). Defaults are already resolved, never inherited by a
  * library. Source root is synthetic; dependencies are not flattened in metadata.
  * This checks imports for analysis, not the eventual named build artifact. Before
- * publication, validate_module_graph must check the final temporary archive with
- * the original search object, including any edge back to the build's identity.
+ * publication, validate_module_graph or validate_module_graph_memory must check
+ * the final archive with the original search object, including any edge back to
+ * the build's identity.
  */
 module_graph_status_t validate_source_graph(const module_imports_t *imports,
                                             const module_search_t *search,

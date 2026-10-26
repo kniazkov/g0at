@@ -67,3 +67,6 @@ goat_native_status goat_module_native_validate_diagnostics(const goat_module_con
                                                            goat_native_error *error,
                                                            goat_native_diagnostic callback,
                                                            void *context);
+
+/** Count distinct function identities in one validated native variant. No loading. */
+size_t goat_module_native_function_count(const yyjson_val *variant);

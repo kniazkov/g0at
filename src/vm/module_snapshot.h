@@ -24,6 +24,19 @@ module_graph_status_t load_module_snapshot(const char *archive,
                                            const module_validation_options_t *options,
                                            module_snapshot_t **out,
                                            module_graph_t **diagnostics);
+/** Memory-root counterpart of load_module_snapshot. Root bytes are borrowed
+ * during this call only; label is a nonempty diagnostic name, never opened.
+ * Search retains the actual canonical .gmod/.goat launch context. The entire
+ * dependency graph and every native payload are checked before runtime creation.
+ * No root temporary file is needed, including native-off build-and-run.
+ */
+module_graph_status_t load_module_snapshot_memory(const void *data,
+                                                  size_t size,
+                                                  const char *label,
+                                                  const module_search_t *search,
+                                                  const module_validation_options_t *options,
+                                                  module_snapshot_t **out,
+                                                  module_graph_t **diagnostics);
 /** Call only after all execution/threads/callbacks have stopped. Frees managed
  * objects and runtime wrappers BEFORE the borrowed immutable images. No module
  * can be unloaded individually. NULL is allowed.
