@@ -17,6 +17,8 @@ struct module_snapshot {
     module_files_t **files;
     size_t count;
     size_t *offsets, *targets;
+    void *native_state;
+    void (*destroy_native)(void *);
 };
 
 void free_module_snapshot(module_snapshot_t *snapshot) {
@@ -24,6 +26,8 @@ void free_module_snapshot(module_snapshot_t *snapshot) {
         return;
     if (snapshot->process)
         destroy_process(snapshot->process);
+    if (snapshot->destroy_native)
+        snapshot->destroy_native(snapshot->native_state);
     free(snapshot->files);
     free(snapshot->offsets);
     free(snapshot->targets);
@@ -204,4 +208,18 @@ size_t module_snapshot_import(const module_snapshot_t *snapshot,
             return target;
     }
     return SIZE_MAX;
+}
+
+bool set_module_snapshot_native_state(module_snapshot_t *snapshot,
+                                      void *state,
+                                      void (*destroy)(void *)) {
+    if (!snapshot || !state || snapshot->native_state)
+        return false;
+    snapshot->native_state = state;
+    snapshot->destroy_native = destroy;
+    return true;
+}
+
+void *module_snapshot_native_state(module_snapshot_t *snapshot) {
+    return snapshot ? snapshot->native_state : NULL;
 }

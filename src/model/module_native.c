@@ -322,28 +322,34 @@ module_native_call_status_t call_module_native(module_files_t *files,
     }
     if (!selected || !native_stack_has_headroom())
         goto done;
-    if (!binding->resolve(binding->state,
-                          integer_field(selected, "specializationId"),
-                          yyjson_get_str(yyjson_obj_get(selected, "symbol")),
-                          &memory.entry)
-        || !memory.entry.adapter) {
-        if (binding->required) {
+    bool resolved = binding->resolve(binding->state,
+                                     integer_field(selected, "specializationId"),
+                                     yyjson_get_str(yyjson_obj_get(selected, "symbol")),
+                                     &memory.entry);
+    /* Loading can release the execution lock. A different thread may terminate
+       the run during I/O; do not begin native code or replace its exit status. */
+    if (thread->process->native_failed || thread->process->exit_requested) {
+        outcome = MODULE_NATIVE_ERROR;
+        goto done;
+    }
+    if (!resolved || !memory.entry.adapter) {
+        if (binding->required || memory.entry.integrity_failed) {
             outcome = failure(files,
                               function,
-                              "selected native library or ABI could not be resolved",
+                              memory.entry.failure_reason
+                                  ? memory.entry.failure_reason
+                                  : "selected native library or ABI could not be resolved",
                               GOAT_MODULE_EXTERNAL_ERROR,
                               thread);
         } else {
             binding->unavailable = true;
-            diagnostic(files, function->id, "native library unavailable; using VM", thread);
-            FPRINTF(stderr, "%s\n", thread->native_diagnostic);
-            FREE(thread->native_diagnostic);
-            thread->native_diagnostic = NULL;
+            if (!memory.entry.failure_reported) {
+                diagnostic(files, function->id, "native library unavailable; using VM", thread);
+                FPRINTF(stderr, "%s\n", thread->native_diagnostic);
+                FREE(thread->native_diagnostic);
+                thread->native_diagnostic = NULL;
+            }
         }
-        goto done;
-    }
-    if (thread->process->native_failed) {
-        outcome = MODULE_NATIVE_ERROR;
         goto done;
     }
     goat_module_context_v1 context = {&services, &memory};

@@ -4152,9 +4152,10 @@ family, numeric OS/runtime minimums, usable CPU prerequisites and exact supporte
 Goat ABI membership. Unknown requirements exclude variants; multiple matches are
 an error. Compiler information does not affect selection. Actual host detection
 and strict synthetic target profiles are available; all existing CI platforms
-exercise selection and a real baseline control-library call. This does not yet
-implement the specialization ABI, full module loader or producer-side requirement
-discovery (#209/#210/#211/#219), nor prove execution on older OS/runtime minimums.
+exercise selection and a real baseline control-library call. This does not
+by itself implement the specialization ABI, loader or producer requirement discovery;
+those are separate #209/#210/#211 layers. Selection tests do not prove execution
+on older OS/runtime minimums.
 
 ### Implemented specialization ABI (#209)
 
@@ -4164,9 +4165,8 @@ symbols, side-effect-free predicates and decidable overlap rejection. Checked
 calls validate arguments and returned status/type/payload and never retry on the
 VM after native entry. The new interface is separate from the legacy query ABI;
 real control libraries exercise it on all existing CI architectures, including
-MINGW32. OS loader integration (#210),
-per-call VM dispatch and clone/flat bindings (#232), and full exit (#230) remain
-separate stages, not implied by descriptor validity.
+MINGW32. OS loading (#210) and per-call VM dispatch/clone/flat bindings (#232)
+are separate layers, not implied by descriptor validity. Full exit remains #230.
 
 ### Implemented native/bytecode consistency (#233)
 
@@ -4584,4 +4584,27 @@ Temporary builds and probes share cleaner #245, including direct .goat execution
 READY precedes build files and compiler startup. Saved libraries and archives are
 not cleaner-owned. See [module-build-api.md](../../module-build-api.md) for the API,
 limits and automated checks. Full .gmod CLI/target-list presentation remain #191;
-OS library loading remains #210.
+lazy OS library loading is provided separately by #210.
+
+
+## Implemented lazy library loading (#210)
+
+A validated graph snapshot is prepared for `off`, `auto` or `required` before
+user code. `required` checks for a compatible specialization owned by the root
+module, without loading it or counting dependencies. Calls without an applicable
+specialization still permit VM. Only the first applicable call extracts exact
+retained snapshot bytes and loads the DLL/SO after the shared cleaner's READY.
+Later archive changes cannot affect execution; there is no persistent cache
+or search for another physical copy.
+
+Before the first adapter, the mapped descriptor and every declared symbol are
+checked. A library preparation failure in `auto` disables that library only;
+cleaner-readiness failure disables native for the whole run. Each such reason
+is reported once; `required` terminates with an error. Native entry never permits
+a VM retry. Libraries outlive every program thread, while the separate cleaner
+removes files after actual Goat process termination. Death of an already ready
+cleaner does not change the running program's result.
+
+See [API and verification](../../module-loading-api.md). This runtime layer does
+not claim completion of CLI integration #191, bounded exit #230 or the isolated
+inspect probe #214.
