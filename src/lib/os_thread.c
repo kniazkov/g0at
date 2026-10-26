@@ -109,7 +109,18 @@ os_thread_status_t create_os_thread(os_thread_t **out,
         FREE(thread);
         return OS_THREAD_ERROR;
     }
-    if (stack_size)
+    /* musl defaults to a small fixed stack, below the native entry guard.
+     * Match the ordinary Linux development stack for Goat-owned workers while
+     * preserving explicit small-stack requests and larger platform defaults. */
+#    ifdef __linux__
+    if (!stack_size) {
+        size_t default_size = 0;
+        error = pthread_attr_getstacksize(&attributes, &default_size);
+        if (!error && default_size < 8 * 1024 * 1024)
+            stack_size = 8 * 1024 * 1024;
+    }
+#    endif
+    if (!error && stack_size)
         error = pthread_attr_setstacksize(&attributes, stack_size);
     if (!error)
         error = pthread_create(&thread->handle, &attributes, thread_entry, thread);

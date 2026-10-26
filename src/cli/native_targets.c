@@ -18,6 +18,10 @@ static const char *describe_target(const char *target) {
         return "Linux x86-64 / glibc";
     if (!strcmp(target, "linux-aarch64-gnu"))
         return "Linux AArch64 / glibc";
+    if (!strcmp(target, "linux-x86_64-musl"))
+        return "Linux x86-64 / musl";
+    if (!strcmp(target, "linux-aarch64-musl"))
+        return "Linux AArch64 / musl";
     if (!strcmp(target, "windows-x86_64-mingw64"))
         return "Windows x86-64 / MinGW MSVCRT";
     if (!strcmp(target, "windows-x86_64-ucrt64"))

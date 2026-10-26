@@ -66,6 +66,7 @@ static int compiler(int argc, char **argv) {
         fputs("controlled link failure\n", stderr);
         return 3;
     }
+    bool hide_trace = mode && !strcmp(mode, "hide-trace") && !preprocess;
     FREE(mode);
     /* Test-only control library: a real versioned libc dependency, never patched metadata. */
     bool module = false;
@@ -98,7 +99,8 @@ static int compiler(int argc, char **argv) {
                                .empty_stdin = true};
     child_process_t *child = start_child_process(&options);
     const child_result_t *result = wait_child_process(child);
-    FWRITE(result->out.data, 1, result->out.size, stdout);
+    if (!hide_trace)
+        FWRITE(result->out.data, 1, result->out.size, stdout);
     FWRITE(result->err.data, 1, result->err.size, stderr);
     int code = result->status == CHILD_EXITED ? (int)result->exit_code : 4;
     destroy_child_process(child);
@@ -108,6 +110,26 @@ static int compiler(int argc, char **argv) {
     return code;
 }
 
+static void target_profiles(void) {
+    goat_native_environment target;
+    assert(native_toolchain_target("linux-x86_64-musl", &target));
+    assert(target.os == GOAT_OS_LINUX && target.runtime == GOAT_RUNTIME_MUSL
+           && target.architecture == GOAT_ARCH_X86_64 && target.bits == 64
+           && target.cpu_features == GOAT_CPU_SSE2);
+    assert(native_toolchain_target("linux-x86_64-musl+avx2", &target));
+    assert(target.runtime == GOAT_RUNTIME_MUSL && (target.cpu_features & GOAT_CPU_AVX2));
+    assert(native_toolchain_target("linux-aarch64-musl", &target));
+    assert(target.os == GOAT_OS_LINUX && target.runtime == GOAT_RUNTIME_MUSL
+           && target.architecture == GOAT_ARCH_AARCH64 && target.bits == 64
+           && target.cpu_features == (GOAT_CPU_FP | GOAT_CPU_NEON));
+    assert(native_toolchain_target("linux-aarch64-musl+sha2", &target));
+    assert(target.runtime == GOAT_RUNTIME_MUSL
+           && target.cpu_features == (GOAT_CPU_FP | GOAT_CPU_NEON | GOAT_CPU_SHA1 | GOAT_CPU_SHA2));
+    assert(!native_toolchain_target("linux-aarch64-musl+crypto", &target));
+    assert(!native_toolchain_target("linux-aarch64-musl+avx2", &target));
+    assert(!native_toolchain_target("linux-x86_64-musl+sha2", &target));
+}
+
 static int execute(int argc, char **argv) {
     int code;
     if (cleanup_service_main(argc, argv, &code))
@@ -115,6 +137,7 @@ static int execute(int argc, char **argv) {
     if (argc > 1 && argv[1][0] == '-')
         return compiler(argc, argv);
     assert(argc == 6);
+    target_profiles();
     cleanup_service_t *cleanup = create_cleanup_service(NULL);
     assert(cleanup);
     native_toolchain_context_t *context = create_native_toolchain_context(cleanup);

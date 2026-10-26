@@ -12,6 +12,7 @@ exe = Path(sys.argv[1]).resolve()
 compiler = shutil.which(sys.argv[2] if len(sys.argv) > 2 else os.environ.get("CC", "gcc"))
 assert compiler, "a real C compiler is required"
 compiler = str(Path(compiler).resolve())
+requested_target = sys.argv[3] if len(sys.argv) > 3 else "host"
 passed = 0
 last_output = ""
 last_error = ""
@@ -32,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix="goat-toolchain-tests-") as directory:
     log = root / "calls.log"
     env = dict(os.environ, GOAT_TOOLCHAIN_REAL=compiler, GOAT_TOOLCHAIN_LOG=str(log))
 
-    def run(cc=str(wrapper), target="host", timeout="10", repetitions="1", mode="select", extra=None):
+    def run(cc=str(wrapper), target=requested_target, timeout="10", repetitions="1", mode="select", extra=None):
         global last_output, last_error
         current = dict(env)
         current.update(extra or {})
@@ -51,10 +52,17 @@ with tempfile.TemporaryDirectory(prefix="goat-toolchain-tests-") as directory:
 
     output = run(repetitions="2")
     check("real compiler probe succeeds without loading", output.count("available=1") == 2)
+    host_target = next(line.split(" target=", 1)[1].split(" available=", 1)[0]
+                       for line in output.splitlines() if " available=1" in line)
     calls = log.read_text().splitlines()
     check("same probe in one context uses cache", sum(" -std=c11" in line for line in calls) == 2)
     output = run()
     check("new process reprobes", len(log.read_text().splitlines()) > len(calls))
+    if host_target.startswith("linux-"):
+        arguments_log = root / "arguments.log"
+        run(extra={"GOAT_TOOLCHAIN_ARGUMENTS_LOG": str(arguments_log)})
+        check("Linux probes explicitly require immutable dynamic tables",
+              b"-Wl,-z,relro,-z,now\0" in arguments_log.read_bytes())
     unicode_temp = root / "временные файлы 漢字"
     unicode_temp.mkdir()
     output = run(extra={name: str(unicode_temp) for name in ("TMPDIR", "TMP", "TEMP")})
@@ -71,17 +79,27 @@ with tempfile.TemporaryDirectory(prefix="goat-toolchain-tests-") as directory:
     for mode in ("hang-query", "hang-link"):
         output = run(timeout="1", extra={"GOAT_TOOLCHAIN_MODE": mode})
         check(mode + " bounded by shared deadline", "available=0 timeout=1" in output)
-    output = run(target="host+avx2")
+    output = run(target=requested_target + "+avx2")
     if "unsupported native target" not in output:
         check("explicit AVX2 profile retains target suffix", "+avx2 available=1" in output)
-    sha2 = run(target="host+sha2")
+    sha2 = run(target=requested_target + "+sha2")
     if "unsupported native target" not in sha2:
         check("explicit ARM SHA2 profile retains target suffix", "+sha2 available=1" in sha2)
-        listed = run(target="linux-aarch64-gnu+sha2", mode="list")
-        check("explicit ARM SHA2 target is discoverable", "linux-aarch64-gnu+sha2 available=1" in listed)
+        listed = run(target=host_target + "+sha2", mode="list")
+        check("explicit ARM SHA2 target is discoverable", host_target + "+sha2 available=1" in listed)
     else:
         check("ARM SHA2 profile rejects non-ARM host", "unsupported native target" in sha2)
     check("unmodeled crypto PMULL profile is rejected", "unsupported native target" in run(target="linux-aarch64-gnu+crypto"))
+    if host_target.startswith("linux-"):
+        foreign = host_target.rsplit("-", 1)[0] + ("-gnu" if host_target.endswith("-musl") else "-musl")
+        output = run(target=foreign)
+        check("compiler headers cannot masquerade as the other libc family",
+              "available=0" in output and "selected=none" in output)
+    if host_target.endswith("-musl"):
+        output = run(extra={"GOAT_TOOLCHAIN_MODE": "hide-trace"})
+        check("musl probe refuses unknown actual linked libc",
+              "available=0" in output and "linked musl runtime cannot be established" in output)
+    check("musl crypto PMULL profile is rejected", "unsupported native target" in run(target="linux-aarch64-musl+crypto"))
     check("unknown CPU profile is not silently downgraded", "unsupported native target" in run(target="host+unmodeled"))
     # Discover only controlled known names. GCC's internal tool search remains explicit.
     for name in ("cc", "gcc", "clang"):
@@ -107,7 +125,7 @@ with tempfile.TemporaryDirectory(prefix="goat-toolchain-tests-") as directory:
     check("timed out candidate does not block fallback", selected_is(output, root / (fallback + suffix)) and "timeout=1" in output)
     output = run(cc="PATH", extra={"PATH": str(root / "unsearched")})
     check("compiler outside PATH is not discovered by hidden scanning", "no supported C compiler" in output)
-    output = run(cc="PATH", mode="list", target="host", extra=isolation)
+    output = run(cc="PATH", mode="list", target=requested_target, extra=isolation)
     check("enumeration includes all successful compilers", output.count("available=1") >= 3)
     output = run(cc=str(root / (selected + suffix)), extra=dict(isolation, GOAT_TOOLCHAIN_FAIL=selected + suffix))
     check("explicit compiler failure never selects fallback", "selected=none" in output and "count=1" in output)

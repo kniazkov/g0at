@@ -23,7 +23,8 @@ ELF/PE: успешный exit компилятора с чужой библио�
 всех кандидатов и возвращает успешные цели отдельно от диагностики отказов.
 Приоритет: Linux `cc`, `gcc`, `clang`; Windows `gcc`, `clang`, `cc`.
 Затем рассматриваются PATH-кандидаты `x86_64-linux-gnu-gcc`,
-`aarch64-linux-gnu-gcc`, `x86_64-w64-mingw32-gcc`, `i686-w64-mingw32-gcc`.
+`aarch64-linux-gnu-gcc`, `musl-gcc`, `x86_64-linux-musl-gcc`,
+`aarch64-linux-musl-gcc`, `x86_64-w64-mingw32-gcc`, `i686-w64-mingw32-gcc`.
 Явный `--cc`/параметр compiler ограничивает поиск одним исполняемым файлом.
 Прямой `.goat` и `--save-library` сохраняют прежний `CC` как выбор компилятора;
 явный `--cc` имеет приоритет. Модульный API получает compiler явно от вызывающего CLI.
@@ -35,17 +36,30 @@ ELF/PE: успешный exit компилятора с чужой библио�
 должно оставаться неизменным.
 
 Поддерживаемые backend-цели: `linux-x86_64-gnu`, `linux-aarch64-gnu`,
-`windows-x86_64-mingw64`, `windows-x86_64-ucrt64`, `windows-x86-mingw32`.
+`linux-x86_64-musl`, `linux-aarch64-musl`, `windows-x86_64-mingw64`,
+`windows-x86_64-ucrt64`, `windows-x86-mingw32`.
 Наличие имени цели не означает доступности toolchain. `host` выбирает профиль
 исполняющего процесса, а не переменную MSYSTEM. Базы: x86-64/SSE2,
 Armv8-A/FP/NEON, x86/i686. Явные суффиксы `+avx2` для x86-64 и `+sha2`
 для AArch64 повышают CPU-требования; `+sha2` добавляет SHA1/SHA2 без AES/PMULL.
 прочие неподдерживаемые профили отклоняются. Все исходники встроенного runtime
 перекомпилируются теми же целевыми флагами: host-архив не переносится в чужую цель.
+Linux-сборка явно включает `-Wl,-z,relro,-z,now`: загруженные динамические
+таблицы должны оставаться неизменяемыми при проверке точного имени и типа экспорта.
 
 Инспектор читает ELF и замыкание динамических зависимостей через выбранный
-компилятор, учитывает version requirements и GNU ABI notes. Минимальная glibc
-не копируется с build-host. Неизвестные зависимости/требования отклоняются.
+компилятор, учитывает version requirements и GNU ABI notes. Для musl путь libc
+получается из успешной трассировки линковки (`-Wl,-t`): ответ `-print-file-name`
+обёртки musl-gcc может указывать на host glibc и не является доказательством.
+Проба заголовков и реальный ELF должны подтвердить одно семейство; ни libc,
+ни дополнительный helper для определения версии не исполняются. Минимальная glibc
+не копируется с build-host. У musl нет аналогичной таблицы версий символов:
+ограниченный разбор ELF libc выбранного toolchain устанавливает её реальную
+версию, которая консервативно записывается как минимум. Это не утверждение о
+самой старой musl, на которой случайно заработает конкретная функция. Неизвестные
+разметка/версия, зависимости и требования отклоняются; семейства не смешиваются.
+Базовый минимум ядра для musl — 2.6.39 на x86-64 и 3.7 на AArch64; реальные
+GNU ABI notes могут его повысить. Это профиль backend, не запуск на старом ядре.
 PE проверяет разрядность, runtime и разрешённый профиль импортов Windows 10;
 неизвестные DLL, символы, ordinal/delay imports не дают ложного обещания
 совместимости. Дескриптор генерируется повторно после установления полных
@@ -91,6 +105,7 @@ failure after compiler selection is fatal, without alternate-compiler retries.
 
 Discovery searches PATH only, in stable order: Linux cc/gcc/clang; Windows
 gcc/clang/cc, followed by x86_64-linux-gnu-gcc, aarch64-linux-gnu-gcc,
+musl-gcc, x86_64-linux-musl-gcc, aarch64-linux-musl-gcc,
 x86_64-w64-mingw32-gcc and i686-w64-mingw32-gcc. Explicit --cc/compiler restricts both selection and enumeration to
 one executable, with inherited environment. Direct .goat/--save-library retain legacy
 CC selection, overridden by --cc; the module API receives compiler selection from its caller. Ordinary selection stops at the first
@@ -101,17 +116,31 @@ all query/probe commands, not generated user C builds. In-memory results, includ
 failures/timeouts, are keyed by compiler, target and timeout; they are not persisted.
 The environment must remain unchanged within a context.
 
-Backends support linux-x86_64-gnu, linux-aarch64-gnu, windows-x86_64-mingw64,
+Backends support linux-x86_64-gnu, linux-aarch64-gnu, linux-x86_64-musl,
+linux-aarch64-musl, windows-x86_64-mingw64,
 windows-x86_64-ucrt64 and windows-x86-mingw32. A recognized target is not a promise
 of an installed toolchain. Host derives the running process profile, not MSYSTEM.
 Baselines are x86-64/SSE2, Armv8-A/FP/NEON and x86/i686. Explicit +avx2 (x86-64) and +sha2
 (AArch64) profiles raise CPU requirements. The latter requires SHA1/SHA2, not
 AES/PMULL. Unsupported profiles fail closed. Bundled runtime
 sources are rebuilt with the same target flags instead of linking a host-only archive.
+Linux builds explicitly use `-Wl,-z,relro,-z,now`: loaded dynamic tables must remain
+immutable while the loader validates the exact export name and type.
 
 ELF inspection follows compiler-resolved dynamic dependencies and combines their
 version requirements and GNU ABI notes, without substituting build-host glibc.
-Unknown requirements/dependencies fail. PE validates architecture, runtime and the
+For musl, the libc path comes from the successful linker's trace (`-Wl,-t`):
+a musl-gcc wrapper's `-print-file-name` may point to host glibc and is not proof.
+Header probes and the actual ELF must agree on family; neither libc nor an
+extra version-detection helper is executed.
+musl has no equivalent symbol-version table: bounded inspection of the selected
+toolchain's libc ELF establishes its actual version and conservatively records
+that version as the minimum. This is not a claim about the oldest musl on which
+an individual function might happen to work. Unknown layouts/versions,
+requirements and dependencies fail closed; runtime families cannot be mixed.
+The musl backend kernel floor is 2.6.39 on x86-64 and 3.7 on AArch64; actual GNU
+ABI notes may raise it. This is a backend profile, not an old-kernel execution test.
+PE validates architecture, runtime and the
 supported Windows 10 import profile; unknown DLLs/symbols/ordinal/delay imports fail
 closed. After inspecting full linked requirements the descriptor may be re-emitted;
 the final build must reproduce the same target. cCompiler records the actual selected

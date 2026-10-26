@@ -385,12 +385,13 @@ codes, author ordering and failure handling.
 The [delivery suite](../../module-delivery-tests.md) exercises VM/native modes,
 actual native-call counters, separate build/run, relocated Release packages and
 mixed MINGW64/UCRT64 archives. ARM64 enhanced profiles use `host+sha2` /
-`linux-aarch64-gnu+sha2` (SHA1/SHA2, not the broader crypto/PMULL bundle).
+`linux-aarch64-gnu+sha2` / `linux-aarch64-musl+sha2` (SHA1/SHA2, not the broader crypto/PMULL bundle).
 Control libraries execute unchanged at their measured glibc floors: 2.35 in
 Ubuntu 22.04 and 2.36 in Debian Bookworm. This does **not** prove execution of
 ordinary variants on declared glibc 2.14/2.17, nor actual execution on Windows 10;
 those lower-bound runs remain explicitly unperformed. A synthetic compatibility
-profile is not an old-OS execution test. musl and big-endian are outside v1;
+profile is not an old-OS execution test. Linux/musl support on x86-64 and AArch64
+is added by the subsequent #248 stage; big-endian remains unsupported;
 user mutexes and immutable wrappers are not supplied by this module implementation.
 
 

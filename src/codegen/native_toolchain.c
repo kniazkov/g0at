@@ -16,7 +16,9 @@ static const char *targets[] = {"linux-x86_64-gnu",
                                 "linux-aarch64-gnu",
                                 "windows-x86_64-mingw64",
                                 "windows-x86_64-ucrt64",
-                                "windows-x86-mingw32"};
+                                "windows-x86-mingw32",
+                                "linux-x86_64-musl",
+                                "linux-aarch64-musl"};
 static const char *x64_flags[] = {"-std=c11",
                                   "-O2",
                                   "-march=x86-64",
@@ -27,6 +29,7 @@ static const char *x64_flags[] = {"-std=c11",
                                   "-fno-fast-math",
                                   "-ffp-contract=off",
                                   "-Wl,-z,defs",
+                                  "-Wl,-z,relro,-z,now",
                                   NULL};
 static const char *arm_flags[] = {"-std=c11",
                                   "-O2",
@@ -36,6 +39,7 @@ static const char *arm_flags[] = {"-std=c11",
                                   "-fno-fast-math",
                                   "-ffp-contract=off",
                                   "-Wl,-z,defs",
+                                  "-Wl,-z,relro,-z,now",
                                   NULL};
 static const char *win64_flags[] = {"-std=c11",
                                     "-O2",
@@ -133,11 +137,16 @@ bool native_toolchain_target(const char *target, goat_native_environment *out) {
         return false;
     }
     out->little_endian = true;
-    if (!strcmp(target, targets[0]) || !strcmp(target, targets[1])) {
+    if (!strcmp(target, targets[0]) || !strcmp(target, targets[1]) || !strcmp(target, targets[5])
+        || !strcmp(target, targets[6])) {
         out->os = GOAT_OS_LINUX;
-        out->architecture = !strcmp(target, targets[0]) ? GOAT_ARCH_X86_64 : GOAT_ARCH_AARCH64;
+        out->architecture = !strcmp(target, targets[0]) || !strcmp(target, targets[5])
+                                ? GOAT_ARCH_X86_64
+                                : GOAT_ARCH_AARCH64;
         out->bits = 64;
-        out->runtime = GOAT_RUNTIME_GLIBC;
+        out->runtime = !strcmp(target, targets[5]) || !strcmp(target, targets[6])
+                           ? GOAT_RUNTIME_MUSL
+                           : GOAT_RUNTIME_GLIBC;
         out->cpu_features =
             out->architecture == GOAT_ARCH_X86_64 ? GOAT_CPU_SSE2 : GOAT_CPU_FP | GOAT_CPU_NEON;
         return true;
@@ -161,8 +170,10 @@ static const char *target_name(const goat_native_environment *env) {
         native_toolchain_target(targets[i], &candidate);
         if (same_platform(env, &candidate)) {
             if (env->architecture == GOAT_ARCH_AARCH64 && (env->cpu_features & GOAT_CPU_SHA2))
-                return "linux-aarch64-gnu+sha2";
+                return env->runtime == GOAT_RUNTIME_MUSL ? "linux-aarch64-musl+sha2"
+                                                         : "linux-aarch64-gnu+sha2";
             return (env->cpu_features & GOAT_CPU_AVX2) ? (i == 0   ? "linux-x86_64-gnu+avx2"
+                                                          : i == 5 ? "linux-x86_64-musl+avx2"
                                                           : i == 2 ? "windows-x86_64-mingw64+avx2"
                                                                    : "windows-x86_64-ucrt64+avx2")
                                                        : targets[i];
@@ -272,18 +283,59 @@ static char *run(native_toolchain_context_t *ctx,
 
 typedef struct {
     native_toolchain_context_t *ctx;
-    const char *compiler;
+    const native_toolchain_t *toolchain;
     child_deadline_t deadline;
     bool timed_out;
 } resolver_t;
+
+static bool musl_library_name(const char *name, const goat_native_environment *environment) {
+    return !strcmp(name, "libc.so")
+           || (environment->architecture == GOAT_ARCH_X86_64
+               && !strcmp(name, "libc.musl-x86_64.so.1"))
+           || (environment->architecture == GOAT_ARCH_AARCH64
+               && !strcmp(name, "libc.musl-aarch64.so.1"));
+}
+
+/* GCC's musl wrapper applies its -L overrides only while linking:
+ * -print-file-name=libc.so can otherwise name the host glibc linker script.
+ * Use the actual successful link's trace, never a guessed libc on disk. */
+static char *linked_musl_runtime(char *trace, const goat_native_environment *environment) {
+    char *result = NULL;
+    for (char *line = trace; line && *line;) {
+        char *next = strchr(line, '\n');
+        if (next)
+            *next++ = 0;
+        size_t length = strlen(line);
+        if (length && line[length - 1] == '\r')
+            line[--length] = 0;
+        const char *name = strrchr(line, '/');
+        if (name && musl_library_name(name + 1, environment)) {
+            char *path = canonical_fs_path(line, NULL);
+            if (!path || (result && strcmp(result, path))) {
+                FREE(path);
+                FREE(result);
+                return NULL;
+            }
+            FREE(result);
+            result = path;
+        }
+        line = next;
+    }
+    return result;
+}
 
 static char *resolve_dependency(const char *name, void *opaque) {
     resolver_t *resolver = opaque;
     if (!name || strchr(name, '/') || strchr(name, '\\'))
         return NULL;
+    if (resolver->toolchain->requirements.runtime == GOAT_RUNTIME_MUSL
+        && musl_library_name(name, &resolver->toolchain->requirements))
+        return resolver->toolchain->runtime_library
+                   ? copy_text(resolver->toolchain->runtime_library)
+                   : NULL;
     char *option = ALLOC(strlen(name) + 18);
     sprintf(option, "-print-file-name=%s", name);
-    const char *argv[] = {resolver->compiler, option, NULL};
+    const char *argv[] = {resolver->toolchain->compiler, option, NULL};
     char *error = NULL;
     char *answer = run(resolver->ctx, argv, NULL, resolver->deadline, &resolver->timed_out, &error);
     FREE(option);
@@ -328,7 +380,10 @@ static bool has_macro(const char *macros, const char *name) {
 }
 
 static bool macros_match(const char *text, const goat_native_environment *env) {
-    if (has_macro(text, "_WIN32") != (env->os == GOAT_OS_WINDOWS)
+    if (has_macro(text, "__linux__") != (env->os == GOAT_OS_LINUX)
+        || (env->os == GOAT_OS_LINUX
+            && has_macro(text, "__GLIBC__") != (env->runtime == GOAT_RUNTIME_GLIBC))
+        || has_macro(text, "_WIN32") != (env->os == GOAT_OS_WINDOWS)
         || has_macro(text, "__aarch64__") != (env->architecture == GOAT_ARCH_AARCH64)
         || has_macro(text, "__x86_64__") != (env->architecture == GOAT_ARCH_X86_64)
         || has_macro(text, "__i386__") != (env->architecture == GOAT_ARCH_X86))
@@ -384,7 +439,7 @@ static bool inspect(native_toolchain_context_t *ctx,
                     goat_native_environment *environment,
                     char **diagnostic,
                     bool *timed_out) {
-    resolver_t resolver = {.ctx = ctx, .compiler = candidate->compiler, .deadline = deadline};
+    resolver_t resolver = {.ctx = ctx, .toolchain = candidate, .deadline = deadline};
     bool result = inspect_native_requirements(library,
                                               &candidate->requirements,
                                               resolve_dependency,
@@ -469,6 +524,8 @@ probe(native_toolchain_context_t *ctx, const char *compiler, const char *target,
      * cleaner-owned cwd with ASCII names, without changing inherited environment. */
     if (candidate->requirements.os == GOAT_OS_WINDOWS)
         argv[count++] = "-save-temps=obj";
+    if (candidate->requirements.runtime == GOAT_RUNTIME_MUSL)
+        argv[count++] = "-Wl,-t";
     argv[count++] = "-o";
     argv[count++] = candidate->requirements.os == GOAT_OS_WINDOWS ? "probe.dll" : "probe.so";
     argv[count++] = "probe.c";
@@ -478,6 +535,14 @@ probe(native_toolchain_context_t *ctx, const char *compiler, const char *target,
         run(ctx, argv, directory, deadline, &candidate->timed_out, &candidate->diagnostic);
     if (!output)
         goto done;
+    if (candidate->requirements.runtime == GOAT_RUNTIME_MUSL) {
+        candidate->runtime_library = linked_musl_runtime(output, &candidate->requirements);
+        if (!candidate->runtime_library) {
+            FREE(output);
+            candidate->diagnostic = copy_text("linked musl runtime cannot be established");
+            goto done;
+        }
+    }
     FREE(output);
     goat_native_environment actual;
     candidate->available = inspect(ctx,
@@ -515,6 +580,7 @@ void destroy_native_toolchain_context(native_toolchain_context_t *ctx) {
         FREE(p->result.name);
         FREE(p->result.version);
         FREE(p->result.target);
+        FREE(p->result.runtime_library);
         FREE((void *)p->result.flags);
         FREE(p->result.diagnostic);
         FREE(p);
@@ -550,6 +616,9 @@ native_toolchain_search_t find_native_toolchains(native_toolchain_context_t *ctx
 #endif
         "x86_64-linux-gnu-gcc",
         "aarch64-linux-gnu-gcc",
+        "musl-gcc",
+        "x86_64-linux-musl-gcc",
+        "aarch64-linux-musl-gcc",
         "x86_64-w64-mingw32-gcc",
         "i686-w64-mingw32-gcc"};
     size_t n = compiler ? 1 : sizeof(names) / sizeof(*names);

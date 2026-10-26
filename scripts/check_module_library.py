@@ -43,10 +43,14 @@ with tempfile.TemporaryDirectory(prefix='goat-module-library-') as temporary:
     assert len(names) >= 2
     export = '__declspec(dllexport)' if os.name == 'nt' else '__attribute__((visibility("default")))'
 
-    def build(name, data=envelope, qualifier='const', symbols=None, extra='', missing=False, data_symbol=False, data_in_text=False):
+    def build(name, data=envelope, qualifier='const', symbols=None, extra='', missing=False, data_symbol=False, data_in_text=False, hash_style=None, symbol_alias=None):
         source = '' if missing else f'{export} {qualifier} unsigned char goat_module_descriptor_v1[] = {{{",".join(map(str, data))}}};\n'
         data_attribute = '__attribute__((section(".text")))' if data_in_text else ''
         for index, symbol in enumerate(names if symbols is None else symbols):
+            if index == 0 and symbol_alias:
+                source += f'{export} unsigned actual_function(void) {{ return 0; }}\n'
+                source += '__asm__(".globl ' + symbol + '\\n.set ' + symbol + ',actual_function\\n.type ' + symbol + ',%' + symbol_alias + '\\n");\n'
+                continue
             source += f'{export} {data_attribute} const int {symbol}=0;\n' if data_symbol and index == 0 else f'{export} unsigned {symbol}(void) {{ return 0; }}\n'
         source += extra
         path = root / (name + ('.dll' if os.name == 'nt' else '.so'))
@@ -55,6 +59,8 @@ with tempfile.TemporaryDirectory(prefix='goat-module-library-') as temporary:
         command = [compiler, '-shared', '-o', str(path), str(code)]
         if os.name != 'nt':
             command.insert(1, '-fPIC')
+            if hash_style:
+                command.append('-Wl,--hash-style=' + hash_style)
         result = subprocess.run(command, capture_output=True, timeout=60)
         assert result.returncode == 0, (name, result.stdout, result.stderr)
         return path
@@ -71,6 +77,17 @@ with tempfile.TemporaryDirectory(prefix='goat-module-library-') as temporary:
     check(build('data-symbol', data_symbol=True), False)
     if os.name != 'nt':
         check(build('data-in-text', data_symbol=True, data_in_text=True), False)
+        # musl lacks dladdr1; portable validation must derive bounded dynamic
+        # symbols from either supported ELF hash table without accepting data
+        # merely because its address lies in executable memory.
+        for hash_style in ('sysv', 'gnu', 'both'):
+            check(build('valid-' + hash_style, hash_style=hash_style), True)
+            check(build('data-in-text-' + hash_style, data_symbol=True,
+                        data_in_text=True, hash_style=hash_style), False)
+            check(build('object-alias-' + hash_style, symbol_alias='object',
+                        hash_style=hash_style), False)
+            check(build('function-alias-' + hash_style, symbol_alias='function',
+                        hash_style=hash_style), True)
         hidden = '#include <sys/mman.h>\n__attribute__((constructor)) static void protect_descriptor(void) { mprotect((void *)goat_module_descriptor_v1, 4096, PROT_NONE); }\n'
         check(build('unreadable-descriptor', data=envelope + b'\0' * 8192,
                     qualifier='const __attribute__((aligned(4096)))', extra=hidden), False)

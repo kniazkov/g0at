@@ -223,8 +223,10 @@ glibc/musl, Windows — msvcrt/ucrt; семейства несовместимы
 доказанности производителем. Неизвестное требование не считается выполненным.
 
 Обязательны linux-x86_64-gnu, linux-aarch64-gnu, windows-x86_64-mingw64,
-windows-x86_64-ucrt64, windows-x86-mingw32. Аналогичные linux-*-musl допустимы
-синтаксически, реализация в #248. host раскрывается в конкретную цель. Суффиксы
+windows-x86_64-ucrt64, windows-x86-mingw32. Последующий backend #248 также
+поддерживает linux-x86_64-musl и linux-aarch64-musl. Известное имя не заменяет
+пробу toolchain: --list-native-targets показывает только проверенные возможности.
+host раскрывается в конкретную цель. Суффиксы
 +feature запрашивают расширения. Базы: x86_64/SSE2, aarch64/FP+NEON, x86/i686.
 Идентификаторы: i686, sse2, sse3, ssse3, sse4_1, sse4_2, avx, avx2, fma, bmi1,
 bmi2, avx512f, fp, neon, aes, sha1, sha2, crc32, lse, sve, sve2. Неизвестное

@@ -41,6 +41,8 @@ struct module_library_t {
     uintptr_t base;
     image_range_t *ranges;
     size_t range_count;
+    const ElfW(Dyn) * dynamic;
+    size_t dynamic_count;
 #endif
 };
 
@@ -53,6 +55,10 @@ static int collect_ranges(struct dl_phdr_info *info, size_t size, void *state) {
     library->ranges = CALLOC(allocation_size_multiply(info->dlpi_phnum, sizeof(image_range_t)));
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
         const ElfW(Phdr) *header = info->dlpi_phdr + i;
+        if (header->p_type == PT_DYNAMIC && header->p_vaddr <= UINTPTR_MAX - library->base) {
+            library->dynamic = (const ElfW(Dyn) *)(library->base + header->p_vaddr);
+            library->dynamic_count = header->p_memsz / sizeof(ElfW(Dyn));
+        }
         if (header->p_type != PT_LOAD || !(header->p_flags & PF_R)
             || header->p_vaddr > UINTPTR_MAX - library->base)
             continue;
@@ -129,16 +135,149 @@ static void *symbol_address(module_library_t *library, const char *symbol) {
  * Check the dynamic symbol type as well as page access before treating an
  * address as a callable adapter. A nearest containing symbol is insufficient.
  */
-static bool function_symbol(module_library_t *library, const void *address) {
-    Dl_info information;
-    void *extra = NULL;
-    if (!address || !dladdr1(address, &information, &extra, RTLD_DL_SYMENT) || !extra
-        || information.dli_saddr != address || (uintptr_t)information.dli_fbase != library->base
-        || !image_range(library, extra, sizeof(ElfW(Sym)), false))
-        return false;
-    const ElfW(Sym) *symbol = extra;
-    return symbol->st_shndx != SHN_UNDEF && ELF64_ST_TYPE(symbol->st_info) == STT_FUNC;
+/* musl has no dladdr1/RTLD_DL_SYMENT. More importantly, nearest-symbol
+ * queries cannot distinguish differently typed aliases at one address. Read the loaded
+ * dynamic symbol table instead. Every span must belong to immutable readable
+ * mappings of this image; hash tables bound the symbol count, not heuristics
+ * based on adjacent sections. Match the exact requested export name and type.
+ * Dynamic pointers remain image-relative on musl; glibc usually relocates them.
+ */
+static const void *dynamic_pointer(module_library_t *library, uintptr_t offset, size_t size) {
+#    ifdef __GLIBC__
+    const void *absolute = (const void *)offset;
+    if (image_range(library, absolute, size, false))
+        return absolute;
+#    endif
+    if (offset > UINTPTR_MAX - library->base)
+        return NULL;
+    const void *pointer = (const void *)(library->base + offset);
+    return image_range(library, pointer, size, false) ? pointer : NULL;
 }
+
+static size_t dynamic_symbol_count(module_library_t *library, uintptr_t hash, uintptr_t gnu_hash) {
+    const size_t limit = 1048576;
+    if (hash) {
+        const uint32_t *table = dynamic_pointer(library, hash, 2 * sizeof(uint32_t));
+        if (!table || (uintptr_t)table % _Alignof(uint32_t) || !table[0] || table[0] > limit
+            || !table[1] || table[1] > limit
+            || !dynamic_pointer(library, hash, (2 + (size_t)table[0] + table[1]) * 4))
+            return 0;
+        return table[1];
+    }
+    const uint32_t *table = dynamic_pointer(library, gnu_hash, 4 * sizeof(uint32_t));
+    if (!gnu_hash || !table || (uintptr_t)table % _Alignof(uint32_t) || !table[0]
+        || table[0] > limit || table[1] > limit || !table[2] || table[2] > limit)
+        return 0;
+    size_t prefix = 16 + (size_t)table[2] * sizeof(ElfW(Addr));
+    size_t bytes = prefix + (size_t)table[0] * 4;
+    if (!dynamic_pointer(library, gnu_hash, bytes))
+        return 0;
+    const uint32_t *buckets = (const uint32_t *)((const unsigned char *)table + prefix);
+    uint32_t last = 0;
+    for (uint32_t i = 0; i < table[0]; i++) {
+        if (buckets[i] && buckets[i] < table[1])
+            return 0;
+        if (buckets[i] > last)
+            last = buckets[i];
+    }
+    if (!last)
+        return table[1];
+    while (last < limit) {
+        size_t offset = bytes + ((size_t)last - table[1]) * 4;
+        if (offset > UINTPTR_MAX - gnu_hash)
+            return 0;
+        const uint32_t *chain = dynamic_pointer(library, gnu_hash + offset, 4);
+        if (!chain)
+            return 0;
+        last++;
+        if (*chain & 1)
+            return last;
+    }
+    return 0;
+}
+
+static bool function_symbol(module_library_t *library, const void *address, const char *name) {
+    if (!address || !name || !library->dynamic_count || library->dynamic_count > 1048576
+        || (uintptr_t)library->dynamic % _Alignof(ElfW(Dyn))
+        || !image_range(library,
+                        library->dynamic,
+                        library->dynamic_count * sizeof(ElfW(Dyn)),
+                        false))
+        return false;
+    uintptr_t symbols = 0, strings = 0, hash = 0, gnu_hash = 0;
+    size_t entry_size = 0, string_size = 0;
+    unsigned seen = 0;
+    bool terminated = false;
+    for (size_t i = 0; i < library->dynamic_count; i++) {
+        const ElfW(Dyn) *entry = library->dynamic + i;
+        if (entry->d_tag == DT_NULL) {
+            terminated = true;
+            break;
+        }
+        unsigned field = 0;
+        switch (entry->d_tag) {
+            case DT_SYMTAB:
+                field = 1;
+                symbols = entry->d_un.d_ptr;
+                break;
+            case DT_SYMENT:
+                field = 2;
+                entry_size = entry->d_un.d_val;
+                break;
+            case DT_STRTAB:
+                field = 4;
+                strings = entry->d_un.d_ptr;
+                break;
+            case DT_STRSZ:
+                field = 8;
+                string_size = entry->d_un.d_val;
+                break;
+            case DT_HASH:
+                field = 16;
+                hash = entry->d_un.d_ptr;
+                break;
+            case DT_GNU_HASH:
+                field = 32;
+                gnu_hash = entry->d_un.d_ptr;
+                break;
+            default:
+                break;
+        }
+        if (seen & field)
+            return false;
+        seen |= field;
+    }
+    if (!terminated || !symbols || !strings || !string_size || entry_size != sizeof(ElfW(Sym)))
+        return false;
+    size_t count = dynamic_symbol_count(library, hash, gnu_hash);
+    const ElfW(Sym) *table = dynamic_pointer(library, symbols, count * sizeof(ElfW(Sym)));
+    const char *names = dynamic_pointer(library, strings, string_size);
+    if (!count || !table || (uintptr_t)table % _Alignof(ElfW(Sym)) || !names)
+        return false;
+    bool found = false;
+    for (size_t i = 0; i < count; i++) {
+        const ElfW(Sym) *symbol = table + i;
+        unsigned binding = ELF64_ST_BIND(symbol->st_info);
+        unsigned visibility = ELF64_ST_VISIBILITY(symbol->st_other);
+        if (symbol->st_shndx == SHN_UNDEF || (binding != STB_GLOBAL && binding != STB_WEAK)
+            || (visibility != STV_DEFAULT && visibility != STV_PROTECTED))
+            continue;
+        if (symbol->st_name >= string_size
+            || !memchr(names + symbol->st_name, 0, string_size - symbol->st_name))
+            return false;
+        if (strcmp(names + symbol->st_name, name))
+            continue;
+        /* Ambiguous/versioned same-name definitions are not generated by the
+         * supported module compiler. Never let a FUNC hide an OBJECT alias. */
+        if (found || symbol->st_shndx == SHN_ABS || ELF64_ST_TYPE(symbol->st_info) != STT_FUNC
+            || symbol->st_value > UINTPTR_MAX - library->base
+            || library->base + symbol->st_value != (uintptr_t)address)
+            return false;
+        found = true;
+    }
+    return found;
+}
+
 #elif defined(_WIN32)
 static bool image_range(module_library_t *library, const void *pointer, size_t length, bool code) {
     return module_windows_image_range(library->handle, pointer, length, code);
@@ -259,7 +398,7 @@ module_library_result_t load_module_library_observed(const char *path,
         void *address = name ? symbol_address(library, name) : NULL;
         bool callable = image_range(library, address, 1, true);
 #ifdef __linux__
-        callable = callable && function_symbol(library, address);
+        callable = callable && function_symbol(library, address, name);
 #endif
         if (!callable) {
             failure = "Native module adapter symbol is absent, foreign or not executable";

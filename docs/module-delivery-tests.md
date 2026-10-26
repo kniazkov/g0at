@@ -62,6 +62,31 @@ compiler PATH, native off/auto/required и положительных native-с�
 должен быть отвергнут до загрузки. До появления такого окружения этот пункт
 остаётся **не проверен**, а не «пройден» или скрыто пропущен в обязательном CI.
 
+### Linux/musl после v1 (#248)
+
+Два дополнительных задания `Native musl delivery` используют Alpine 3.22 в
+Docker на настоящих x86-64 и AArch64 runners, без эмуляции. Они сохраняют
+исходную матрицу glibc/Windows и выполняют Debug-сборку с основными тестами,
+существующие проверки поставки и книги, затем Release-упаковку и `check_package.py`.
+
+`scripts/check_module_musl.py produce GOAT SELECTOR FAMILY DEST` собирает одинаковый
+исходник настоящими glibc- и musl-toolchain в соответствующих средах; SELECTOR —
+`module_native_testing`, FAMILY — `glibc` или `musl`. Команда `verify` с теми же
+аргументами проверяет сохранённые артефакты в каждой среде. Сравниваются переносимый
+байткод и основной хеш; проверяются ABI 1, собственные хеши библиотек, базовые
+CPU-требования и runtime. Версия musl в требованиях равна консервативной границе
+по libc выбранного toolchain и подтверждается на исполняющем runtime этой версии.
+Это не доказательство совместимости с более старой musl.
+
+Автономные собственный, чужой и объединённый архивы исполняются в режимах
+`off`/`auto`/`required` без исходников и доступного C-компилятора. Счётчики
+подтверждают реальные native-вызовы и отсутствие скрытого fallback там, где
+должен исполняться native. Чужой glibc-вариант не выбирается musl-процессом и
+наоборот; `auto` использует VM, `required` сообщает отсутствие подходящего
+варианта. Inspect успешно читает корректный чужой архив. Проверяются неизменность
+поставленных байтов и идентичность основных частей после merge; требования
+runtime не подменяются ручным редактированием метаданных.
+
 ### Существующие проверки остаются обязательными
 
 - `check_module_hash.py`, `check_module_canonical.py`, `check_module_bytecode.py`,
@@ -140,6 +165,30 @@ ready modules. Run MINGW32/MINGW64/UCRT64 with compiler discovery disabled in
 off/auto/required modes, preserve positive native-call counters and OS/module
 requirements, and reject variants requiring a newer Windows build before loading.
 Until that environment is available, this is explicitly **not run**, never passed.
+
+### Post-v1 Linux/musl (#248)
+
+Two additional `Native musl delivery` jobs run Alpine 3.22 in Docker on native
+x86-64 and AArch64 runners, without emulation. They preserve the original
+glibc/Windows matrix, run Debug builds and core tests, the existing delivery and
+book suites, then Release packaging and `check_package.py`.
+
+`scripts/check_module_musl.py produce GOAT SELECTOR FAMILY DEST` builds identical
+sources using real glibc and musl toolchains in their respective environments.
+SELECTOR is `module_native_testing`; FAMILY is `glibc` or `musl`. The `verify`
+command with the same arguments checks the preserved artifacts in each environment.
+It compares portable bytecode and mainHash, checks ABI 1, per-library hashes,
+baseline CPU requirements and runtime. The musl requirement is a conservative
+floor taken from the selected toolchain's libc, verified on that executing runtime
+version. It does not prove compatibility with an older musl.
+
+Autonomous own-family, foreign-family and merged archives run in off/auto/required
+modes without sources or an available C compiler. Counters prove actual native
+calls and exclude silent fallback where native execution is expected. A glibc
+variant is not selected by a musl process or vice versa: auto uses the VM and
+required reports no suitable variant. Inspect successfully reads a valid foreign
+archive. Delivered bytes remain unchanged, and merge preserves the main-part
+identity; runtime requirements are not manufactured by relabeling metadata.
 
 Existing mandatory suites provide frozen cross-platform bytecode/main-hash and
 writer vectors (`check_module_hash`, `canonical`, `bytecode`, `writer`), bounded

@@ -15,6 +15,7 @@ typedef struct {
     char *name;
     char *version;
     char *target;
+    char *runtime_library; /**< Actual musl libc selected by the successful link probe. */
     const char *const *flags;
     goat_native_environment requirements;
     uint64_t probe_timeout_seconds;

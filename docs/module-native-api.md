@@ -46,7 +46,7 @@ AVX, AVX — SSE2; SSE4.2 → SSE4.1 → SSSE3 → SSE3 → SSE2. На x86 AES/S
 
 `goat_native_environment_detect` узнаёт архитектуру и runtime текущего процесса,
 а не установленной ОС/компилятора. `MSYSTEM`, `PATH`, `CC` не выбирают runtime.
-Linux: `uname`, `gnu_get_libc_version`; AArch64: OS HWCAP; x86: CPUID и, для AVX,
+Linux: `uname`, `gnu_get_libc_version` для glibc; AArch64: OS HWCAP; x86: CPUID и, для AVX,
 проверки XSAVE/OSXSAVE/XGETBV. Одного CPU-бита AVX недостаточно. Windows: реальные
 версии из `RtlGetVersion` и ресурса уже загруженной CRT, семейство из параметров
 компиляции Goat. Посторонние библиотеки при определении среды не загружаются.
@@ -54,8 +54,16 @@ Linux: `uname`, `gnu_get_libc_version`; AArch64: OS HWCAP; x86: CPUID и, для
 Недоступные сведения остаются неизвестными. Windows servicing revision, не
 возвращаемая `RtlGetVersion`, консервативно равна нулю: вариант с большим revision
 не будет выбран даже на фактически подходящей системе. Это безопасная нижняя
-оценка, не обещание поддержки любой сборки Windows 10. Backend musl отложен до
-#248; отсутствие glibc не выдаётся за доказанную musl.
+оценка, не обещание поддержки любой сборки Windows 10.
+
+Для musl (#248) проверяется уже отображённый ELF-интерпретатор процесса,
+определённый через `AT_BASE`, а не наличие другой libc на диске. Ограниченный
+разбор read-only ELF-сегментов требует архитектурно соответствующую строку
+musl-loader и однозначную NUL-ограниченную версию выпуска `1.x.y` без суффикса
+разработки. Отсутствие
+`__GLIBC__` само по себе не доказывает musl. Неизвестная vendor-разметка,
+неоднозначная версия или статический процесс без отображённого интерпретатора
+оставляют среду неизвестной: нативная совместимость не угадывается.
 
 `goat_native_environment_read` читает строгий профиль `target.schema.json`; это
 те же поля, но версии и CPU-возможности означают **доступные**, а не требуемые.
@@ -129,11 +137,18 @@ requirements including prerequisites; omitting one never weakens checking.
 
 `goat_native_environment_detect` identifies the running process, not installed
 compilers or the OS bitness. `MSYSTEM`, `PATH` and `CC` do not select its runtime.
-Linux uses `uname`/`gnu_get_libc_version`, ARM64 OS HWCAP, and x86 CPUID with guarded
+Linux uses `uname` and, for glibc, `gnu_get_libc_version`; ARM64 OS HWCAP and x86 CPUID with guarded
 XSAVE/OSXSAVE/XGETBV for AVX register state. Windows uses `RtlGetVersion`, compile-time
 CRT family and version resources from the already-loaded CRT. No foreign library
-is loaded. Unknown facts stay unknown; musl backend detection is deferred to #248,
-not guessed from the absence of glibc.
+is loaded. Unknown facts stay unknown.
+
+For musl (#248), identification examines the process's already-mapped ELF
+interpreter selected through `AT_BASE`, not another libc's files on disk. A bounded
+read-only ELF-segment parser requires the architecture-specific musl loader banner
+and an unambiguous NUL-delimited `1.x.y` release version without a development
+suffix. Absence of `__GLIBC__` alone
+never proves musl. Unknown vendor layouts, ambiguous versions and static processes
+without a mapped interpreter remain unknown rather than guessing native compatibility.
 
 Windows servicing revision unavailable through `RtlGetVersion` conservatively
 uses zero. A higher-revision variant is rejected even if the machine actually

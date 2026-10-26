@@ -42,6 +42,44 @@ jobs:
           name: doxygen-diagnostics
           path: doxygen.log
           if-no-files-found: ignore
+  musl:
+    name: Native musl delivery (Linux, ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build real glibc control producer
+        run: |
+          test "$(uname -m)" = "${{ matrix.arch }}"
+          sudo apt-get update
+          sudo apt-get install -y gcc cmake make python3
+          cmake -S src -B build/libc-control -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/libc-control --parallel 2 --target goat goat-inspect goat-merge module_native_testing
+          python3 scripts/check_module_musl.py produce build/libc-control/goat build/libc-control/module_native_testing glibc build/libc-delivery
+      - name: Build, package and execute under real musl
+        run: |
+          docker run --rm --network bridge \
+            -v "$PWD:/source:ro" -v "$PWD/build/libc-delivery:/results" \
+            alpine:3.22 sh -euxc '
+              apk add --no-cache bash build-base cmake python3 linux-headers
+              bash /source/scripts/check_musl_ci.sh
+            '
+      - name: Verify actual musl artifact is foreign to glibc process
+        run: python3 scripts/check_module_musl.py verify build/libc-control/goat build/libc-control/module_native_testing glibc build/libc-delivery
+      - name: Preserve musl package and immutable cross-runtime artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: goat-musl-${{ matrix.arch }}
+          path: build/libc-delivery
+          if-no-files-found: error
   linux:
     name: Build and test (Linux, ${{ matrix.arch }}, ${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
