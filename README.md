@@ -189,3 +189,7 @@ See [loops and loop transfers](docs/loops.md) for syntax, scopes, and native sup
 See [compound assignments](docs/compound-assignment.md) for evaluation order, exception behavior, and native support (English and Russian).
 
 See [switch selection](docs/switch.md) for ordered variants, branch scopes, diagnostics, and native support (English and Russian).
+
+Standalone module tools: `goat-inspect` validates and inspects archives;
+[`goat-merge`](docs/module-merge-api.md) combines native variants of the same main
+build with validated atomic publication, without executing module code.

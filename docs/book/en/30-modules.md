@@ -327,5 +327,6 @@ probe budget in seconds, not a user-program build deadline.
 Options can follow the input path. `--` separates literal program arguments.
 Compiler provenance is stable across packaging and excluded from mainHash.
 Build and execution share one cleanup service and its one-warning fallback policy.
-See [commands, paths and verification](../../module-cli-api.md). Bounded exit and
-the separate inspect/merge tools remain subsequent checklist tasks.
+See [commands, paths and verification](../../module-cli-api.md),
+[bounded exit](../../module-exit-api.md), the separate
+[inspector](../../module-inspect-api.md) and [merger](../../module-merge-api.md).

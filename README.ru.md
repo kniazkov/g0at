@@ -164,3 +164,7 @@ Copy-Item .\docs\book\examples\22-native-module.goat .\build\quickstart\program.
 Автор — [Иван Князьков](https://github.com/kniazkov).
 
 Goat распространяется по [лицензии MIT](LICENSE.txt).
+
+Отдельные инструменты модулей: `goat-inspect` проверяет и показывает архивы;
+[`goat-merge`](docs/module-merge-api.md) объединяет native-варианты одной основной
+сборки с проверенной атомарной публикацией, без исполнения кода модуля.
