@@ -244,7 +244,9 @@ int try_module_program(const options_t *options, bool *handled) {
         size_t count = file ? FREAD(magic, 1, sizeof(magic), file) : 0;
         if (file)
             FCLOSE(file);
-        if (count == sizeof(magic) && !memcmp(magic, "GOATPG01", sizeof(magic)))
+        /* The legacy reader owns raw GOATBC01 bytecode, GOATPG01 programs and
+         * their malformed/truncated diagnostics. Only ZIP inputs use modules. */
+        if (count < 2 || memcmp(magic, "PK", 2))
             return 0;
     }
     *handled = descriptor || binary;

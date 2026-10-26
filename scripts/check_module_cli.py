@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -393,7 +394,8 @@ with tempfile.TemporaryDirectory(prefix='goat-module-cli-') as temporary:
     invoke(default_auto, '--native', 'off', '--save-native', source, fail=True, expected='')
     assert source.read_bytes() == saved_source
     # Case-insensitive known extensions select the same public pipelines.
-    upper = default_auto.with_name('module.GMOD')
+    # Use a distinct basename: merely changing case aliases the source on Windows.
+    upper = default_auto.with_name('uppercase-description.GMOD')
     shutil.copyfile(default_auto, upper)
     invoke('run', upper, '--native', 'off', expected='3\n')
     upper_binary = root / 'upper.GBIN'
@@ -449,6 +451,29 @@ with tempfile.TemporaryDirectory(prefix='goat-module-cli-') as temporary:
     legacy = standalone.with_suffix('.gbin')
     assert legacy.is_file()
     invoke('--run', '--native', 'off', legacy, expected='42\n')
+
+    # Raw bytecode remains distinct from both GOATPG01 envelopes and ZIP modules.
+    envelope = legacy.read_bytes()
+    assert envelope[:8] == b'GOATPG01'
+    code_size = struct.unpack_from('<Q', envelope, 24)[0]
+    raw_code = envelope[96:96 + code_size]
+    assert len(raw_code) == code_size and raw_code[:8] == b'GOATBC01'
+    raw = root / 'raw-bytecode.gbin'
+    for mode in ((), ('run',), ('--run',)):
+        raw.write_bytes(raw_code)
+        invoke(*mode, raw, '--native', 'off', '--lang', 'en', expected='42\n')
+        assert raw.read_bytes() == raw_code
+    bad_version = bytearray(raw_code)
+    struct.pack_into('<I', bad_version, 8, 0xffffffff)
+    invalid_raw = (b'', raw_code[:7], raw_code[:8], raw_code[:-1],
+                   b'GOATBIN1' + raw_code[8:], bytes(bad_version))
+    for data in invalid_raw:
+        raw.write_bytes(data)
+        for mode in ((), ('run',), ('--run',)):
+            result = invoke(*mode, raw, '--native', 'off', '--lang', 'en',
+                            fail=True, expected='')
+            assert b'Invalid, incompatible or unreadable Goat binary' in result.stderr, result.stderr
+            assert raw.read_bytes() == data
 
 print(f'Module CLI checks: {count}/{count}')
 if unsupported_replacements:
