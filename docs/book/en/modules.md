@@ -2532,6 +2532,8 @@ Acceptance: reject duplicate pairs within an input list; allow identical names w
 
 ## Interactive author-order selection in goat-merge
 
+Implementation stage #222 provides the shared in-memory information merge policy and interactive selection adapter in `src/module/module_information_merge.h` (see [API and tests](../../module-information-api.md)). It validates complete descriptors before decisions, counts all input author lists together and returns no result until required selection succeeds. Archive/path validation and atomic publication are integrated by the following CLI task #215; this policy stage never touches destination files.
+
 When author-order selection is required, display the deduplicated union as a numbered list starting at 1. The user enters space-separated numbers on one line in the desired order, for example `3 1 2`. Every list number must appear exactly once. Missing, duplicate, nonnumeric, and out-of-range values are invalid; an empty line does not automatically confirm an order.
 
 For an invalid answer, explain the error and repeat the prompt, retaining the list and its numbering. End of input before a complete valid answer exits with status 1 without publishing output or modifying an existing destination. The accepted order applies to the entire author union; publication waits until selection is complete.

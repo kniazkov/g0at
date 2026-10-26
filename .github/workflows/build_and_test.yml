@@ -134,6 +134,7 @@ jobs:
           python3 scripts/check_module_files.py build/${{ matrix.compiler }}/module_files_testing
           python3 scripts/test_module_access.py build/${{ matrix.compiler }}/module_access_testing
           python3 scripts/check_module_information.py build/${{ matrix.compiler }}/module_json_testing build/${{ matrix.compiler }}/module_writer_testing
+          python3 scripts/check_module_information_merge.py build/${{ matrix.compiler }}/module_json_testing
       - name: Strict module JSON
         run: |
           python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
@@ -398,6 +399,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_files.py build/module_files_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/test_module_access.py build/module_access_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_information.py build/module_json_testing.exe build/module_writer_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_information_merge.py build/module_json_testing.exe
       - name: Strict module JSON
         shell: msys2 {0}
         env:
