@@ -1,0 +1,694 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kniazkov/g0at/docs/module-format-v1/inspect-report.schema.json",
+  "type": "object",
+  "properties": {
+    "reportVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "success": {
+      "type": "boolean"
+    },
+    "exitCode": {
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2
+      ]
+    },
+    "input": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "target": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/target"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/module"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    },
+    "information": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "help",
+            "version"
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "reportVersion",
+    "success",
+    "exitCode",
+    "input",
+    "target",
+    "modules",
+    "diagnostics"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "reason": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "stream": {
+      "type": "object",
+      "properties": {
+        "dataBase64": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+          "maxLength": 87384,
+          "description": "Canonical standard padded Base64 without line breaks; decoded prefix is at most 65536 bytes. The byte limit and canonical padding bits are semantic constraints."
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "dataBase64",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "capture": {
+      "type": "object",
+      "properties": {
+        "stdout": {
+          "$ref": "#/$defs/stream"
+        },
+        "stderr": {
+          "$ref": "#/$defs/stream"
+        }
+      },
+      "required": [
+        "stdout",
+        "stderr"
+      ],
+      "additionalProperties": false
+    },
+    "cleanup": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "passed",
+            "failed"
+          ]
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reason"
+          }
+        },
+        "remainingPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "state",
+        "diagnostics",
+        "remainingPaths"
+      ],
+      "additionalProperties": false
+    },
+    "probe": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "passed",
+            "failed",
+            "crashed",
+            "timeout"
+          ]
+        },
+        "stage": {
+          "enum": [
+            "start",
+            "load",
+            "descriptor",
+            "symbols",
+            "unload",
+            "exit",
+            "capture"
+          ]
+        },
+        "exitCode": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "signal": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capture": {
+          "$ref": "#/$defs/capture"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reason"
+          }
+        }
+      },
+      "required": [
+        "state",
+        "stage",
+        "exitCode",
+        "signal",
+        "capture",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "loading": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "not_checked"
+            },
+            "reason": {
+              "$ref": "#/$defs/reason"
+            }
+          },
+          "required": [
+            "state",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "checked"
+            },
+            "probe": {
+              "$ref": "#/$defs/probe"
+            },
+            "cleanup": {
+              "$ref": "#/$defs/cleanup"
+            }
+          },
+          "required": [
+            "state",
+            "probe",
+            "cleanup"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "export": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mutable": {
+          "type": "boolean"
+        },
+        "type": {
+          "enum": [
+            "null",
+            "boolean",
+            "integer",
+            "real",
+            "numeric",
+            "character",
+            "string",
+            "function",
+            "array",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "mutable"
+      ],
+      "additionalProperties": false
+    },
+    "variant": {
+      "type": "object",
+      "properties": {
+        "library": {
+          "type": "string",
+          "minLength": 1
+        },
+        "compatibility": {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "compatible",
+                "incompatible",
+                "not_checked"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        "loading": {
+          "$ref": "#/$defs/loading"
+        }
+      },
+      "required": [
+        "library",
+        "compatibility",
+        "loading"
+      ],
+      "additionalProperties": false
+    },
+    "module": {
+      "type": "object",
+      "properties": {
+        "archive": {
+          "type": "string",
+          "minLength": 1
+        },
+        "validation": {
+          "enum": [
+            "passed",
+            "failed"
+          ]
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "$ref": "module.schema.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exports": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/export"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "native": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variant"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "archive",
+        "validation",
+        "metadata",
+        "exports",
+        "native"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "metadata": {
+                  "type": "null"
+                },
+                "exports": {
+                  "type": "null"
+                },
+                "native": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "properties": {
+                "metadata": {
+                  "type": "object"
+                },
+                "exports": {
+                  "type": "array"
+                },
+                "native": {
+                  "type": "array"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "pathStep": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expectedHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "expectedHash"
+      ],
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "properties": {
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "skipped"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pathStep"
+          }
+        },
+        "check": {
+          "enum": [
+            "input",
+            "container",
+            "bytecode",
+            "native",
+            "references"
+          ]
+        },
+        "archive": {
+          "type": "string"
+        },
+        "entryBase64": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+        },
+        "field": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reference": {
+          "type": "string"
+        },
+        "systemError": {
+          "type": "integer"
+        },
+        "prerequisite": {
+          "type": "object",
+          "properties": {
+            "check": {
+              "enum": [
+                "input",
+                "container",
+                "bytecode",
+                "native"
+              ]
+            },
+            "containerCheck": {
+              "enum": [
+                "layout",
+                "content",
+                "json",
+                "declarations",
+                "native_hash",
+                "main_hash"
+              ]
+            }
+          },
+          "required": [
+            "check",
+            "containerCheck"
+          ],
+          "additionalProperties": false
+        },
+        "expectedHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "actualHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "severity",
+        "code",
+        "message",
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "enum": [
+            "current",
+            "explicit"
+          ]
+        },
+        "os": {
+          "enum": [
+            "unknown",
+            "linux",
+            "windows"
+          ]
+        },
+        "architecture": {
+          "enum": [
+            "unknown",
+            "x86",
+            "x86_64",
+            "aarch64"
+          ]
+        },
+        "bits": {
+          "enum": [
+            0,
+            32,
+            64
+          ]
+        },
+        "littleEndian": {
+          "type": "boolean"
+        },
+        "runtime": {
+          "enum": [
+            "unknown",
+            "glibc",
+            "musl",
+            "msvcrt",
+            "ucrt"
+          ]
+        },
+        "osVersion": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "runtimeVersion": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cpuFeatures": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "source",
+        "os",
+        "architecture",
+        "bits",
+        "littleEndian",
+        "runtime",
+        "osVersion",
+        "runtimeVersion",
+        "cpuFeatures"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "success": {
+              "const": true
+            },
+            "exitCode": {
+              "const": 0
+            }
+          }
+        },
+        {
+          "properties": {
+            "success": {
+              "const": false
+            },
+            "exitCode": {
+              "enum": [
+                1,
+                2
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

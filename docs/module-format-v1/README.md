@@ -450,3 +450,12 @@ accepts only this envelope or a bare new image. In particular, neither accepts
 `GOATST01`/`GOATSC01` or previous numeric-version-1 layouts. Native ABI is already
 version 1; historical `_v2` C identifiers are not serialized format versions.
 The module's `GOATND01` descriptor and ZIP implementation remain #209/#247.
+
+## Inspector report v1 (#223)
+
+`inspect-report.schema.json` is the independent closed JSON Schema for
+`goat-inspect --json`. Unlike archive schemas, it describes inspection results,
+including errors and unavailable metadata, and does not enter any module hash.
+Its complete bilingual field contract and stable code catalog are in
+[the report specification](../module-inspect-report-v1.md). Native probing is
+reserved for #214; current reports never fabricate a successful probe.

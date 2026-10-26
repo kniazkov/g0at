@@ -4679,8 +4679,14 @@ and strict target contracts. Safely validated metadata remains available when
 other archive checks fail; unavailable metadata is not replaced by invented
 empty fields. Bytecode and native code are never executed by this stage.
 
-The final contract above is implemented in ordered stages: #223 supplies the
-versioned JSON renderer, and #214 supplies isolated load probes. Currently
-`--json` is explicitly unavailable, and text always reports loading as not
-checked. Metadata compatibility must not be mistaken for proven library loading.
-See [the implemented command, statuses and boundaries](../../module-inspect-api.md).
+The final contract above is implemented in ordered stages. #223 now supplies
+`goat-inspect --json archive`: one versioned report on success or handled error,
+with `reportVersion: 1`, `success`, `exitCode`, `input`, `target`, `modules`, and
+`diagnostics`. Error codes are stable and separate from human messages; skipped
+checks and unknown metadata are structural, not fictional successes or empty
+interfaces. Integers and normalized information are preserved without binary64
+rounding. The [complete schema and code catalog](../../module-inspect-report-v1.md)
+define all fields and reserved probe-result branches. #214 supplies isolated
+load probes; currently both text and JSON always state that loading is not
+checked. Metadata compatibility is not proof of library loading. See also
+[the command, statuses and boundaries](../../module-inspect-api.md).
