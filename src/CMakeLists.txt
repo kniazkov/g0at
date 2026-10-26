@@ -117,6 +117,8 @@ message(STATUS "Found core sources: ${core_sources}")
 
 file(GLOB goat_exe main.c)
 message(STATUS "Found interpreter sources: ${goat_exe}")
+add_executable(goat-merge merge.c)
+target_link_libraries(goat-merge core goat_validation goat_module m)
 add_executable(goat-inspect inspect.c)
 target_link_libraries(goat-inspect core goat_validation goat_module m)
 # Fault hooks are compiled only into this dedicated inspector test host.

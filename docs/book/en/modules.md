@@ -4711,3 +4711,23 @@ Native unavailability is a warning when graph validation and cleanup succeed;
 ABI violations and infrastructure/cleanup failures are errors. Metadata
 compatibility alone is not proof of library loading. See
 [the command, statuses and isolation limits](../../module-inspect-api.md).
+
+### Implemented standalone merging (#215)
+
+`goat-merge destination source [source ...]` validates and combines native variants
+with the same main hash without loading libraries, executing bytecode or looking
+up dependency archives. Exact duplicate source arguments count only once; the
+destination participates only when explicitly listed as a source. One source is
+fully checked and canonically repackaged. Conflicting native requirements/hashes,
+ambiguous variants and inconsistent compiler information fail before publication.
+The shared information policy considers all inputs at once and requires terminal
+author-order selection for two or more nonempty lists, even identical ones.
+
+Literal paths need no extension. The existing parent and regular-file destination
+are checked before prompts; final symlinks and special objects are rejected. A
+fully validated deterministic temporary archive is published by atomic replacement,
+preserving destination permissions and ACLs before replacement. No overwrite
+confirmation or `--force` is needed. Statuses are 0 for success/help/version,
+1 for processing errors, and 2 for invalid arguments. The success line identifies
+the published module and total native count. See [the command and failure
+guarantees](../../module-merge-api.md).

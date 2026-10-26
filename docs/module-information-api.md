@@ -97,9 +97,9 @@ nonempty lists need no interaction. Streams are borrowed and never closed.
 `goat_information_merge_parse_order` also exposes the same length-aware parser.
 
 This stage performs no archive I/O, native loading, bytecode execution, dependency
-lookup or publication. #215 is responsible for source/path checks, main-hash and
-variant compatibility, validated deterministic archive writing and atomic
-publication only after successful selection; #224 adds final autonomous-merge
+lookup or publication. The [goat-merge CLI](module-merge-api.md) (#215) handles
+source/path checks, main-hash and variant compatibility, validated deterministic
+archive writing and atomic publication only after successful selection; #224 adds final autonomous-merge
 coverage. Existing destination files therefore cannot be changed by this API.
 The existing `module_json_testing` executable and
 `scripts/check_module_information_merge.py` exercise the production policy and
@@ -144,7 +144,8 @@ JSON-строки (включая U+0000), читает одну строку н
 API не читает архивы, не загружает библиотеки, не исполняет байткод, не ищет
 зависимости и не публикует результат. Проверки путей, основного хеша и вариантов,
 детерминированная запись, проверка временного архива и атомарная публикация после
-выбора относятся к #215; итоговая автономность — к #224. Существующее назначение
+выбора реализованы в [CLI goat-merge](module-merge-api.md) (#215); итоговая
+автономность — к #224. Существующее назначение
 этот API изменить не может. Текущий `module_json_testing` и
 `scripts/check_module_information_merge.py` проверяют рабочую политику и адаптер
 в Linux/Windows CI без отдельной схемы или исполняемого файла.

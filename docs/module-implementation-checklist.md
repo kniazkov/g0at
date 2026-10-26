@@ -71,7 +71,7 @@
 - [x] 55. [#223](https://github.com/kniazkov/g0at/issues/223) — Машиночитаемый вывод goat-inspect
 - [x] 56. [#214](https://github.com/kniazkov/g0at/issues/214) — goat-inspect: безопасная пробная загрузка ([API и проверки](module-inspect-api.md))
 - [x] 57. [#222](https://github.com/kniazkov/g0at/issues/222) — Конфликты информационных метаданных при goat-merge ([API и проверки](module-information-api.md))
-- [ ] 58. [#215](https://github.com/kniazkov/g0at/issues/215) — goat-merge: объединение вариантов
+- [x] 58. [#215](https://github.com/kniazkov/g0at/issues/215) — goat-merge: объединение вариантов ([CLI и публикация](module-merge-api.md))
 - [ ] 59. [#224](https://github.com/kniazkov/g0at/issues/224) — Проверка графа inspect и автономность merge
 - [ ] 60. [#218](https://github.com/kniazkov/g0at/issues/218) — Многофайловые тесты модели доступа
 - [ ] 61. [#219](https://github.com/kniazkov/g0at/issues/219) — Сквозные тесты сборки и поставки
