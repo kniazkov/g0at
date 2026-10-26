@@ -46,7 +46,7 @@ class Owner:
     def marker(self, name):
         def read():
             try:
-                value = (self.root / name).read_text().strip()
+                value = (self.root / name).read_text(encoding='utf-8').strip()
                 return value or None
             except FileNotFoundError:
                 return None
@@ -182,7 +182,10 @@ with tempfile.TemporaryDirectory(prefix='goat-native-cleanup-данные-') as 
         b_compiler = b.watch('compiler.pid')
         b_worker = b.watch('worker.pid')
         output = Path(a.marker('compiler.output'))
-        assert output.parent.parent.parent == a.root
+        # The fixture writes UTF-8; Windows may spell the same directory with
+        # a different drive case or extended-length prefix. Compare filesystem
+        # identity, preserving the exact three-level containment requirement.
+        assert output.parent.parent.parent.samefile(a.root), (str(output), str(a.root))
         assert (output.parent / 'module.c').is_file()
         assert a_cleaner.alive() and b_cleaner.alive()
         a.process.kill()

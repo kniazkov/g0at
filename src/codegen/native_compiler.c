@@ -216,10 +216,13 @@ native_compile_result_t compile_native_library_in_context(native_build_context_t
         if (*p == '/' || *p == '\\')
             name = p + 1;
     char *output = join_fs_path(directory, name, &error);
+    /* A leading '-' must stay a filename even through GCC's linker driver. */
+    char *relative_output = join_fs_path(".", name, &error);
     char *runtime = join_fs_path(directory, GOAT_NATIVE_ARCHIVE_NAME, &error);
     bool source_runtime = !options || options->runtime_sources;
     bool bundled = !source_runtime && options && options->bundled_runtime;
-    if (!input || !output || !runtime || (bundled && !write_native_runtime_files(input))
+    if (!input || !output || !relative_output || !runtime
+        || (bundled && !write_native_runtime_files(input))
         || (source_runtime && !write_native_runtime_sources(input))
         || !write_utf8_file(input, source)) {
         result.system_error = errno ? errno : EIO;
@@ -249,7 +252,7 @@ native_compile_result_t compile_native_library_in_context(native_build_context_t
     /* The process API sets this Unicode directory through the native OS API.
        Keep compiler-visible input paths relative ASCII names: external Windows
        toolchains need not decode our UTF-8 absolute directory names in argv. */
-    arguments[index++] = name;
+    arguments[index++] = relative_output;
     arguments[index++] = "./module.c";
     if (bundled)
         arguments[index++] = GOAT_NATIVE_ARCHIVE_NAME;
@@ -277,6 +280,7 @@ done:
     FREE(runtime);
     FREE(input);
     FREE(output);
+    FREE(relative_output);
     FREE(directory);
     FREE(target);
     return result;
