@@ -56,8 +56,16 @@ bool get_native_library_query(void *handle, goat_native_query_v2_t *query, char 
     return true;
 }
 
+bool close_native_library_handle_checked(void *handle, char **diagnostic) {
+    if (FreeLibrary((HMODULE)handle))
+        return true;
+    if (diagnostic)
+        *diagnostic = last_error();
+    return false;
+}
+
 void close_native_library_handle(void *handle) {
-    FreeLibrary((HMODULE)handle);
+    (void)close_native_library_handle_checked(handle, NULL);
 }
 
 bool native_stack_has_headroom(void) {

@@ -154,6 +154,11 @@
           "items": {
             "type": "string"
           }
+        },
+        "temporaryDirectory": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Known absolute temporary directory when cleanup was not confirmed; does not assert that it still exists."
         }
       },
       "required": [
@@ -213,6 +218,19 @@
           "items": {
             "$ref": "#/$defs/reason"
           }
+        },
+        "completedStages": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "load",
+              "descriptor",
+              "symbols",
+              "unload"
+            ]
+          },
+          "uniqueItems": true,
+          "description": "Acknowledged completed stages in execution order, preserved even when subsequent process exit or cleanup fails."
         }
       },
       "required": [

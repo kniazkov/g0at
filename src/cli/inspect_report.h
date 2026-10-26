@@ -1,8 +1,9 @@
 /** @file inspect_report.h
  * @copyright 2026 Ivan Kniazkov
- * @brief Versioned nonexecuting inspector report serialization.
+ * @brief Versioned metadata and isolated native-probe report serialization.
  */
 #pragma once
+#include "inspect_probe.h"
 #include "module/module_native.h"
 #include "vm/module_graph.h"
 
@@ -11,6 +12,15 @@ typedef struct metadata_record {
     yyjson_doc *doc;
     struct metadata_record *next;
 } metadata_record_t;
+
+typedef struct {
+    bool graph_valid, local_target;
+    size_t count;
+    inspect_probe_result_t **results;
+    size_t *selected;
+    cleanup_result_t cleanup;
+    const char *temporary_directory;
+} inspect_probe_reports_t;
 
 /** All arguments are borrowed. graph/nodes/target may be NULL for an early
  * handled error. code/message describe that error; information_kind/text are
@@ -26,4 +36,5 @@ bool write_inspect_json(const char *input,
                         const char *code,
                         const char *message,
                         const char *information_kind,
-                        const char *information_text);
+                        const char *information_text,
+                        const inspect_probe_reports_t *probes);

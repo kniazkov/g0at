@@ -167,18 +167,22 @@ static bool readable(void *state, const void *pointer, size_t length) {
     return image_range(state, pointer, length, false);
 }
 
-void release_module_library(module_library_t *library) {
+bool release_module_library_checked(module_library_t *library, char **diagnostic) {
     if (!library)
-        return;
+        return true;
     for (size_t i = 0; i < library->count; i++)
         FREE(library->symbols[i].symbol);
     FREE(library->symbols);
 #ifdef __linux__
     FREE(library->ranges);
 #endif
-    if (library->handle)
-        close_native_library_handle(library->handle);
+    bool ok = !library->handle || close_native_library_handle_checked(library->handle, diagnostic);
     FREE(library);
+    return ok;
+}
+
+void release_module_library(module_library_t *library) {
+    (void)release_module_library_checked(library, NULL);
 }
 
 static bool validate_descriptor(module_library_t *library,
@@ -203,8 +207,11 @@ static bool validate_descriptor(module_library_t *library,
     return ok;
 }
 
-module_library_result_t
-load_module_library(const char *path, const yyjson_doc *metadata, size_t variant_index) {
+module_library_result_t load_module_library_observed(const char *path,
+                                                     const yyjson_doc *metadata,
+                                                     size_t variant_index,
+                                                     module_library_observer_t observer,
+                                                     void *context) {
     module_library_result_t result = {0};
     const yyjson_val *root = metadata ? yyjson_doc_get_root((yyjson_doc *)metadata) : NULL;
     const yyjson_val *variant = yyjson_arr_get(yyjson_obj_get(root, "native"), variant_index);
@@ -213,10 +220,16 @@ load_module_library(const char *path, const yyjson_doc *metadata, size_t variant
         return result;
     }
     module_library_t *library = CALLOC(sizeof(*library));
+    if (observer)
+        observer(MODULE_LIBRARY_LOAD, false, context);
     library->handle = open_native_library_handle(path, &result.diagnostic);
     const char *failure = NULL;
     if (!library->handle)
         goto failed;
+    if (observer) {
+        observer(MODULE_LIBRARY_LOAD, true, context);
+        observer(MODULE_LIBRARY_DESCRIPTOR, false, context);
+    }
 #ifdef __linux__
     struct link_map *map = NULL;
     if (dlinfo(library->handle, RTLD_DI_LINKMAP, &map) || !map) {
@@ -233,6 +246,10 @@ load_module_library(const char *path, const yyjson_doc *metadata, size_t variant
     if (!validate_descriptor(library, root, variant)) {
         failure = "Native module descriptor is unreadable, mutable, foreign or mismatched";
         goto failed;
+    }
+    if (observer) {
+        observer(MODULE_LIBRARY_DESCRIPTOR, true, context);
+        observer(MODULE_LIBRARY_SYMBOLS, false, context);
     }
     const yyjson_val *specs = yyjson_obj_get(variant, "specializations");
     size_t count = yyjson_arr_size(specs);
@@ -254,6 +271,9 @@ load_module_library(const char *path, const yyjson_doc *metadata, size_t variant
                        "Adapter pointer representation");
         memcpy(&symbol->adapter, &address, sizeof(address));
     }
+    if (observer)
+        observer(MODULE_LIBRARY_SYMBOLS, true, context);
+    result.valid = true;
     result.library = library;
     return result;
 failed:
@@ -261,7 +281,18 @@ failed:
         FREE(result.diagnostic);
         result.diagnostic = copy_native_library_diagnostic(failure);
     }
-    release_module_library(library);
+    result.library = library;
+    return result;
+}
+
+module_library_result_t
+load_module_library(const char *path, const yyjson_doc *metadata, size_t variant_index) {
+    module_library_result_t result =
+        load_module_library_observed(path, metadata, variant_index, NULL, NULL);
+    if (!result.valid) {
+        release_module_library(result.library);
+        result.library = NULL;
+    }
     return result;
 }
 

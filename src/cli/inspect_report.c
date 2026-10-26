@@ -271,23 +271,165 @@ static yyjson_mut_val *exports_json(report_t *r, yyjson_val *metadata) {
     return a;
 }
 
+static yyjson_mut_val *reason_json(report_t *r, const char *code, const char *message) {
+    yyjson_mut_val *reason = object(r);
+    text(r, reason, "code", code);
+    text(r, reason, "message", message);
+    return reason;
+}
+
+static const char *probe_code(const inspect_probe_result_t *probe) {
+    if (probe->abi_error)
+        return "PROBE_ABI_INVALID";
+    if (probe->infrastructure_error)
+        return "PROBE_INFRASTRUCTURE_FAILED";
+    if (probe->state == INSPECT_PROBE_CRASHED)
+        return "PROBE_CRASHED";
+    if (probe->state == INSPECT_PROBE_TIMEOUT)
+        return "PROBE_TIMEOUT";
+    if (probe->stage == INSPECT_PROBE_LOAD)
+        return "PROBE_LOAD_FAILED";
+    if (probe->stage == INSPECT_PROBE_UNLOAD)
+        return "PROBE_UNLOAD_FAILED";
+    return "PROBE_FAILED";
+}
+
+static const char *cleanup_message(const inspect_probe_reports_t *probes) {
+    return probes->cleanup.status == CLEANUP_TIMEOUT
+               ? "Cleanup confirmation timed out; the janitor may still be working. "
+                 "Manual deletion is unsafe until it has finished."
+               : "Temporary resource cleanup was not confirmed.";
+}
+
+static const char *cleanup_code(const inspect_probe_reports_t *probes) {
+    return probes->cleanup.status == CLEANUP_TIMEOUT ? "CLEANUP_TIMEOUT" : "CLEANUP_FAILED";
+}
+
+static yyjson_mut_val *stream_json(report_t *r, const child_output_t *output) {
+    yyjson_mut_val *stream = object(r);
+    add(r, stream, "dataBase64", base64(r, output->data, output->size));
+    add(r, stream, "truncated", yyjson_mut_bool(r->doc, output->truncated));
+    return stream;
+}
+
+typedef struct {
+    report_t *report;
+    const module_graph_node_t *node;
+    const inspect_probe_result_t *probe;
+    const char *code, *message;
+} probe_path_context_t;
+
+static bool probe_path_diagnostic(const size_t *edges, size_t count, void *context) {
+    probe_path_context_t *c = context;
+    report_t *r = c->report;
+    yyjson_mut_val *d =
+        diagnostic(r,
+                   c->probe->abi_error || c->probe->infrastructure_error ? "error" : "warning",
+                   c->code,
+                   c->message);
+    text(r, d, "archive", c->node->archive);
+    text(r, d, "check", "native");
+    if (c->probe->child.system_error)
+        number(r, d, "systemError", c->probe->child.system_error);
+    yyjson_mut_val *path = yyjson_mut_obj_get(d, "path");
+    for (size_t i = 0; i < count; ++i) {
+        const module_graph_edge_t *edge = module_graph_edge(r->graph, edges[i]);
+        const module_graph_node_t *node = module_graph_node(r->graph, edge->to);
+        yyjson_mut_val *step = object(r);
+        text(r, step, "name", node->name);
+        text(r, step, "version", node->version);
+        text(r, step, "expectedHash", edge->hash);
+        append(r, path, step);
+    }
+    return !r->failed;
+}
+
+static yyjson_mut_val *checked_loading(report_t *r,
+                                       const module_graph_node_t *node,
+                                       const inspect_probe_result_t *probe,
+                                       const inspect_probe_reports_t *probes) {
+    yyjson_mut_val *loading = object(r), *trial = object(r), *cleanup = object(r);
+    yyjson_mut_val *capture = object(r), *diagnostics = array(r), *completed = array(r);
+    text(r, loading, "state", "checked");
+    text(r, trial, "state", inspect_probe_state_name(probe->state));
+    text(r, trial, "stage", inspect_probe_stage_name(probe->stage));
+    add(r,
+        trial,
+        "exitCode",
+        probe->child.status == CHILD_EXITED ? yyjson_mut_sint(r->doc, probe->child.exit_code)
+                                            : yyjson_mut_null(r->doc));
+    add(r,
+        trial,
+        "signal",
+        probe->child.status == CHILD_SIGNALED ? yyjson_mut_sint(r->doc, probe->child.signal_number)
+                                              : yyjson_mut_null(r->doc));
+    add(r, capture, "stdout", stream_json(r, &probe->child.out));
+    add(r, capture, "stderr", stream_json(r, &probe->child.err));
+    add(r, trial, "capture", capture);
+    if (probe->load_completed)
+        append(r, completed, string(r, "load"));
+    if (probe->descriptor_completed)
+        append(r, completed, string(r, "descriptor"));
+    if (probe->symbols_completed)
+        append(r, completed, string(r, "symbols"));
+    if (probe->unload_completed)
+        append(r, completed, string(r, "unload"));
+    add(r, trial, "completedStages", completed);
+    if (probe->state != INSPECT_PROBE_PASSED || probe->abi_error || probe->infrastructure_error) {
+        const char *code = probe_code(probe);
+        const char *message =
+            probe->diagnostic[0] ? probe->diagnostic : "Native loading trial failed.";
+        append(r, diagnostics, reason_json(r, code, message));
+        probe_path_context_t context = {r, node, probe, code, message};
+        size_t graph_index = 0;
+        while (graph_index < module_graph_node_count(r->graph)
+               && module_graph_node(r->graph, graph_index) != node)
+            ++graph_index;
+        r->failed |=
+            !module_graph_paths(r->graph, graph_index, SIZE_MAX, probe_path_diagnostic, &context);
+    }
+    add(r, trial, "diagnostics", diagnostics);
+    text(r, cleanup, "state", probes->cleanup.status == CLEANUP_OK ? "passed" : "failed");
+    yyjson_mut_val *cleanup_diagnostics = array(r);
+    if (probes->cleanup.status != CLEANUP_OK) {
+        append(r,
+               cleanup_diagnostics,
+               reason_json(r, cleanup_code(probes), cleanup_message(probes)));
+        if (probes->temporary_directory)
+            text(r, cleanup, "temporaryDirectory", probes->temporary_directory);
+    }
+    add(r, cleanup, "diagnostics", cleanup_diagnostics);
+    /* A failed confirmation does not establish that any path still exists. */
+    add(r, cleanup, "remainingPaths", array(r));
+    add(r, loading, "probe", trial);
+    add(r, loading, "cleanup", cleanup);
+    return loading;
+}
+
 static yyjson_mut_val *native_json(report_t *r,
                                    const module_graph_node_t *node,
                                    yyjson_val *metadata,
-                                   const goat_native_environment *target) {
+                                   const goat_native_environment *target,
+                                   const inspect_probe_reports_t *probes,
+                                   size_t node_index) {
     yyjson_val *source = yyjson_obj_get(metadata, "native"), *variant;
     size_t i, max, matches = 0;
+    const uint32_t abi = 1;
     yyjson_mut_val *a = array(r);
+    if (node->snapshot) {
+        yyjson_arr_foreach(source, i, max, variant) {
+            goat_native_compatibility_result result;
+            if (goat_module_native_compatibility(variant, target, &abi, 1, &result)
+                == GOAT_NATIVE_OK)
+                ++matches;
+        }
+    }
     yyjson_arr_foreach(source, i, max, variant) {
         goat_native_compatibility_result result;
-        const uint32_t abi = 1;
         goat_native_status status =
             node->snapshot ? goat_module_native_compatibility(variant, target, &abi, 1, &result)
                            : GOAT_NATIVE_INVALID_METADATA;
-        if (status == GOAT_NATIVE_OK)
-            ++matches;
-        yyjson_mut_val *o = object(r), *compatibility = object(r), *loading = object(r),
-                       *reason = object(r);
+        yyjson_mut_val *o = object(r), *compatibility = object(r), *loading;
         add(r, o, "library", yyjson_val_mut_copy(r->doc, yyjson_obj_get(variant, "library")));
         text(r,
              compatibility,
@@ -296,20 +438,33 @@ static yyjson_mut_val *native_json(report_t *r,
              : status == GOAT_NATIVE_OK ? "compatible"
                                         : "incompatible");
         add(r, o, "compatibility", compatibility);
-        text(r, loading, "state", "not_checked");
-        text(r,
-             reason,
-             "code",
-             !node->snapshot            ? "VALIDATION_FAILED"
-             : status != GOAT_NATIVE_OK ? "NO_COMPATIBLE_VARIANT"
-                                        : "PROBE_NOT_IMPLEMENTED");
-        text(r,
-             reason,
-             "message",
-             !node->snapshot            ? "Archive validation failed."
-             : status != GOAT_NATIVE_OK ? "Variant is not compatible with the selected target."
-                                        : "Isolated loading has not been performed.");
-        add(r, loading, "reason", reason);
+        if (probes && node_index < probes->count && probes->results[node_index]
+            && probes->selected[node_index] == i) {
+            loading = checked_loading(r, node, probes->results[node_index], probes);
+        } else {
+            const char *code, *message;
+            if (!node->snapshot || !probes || !probes->graph_valid) {
+                code = "VALIDATION_FAILED";
+                message =
+                    "Archive or dependency graph validation failed; no native code was loaded.";
+            } else if (!probes->local_target) {
+                code = "FOREIGN_TARGET";
+                message = "The selected target differs from the current environment; loading was "
+                          "not attempted.";
+            } else if (status != GOAT_NATIVE_OK) {
+                code = "NO_COMPATIBLE_VARIANT";
+                message = "Variant is not compatible with the selected target.";
+            } else if (matches > 1) {
+                code = "AMBIGUOUS_NATIVE_VARIANT";
+                message = "Multiple native variants match; no variant was loaded.";
+            } else {
+                code = "NOT_SELECTED";
+                message = "This variant was not selected for loading.";
+            }
+            loading = object(r);
+            text(r, loading, "state", "not_checked");
+            add(r, loading, "reason", reason_json(r, code, message));
+        }
         add(r, o, "loading", loading);
         append(r, a, o);
     }
@@ -347,7 +502,8 @@ bool write_inspect_json(const char *input,
                         const char *code,
                         const char *message,
                         const char *information_kind,
-                        const char *information_text) {
+                        const char *information_text,
+                        const inspect_probe_reports_t *probes) {
     report_t r = {.doc = yyjson_mut_doc_new(NULL), .graph = graph};
     if (!r.doc)
         return report_failed();
@@ -382,7 +538,10 @@ bool write_inspect_json(const char *input,
         text(&r, o, "validation", node->snapshot ? "passed" : "failed");
         add(&r, o, "metadata", meta ? yyjson_val_mut_copy(r.doc, meta) : yyjson_mut_null(r.doc));
         add(&r, o, "exports", meta ? exports_json(&r, meta) : yyjson_mut_null(r.doc));
-        add(&r, o, "native", meta ? native_json(&r, node, meta, target) : yyjson_mut_null(r.doc));
+        add(&r,
+            o,
+            "native",
+            meta ? native_json(&r, node, meta, target, probes, i) : yyjson_mut_null(r.doc));
         append(&r, modules, o);
         if (node->references_skipped) {
             yyjson_mut_val *d = diagnostic(
@@ -393,6 +552,11 @@ bool write_inspect_json(const char *input,
             text(&r, d, "archive", node->archive);
             text(&r, d, "check", "references");
         }
+    }
+    if (probes && probes->cleanup.status != CLEANUP_OK) {
+        yyjson_mut_val *d = diagnostic(&r, "error", cleanup_code(probes), cleanup_message(probes));
+        if (probes->cleanup.native_code)
+            number(&r, d, "systemError", probes->cleanup.native_code);
     }
     size_t length = 0;
     char *json = r.failed ? NULL : yyjson_mut_write(r.doc, 0, &length);
