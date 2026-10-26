@@ -255,8 +255,9 @@ An unknown requirement remains incompatible, never guessed satisfied.
 
 Required initial targets are linux-x86_64-gnu, linux-aarch64-gnu,
 windows-x86_64-mingw64, windows-x86_64-ucrt64, windows-x86-mingw32.
-The analogous linux-*-musl names are syntactically valid but implementation is
-deferred to #248. `host` resolves to a concrete target. `+feature` suffixes request
+The subsequent #248 backend also supports linux-x86_64-musl and
+linux-aarch64-musl. A recognized name is not a successful toolchain probe;
+`--list-native-targets` reports only verified capabilities. `host` resolves to a concrete target. `+feature` suffixes request
 additional CPU features; base x86_64 requires SSE2, aarch64 requires FP/NEON,
 x86 requires i686. Canonical feature identifiers are lowercase ASCII names:
 i686, sse2, sse3, ssse3, sse4_1, sse4_2, avx, avx2, fma, bmi1, bmi2, avx512f,

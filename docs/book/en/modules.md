@@ -11,8 +11,9 @@ The [implementation checklist](../../module-implementation-checklist.md) maps th
 to completed components and test evidence. Issues #154 and #169 are historical.
 See [the runnable chapter](30-modules.md) for current commands, and
 [delivery evidence and unexecuted lower-bound checks](../../module-delivery-tests.md)
-for the precise portability boundary. User mutexes, immutable wrappers, musl and
-big-endian support are not introduced by completion of this module plan.
+for the precise portability boundary. The subsequent #248 stage adds Linux/musl
+on x86-64 and AArch64. User mutexes, immutable wrappers and big-endian support
+are not introduced by completion of this module plan.
 Where older access-control documents disagree, this contract takes precedence.
 
 ## Build and distribution unit
@@ -3538,15 +3539,17 @@ Acceptance in #208/#211/#219: check effective CPU settings and final variant req
 
 Technical references: [GCC x86 options](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html), [GCC AArch64 options](https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html). Baseline selection is a Goat policy; flag meanings and feature sets were checked against GCC documentation.
 
-## libc family: glibc in v1, musl in a subsequent stage
+## libc families: glibc and musl
 
-Required Linux support in v1 implements and tests glibc targets on x86-64 and AArch64. Full native musl support is deferred to #248 and does not block v1. This does not change the agreed Windows support.
+The original required Linux scope of v1 covered glibc on x86-64 and AArch64. The subsequent #248 implementation adds native musl builds and execution on both architectures, using the same format, ABI, runtime sources and loader. This does not change the agreed Windows support.
 
 The v1 format immediately distinguishes glibc and musl families in system ABI/runtime requirements. Matching Linux, architecture and bitness is insufficient: a glibc variant is not selected for a musl Goat process, or vice versa. Compatibility is determined by the executing process environment, not by files of another libc being present on disk. Neither family is implied when mandatory runtime information is missing.
 
 A valid variant for another known family remains a valid archive component but is unsuitable for native execution in the current environment. Do not turn runtime incompatibility into a structural error of the entire container. General metadata and hash checks for all variants still apply; an unsuitable library is not passed to the OS loader. If no suitable variant exists, apply the already agreed VM and native required rules.
 
 Target discovery and --list-native-targets must not promise musl merely because the schema recognizes the family. An implemented backend and a successful probe of the specific toolchain are required. Existing linux-x86_64-gnu and linux-x86_64-musl examples denote different targets, not interchangeable Linux names.
+
+The implemented #248 targets are `linux-x86_64-musl` and `linux-aarch64-musl`, with the same conservative baseline and explicit `+avx2`/`+sha2` profiles as the corresponding GNU targets. The process's musl identity and version come from its actual mapped ELF interpreter, not from another libc installed beside it. The build inspector obtains the version from the selected toolchain's libc and uses it as a conservative minimum because musl has no glibc-style symbol-version table. Unknown layouts or versions fail closed; older-musl portability is not inferred. Both libc variants retain identical portable bytecode and mainHash; only native payloads, their requirements and their own hashes differ. See [build rules](../../module-build-api.md), [runtime detection](../../module-native-api.md) and [real two-runtime delivery tests](../../module-delivery-tests.md).
 
 Runtime family and its minimum version are separate requirements. Selecting glibc does not mean supporting every glibc version; exact minimum-version fields and rules belong to the final #244/#208 schema. Do not choose a more convenient family or guess one when requirements are unknown.
 

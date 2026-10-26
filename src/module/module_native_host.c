@@ -2,7 +2,11 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Conservative capabilities of the executing process, without probing a module.
  */
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
 #include "module_native.h"
+#include "musl_runtime.h"
 
 #include <limits.h>
 #include <string.h>
@@ -12,13 +16,14 @@
 #ifdef _WIN32
 #    include <windows.h>
 #elif defined(__linux__)
+#    include <link.h>
+#    include <sys/auxv.h>
 #    include <sys/utsname.h>
 #    ifdef __GLIBC__
 #        include <gnu/libc-version.h>
 #    endif
 #    ifdef __aarch64__
 #        include <asm/hwcap.h>
-#        include <sys/auxv.h>
 #    endif
 #endif
 
@@ -47,6 +52,39 @@ static bool parse_version(const char *text, goat_native_version *out) {
     version.known = true;
     *out = version;
     return true;
+}
+#endif
+
+#if defined(__linux__) && !defined(__GLIBC__)
+typedef struct {
+    uintptr_t base;
+    goat_native_arch architecture;
+    goat_native_version version;
+} musl_host_t;
+
+static int musl_host_image(struct dl_phdr_info *info, size_t size, void *context) {
+    (void)size;
+    musl_host_t *host = context;
+    if (!host->base || info->dlpi_addr != host->base)
+        return 0;
+    musl_image_evidence_t evidence = {0};
+    size_t total = 0;
+    for (size_t i = 0; i < info->dlpi_phnum; i++) {
+        const ElfW(Phdr) *header = info->dlpi_phdr + i;
+        if (header->p_type != PT_LOAD || !(header->p_flags & PF_R) || (header->p_flags & PF_W))
+            continue;
+        if (header->p_filesz > 128u * 1024u * 1024u - total || header->p_filesz > header->p_memsz
+            || header->p_vaddr > UINTPTR_MAX - host->base
+            || header->p_filesz > UINTPTR_MAX - host->base - header->p_vaddr)
+            return 1;
+        total += header->p_filesz;
+        musl_image_scan(&evidence,
+                        (const unsigned char *)(host->base + header->p_vaddr),
+                        header->p_filesz,
+                        host->architecture);
+    }
+    musl_image_version(&evidence, &host->version);
+    return 1;
 }
 #endif
 
@@ -237,9 +275,16 @@ bool goat_native_environment_detect(goat_native_environment *out) {
 #    ifdef __GLIBC__
     out->runtime = GOAT_RUNTIME_GLIBC;
     parse_version(gnu_get_libc_version(), &out->runtime_version);
+#    else
+    /* AT_BASE identifies the already mapped interpreter, not a second libc on
+     * disk. Static or unrecognized runtime images remain unknown. */
+    musl_host_t host = {.base = getauxval(AT_BASE), .architecture = out->architecture};
+    dl_iterate_phdr(musl_host_image, &host);
+    if (host.version.known) {
+        out->runtime = GOAT_RUNTIME_MUSL;
+        out->runtime_version = host.version;
+    }
 #    endif
-    /* No portable musl identification/version API exists. Its native backend is
-     * deferred; do not infer musl merely from the absence of __GLIBC__. */
 #endif
     return out->little_endian && out->os != GOAT_OS_UNKNOWN
            && out->architecture != GOAT_ARCH_UNKNOWN && out->runtime != GOAT_RUNTIME_UNKNOWN;

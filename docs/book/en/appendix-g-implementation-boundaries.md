@@ -67,7 +67,7 @@ The control modules execute on glibc 2.35 (Ubuntu 22.04) or 2.36 (Debian Bookwor
 according to their actual symbol requirements. Ordinary declared glibc 2.14/2.17 floors
 have **not** been executed on those exact runtimes; actual Windows 10 floor execution
 also remains an explicit validation plan, not a missing loader implementation or a passed test.
-ARM `host+sha2` / `linux-aarch64-gnu+sha2` tests SHA1/SHA2, not PMULL or all `crypto` features.
+ARM `host+sha2` / `linux-aarch64-gnu+sha2` / `linux-aarch64-musl+sha2` tests SHA1/SHA2, not PMULL or all `crypto` features.
 
 Native libraries are trusted in-process code. Inspect's isolated crash/timeout probe is
 not a security sandbox. A detected ABI violation terminates the process without replay.

@@ -6,6 +6,7 @@
 
 #include "lib/allocate.h"
 #include "lib/binary_file.h"
+#include "module/musl_runtime.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -24,6 +25,7 @@ typedef struct {
     void *context;
     char *paths[DEPENDENCY_LIMIT];
     size_t count;
+    bool musl;
     const char *error;
     char detail[4096];
 } inspection_t;
@@ -131,9 +133,41 @@ static bool elf(inspection_t *state, image_t image, bool private_abi) {
                             : machine == 3   ? GOAT_ARCH_X86
                                              : GOAT_ARCH_UNKNOWN;
     if (state->value.os != GOAT_OS_LINUX || state->value.architecture != arch
-        || state->value.bits != (wide ? 64u : 32u) || state->value.runtime != GOAT_RUNTIME_GLIBC
+        || state->value.bits != (wide ? 64u : 32u)
+        || (state->value.runtime != GOAT_RUNTIME_GLIBC && state->value.runtime != GOAT_RUNTIME_MUSL)
         || number(image, 16, 2) != 3)
         return failure(state, "ELF target does not match selected compiler target");
+    if (state->value.runtime == GOAT_RUNTIME_MUSL && private_abi) {
+        uint64_t headers = number(image, wide ? 32 : 28, word);
+        uint64_t step = number(image, wide ? 54 : 42, 2);
+        uint64_t amount = number(image, wide ? 56 : 44, 2);
+        if (!wide || step < 56 || !amount || !range(image, headers, step * amount))
+            return failure(state, "Musl loadable segment metadata is unavailable");
+        musl_image_evidence_t evidence = {0};
+        for (uint64_t i = 0; i < amount; i++) {
+            uint64_t header = headers + step * i;
+            uint64_t flags = number(image, header + 4, 4);
+            if (number(image, header, 4) != 1 || !(flags & 4) || (flags & 2))
+                continue;
+            uint64_t offset = number(image, header + 8, 8);
+            uint64_t length = number(image, header + 32, 8);
+            if (!range(image, offset, length) || length > number(image, header + 40, 8))
+                return failure(state, "Invalid musl loadable segment range");
+            musl_image_scan(&evidence, image.data + offset, (size_t)length, arch);
+        }
+        goat_native_version linked;
+        if (!musl_image_version(&evidence, &linked))
+            return failure(state, "Musl runtime identity or release version is unavailable");
+        maximum(&state->value.runtime_version, &linked);
+        /* musl's documented POSIX kernel baseline, raised for AArch64's first
+         * Linux release. This explicit target contract is not a build-host guess.
+         * https://wiki.musl-libc.org/supported-platforms */
+        goat_native_version kernel = {.components = {2, 6, 39}, .known = true};
+        if (arch == GOAT_ARCH_AARCH64)
+            kernel = (goat_native_version){.components = {3, 7}, .known = true};
+        maximum(&state->value.os_version, &kernel);
+        state->musl = true;
+    }
     uint64_t sections = number(image, wide ? 40 : 32, word);
     uint64_t stride = number(image, wide ? 58 : 46, 2);
     uint64_t count = number(image, wide ? 60 : 48, 2);
@@ -173,14 +207,22 @@ static bool elf(inspection_t *state, image_t image, bool private_abi) {
                     index < length ? string_at(image, base + index, length - index) : NULL;
                 if (!name || !*name || strchr(name, '/') || !state->resolver)
                     return failure(state, "ELF dependency cannot be resolved");
+                bool musl_dependency = !strcmp(name, "libc.so")
+                                       || !strcmp(name, "libc.musl-x86_64.so.1")
+                                       || !strcmp(name, "libc.musl-aarch64.so.1");
+                if ((musl_dependency && state->value.runtime != GOAT_RUNTIME_MUSL)
+                    || (state->value.runtime == GOAT_RUNTIME_MUSL
+                        && (!strcmp(name, "libc.so.6") || !strcmp(name, "libm.so.6")
+                            || !strncmp(name, "ld-linux", 8))))
+                    return failure(state, "ELF libc family does not match selected target");
                 char *path = state->resolver(name, state->context);
                 if (!path)
                     return failure(state,
                                    "ELF dependency is unavailable in the selected toolchain");
-                bool private_dependency = !strcmp(name, "libc.so.6") || !strcmp(name, "libm.so.6")
-                                          || !strcmp(name, "ld-linux-x86-64.so.2")
-                                          || !strcmp(name, "ld-linux-aarch64.so.1")
-                                          || !strcmp(name, "ld-linux.so.2");
+                bool private_dependency =
+                    musl_dependency || !strcmp(name, "libc.so.6") || !strcmp(name, "libm.so.6")
+                    || !strcmp(name, "ld-linux-x86-64.so.2")
+                    || !strcmp(name, "ld-linux-aarch64.so.1") || !strcmp(name, "ld-linux.so.2");
                 bool ok = inspect_path(state, path, private_dependency);
                 FREE(path);
                 if (!ok)
@@ -203,6 +245,8 @@ static bool elf(inspection_t *state, image_t image, bool private_abi) {
                         index < length ? string_at(image, base + index, length - index) : NULL;
                     if (!name)
                         return failure(state, "Invalid ELF version name");
+                    if (state->value.runtime == GOAT_RUNTIME_MUSL)
+                        return failure(state, "Versioned ELF dependency is not a musl runtime");
                     if (strncmp(name, "GLIBC_", 6) == 0) {
                         goat_native_version requirement;
                         if (!strcmp(name, "GLIBC_PRIVATE") && private_abi) {
@@ -630,6 +674,8 @@ bool inspect_native_requirements(const char *path,
     memset(&state.value.os_version, 0, sizeof(state.value.os_version));
     memset(&state.value.runtime_version, 0, sizeof(state.value.runtime_version));
     bool ok = expected->little_endian && inspect_path(&state, path, false);
+    if (ok && expected->runtime == GOAT_RUNTIME_MUSL && !state.musl)
+        ok = failure(&state, "Musl libc dependency cannot be established");
     if (ok && (!state.value.os_version.known || !state.value.runtime_version.known))
         ok = failure(&state, "Native OS or runtime requirement cannot be established");
     if (ok)

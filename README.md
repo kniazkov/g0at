@@ -68,7 +68,7 @@ cd g0at
 
 ### Linux
 
-Install GCC or Clang, GNU Make, Bash, CMake 3.13 or newer, and the standard C development libraries, including pthread and libm.
+Install GCC or Clang, GNU Make, Bash, CMake 3.13 or newer, and the standard C development libraries, including pthread and libm. Linux native backends support glibc and musl on x86-64 and AArch64; build Goat and its native modules for the same runtime family. Installing a second libc does not change the runtime of an already-built Goat process. On Alpine, install `build-base`, `cmake`, `bash`, `python3` and `linux-headers` before using the same build commands. Ordinary glibc users do not need musl installed.
 
 ```bash
 bash scripts/build.sh
@@ -219,7 +219,7 @@ Return to the repository root before the commands below (`cd ../../..`, or `Set-
 
 For standalone sources, `--print-source-code`, `--print-bytecode`, and `--print-analysis` expose intermediate representations; these options also execute the program. `--save-graph graph.svg` writes an AST image and requires Graphviz (`dot` on `PATH`). `--print-c` exports generated C without executing the program. Module input currently rejects C/source/analysis/graph exports explicitly; use `goat-inspect` for module metadata and graph diagnostics. See [Observability](docs/book/en/27-observability.md) for complete examples.
 
-The Debug scripts run strict module-JSON checks and three core suites; the full CI additionally runs component/integration suites for formats, module graphs, access, initialization, native ABI/build/loading, threads, exit, inspect/merge, delivery and the bilingual tutorial. The seven platform jobs cover Linux GCC/Clang on x86-64 and AArch64, and Windows MINGW32/MINGW64/UCRT64. Style, Doxygen and format vectors have separate checks. See the [testing chapter](docs/book/en/28-testing.md) and [workflow](.github/workflows/build_and_test.yml).
+The Debug scripts run strict module-JSON checks and three core suites; the full CI additionally runs component/integration suites for formats, module graphs, access, initialization, native ABI/build/loading, threads, exit, inspect/merge, delivery and the bilingual tutorial. The original seven platform jobs cover Linux/glibc GCC/Clang on x86-64 and AArch64, and Windows MINGW32/MINGW64/UCRT64. Two additional native Alpine jobs cover Linux/musl x86-64 and AArch64, including relocated Release packages and cross-libc module selection. Style, Doxygen and format vectors have separate checks. See the [testing chapter](docs/book/en/28-testing.md) and [workflow](.github/workflows/build_and_test.yml).
 
 For the focused book/README tutorial check after building (Python 3 required):
 
@@ -229,7 +229,7 @@ python3 scripts/check_module_book.py build/goat
 
 On Windows use `python scripts/check_module_book.py build/goat.exe`. This checks the documented examples and local links, not every possible program or the semantic equivalence of all prose. See [benchmarks](test/performance/README.md) for Release performance checks.
 
-Portability claims are bounded by evidence: current CI executes relocated native/VM programs, genuine mixed Windows CRT variants and control modules on glibc 2.35/2.36. Ordinary declared glibc 2.14/2.17 floors and actual Windows 10 execution are **not** yet demonstrated on those exact systems. The [delivery evidence and validation plan](docs/module-delivery-tests.md) separates these limits from implemented functionality. Native ELF/PE compatibility metadata is not a guarantee about every host or the interpreter executable itself.
+Portability claims are bounded by evidence: current CI executes relocated native/VM programs, genuine mixed Windows CRT variants, control modules on glibc 2.35/2.36, and musl modules on their linked runtime version. The musl version floor is conservative; execution on an older musl is not claimed. Ordinary declared glibc 2.14/2.17 floors and actual Windows 10 execution are **not** yet demonstrated on those exact systems. The [delivery evidence and validation plan](docs/module-delivery-tests.md) separates these limits from implemented functionality. Native ELF/PE compatibility metadata is not a guarantee about every host or the interpreter executable itself.
 
 ## More language guides
 

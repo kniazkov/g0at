@@ -18,8 +18,9 @@ typedef enum {
     OS_THREAD_ERROR
 } os_thread_status_t;
 
-/** @brief Starts immediately; zero stack size uses the OS default, otherwise reserves bytes.
- * Sets *out to NULL on failure. The callback must return normally; no cancellation/detach API.
+/** @brief Starts immediately; zero uses the OS default (at least 8 MiB on Linux), otherwise
+ * reserves bytes. Sets *out to NULL on failure. The callback must return normally; no
+ * cancellation/detach API.
  */
 os_thread_status_t create_os_thread(os_thread_t **out,
                                     os_thread_function_t function,

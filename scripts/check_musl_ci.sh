@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Copyright 2026 Ivan Kniazkov
+# Run inside the native-architecture Alpine CI container, not an emulator.
+set -euo pipefail
+mkdir -p /work/source
+# Avoid copying the host's .git or glibc build tree into the musl build.
+for item in .github src scripts docs test example include third_party README.md README.ru.md LICENSE.txt; do
+    cp -a "/source/$item" /work/source/
+done
+cd /work/source
+export CC=gcc CXX=/nonexistent/cxx CMAKE_BUILD_PARALLEL_LEVEL=2
+BUILD_DIR=/work/debug bash scripts/build.sh 2
+# Includes real default-worker native calls and explicit small-stack fallback.
+bash scripts/check_native_pipeline.sh /work/debug/goat /work/debug/unit_testing /work/native-pipeline
+python3 scripts/check_native_requirements.py /work/debug/native_requirements_testing
+python3 scripts/check_module_native.py /work/debug/module_native_testing
+python3 scripts/check_native_toolchains.py /work/debug/native_toolchain_testing gcc
+python3 scripts/check_module_build.py /work/debug/module_import_execution_testing gcc
+python3 scripts/check_module_library.py /work/debug/module_import_execution_testing /work/debug/module_library_testing gcc
+python3 scripts/check_module_loading.py /work/debug/module_loading_testing /work/debug/module_import_execution_testing gcc
+python3 scripts/check_module_delivery.py /work/debug/goat /work/debug/goat-inspect gcc
+python3 scripts/check_module_book.py /work/debug/goat
+python3 scripts/check_module_musl.py produce /work/debug/goat /work/debug/module_native_testing musl /results
+python3 scripts/check_module_musl.py verify /work/debug/goat /work/debug/module_native_testing musl /results
+BUILD_DIR=/work/release bash scripts/build_release.sh
+python3 scripts/check_package.py /work/release/packages
+cmake --build /work/release --parallel 2 --target module_native_testing
+# Release executes the same Debug-produced bytecode/SO, without recompilation.
+python3 scripts/check_module_musl.py verify /work/release/goat /work/release/module_native_testing musl /results
+cp /work/release/packages/*.tar.gz /results/

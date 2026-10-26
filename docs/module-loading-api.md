@@ -65,6 +65,25 @@ VM даже в `required`. Простой import, успешный выбор п
 OS loading может исполнить конструкторы, а проверка ABI не является песочницей.
 После входа в адаптер ошибка ABI никогда не разрешает повторное исполнение на VM.
 
+На Linux экспорт проверяется не только по адресу в RX-сегменте: именованный
+символ обязан иметь тип `STT_FUNC` и принадлежать той же загруженной библиотеке.
+Для musl, где нет `dladdr1`, ограниченный разбор отображённых динамических
+ELF-таблиц GNU/SYSV устанавливает имя, тип и адрес без повторного чтения файла.
+Проверки диапазонов, принадлежности и неизменности снимка не ослабляются; данные,
+оказавшиеся в исполняемом сегменте, не становятся допустимой функцией.
+
+Нативный вход сохраняет требование свободного стека не менее 512 КиБ. На musl
+`pthread_getattr_np` для главного потока может сообщать только уже отображённые
+страницы. Дополнительная проверка учитывает расширение Linux `[stack]` только
+для исходного главного потока: нужен конечный `RLIMIT_STACK`, точное имя `[stack]`,
+права `rw-p` и отметка роста вниз `VmFlags: gd` в `/proc/self/smaps`.
+Свободный промежуток до предыдущего отображения учитывает 256 страниц реального
+системного размера либо переопределение `stack_guard_gap=` из `/proc/cmdline`.
+Недоступные, слишком большие или некорректные данные политики `/proc` не разрешают
+native. Фиксированные
+pthread-стеки так не расширяются. Создаваемые Goat Linux-потоки с размером стека
+по умолчанию получают не менее 8 МиБ; явно заданный малый размер не увеличивается.
+
 Загруженные библиотеки живут до завершения всех потоков и использования объектов.
 Освобождение снимка не выполняет синхронную уборку каталога. Уборщик ждёт фактической
 смерти процесса-владельца, затем удаляет собственные файлы и завершает работу;
@@ -149,6 +168,25 @@ that was never called invalidates the library. String results must belong to a
 readable range and are copied before call memory is released. Native code remains
 trusted: OS loading can execute constructors; ABI checks are not a sandbox.
 After adapter entry, an ABI failure never permits execution again on the VM.
+
+On Linux, an address in an RX segment is not enough: the named export must be
+an `STT_FUNC` belonging to the same loaded library. For musl, which lacks
+`dladdr1`, bounded inspection of mapped GNU/SYSV dynamic ELF tables establishes
+the symbol name, type and address without rereading the file. Range, ownership
+and immutable-snapshot checks are not weakened; data sharing an executable
+segment does not become a callable function.
+
+Native entry retains the requirement for at least 512 KiB of stack headroom.
+On musl, `pthread_getattr_np` may report only the main thread's already-mapped
+pages. An additional check accounts for Linux `[stack]` growth only in the
+original main thread: it requires a finite `RLIMIT_STACK`, the exact `[stack]`
+mapping with `rw-p` permissions and the grow-down `gd` VmFlag in `/proc/self/smaps`.
+The unmapped gap above the preceding mapping accounts for 256 actual system
+pages or the `stack_guard_gap=` override from `/proc/cmdline`. Missing, unreadable,
+oversized or malformed `/proc` policy information never grants native entry. Fixed
+pthread stacks are never enlarged by this check. Goat-created Linux threads
+using the default stack size receive at least 8 MiB; explicitly requested small
+stack sizes are not increased.
 
 Loaded libraries survive all program threads and managed-object uses. Freeing
 the snapshot does not synchronously clean its directory. The cleaner waits for

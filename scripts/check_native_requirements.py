@@ -39,6 +39,30 @@ def elf(requirement="GLIBC_2.9", dependencies=(), machine=62, note=True):
     return data
 
 
+def musl_image(release="1.2.5", banner=True, duplicate=False):
+    """Synthetic layout fixture, never evidence of native musl execution."""
+    data = elf(note=False)
+    # No symbol versions: musl deliberately has no GLIBC version namespace.
+    struct.pack_into("<I", data, 64 + 3 * 64 + 4, 0)
+    struct.pack_into("<Q", data, 32, 3328)
+    struct.pack_into("<HH", data, 54, 56, 1)
+    struct.pack_into("<IIQQQQQQ", data, 3328, 1, 4, 3456, 3456, 3456, 512, 512, 1)
+    text = b"musl libc (x86_64)\nVersion %s\nDynamic Program Loader\n"
+    if banner:
+        data[3456:3456 + len(text)] = text
+    encoded = release.encode() + b"\0"
+    data[3584:3584 + len(encoded)] = encoded
+    if duplicate:
+        data[3680:3686] = b"1.2.4\0"
+    return data
+
+
+def musl_module(dependencies=("libc.so",)):
+    data = elf(dependencies=dependencies, note=False)
+    struct.pack_into("<I", data, 64 + 3 * 64 + 4, 0)
+    return data
+
+
 def pe(crt="msvcrt.dll", extra="KERNEL32.dll", machine=0x8664, os_major=10):
     data = bytearray(4096)
     data[:2] = b"MZ"
@@ -69,6 +93,26 @@ def pe(crt="msvcrt.dll", extra="KERNEL32.dll", machine=0x8664, os_major=10):
 def main():
     executable = str(pathlib.Path(sys.argv[1]).resolve())
     count = 0
+    if sys.platform.startswith('linux'):
+        import resource
+        def stack(mode, expected, limited=False):
+            nonlocal count
+            def lower_limit():
+                resource.setrlimit(resource.RLIMIT_STACK, (128 * 1024, 128 * 1024))
+            result = subprocess.run([executable, '--stack-' + mode], capture_output=True,
+                                    text=True, timeout=10,
+                                    preexec_fn=lower_limit if limited else None)
+            assert result.returncode == 0 and result.stdout == str(expected) + '\n', result
+            count += 1
+        stack('main', 1)
+        stack('worker', 1)
+        stack('small', 0)
+        stack('main', 0, limited=True)
+        blocked = subprocess.run([executable, '--stack-blocked'], capture_output=True,
+                                 text=True, timeout=10)
+        assert blocked.returncode == 0 and blocked.stdout in ('0\n', 'not-musl\n'), blocked
+        if blocked.stdout == '0\n':
+            count += 1
     with tempfile.TemporaryDirectory(prefix="goat-image-requirements-") as directory:
         directory = pathlib.Path(directory)
         def check(data, succeeds=True, contains=None, target="glibc"):
@@ -100,6 +144,45 @@ def main():
         check(data, False)
         data = elf(); data[5] = 2
         check(data, False)
+        # Static parser fixtures complement actual musl compiler/runtime CI jobs.
+        libc = directory / "libc.so"
+        libc.write_bytes(musl_image())
+        check(musl_module(), target="musl", contains="2.6.39.0 1.2.5.0")
+        check(musl_module(), False, target="glibc")
+        check(elf(), False, target="musl")
+        check(musl_module(dependencies=()), False, target="musl")
+        for contents in (musl_image(banner=False), musl_image(duplicate=True),
+                         musl_image("1.2.5-dev"), musl_image("1.2"),
+                         musl_image("1.2.4294967296"), musl_image("2.0.0")):
+            libc.write_bytes(contents)
+            check(musl_module(), False, target="musl")
+        for offset, value in ((3328 + 8, 0xffffffffffffffff),
+                              (3328 + 32, 0xffffffffffffffff),
+                              (3328 + 40, 1)):
+            data = musl_image(); struct.pack_into("<Q", data, offset, value)
+            libc.write_bytes(data)
+            check(musl_module(), False, target="musl")
+        for flags in (0, 2, 6):
+            data = musl_image(); struct.pack_into("<I", data, 3328 + 4, flags)
+            libc.write_bytes(data)
+            check(musl_module(), False, target="musl")
+        data = musl_image(); struct.pack_into("<I", data, 3328 + 4, 5)
+        libc.write_bytes(data)
+        check(musl_module(), target="musl")
+        arm_libc = musl_image()
+        struct.pack_into("<H", arm_libc, 18, 183)
+        start = arm_libc.index(b"x86_64")
+        arm_libc[start:start + 6] = b"aarch64"
+        # Keep segment/file boundaries intact after the longer architecture name.
+        arm_libc.pop()
+        libc.write_bytes(arm_libc)
+        arm_module = musl_module(); struct.pack_into("<H", arm_module, 18, 183)
+        check(arm_module, target="musl-aarch64", contains="3.7.0.0 1.2.5.0")
+        check(musl_module(), False, target="musl")
+        libc.write_bytes(elf())
+        check(musl_module(), False, target="musl")
+        libc.write_bytes(musl_image())
+        check(elf(dependencies=("libc.so",)), False, target="musl")
         check(pe(), target="msvcrt", contains="10.0.0.0 0.0.0.0")
         data = pe(); data[1794:1801] = b"_iob\0\0\0"
         check(data, target="msvcrt")
