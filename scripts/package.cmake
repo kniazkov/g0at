@@ -4,10 +4,11 @@
 # MinGW runtime DLLs must not be required on the destination computer.
 if(MINGW)
   target_link_libraries(goat "$<$<CONFIG:Release>:-static>" "$<$<CONFIG:Release>:-static-libgcc>")
+  target_link_libraries(goat-inspect "$<$<CONFIG:Release>:-static>" "$<$<CONFIG:Release>:-static-libgcc>")
 endif()
 
 set(package_root "${CMAKE_CURRENT_LIST_DIR}/..")
-install(TARGETS goat RUNTIME DESTINATION bin CONFIGURATIONS Release)
+install(TARGETS goat goat-inspect RUNTIME DESTINATION bin CONFIGURATIONS Release)
 install(TARGETS goat_native ARCHIVE DESTINATION lib CONFIGURATIONS Release)
 install(FILES "${native_headers_dir}/unicode.h" "${native_headers_dir}/native_abi.h" "${native_headers_dir}/native_runtime.h"
   "${native_headers_dir}/native_strings.h"

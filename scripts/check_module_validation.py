@@ -82,7 +82,8 @@ def archive(m=None, code=IMAGE, payloads=None, rehash=True, raw_json=None):
     return pack(parts)
 
 
-def run(data=b'', status=OK, role='compiler', label='fixture.gbin', limits=None, env=None):
+def run(data=b'', status=OK, role='compiler', label='fixture.gbin', limits=None, env=None,
+        metadata=None):
     global COUNT
     COUNT += 1
     args = [EXE, role, str(label)]
@@ -97,7 +98,12 @@ def run(data=b'', status=OK, role='compiler', label='fixture.gbin', limits=None,
     assert result['failures'] == sum(e['state'] == FAILED for e in events)
     assert result['skipped'] == sum(e['state'] == SKIPPED for e in events)
     assert all(e['archive'] == str(label) for e in events)
+    if metadata is not None:
+        assert (result['metadata'] is not None) == metadata, result
+    if result['metadata'] is not None:
+        assert result['metadata']['name'] == 'validation', result
     if status == OK:
+        assert result['metadata'] is not None, result
         assert not result['failures'] and not result['skipped']
         assert any(e['check'] == BYTECODE and e['state'] == PASSED for e in events)
         assert any(e['check'] == NATIVE and e['state'] == PASSED for e in events)
@@ -122,7 +128,7 @@ for role in ('compiler', 'loader', 'inspect', 'merge'):
     assert run(good, role=role) == baseline
     run(archive(module(False)), role=role)
     bad = bytearray(IMAGE); bad[64] = 255
-    assert failed(run(archive(code=bad), CORRUPT, role=role), BYTECODE)
+    assert failed(run(archive(code=bad), CORRUPT, role=role, metadata=True), BYTECODE)
     wrong = module(); wrong['functions'][0]['instruction'] = 2
     assert failed(run(archive(wrong), CORRUPT, role=role), BYTECODE)
     wrong = module(); wrong['native'][0]['specializations'][0]['symbol'] = 'goat_fn_2_v1'
@@ -142,19 +148,19 @@ for dependencies in (None, []):
 
 # Two schema errors survive together, no invented hash or semantic failures.
 m = module(); m['name'] = False; m['version'] = 42
-schema = run(archive(m, rehash=False), CORRUPT)
+schema = run(archive(m, rehash=False), CORRUPT, metadata=False)
 assert {'/name', '/version'} <= {e['field'] for e in failed(schema)}, schema
 assert skipped(schema, BYTECODE) and skipped(schema, NATIVE), schema
 assert not failed(schema, code=12), schema
 assert run(archive(m, rehash=False), CORRUPT) == schema
 for raw in (b'{', b'{"name":1,', b'null'):
-    events = run(archive(raw_json=raw), CORRUPT)
+    events = run(archive(raw_json=raw), CORRUPT, metadata=False)
     assert len(failed(events)) == 1, events
     assert not failed(events, code=12), events
     assert skipped(events, BYTECODE) and skipped(events, NATIVE)
 
 for data in (b'', b'not a ZIP', good[:20], good[:-20]):
-    events = run(data, CORRUPT)
+    events = run(data, CORRUPT, metadata=False)
     assert skipped(events, BYTECODE) and skipped(events, NATIVE)
 
 # CRC damage is caught before the damaged part can be trusted.
@@ -167,7 +173,7 @@ def break_crc(data, entry):
     return data
 
 
-assert failed(run(break_crc(good, 'native/main.so'), CORRUPT), code=4)
+assert failed(run(break_crc(good, 'native/main.so'), CORRUPT, metadata=True), code=4)
 bad_code = bytearray(IMAGE); bad_code[64] = 255
 events = run(break_crc(archive(code=bad_code), 'native/main.so'), CORRUPT)
 assert failed(events, code=4) and failed(events, BYTECODE), events
@@ -181,7 +187,8 @@ assert any(e['check'] == BYTECODE and e['state'] == SKIPPED
            for e in events), events
 
 # Independent unreadable entries report separately, without derived schema/hash errors.
-events = run(break_crc(break_crc(good, 'module.json'), 'bytecode.bin'), CORRUPT)
+events = run(break_crc(break_crc(good, 'module.json'), 'bytecode.bin'), CORRUPT,
+             metadata=False)
 assert len(failed(events, code=4)) == 2, events
 assert not failed(events, code=11) and not failed(events, code=12), events
 assert skipped(events, BYTECODE) and skipped(events, NATIVE), events
@@ -194,7 +201,7 @@ assert not any(e['check'] == CONTAINER and e['detail'] == 4 and e['state'] == PA
 
 # Independent main/library hash failures both survive, while safe semantics still run.
 m = module(); m['mainHash'] = '0' * 64; m['native'][0]['hash'] = '0' * 64
-both = run(archive(m, rehash=False), CORRUPT)
+both = run(archive(m, rehash=False), CORRUPT, metadata=True)
 assert failed(both, code=12) and failed(both, code=13), both
 assert any(e['check'] == BYTECODE and e['state'] == PASSED for e in both), both
 m = module(); m['mainHash'] = '0' * 64

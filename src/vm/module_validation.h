@@ -52,11 +52,25 @@ typedef struct {
 typedef void (*module_validation_report_t)(const module_validation_diagnostic_t *diagnostic,
                                            void *context);
 
+/** Diagnostic-only metadata, borrowed for this synchronous callback. The JSON
+ * is normalized and has passed structural/schema validation, but archive hashes,
+ * bytecode and native consistency may have failed or may not have been checked yet. This
+ * does not authorize execution or establish module integrity. Called at most
+ * once per archive, never for unavailable or structurally invalid metadata.
+ * Copy any required values before returning; archive is the validation label.
+ */
+typedef void (*module_validation_metadata_t)(const char *archive,
+                                             const yyjson_doc *metadata,
+                                             void *context);
+
 typedef struct {
     size_t max_archive,
         max_expanded; /**< SIZE_MAX permits the implementation/address-space limit. */
     module_validation_report_t report; /**< Optional synchronous report; must not mutate inputs. */
     void *context;
+    module_validation_metadata_t metadata; /**< Optional diagnostic-only metadata observation. */
+    /** Independent of report/context, including graph callback wrappers. */
+    void *metadata_context;
 } module_validation_options_t;
 
 typedef struct {

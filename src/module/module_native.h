@@ -68,5 +68,44 @@ goat_native_status goat_module_native_validate_diagnostics(const goat_module_con
                                                            goat_native_diagnostic callback,
                                                            void *context);
 
+/** Independent incompatibility reasons. A zero mask means metadata requirements
+ * match; it never proves OS loading or execution. Unknown mandatory versions
+ * have distinct reasons rather than being mistaken for a low known version.
+ */
+typedef enum {
+    GOAT_NATIVE_REASON_OS = 1u << 0,
+    GOAT_NATIVE_REASON_ARCHITECTURE = 1u << 1,
+    GOAT_NATIVE_REASON_BITS = 1u << 2,
+    GOAT_NATIVE_REASON_ENDIAN = 1u << 3,
+    GOAT_NATIVE_REASON_RUNTIME = 1u << 4,
+    GOAT_NATIVE_REASON_OS_VERSION = 1u << 5,
+    GOAT_NATIVE_REASON_RUNTIME_VERSION = 1u << 6,
+    GOAT_NATIVE_REASON_UNKNOWN_OS_VERSION = 1u << 7,
+    GOAT_NATIVE_REASON_UNKNOWN_RUNTIME_VERSION = 1u << 8,
+    GOAT_NATIVE_REASON_CPU = 1u << 9,
+    GOAT_NATIVE_REASON_UNKNOWN_CPU = 1u << 10,
+    GOAT_NATIVE_REASON_ABI = 1u << 11
+} goat_native_compatibility_reason;
+
+typedef struct {
+    unsigned reasons;
+    uint64_t missing_cpu_features; /**< Includes architecture baseline/prerequisites. */
+} goat_native_compatibility_result;
+
+/** Compare a schema-validated native record with an environment using exactly
+ * the selector's rules. Structural native contradictions return INVALID_METADATA;
+ * ordinary mismatches return NO_MATCH and all independent reason bits. Inputs
+ * and output are borrowed; no I/O, loading or mutation. Clears output first.
+ */
+goat_native_status goat_module_native_compatibility(const yyjson_val *variant,
+                                                    const goat_native_environment *environment,
+                                                    const uint32_t *supported_abis,
+                                                    size_t abi_count,
+                                                    goat_native_compatibility_result *out);
+/** Stable English explanation of one reason bit, or unknown for invalid input. */
+const char *goat_native_compatibility_reason_string(goat_native_compatibility_reason reason);
+/** Canonical name for one known feature bit; NULL for zero/multiple/unknown bits. */
+const char *goat_native_cpu_feature_name(uint64_t bit);
+
 /** Count distinct function identities in one validated native variant. No loading. */
 size_t goat_module_native_function_count(const yyjson_val *variant);

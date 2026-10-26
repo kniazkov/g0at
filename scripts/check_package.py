@@ -27,6 +27,11 @@ def check(archive):
                      "lib/libgoat_native.a", "include/goat/native_strings.h", "README.md", "LICENSE.txt",
                      "build-info.txt", "docs/native-memory.md"):
             assert (package / name).is_file(), name
+        inspector = package / "bin" / ("goat-inspect.exe" if os.name == "nt" else "goat-inspect")
+        assert inspector.is_file(), inspector
+        inspected = subprocess.run([str(inspector), "--help"], capture_output=True,
+                                   timeout=15, text=True, encoding="utf-8")
+        assert inspected.returncode == 0 and "goat-inspect" in inspected.stdout, inspected
         work = workspace / "user programs"
         work.mkdir()
         environment = os.environ.copy()
