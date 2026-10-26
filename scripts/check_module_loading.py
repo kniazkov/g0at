@@ -90,8 +90,16 @@ def custom(root, name, original, kind='valid', edit=None):
     if kind == 'descriptor-short':
         blob = b'X'
     parts = ['#include "goat/module_abi.h"', '#include <stdio.h>', '#include <stdlib.h>',
-             'static void mark(char c) { const char *p=getenv("GOAT_LOADING_NATIVE_MARKER");'
-             ' if(p){FILE *f=fopen(p,"ab");if(f){fputc(c,f);fclose(f);}}}',
+             '#include <stdatomic.h>',
+             'static atomic_flag marker_lock = ATOMIC_FLAG_INIT;',
+             # Separate CRT FILE append handles do not provide an atomic seek/write on Windows.
+             # Serialize only test instrumentation, never the production loader or adapter call.
+             'static void mark(char c) {'
+             ' while(atomic_flag_test_and_set_explicit(&marker_lock,memory_order_acquire)) {}'
+             ' const char *p=getenv("GOAT_LOADING_NATIVE_MARKER");'
+             ' if(p){FILE *f=fopen(p,"ab");if(!f)abort();'
+             ' if(fputc(c,f)==EOF || fclose(f))abort();}'
+             ' atomic_flag_clear_explicit(&marker_lock,memory_order_release);}',
              '__attribute__((constructor)) static void loaded(void) { mark(\'L\'); }']
     if kind != 'descriptor-missing':
         qualifier = '' if kind == 'descriptor-writable' else 'const '
@@ -367,8 +375,8 @@ with tempfile.TemporaryDirectory(prefix='goat-loading-') as temporary:
                             'const a=spawn(f,7); const b=spawn(f,8); println(join(a)); println(join(b));')
         for mode in ('auto', 'required'):
             owner, result = run('concurrent-' + mode, concurrent, mode)
-            assert owner.calls() == b'LCC' and result['writes'] == 1
-            assert result['nodes'][0]['loads'] == 1
+            assert owner.calls() == b'LCC' and result['writes'] == 1, (owner.calls(), result)
+            assert result['nodes'][0]['loads'] == 1 and result['native_successes'] == 2, result
         checked('concurrent first calls share one extraction, OS load and cleaner')
 
         dependency = graft('dependency', 'external f=func(x){return x*x;};')

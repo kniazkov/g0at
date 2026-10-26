@@ -124,6 +124,21 @@ static void *symbol_address(module_library_t *library, const char *symbol) {
     void *address = dlsym(library->handle, symbol);
     return dlerror() ? NULL : address;
 }
+
+/* Executable ELF segments may also contain read-only objects (notably on ARM).
+ * Check the dynamic symbol type as well as page access before treating an
+ * address as a callable adapter. A nearest containing symbol is insufficient.
+ */
+static bool function_symbol(module_library_t *library, const void *address) {
+    Dl_info information;
+    void *extra = NULL;
+    if (!address || !dladdr1(address, &information, &extra, RTLD_DL_SYMENT) || !extra
+        || information.dli_saddr != address || (uintptr_t)information.dli_fbase != library->base
+        || !image_range(library, extra, sizeof(ElfW(Sym)), false))
+        return false;
+    const ElfW(Sym) *symbol = extra;
+    return symbol->st_shndx != SHN_UNDEF && ELF64_ST_TYPE(symbol->st_info) == STT_FUNC;
+}
 #elif defined(_WIN32)
 static bool image_range(module_library_t *library, const void *pointer, size_t length, bool code) {
     return module_windows_image_range(library->handle, pointer, length, code);
@@ -225,7 +240,11 @@ load_module_library(const char *path, const yyjson_doc *metadata, size_t variant
     for (size_t i = 0; i < count; i++) {
         const char *name = yyjson_get_str(yyjson_obj_get(yyjson_arr_get(specs, i), "symbol"));
         void *address = name ? symbol_address(library, name) : NULL;
-        if (!image_range(library, address, 1, true)) {
+        bool callable = image_range(library, address, 1, true);
+#ifdef __linux__
+        callable = callable && function_symbol(library, address);
+#endif
+        if (!callable) {
             failure = "Native module adapter symbol is absent, foreign or not executable";
             goto failed;
         }

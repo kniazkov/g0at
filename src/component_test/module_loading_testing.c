@@ -167,6 +167,13 @@ static int execute(int argc, char **argv) {
     yyjson_mut_obj_add_int(doc, root, "status", status);
     yyjson_mut_obj_add_uint(doc, root, "reports", reports);
     yyjson_mut_obj_add_uint(doc, root, "writes", writes);
+    size_t native_successes = 0;
+    thread_t *thread = process->main_thread;
+    do {
+        native_successes += thread->native_successes;
+        thread = thread->next;
+    } while (thread != process->main_thread);
+    yyjson_mut_obj_add_uint(doc, root, "native_successes", native_successes);
     yyjson_mut_obj_add_bool(doc, root, "terminal", process->native_failed);
     yyjson_mut_obj_add_str(doc, root, "directory", directory ? directory : "");
     yyjson_mut_obj_add_val(doc, root, "nodes", nodes);

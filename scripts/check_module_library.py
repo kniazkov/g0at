@@ -43,10 +43,11 @@ with tempfile.TemporaryDirectory(prefix='goat-module-library-') as temporary:
     assert len(names) >= 2
     export = '__declspec(dllexport)' if os.name == 'nt' else '__attribute__((visibility("default")))'
 
-    def build(name, data=envelope, qualifier='const', symbols=None, extra='', missing=False, data_symbol=False):
+    def build(name, data=envelope, qualifier='const', symbols=None, extra='', missing=False, data_symbol=False, data_in_text=False):
         source = '' if missing else f'{export} {qualifier} unsigned char goat_module_descriptor_v1[] = {{{",".join(map(str, data))}}};\n'
+        data_attribute = '__attribute__((section(".text")))' if data_in_text else ''
         for index, symbol in enumerate(names if symbols is None else symbols):
-            source += f'{export} const int {symbol}=0;\n' if data_symbol and index == 0 else f'{export} unsigned {symbol}(void) {{ return 0; }}\n'
+            source += f'{export} {data_attribute} const int {symbol}=0;\n' if data_symbol and index == 0 else f'{export} unsigned {symbol}(void) {{ return 0; }}\n'
         source += extra
         path = root / (name + ('.dll' if os.name == 'nt' else '.so'))
         code = root / (name + '.c')
@@ -69,6 +70,7 @@ with tempfile.TemporaryDirectory(prefix='goat-module-library-') as temporary:
     check(build('missing-last-symbol', symbols=names[:-1]), False)
     check(build('data-symbol', data_symbol=True), False)
     if os.name != 'nt':
+        check(build('data-in-text', data_symbol=True, data_in_text=True), False)
         hidden = '#include <sys/mman.h>\n__attribute__((constructor)) static void protect_descriptor(void) { mprotect((void *)goat_module_descriptor_v1, 4096, PROT_NONE); }\n'
         check(build('unreadable-descriptor', data=envelope + b'\0' * 8192,
                     qualifier='const __attribute__((aligned(4096)))', extra=hidden), False)
