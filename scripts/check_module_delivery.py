@@ -35,7 +35,7 @@ COUNT = 0
 def invoke(executable, *args, env=None, fail=False, expected=None):
     global COUNT
     result = subprocess.run([executable, *map(str, args)], capture_output=True,
-                            env=env, timeout=180)
+                            env=env, timeout=180, stdin=subprocess.DEVNULL)
     assert (result.returncode != 0) == fail, (args, result.returncode, result.stdout, result.stderr)
     if expected is not None:
         assert result.stdout.decode('utf-8').replace('\r\n', '\n') == expected, (
@@ -66,6 +66,14 @@ with tempfile.TemporaryDirectory(prefix='goat-delivery-') as temporary:
     distribution.mkdir()
     build_env = dict(os.environ, GOAT_MODULE_PATH=str(modules))
 
+    def producer_environment(compiler):
+        env = dict(build_env)
+        if os.name == 'nt':
+            # cc1/collect2 live below GCC's libexec directory. Their DLL lookup
+            # must find this compiler's runtime before another MSYS2 ABI's bin.
+            env['PATH'] = str(Path(compiler).resolve().parent) + os.pathsep + env.get('PATH', '')
+        return env
+
     def build(name, version, code, mode='required', dependencies=None, output=None,
               compiler=CC, native_target='host'):
         directory = source / (name + '-' + version + '-' + mode)
@@ -76,7 +84,8 @@ with tempfile.TemporaryDirectory(prefix='goat-delivery-') as temporary:
         path = put(directory / 'module.gmod', json.dumps(descriptor))
         destination = output or modules
         invoke(GOAT, 'build', path, '--module-dir', destination, '--native', mode,
-               '--cc', compiler, '--native-target', native_target, env=build_env, expected='')
+               '--cc', compiler, '--native-target', native_target,
+               env=producer_environment(compiler), expected='')
         archive = destination / name / (version + '.gbin')
         contents(archive, deflated=True)
         return archive
@@ -135,6 +144,17 @@ with tempfile.TemporaryDirectory(prefix='goat-delivery-') as temporary:
     replacement = build('leaf', '2', leaf_code.replace('x*x', 'x+999'),
                         output=root / 'alternate')
     alternate_bytes = replacement.read_bytes()
+
+    def merge(destination, inputs, variant_count):
+        result = invoke(MERGE, destination, *inputs, env=build_env)
+        text = result.stdout.decode('utf-8').replace('\r\n', '\n')
+        suffix = f': "delivery"@"opaque-release"; {variant_count} native variants\n'
+        assert text.startswith('"') and text.endswith(suffix), (text, result.stderr)
+        assert not result.stderr, result.stderr
+        contents(destination, deflated=True)
+
+    merged = distribution / 'merged-roundtrip.gbin'
+    merge(merged, [app, off], 1)
     mixed = foreign_only = None
     foreign_outputs = []
     if os.name == 'nt':
@@ -148,6 +168,12 @@ with tempfile.TemporaryDirectory(prefix='goat-delivery-') as temporary:
             compiler = os.environ.get(compiler_key)
             assert compiler and Path(compiler).is_absolute() and Path(compiler).is_file(), (
                 'missing mandatory absolute compiler path', compiler_key)
+            # Diagnose real compiler/helper loading before an opaque build error.
+            compiler_env = producer_environment(compiler)
+            machine = invoke(compiler, '-dumpmachine', env=compiler_env).stdout.strip()
+            assert machine == b'x86_64-w64-mingw32', (compiler, machine)
+            macros = invoke(compiler, '-dM', '-E', '-x', 'c', '-', env=compiler_env).stdout
+            assert b'#define __x86_64__ 1' in macros, (compiler, macros)
             directory = root / ('producer-' + environment)
             built = build('delivery', 'opaque-release', app_code, output=directory,
                           compiler=compiler, native_target=native_target)
@@ -163,8 +189,8 @@ with tempfile.TemporaryDirectory(prefix='goat-delivery-') as temporary:
                    if bits == 32 or runtime != target['runtime']['family']]
         mixed = distribution / 'mixed-windows.gbin'
         foreign_only = distribution / 'foreign-windows.gbin'
-        invoke(MERGE, mixed, app, *foreign, env=build_env, expected='')
-        invoke(MERGE, foreign_only, *foreign, env=build_env, expected='')
+        merge(mixed, [app, *foreign], 3 if bits == 32 else 2)
+        merge(foreign_only, foreign, 2 if bits == 32 else 1)
         mixed_doc, _ = contents(mixed, deflated=True)
         assert {v['target']['runtime']['family'] for v in mixed_doc['native']} == {'msvcrt', 'ucrt'}
         assert len(mixed_doc['native']) == (3 if bits == 32 else 2)
@@ -199,6 +225,7 @@ with tempfile.TemporaryDirectory(prefix='goat-delivery-') as temporary:
 
     for mode in ('off', 'auto', 'required'):
         execute(portable, mode)
+    execute(merged, 'required')
     execute(plain, 'off')
     # With no own native part, required rejects before initializer effects.
     execute(plain, 'required', expected_output='', fail=True)

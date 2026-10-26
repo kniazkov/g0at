@@ -2,7 +2,7 @@
 # Copyright 2026 Ivan Kniazkov
 """Run a newer-built native module at its exact declared glibc floor, not the host's.
 
-prepare-floor GOAT CC DEST runs on the ordinary Linux builder.
+prepare-floor GOAT WRAPPER CC DEST runs on the ordinary Linux builder.
 verify-floor GOAT DEST runs
 inside the older userspace with a Goat built there. No source or compiler is
 needed by the delivered artifact. A changed floor is a failure requiring a new
@@ -27,7 +27,7 @@ def run(command, **kwargs):
     return result
 
 
-def prepare(goat, compiler, destination):
+def prepare(goat, wrapper, compiler, destination):
     host = os.confstr('CS_GNU_LIBC_VERSION').split()
     assert host[0] == 'glibc' and tuple(map(int, host[1].split('.'))) > (2, 35), host
     destination.mkdir(parents=True, exist_ok=True)
@@ -40,22 +40,77 @@ def prepare(goat, compiler, destination):
         descriptor = source / 'module.gmod'
         descriptor.write_text(json.dumps(dict(formatVersion=1, name='runtime-floor',
                                               version='1', main='main.goat')), encoding='utf-8')
-        result = run([goat, 'build', descriptor, '--native', 'required', '--cc', compiler])
+        ordinary_dir = source / 'ordinary'
+        ordinary = run([goat, 'build', descriptor, '--native', 'required', '--cc', compiler,
+                        '--module-dir', ordinary_dir])
+        assert not ordinary.stdout
+        with zipfile.ZipFile(ordinary_dir / 'runtime-floor/1.gbin') as container:
+            ordinary_metadata = json.loads(container.read('module.json'))
+            ordinary_bytecode = container.read('bytecode.bin')
+        ordinary_minimum = ordinary_metadata['native'][0]['target']['runtime']['minimumVersion']
+        assert (ordinary_minimum + [0] * 4)[:4] <= [2, 35, 0, 0], ordinary_minimum
+        # The ordinary variant may legitimately require only glibc 2.14/2.17.
+        # Give this CONTROL variant a real 2.35 ABI dependency, compiling it with
+        # the same baseline flags and embedded runtime. The producer must discover
+        # the requirement from ELF; neither metadata nor native bytes are patched.
+        extra = source / 'runtime_floor.c'
+        extra.write_text(r'''#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+extern int floor_equal(const void *, const void *, size_t);
+__asm__(".symver floor_equal,__memcmpeq@GLIBC_2.35");
+__attribute__((constructor)) static void verify_floor_dependency(void) {
+    if (floor_equal("same", "same", 4) || !floor_equal("same", "else", 4))
+        _Exit(91);
+    const char *path = getenv("GOAT_FLOOR_MARKER");
+    if (path) {
+        FILE *file = fopen(path, "wb");
+        if (!file || fputs("memcmpeq-2.35\n", file) < 0 || fclose(file))
+            _Exit(92);
+    }
+}
+''', encoding='utf-8')
+        log = source / 'control-arguments.log'
+        env = dict(os.environ, GOAT_TOOLCHAIN_REAL=str(Path(compiler).resolve()),
+                   GOAT_TOOLCHAIN_EXTRA_SOURCE=str(extra), GOAT_TOOLCHAIN_ARGUMENTS_LOG=str(log))
+        result = run([goat, 'build', descriptor, '--native', 'required', '--cc',
+                      Path(wrapper).resolve()], env=env)
         assert not result.stdout, result.stdout
+        commands = [line.split(b'\0') for line in log.read_bytes().split(b'\n')
+                    if b'./module.c\0' in line]
+        assert commands, 'the control variant must invoke the real module compiler'
+        # Producer may relink after discovering requirements for the embedded descriptor.
+        for command in commands:
+            assert str(extra).encode() in command, command
+            for name in (b'runtime_strings.c', b'runtime_str.c', b'runtime_number_format.c', b'runtime_unicode.c'):
+                assert name in command, command
         archive = source / 'modules/runtime-floor/1.gbin'
         with zipfile.ZipFile(archive) as container:
             metadata = json.loads(container.read('module.json'))
+            assert metadata['mainHash'] == ordinary_metadata['mainHash']
+            assert container.read('bytecode.bin') == ordinary_bytecode
             assert len(metadata['native']) == 1
             variant = metadata['native'][0]
             target = variant['target']
             assert target['os'] == 'linux' and target['runtime']['family'] == 'glibc'
+            expected = max((ordinary_minimum + [0] * 4)[:4], [2, 35, 0, 0])
+            assert (target['runtime']['minimumVersion'] + [0] * 4)[:4] == expected
             assert target['runtime']['minimumVersion'] == [2, 35], (
                 'The verified Ubuntu 22.04 floor is glibc 2.35; provide a matching real '
                 'environment if compiler/dependency requirements change', target)
             assert hashlib.sha256(container.read(variant['library'])).hexdigest() == variant['hash']
+            library = source / 'control.so'
+            library.write_bytes(container.read(variant['library']))
+            symbols = run(['readelf', '--wide', '--dyn-syms', library]).stdout
+            assert b'__memcmpeq@GLIBC_2.35' in symbols, symbols
+        marker = source / 'loaded.txt'
+        executed = run([goat, archive, '--native', 'required'],
+                       env=dict(os.environ, GOAT_FLOOR_MARKER=str(marker)))
+        assert executed.stdout == b'49\n' and marker.read_bytes() == b'memcmpeq-2.35\n'
         shutil.copyfile(archive, destination / 'module.gbin')
     assert sorted(p.name for p in destination.iterdir()) == ['module.gbin']
-    print('Prepared unmodified native module from newer build environment: glibc minimum 2.35')
+    print(f'Ordinary minimum {ordinary_minimum}; control minimum [2, 35] from real '
+          '__memcmpeq@GLIBC_2.35 dependency; metadata discovered by producer')
 
 
 def verify(goat, destination):
@@ -77,6 +132,8 @@ def verify(goat, destination):
                    CXX=str(root / 'absent'), GOAT_MODULE_PATH='')
         for mode in ('off', 'auto', 'required'):
             report = root / (mode + '.native.txt')
+            marker = root / (mode + '.loaded.txt')
+            env['GOAT_FLOOR_MARKER'] = str(marker)
             result = run([goat, delivered, '--native', mode, '--save-native', report],
                          cwd=root, env=env)
             assert result.stdout == b'49\n', (mode, result.stdout, result.stderr)
@@ -84,6 +141,9 @@ def verify(goat, destination):
             assert int(fields['succeeded']) == 0 if mode == 'off' else int(fields['succeeded']) > 0, fields
             if mode != 'off':
                 assert int(fields['bound']) > 0, fields
+                assert marker.read_bytes() == b'memcmpeq-2.35\n'
+            else:
+                assert not marker.exists(), 'VM mode must not load the control library'
         assert delivered.read_bytes() == before
         assert not list(root.glob('*.goat')) and not list(root.glob('*.gmod'))
     print(f'Exact glibc {actual[1]} floor: VM, auto and required passed; real native calls confirmed')
@@ -240,7 +300,7 @@ if __name__ == '__main__':
     mode, executable, *arguments = sys.argv[1:]
     executable = str(Path(executable).resolve())
     if mode == 'prepare-floor':
-        prepare(executable, arguments[0], Path(arguments[1]).resolve())
+        prepare(executable, arguments[0], arguments[1], Path(arguments[2]).resolve())
     elif mode == 'verify-floor':
         verify(executable, Path(arguments[0]).resolve())
     else:

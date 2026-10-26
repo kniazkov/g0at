@@ -32,11 +32,19 @@ MINGW32 — настоящий 32-битный процесс. Обязател�
 `+sha2` требует SHA1/SHA2; неподдерживаемый `+crypto` не маскирует требование
 PMULL отсутствующим полем метаданных.
 
-На Linux `prepare-floor GOAT CC DEST` сохраняет контрольный модуль, собранный
-на новом runner. Затем CI собирает только исполняющий Goat внутри Ubuntu 22.04
+На Linux `prepare-floor GOAT WRAPPER CC DEST` сохраняет контрольный модуль, собранный
+на новом runner. Контрольный вариант содержит реальную дополнительную C-часть:
+конструктор вызывает `__memcmpeq@GLIBC_2.35`, проверяет результат и записывает
+маркер вызова ([добавление ABI в glibc](https://sourceware.org/pipermail/glibc-cvs/2021q4/075514.html)). Тестовая обёртка добавляет этот исходник в штатную компиляцию
+вместе со всем runtime; метаданные не редактируются. Проверяются реальные
+version requirements ELF, установленный производителем минимум и рост требований
+относительно обычного варианта (на Ubuntu 24.04 это 2.14 для x86-64 и 2.17 для
+AArch64). Затем CI собирает только исполняющий Goat внутри Ubuntu 22.04
 и вызывает `verify-floor GOAT DEST` с тем же архивом. Проверка требует **точного
 совпадения** реальной glibc с заявленным минимумом, а не просто большей версии,
-и подтверждает реальный native-вызов без исходников и компилятора. Контейнер
+и подтверждает реальный native-вызов и маркер конструктора без исходников и
+компилятора. Запуск обычных вариантов непосредственно на glibc 2.14/2.17 этой
+проверкой не заявляется. Контейнер
 использует архитектуру runner, без эмуляции. Сейчас контрольное окружение имеет
 glibc 2.35. Это не объявляет 2.35 универсальным минимумом всех модулей: минимум
 каждого варианта по-прежнему выводится из его бинарника и зависимостей. Если
@@ -101,11 +109,20 @@ are audited using effective compiler macros and rejected by baseline-only CPU
 profiles. SHA1/SHA2 are modeled explicitly; unsupported +crypto does not hide an
 unmodeled PMULL requirement.
 
-Linux `prepare-floor GOAT CC DEST` preserves a native module produced on the
-newer runner. CI builds the consuming Goat inside Ubuntu 22.04, then runs
+Linux `prepare-floor GOAT WRAPPER CC DEST` preserves a native module produced on the
+newer runner. Its real additional C component calls `__memcmpeq@GLIBC_2.35`
+from a constructor, checks the result and writes an execution marker
+([glibc ABI introduction](https://sourceware.org/pipermail/glibc-cvs/2021q4/075514.html)). A test-only
+compiler wrapper adds this source to the ordinary whole-runtime build; metadata
+is never rewritten. ELF version requirements, producer-derived minimum and the
+increase over the ordinary variant are checked (ordinary Ubuntu 24.04 variants
+require 2.14 on x86-64 / 2.17 on AArch64). CI builds the consuming Goat inside
+Ubuntu 22.04, then runs
 `verify-floor GOAT DEST` against that unchanged module. Verification demands
 **exact equality** between actual glibc and the declared minimum, and proves
-native calls without sources or compiler access. Both runner architectures run
+native calls and the constructor marker without sources or compiler access.
+This does not claim execution of ordinary variants directly on glibc 2.14/2.17.
+Both runner architectures run
 natively, without emulation. The current controlled runtime is glibc 2.35;
 this is not a universal v1 minimum. Each variant's minimum remains derived from
 its image and dependency closure. Changed requirements fail the test rather

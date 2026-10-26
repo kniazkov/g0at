@@ -143,7 +143,7 @@ jobs:
         # Ubuntu 22.04 provides glibc 2.35 on both native runner architectures.
         # Require exact equality with the module minimum, not just a newer libc.
         run: |
-          python3 scripts/check_module_delivery_requirements.py prepare-floor build/${{ matrix.compiler }}/goat ${{ matrix.compiler }} build/runtime-floor
+          python3 scripts/check_module_delivery_requirements.py prepare-floor build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing ${{ matrix.compiler }} build/runtime-floor
           docker run --rm --network bridge \
             -v "$PWD:/source:ro" ubuntu:22.04 bash -euxo pipefail -c '
               apt-get update
