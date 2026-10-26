@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # Copyright 2026 Ivan Kniazkov
-"""End-to-end nonexecuting merge, metadata policy, paths and atomic publication."""
+"""End-to-end nonexecuting merge, metadata policy, paths and atomic publication.
+
+The goat-inspect executable must be built beside goat-merge.
+"""
 import copy
 import hashlib
 import io
@@ -18,11 +21,15 @@ import tempfile
 import time
 import zipfile
 
+from inspect_report_test_support import schema_check
+from module_interface_fixtures import with_external_declarations
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'docs/module-format-v1'))
 import reference as ref
 
 EXE = str(Path(sys.argv[1]).resolve())
+INSPECT = str(Path(EXE).with_name('goat-inspect' + Path(EXE).suffix))
 CC = shutil.which(next((x for x in sys.argv[2:] if not x.startswith('--')),
                       os.environ.get('CC', 'gcc')))
 ALLOW_UNSUPPORTED_ACL = '--allow-unsupported-acl' in sys.argv[2:]
@@ -458,6 +465,102 @@ __attribute__((constructor)) static void initialize(void) { mark(); }
     marker = root / 'constructor-marker'
     success(root / 'constructor-result', nd, env={'GOAT_MERGE_MARKER': str(marker)})
     assert not marker.exists()
+
+    # #224: the very same archive has two deliberately different validation scopes.
+    # No global imports of an executable test suite or second fixture infrastructure:
+    # use the existing independent bytecode/export builder and strict report schema.
+    schema_path = ROOT / 'docs/module-format-v1/inspect-report.schema.json'
+    schema = json.loads(schema_path.read_text(encoding='utf-8'))
+    graph_dir = root / 'graph modules'; graph_dir.mkdir()
+
+    def inspect(path, expected=0, code=None):
+        global COUNT
+        COUNT += 1
+        result = subprocess.run([INSPECT, '--json', '--module-dir', str(graph_dir), str(path)],
+            capture_output=True, timeout=15, env=dict(os.environ, GOAT_MODULE_PATH=''))
+        assert result.returncode == expected and not result.stderr, result
+        report = json.loads(result.stdout)
+        schema_check(report, schema, schema, schema_path.parent)
+        assert report['success'] == (expected == 0) and report['exitCode'] == expected, report
+        if code is not None:
+            assert code in {d['code'] for d in report['diagnostics']
+                            if d['severity'] == 'error'}, report
+        return report
+
+    def local_archive(name, dependencies=(), reference=None):
+        doc = dict(copy.deepcopy(NATIVE_BASE), name=name)
+        if dependencies:
+            doc['dependencies'] = copy.deepcopy(list(dependencies))
+        if reference is not None:
+            doc['externals'] = {'alias': dict(mutable=False, type='function',
+                                             functionRef=reference)}
+        code = with_external_declarations(doc, IMAGE)
+        path = put(root / (name + '.gbin'), pack(doc, code))
+        return path, dict(name=name, version=doc['version'], hash=metadata(path)['mainHash'])
+
+    def install(path, identity):
+        target = graph_dir / identity['name'] / (identity['version'] + '.gbin')
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(path.read_bytes())
+        return target
+
+    leaf_source, leaf_id = local_archive('scope-leaf')
+    middle_source, middle_id = local_archive('scope-middle', (leaf_id,))
+    install(middle_source, middle_id)
+    reference = dict(module=leaf_id['name'], version=leaf_id['version'], functionId=1)
+    app, app_id = local_archive('scope-root', (middle_id,), reference)
+    # Missing *transitive* file is an inspect error, never an archive-local merge error.
+    inspect(app, 1, 'DEPENDENCY_NOT_FOUND')
+    merged = root / 'scope-repacked.gbin'
+    result = success(merged, app, app)
+    assert result['mainHash'] == app_id['hash']
+    assert result['externals']['alias']['functionRef'] == reference
+    inspect(merged, 1, 'DEPENDENCY_NOT_FOUND')
+    installed_leaf = install(leaf_source, leaf_id)
+    report = inspect(merged)
+    assert len(report['modules']) == 3 and all(m['validation'] == 'passed'
+                                             for m in report['modules']), report
+    assert all(m['native'] == [] for m in report['modules']), report
+    assert any(d['severity'] == 'warning' for d in report['diagnostics']), report
+    # Neither archive metadata nor its bytecode/functionRefs change during repacking.
+    with zipfile.ZipFile(app) as source_zip, zipfile.ZipFile(merged) as merged_zip:
+        assert source_zip.read('bytecode.bin') == merged_zip.read('bytecode.bin')
+
+    # Graph-only failures remain legal input to merge; inspect rejects each result.
+    for kind, dependencies, function_ref in [
+            ('missing-function', (middle_id,), dict(reference, functionId=999)),
+            ('unreachable', (), reference),
+            ('missing-module', (middle_id,), dict(reference, module='not-in-graph')),
+            ('wrong-hash', (dict(leaf_id, hash='0' * 64),), reference)]:
+        source, identity = local_archive('scope-' + kind, dependencies, function_ref)
+        destination = root / ('scope-merged-' + kind)
+        merged_doc = success(destination, source)
+        assert merged_doc['mainHash'] == identity['hash']
+        code = 'DEPENDENCY_HASH_MISMATCH' if kind == 'wrong-hash' else 'REFERENCE_INVALID'
+        inspect(source, 1, code)
+        inspect(destination, 1, code)
+
+    # Invalid local reference shape is not deferred to graph resolution by merge.
+    for value in ('1', 0, -1):
+        invalid_doc = metadata(app)
+        invalid_doc['externals']['alias']['functionRef']['functionId'] = value
+        with zipfile.ZipFile(app) as original_archive:
+            invalid = put(root / 'scope-malformed.gbin', pack(invalid_doc,
+                original_archive.read('bytecode.bin'), rehash=False))
+        rejected = fail_preserving(merged, invalid)
+        # A schema-path diagnostic proves rejection is not merely a stale hash;
+        # deliberately malformed schemas cannot be hashed by the reference API.
+        assert b'container validation failed' in rejected.stderr, rejected.stderr
+        assert b'field "/externals/alias/functionRef/functionId"' in rejected.stderr, rejected.stderr
+        inspect(invalid, 1, 'JSON_INVALID')
+
+    # A corrupt/mismatched shared dependency likewise never becomes a merge input.
+    for payload in (b'corrupted transitive dependency', pack()):
+        installed_leaf.write_bytes(payload)
+        inspect(app, 1)
+        destination = root / ('scope-corrupt-' + str(len(payload)))
+        assert success(destination, app)['mainHash'] == app_id['hash']
+        inspect(destination, 1)
 
     # Real terminal input, retries, EOF, and destination preservation while choice is pending.
     if os.name != 'nt':

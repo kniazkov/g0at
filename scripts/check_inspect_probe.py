@@ -3,7 +3,7 @@
 """Real isolated native inspection: ABI, capture, deadlines and process ownership.
 
 Run with goat-inspect, module_import_execution_testing, a host C compiler,
-and inspect_probe_testing. Every subprocess
+and inspect_probe_testing; goat-merge must be beside goat-inspect. Every subprocess
 has an independent outer deadline; marker barriers, not elapsed sleeps, prove races.
 """
 import base64
@@ -31,6 +31,7 @@ EXE = str(Path(sys.argv[1]).resolve())
 BUILDER = str(Path(sys.argv[2]).resolve())
 CC = shutil.which(sys.argv[3]) or sys.argv[3]
 HOST = str(Path(sys.argv[4]).resolve())
+MERGE = str(Path(EXE).with_name("goat-merge" + Path(EXE).suffix))
 COUNT = 0
 SCHEMA_PATH = ROOT / "docs/module-format-v1/inspect-report.schema.json"
 SCHEMA = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
@@ -323,6 +324,32 @@ with tempfile.TemporaryDirectory(prefix='goat-inspect-probe-') as temporary:
     assert all(n['loading']['state'] == 'not_checked' for m in report['modules'] for n in m['native'])
     checked('exact explicit current target probes; foreign profile is metadata-only')
 
+    # A genuinely different OS/runtime must not reach this host-loadable payload.
+    # Metadata compatibility is deliberate: an incompatible variant alone would
+    # not prove that the explicit foreign-target gate prevents OS loading.
+    opposite = copy.deepcopy(profile)
+    opposite.update(os='linux' if os.name == 'nt' else 'windows', minimumOs=[10],
+                    runtime=dict(family='glibc' if os.name == 'nt' else 'msvcrt',
+                                 minimumVersion=[0]))
+    opposite_file = root / 'opposite-os-target.json'
+    opposite_file.write_text(json.dumps(opposite))
+    foreign_doc, foreign_files = read_archive(valid)
+    foreign_doc['native'][0]['target'] = opposite
+    old_library = foreign_doc['native'][0]['library']
+    foreign_library = 'native/opposite' + ('.so' if os.name == 'nt' else '.dll')
+    foreign_files[foreign_library] = foreign_files.pop(old_library)
+    foreign_doc['native'][0]['library'] = foreign_library
+    opposite_archive = save_archive(root / 'opposite-os.gbin', foreign_doc, foreign_files)
+    case = Case(root, 'opposite-os-compatible', worker)
+    case.env.update(PATH='', CC='no-foreign-compiler', CXX='no-foreign-compiler')
+    foreign, _ = case.report(opposite_archive, 'valid', 0, '--target', str(opposite_file))
+    assert foreign['target']['os'] == opposite['os']
+    variant = foreign['modules'][0]['native'][0]
+    assert variant['compatibility']['state'] == 'compatible', foreign
+    assert variant['loading']['state'] == 'not_checked' and not case.events(), foreign
+    assert not list(case.root.glob('goat-run-*')), list(case.root.iterdir())
+    checked('opposite OS/runtime metadata matches without loading host payload or finding a compiler')
+
     # Build a native diamond from validated metadata, avoiding runtime imports entirely.
     originals, _ = read_archive(original)
     _, template_files = read_archive(original)
@@ -350,6 +377,88 @@ with tempfile.TemporaryDirectory(prefix='goat-inspect-probe-') as temporary:
     assert case.events() == 'loaded\nunloaded\n' * 4, case.events()
     assert all(n['loading']['probe']['state'] == 'passed' for m in report['modules'] for n in m['native'])
     checked('one native probe per unique graph node, shared diamond dependency only once')
+    selected_archives = [m['archive'] for m in report['modules']]
+    leaf_bytes = leaf.read_bytes()
+    case = Case(root, 'diamond-foreign', worker)
+    foreign, _ = case.report(graph, 'valid', 0, '--module-dir', str(root / 'modules'),
+                             '--target', str(profile_file))
+    assert [m['archive'] for m in foreign['modules']] == selected_archives
+    assert all(m['validation'] == 'passed' for m in foreign['modules'])
+    assert all(n['loading']['state'] == 'not_checked' for m in foreign['modules']
+               for n in m['native']), foreign
+    assert not case.events(), 'A foreign target must never load any graph library'
+    checked('foreign target preserves the selected diamond archives without native loading')
+
+    # Search chooses an archive before considering its native variants. A later
+    # copy with the same mainHash must not replace the first, even when only that
+    # later copy contains a variant matching the requested foreign platform.
+    neighboring_leaf = graph.parent / 'modules' / 'diamond-leaf' / '1.gbin'
+    neighboring_leaf.parent.mkdir(parents=True)
+    neighboring_leaf.write_bytes(leaf_bytes)
+    later_doc, later_files = read_archive(leaf)
+    later_doc['native'][0]['target'] = opposite
+    old_library = later_doc['native'][0]['library']
+    later_files[foreign_library] = later_files.pop(old_library)
+    later_doc['native'][0]['library'] = foreign_library
+    save_archive(leaf, later_doc, later_files)
+    assert read_archive(leaf)[0]['mainHash'] == read_archive(neighboring_leaf)[0]['mainHash']
+    selected = []
+    for label, options in [('current', ()), ('foreign', ('--target', str(opposite_file)))]:
+        case = Case(root, 'first-candidate-' + label, worker)
+        result, _ = case.report(graph, 'valid', 0, '--module-dir', str(root / 'modules'), *options)
+        selected.append([m['archive'] for m in result['modules']])
+        shared = next(m for m in result['modules'] if m['metadata']['name'] == 'diamond-leaf')
+        assert Path(shared['archive']) == neighboring_leaf.resolve(), shared
+        assert shared['native'][0]['compatibility']['state'] == (
+            'compatible' if label == 'current' else 'incompatible'), shared
+        assert case.events() == ('loaded\nunloaded\n' * 4 if label == 'current' else '')
+    assert selected[0] == selected[1], selected
+    neighboring_leaf.unlink()
+    case = Case(root, 'later-candidate-foreign', worker)
+    case.env['GOAT_MODULE_PATH'] = str(root / 'modules')
+    result, _ = case.report(graph, 'valid', 0, '--target', str(opposite_file))
+    shared = next(m for m in result['modules'] if m['metadata']['name'] == 'diamond-leaf')
+    assert Path(shared['archive']) == leaf.resolve(), shared
+    assert shared['native'][0]['compatibility']['state'] == 'compatible', shared
+    assert shared['native'][0]['loading']['state'] == 'not_checked' and not case.events()
+    leaf.write_bytes(leaf_bytes)
+    checked('target never replaces first native-incompatible archive with a later compatible copy')
+
+    # The same real native archives establish the boundary between graph and local
+    # validation. Merge must not consult even an explicitly discoverable graph.
+    leaf.unlink()
+    case = Case(root, 'missing-transitive', worker)
+    case.env['GOAT_MODULE_PATH'] = str(root / 'modules')
+    failed, _ = case.report(graph, 'valid', 1)
+    assert not case.events(), 'Missing transitive dependency must precede every probe'
+    assert all(n['loading']['state'] == 'not_checked' for m in failed['modules']
+               for n in (m['native'] or [])), failed
+    merged = root / 'repacked diamond root.gbin'
+    result = run([MERGE, str(merged), str(graph), str(graph)], env=case.env, input=b'')
+    assert result.returncode == 0, (result.stdout, result.stderr)
+    assert not result.stderr and not case.events(), (result.stderr, case.events())
+    assert len(result.stdout.splitlines()) == 1 and b'49' not in result.stdout.splitlines(), result.stdout
+    before_doc, before_files = read_archive(graph)
+    merged_doc, merged_files = read_archive(merged)
+    assert merged_doc == ref.normalize(before_doc) and merged_files == before_files
+    assert merged_doc['mainHash'] == before_doc['mainHash']
+    assert not list(case.root.glob('goat-run-*')), list(case.root.iterdir())
+    checked('missing transitive dependency rejects inspect but not nonexecuting native merge')
+
+    case = Case(root, 'repacked-still-missing', worker)
+    case.env['GOAT_MODULE_PATH'] = str(root / 'modules')
+    case.report(merged, 'valid', 1)
+    assert not case.events(), 'Repacking must not erase unresolved graph requirements'
+    leaf.write_bytes(leaf_bytes)
+    case = Case(root, 'repacked-complete', worker)
+    repacked, _ = case.report(merged, 'valid', 0, '--module-dir', str(root / 'modules'))
+    assert len(repacked['modules']) == 4 and case.events() == 'loaded\nunloaded\n' * 4
+    assert {m['metadata']['mainHash'] for m in repacked['modules']} == {
+        m['metadata']['mainHash'] for m in report['modules']}
+    assert all(n['loading']['probe']['state'] == 'passed'
+               for m in repacked['modules'] for n in m['native'])
+    checked('restored dependencies make merged archive inspectable with one probe per unique node')
+
     leaf.write_bytes(b'corrupted reachable archive')
     case = Case(root, 'invalid-graph', worker)
     report, _ = case.report(graph, 'valid', 1, '--module-dir', str(root / 'modules'))

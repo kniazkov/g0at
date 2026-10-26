@@ -1,4 +1,4 @@
-# Module inspector (#212, #223, #214) / Инспектор модулей
+# Module inspector (#212, #223, #214, #224) / Инспектор модулей
 
 ## Русский
 
@@ -96,6 +96,29 @@ EOF, отдельный временный рабочий каталог и вл
 Несовместимый descriptor или отсутствующий объявленный символ — ошибка ABI;
 ошибки инфраструктуры, захвата и очистки тоже дают код 1.
 
+### Граф и автономное объединение (#224)
+
+Инспекция и объединение имеют разные границы проверки. Общий архивный валидатор
+проверяет форму, типы и ограничения `functionRef` локально; существование внешней
+функции, достижимость её модуля и закреплённые хеши проверяются только на полном
+графе. Поэтому локально корректный архив можно перепаковать через `goat-merge`
+без отсутствующей транзитивной зависимости, но `goat-inspect` такой граф отвергает.
+Успех merge не является подтверждением пригодности графа к запуску.
+
+Проверка всего графа предшествует **любой** пробе: ошибка даже в удалённой ветви
+не допускает загрузки уже проверенных библиотек корня или соседних ветвей.
+В ромбе общий модуль проверяется один раз и получает не более одной пробы;
+ведущие к нему цепочки сохраняются для диагностики. Выбор текущей или чужой цели
+не меняет порядок поиска и не позволяет заменить найденный архив другой копией
+ради native-совместимости. Для чужой цели `not_checked` означает отсутствие
+фактической загрузки, а не её успех. Отсутствие подходящего native само по себе
+остаётся предупреждением и не отменяет VM.
+
+Совместная приёмка использует существующие наборы `scripts/check_module_inspect.py`,
+`scripts/check_inspect_probe.py` и `scripts/check_module_merge.py`: локальные и
+графовые ссылки, недостающие зависимости, общие узлы, выбор цели и отсутствие
+исполнения при merge проверяются вместе с прежними гарантиями публикации.
+
 ### Форматы и проверки
 
 `--json` выводит один отчёт `reportVersion: 1`, включая штатные ошибки и
@@ -104,6 +127,8 @@ EOF, отдельный временный рабочий каталог и вл
 не содержит отдельного списка причин несовместимости; они остаются в тексте.
 Без выполненной пробы захваты вывода и успех загрузки не выдумываются.
 
+Перед самостоятельным запуском скриптов соберите `goat-inspect` и `goat-merge`
+в одном каталоге исполняемых файлов (например, `build`).
 Проверка метаданных CLI: `python3 scripts/check_module_inspect.py build/goat-inspect`.
 Общие наборы native, валидации, дочерних процессов и службы очистки дополняют
 сквозные проверки изолированных проб: стадии загрузки/выгрузки, ABI, бинарный
@@ -212,6 +237,29 @@ and cleanup succeed: VM execution may remain possible, but is not guaranteed.
 An incompatible descriptor or missing declared symbol is an ABI error;
 infrastructure, capture and cleanup failures also return 1.
 
+### Graph inspection and autonomous merging (#224)
+
+Inspection and merging have different validation boundaries. The shared archive
+validator checks `functionRef` shape, types and constraints locally; existence of
+the external function, reachability of its module and pinned hashes are checked
+only over the complete graph. Thus `goat-merge` can repackage a locally valid
+archive with an unavailable transitive dependency, while `goat-inspect` rejects
+that graph. Successful merging does not certify that the graph can run.
+
+The complete graph is checked before **any** probe: an error even in a distant
+branch prevents loading already validated root or sibling libraries. In a
+diamond, the shared module is validated once and receives at most one probe;
+paths leading to it remain available for diagnostics. Selecting the current or
+a foreign target does not change search order or substitute another archive
+copy for native compatibility. For a foreign target, `not_checked` means no
+actual load occurred, not that loading succeeded. Missing matching native alone
+remains a warning and does not disable the VM.
+
+Joint acceptance uses the existing `scripts/check_module_inspect.py`,
+`scripts/check_inspect_probe.py` and `scripts/check_module_merge.py` suites:
+local versus graph references, missing dependencies, shared nodes, target
+selection and nonexecuting merge accompany the existing publication guarantees.
+
 ### Formats and tests
 
 `--json` emits one `reportVersion: 1` report, including handled errors and
@@ -220,6 +268,8 @@ metadata, skipped checks, probe outcome and cleanup outcome. JSON has no separat
 incompatibility-reason list; those explanations remain in text. Unperformed
 probes never produce invented captured streams or loading successes.
 
+Before running the scripts standalone, build `goat-inspect` and `goat-merge`
+side by side in the same executable directory (for example, `build`).
 Run `python3 scripts/check_module_inspect.py build/goat-inspect` for metadata CLI
 coverage. Shared native, validation, child-process and cleanup-service suites
 complement end-to-end isolated-probe coverage: load/unload stages, ABI, binary

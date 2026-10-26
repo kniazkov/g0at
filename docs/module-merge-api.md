@@ -1,4 +1,4 @@
-# Module merger (#215) / Объединение модулей
+# Module merger (#215, #224) / Объединение модулей
 
 ## English
 
@@ -31,6 +31,18 @@ not opened. All sources must pass archive, metadata, bytecode-consistency and
 native checks; all main hashes must match. Dependencies remain pinned as recorded:
 merge neither resolves their versions again nor needs dependency archives.
 No bytecode, native library constructors or exported functions are executed.
+
+This archive-local check validates the shape and constraints of `functionRef`,
+not the existence of an external target function or its reachability. Those are
+full-graph checks performed by the compiler, loader and `goat-inspect`. Missing
+transitive archives therefore do not prevent merging valid explicit inputs.
+Neither neighboring `modules` nor `GOAT_MODULE_PATH` supplies implicit inputs;
+merging does not select a current/foreign target or invoke an OS library loader.
+The result may pass archive validation yet fail subsequent graph inspection.
+The existing `scripts/check_module_merge.py` and `scripts/check_inspect_probe.py`
+suites exercise this boundary alongside nonexecution and atomic publication.
+Before running these scripts standalone, build `goat-inspect` and `goat-merge`
+side by side in the same executable directory (for example, `build`).
 
 Native variants with identical requirements and native hash are deduplicated;
 different hashes under identical requirements are errors. Ambiguous compatible
@@ -103,6 +115,18 @@ source**, с сохранением первого вхождения. Разн�
 и native; основные хеши должны совпасть. Зависимости остаются закреплёнными:
 утилита не выбирает версии заново и не требует архивов зависимостей.
 Байткод, конструкторы DLL/SO и экспортируемые функции не исполняются.
+
+Локальная проверка архива проверяет форму и ограничения `functionRef`, но не
+существование внешней функции и не достижимость её модуля. Это обязанности
+полного графа в компиляторе, загрузчике и `goat-inspect`. Поэтому отсутствие
+транзитивных архивов не мешает объединению корректных явных входов. Ни соседний
+`modules`, ни `GOAT_MODULE_PATH` не добавляют неявных источников; merge не выбирает
+текущую/чужую цель и не вызывает загрузчик библиотек ОС. Результат может пройти
+локальную проверку архива, но не последующую инспекцию графа. Существующие наборы
+`scripts/check_module_merge.py` и `scripts/check_inspect_probe.py` проверяют эту
+границу вместе с отсутствием исполнения и атомарной публикацией.
+Перед самостоятельным запуском этих скриптов соберите `goat-inspect` и `goat-merge`
+в одном каталоге исполняемых файлов (например, `build`).
 
 Варианты с одинаковыми требованиями и нативным хешем дедуплицируются; разные хеши
 при одинаковых требованиях — ошибка. Неоднозначные совместимые варианты отвергаются,

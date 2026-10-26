@@ -4731,3 +4731,30 @@ confirmation or `--force` is needed. Statuses are 0 for success/help/version,
 1 for processing errors, and 2 for invalid arguments. The success line identifies
 the published module and total native count. See [the command and failure
 guarantees](../../module-merge-api.md).
+
+### Graph inspection versus autonomous merging (#224)
+
+Archive validation and graph validation are separate stages. The shared local
+validator checks the shape, types and constraints of `functionRef` without
+opening an external function. The compiler, loader and inspector additionally
+check target existence, reachability and pinned hashes over the complete graph;
+they do not repeat program analysis or the producer's proofs. Consequently,
+`goat-merge result.gbin source.gbin` can succeed with an unavailable transitive
+dependency while `goat-inspect result.gbin` fails. Successful merging certifies
+neither dependency availability nor successful OS loading.
+
+Inspect resolves the same archives for current and foreign targets, using the
+common search order rather than choosing alternate copies for native support.
+It validates a shared diamond node once, retains its diagnostic paths, and
+performs at most one selected-library probe per unique module. Any graph error
+prevents **all** probes, including those for otherwise valid root/sibling modules.
+A foreign-target report explicitly leaves loading untested; metadata compatibility
+is not evidence that a DLL/SO works on another machine. No matching native variant
+alone is a warning, not a reason to reject a valid VM-capable graph.
+
+The existing metadata, probe and merge integration suites jointly verify these
+boundaries; see [inspection coverage](../../module-inspect-api.md) and
+[archive-local merging](../../module-merge-api.md). Merge never searches external
+modules or executes bytecode, constructors or exported functions. Inspect's
+native probes retain the process-isolation and cleanup guarantees above, not a
+security-sandbox guarantee.
