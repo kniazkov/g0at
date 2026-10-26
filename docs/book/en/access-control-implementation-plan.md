@@ -1,10 +1,10 @@
 # Implementation Plan for Access Modifiers and Copying
 
-> October 20, 2026 update: the [module contract](modules.md) changes access boundaries: unmodified declarations belong to their source file, `public` to their module, and `external` allows other modules. The text below preserves the A–G model before this change; its cross-module examples and plan require adaptation. The new rules take precedence; the loader and `external` are not implemented here yet.
+> Historical stages A–G below are implementation history. Stage H is complete; the current rules are in [appendix I](appendix-i-access-control.md).
 
 [Contents](index.md) · [Русский](../ru/access-control-implementation-plan.md) · [Rules](appendix-i-access-control.md) · [Examples](access-control-examples.md)
 
-This is the technical plan and implementation history for the agreed semantics. Stages A–G are implemented; H awaits module loader #154. Intermediate limitations describe their respective stages; current analysis limits are listed in G. AC-01–AC-28 refer to the example catalog. The stages are intended as sequential, reviewable PRs; stages may be combined, but partially enforced protection must not be released.
+Stages A–H are implemented. The imperative descriptions below record the original work plan; old format numbers and #154 references are historical, superseded by portable v1 and the [module checklist](../../module-implementation-checklist.md). Current restrictions are stated in appendix I and the implementation-boundaries appendix.
 
 ## 1. Changes Required in the Existing Model
 
@@ -123,15 +123,11 @@ Until a native path is proven safe, functions requiring access checks remain in 
 
 Acceptance: static negative tests and dynamic exceptions for equivalent scenarios, identical results with optimization off/on, native tests for proven-safe cases and required-mode rejection. Run these checks before releasing the feature as a whole.
 
-## 9. Stage H: Integration with #154 and Completion
+## 9. Stage H: completed module integration
 
-Module identity is introduced in A; the real module loader arrives in #154. Then map stable compilation-module identifiers to runtime module instances, export `public` declarations, carry function module identity through calls, and restore metadata when loading bytecode separately. This plan does not specify import syntax.
+#193/#204 introduced real file/module access boundaries; #194/#195 execute include/import, #228 preserves function provenance, and #218 checks AC-01–AC-28 through the real source compiler and archive loader. Export across a module boundary requires `external`, not `public`. Model tests remain complementary, not a substitute for loading.
 
-Before #154, model tests use two identities to check module rules. With the loader, AC-25–AC-28 become full multi-file functional tests. Cover B calling an A factory; a B-owned copy with A-declared fields; a B descendant of A; forbidden extension of the original; and protected access across the boundary.
-
-Final verification: the general functional suite, analyzer, saved source/bytecode, native regression, UBSan/memory checks, and existing Linux/Windows/ARM64 builds. CI complements local checks; run relevant suites at each stage and the full suite before integrating the completed implementation. Add cases to existing test lists rather than creating individual CI jobs.
-
-Update both book languages as implementation proceeds, stating actual status. Once complete, move rules from design status into the language reference; do not advertise multi-file execution before #154.
+The [real-file coverage table](access-control-examples.md) links the executable fixtures. They cover factory ownership, copies retaining field provenance, protected descendants, forbidden foreign extension, constness, observation and native-call guards. Existing CI runs these checks at both optimization levels and through compiled archives.
 
 ## 10. Order and Readiness Boundaries
 

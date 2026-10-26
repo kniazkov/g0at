@@ -2,6 +2,8 @@
 
 [Contents](index.md) · [Русский](../ru/06-syntax-analysis.md) · [Previous chapter](05-lexical-analysis.md) · [Next chapter](07-ast-and-name-binding.md)
 
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
+
 Edition 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-6-1"></a>
@@ -148,7 +150,7 @@ The [`for` rule](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822
 ## 6.7. What the Parser Does Not Promise
 
 > [!CAUTION]
-> A word in a C comment or an item in a low-level structure does not establish syntax support. The keyword table and active rules implement `for`, but not `while` or `do/while`. Recognizing square brackets does not implement arrays. The call rule is built around an identifier and parentheses: it does not support a chain such as `f()()`; a returned function can first be stored in a variable and then called.
+> A word in a C comment is not evidence of syntax support. The active parser implements `for`, `while`, `do/while`, `break`, `continue`, arrays, indexed access, include and import. Exact syntax and restrictions belong to the [language reference](appendix-b-language.md) and [module chapter](30-modules.md), not the earlier parser snapshot linked in this walkthrough.
 
 > [!CAUTION]
 > Errors accumulate in compilation structures; a critical error stops the current pass sequence. This is not a recovery system guaranteed to continue parsing after arbitrary source damage. Diagnostic completeness is further limited by the cases described in Chapter 5.

@@ -1,0 +1,2 @@
+const geometry = import "geometry";
+println(geometry.square(5));

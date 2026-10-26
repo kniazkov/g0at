@@ -1,0 +1,2 @@
+const implementation = include "square.goat";
+external square = implementation.square;

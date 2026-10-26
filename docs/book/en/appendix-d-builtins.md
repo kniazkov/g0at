@@ -2,15 +2,15 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-d-builtins.md) · [Previous](appendix-c-vm-instructions.md) · [Next](appendix-e-launch-interfaces.md)
 
-Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
+Updated for the implemented module system (#220); source baseline: [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a).
 
 <a id="section-d-1"></a>
 
 ## D.1. Common call rules
 
-[registry.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/registry.c) registers 52 functions. The tables list all of them. `pi` and `Exceptions` are root-environment values, not functions. The names `Object`, `String`, `Number`, `Integer`, `Real`, `Character`, `Boolean`, `Function`, and `Null` are likewise not functions: they are type prototypes exposed by the root context. A name may be shadowed by a user declaration; handling follows the built-in function object, not its spelling alone.
+[registry.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/builtins/registry.c) defines the built-in registry. The tables below summarize its numeric and string families; process/thread operations are listed separately below. `pi` and `Exceptions` are root-environment values, not functions. The names `Object`, `String`, `Number`, `Integer`, `Real`, `Character`, `Boolean`, `Function`, and `Null` are likewise not functions: they are type prototypes exposed by the root context. A name may be shadowed by a user declaration; handling follows the built-in function object, not its spelling alone.
 
-The shared wrapper checks minimum arity: too few arguments produce the string exception `INVALID_ARGUMENT`. Extra arguments are evaluated first and then ignored, except for `int`'s second argument, which supplies a fallback value. Even `println()` without an argument fails; print an empty line with `println("")`.
+The shared wrapper checks minimum arity: too few arguments produce the string exception `INVALID_ARGUMENT`. For fixed-arity numeric/output functions, extra arguments are evaluated first and then ignored, except for `int`'s second argument, which supplies a fallback value. Variadic functions such as `spawn` and `format` consume their extra arguments. Even `println()` without an argument fails; print an empty line with `println("")`.
 
 <a id="section-d-2"></a>
 
@@ -30,7 +30,7 @@ The function form `instanceOf(value, proto)` requires two arguments; too few pro
 
 `int` leaves an integer unchanged and converts `false`/`true` to 0/1. A finite real must lie in [-2^63, 2^63); its fractional part is truncated toward zero. A string must contain an entire signed decimal integer with permitted surrounding ASCII whitespace and no overflow. `NaN`, infinities, unsuitable strings, and other objects produce the fallback, not a conversion exception.
 
-`abs(INT64_MIN)` remains `INT64_MIN` under integer-overflow rules. Nonnumeric arguments to `abs` and `sign` produce `INVALID_ARGUMENT`. Output uses an object's text representation; truthiness and numeric conversion are different operations.
+`abs(INT64_MIN)` saturates to `INT64_MAX`. Nonnumeric arguments to `abs` and `sign` produce `INVALID_ARGUMENT`. Output uses an object's text representation; truthiness and numeric conversion are different operations.
 
 <a id="section-d-3"></a>
 
@@ -74,7 +74,7 @@ A nonnumeric operand produces `INVALID_ARGUMENT`. Domain errors and overflow ins
 
 ## D.4. Abstract results and effects
 
-Analysis handlers perform no input or output. `print`/`println` produce the `null` domain and `output` effect; `input` produces `string` and `input`. All others have `effects=none`, which does not rule out argument errors. `instanceOf` produces the boolean domain when arguments are present and `BOTTOM` when none are.
+Analysis handlers perform no input or output. `print`/`println` produce the `null` domain and `output` effect; `input` produces `string` and `input`. The numeric functions below have `effects=none`, which does not rule out argument errors. `instanceOf` produces the boolean domain when arguments are present and `BOTTOM` when none are.
 
 Common math handlers compute a constant for known numbers; otherwise they produce `real` for numeric or still-unknown types. A definitely unsuitable type produces `BOTTOM`. `abs` preserves a known numeric category but does not calculate the exact image of an arbitrary integer range. `sign` can compute a constant or a range within [-1..1]. `int` preserves integer information, gives [0..1] for a general boolean, and joins `integer` with the fallback when conversion success is unknown.
 
@@ -84,7 +84,7 @@ These facts describe normal results, not a complete exception graph. A built-in 
 
 ## D.5. String methods and the str function
 
-The string prototype [string.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/model/string.c) exposes methods available on a string in the form `"text".name(arguments)`. Each method is also available as a function with the string prefixed as its first argument, for example `charAt("abc", 1)` equals `"abc".charAt(1)`. An unsuitable receiver or argument produces `INVALID_ARGUMENT`.
+The string prototype [string.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/string.c) exposes methods available on a string in the form `"text".name(arguments)`. Each method is also available as a function with the string prefixed as its first argument, for example `charAt("abc", 1)` equals `"abc".charAt(1)`. An unsuitable receiver or argument produces `INVALID_ARGUMENT`.
 
 | Method | Minimum | Behavior |
 | --- | --- | --- |
@@ -97,8 +97,8 @@ The string prototype [string.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d
 | `endsWith(str)` | 1 | true if the string ends with the suffix; an empty suffix is true. The argument may be a string or a character. |
 | `isEmpty()` | 0 | true for a string of zero length. |
 | `isBlank()` | 0 | true if the string is empty or consists only of whitespace. |
-| `toUpperCase()` | 0 | The string in upper case; uses locale-aware wide C functions. |
-| `toLowerCase()` | 0 | The string in lower case; uses locale-aware wide C functions. |
+| `toUpperCase()` | 0 | The string in upper case; uses pinned Unicode 17.0.0 scalar tables. |
+| `toLowerCase()` | 0 | The string in lower case; uses pinned Unicode 17.0.0 scalar tables. |
 | `replace(old, new)` | 2 | Replaces all occurrences of old with new; an empty old returns the original string. Both arguments may be strings or characters. |
 | `repeat(count)` | 1 | The string repeated count times; count<0 or overflow is INVALID_ARGUMENT. |
 | `format(arg0, ...)` | 0 | Replaces occurrences of %0, %1, ... with the string representations of the arguments; an index outside the list is left as is. |
@@ -107,6 +107,19 @@ The string prototype [string.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d
 
 The abstract handlers of these functions do not perform locale-aware text conversion during analysis: for known constants they may compute a `char`, `string`, or `boolean` constant; for an unknown string they return the corresponding domain; and a definitely unsuitable type gives `BOTTOM`. All have `effects=none`.
 
-Sources: [math_function.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/println.c). Checks: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/unit_test/test_builtin_functions.c).
+Sources: [math_function.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/builtins/println.c). Checks: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/unit_test/test_builtin_functions.c).
 
-The original built-in `abs` also has native integer and real lowering inside eligible functions, with binding and numeric-type proofs. Extra arguments retain their evaluation order. See [chapter 22](22-c-code-generation.md); this does not extend native support to all built-ins.
+Native lowering covers proven numeric/math calls, scalar conversions and supported string methods, with binding and argument-type proofs (`src/codegen/c_native.c`, `c_string_methods.c`). It includes `abs`, `chr`, `ord`, `str`, string trimming/case conversion and other explicitly supported operations; this is not permission to call every built-in natively. Arguments retain their evaluation order; see [chapter 22](22-c-code-generation.md).
+
+## Process and module execution
+
+- `exit(code)` accepts an integer in 0–255; invalid arguments or use during module
+  initialization raise ordinary exceptions. A valid exit ends the whole process,
+  without user `finally`, join, or VM replay. The first valid caller fixes the code;
+  stdout/stderr flushing has a shared one-second budget. See [exit](../../module-exit-api.md).
+- `spawn(function, ...)` starts an OS-backed thread with ordinary function provenance;
+  `join(thread)` waits and propagates its result or exception. Starting/joining threads
+  during module initialization is restricted. Main-thread completion alone does not
+  destroy modules while children remain. See [threads](../../module-serialization-api.md).
+- `__main__` and `__dir__` are contextual constants, not built-in functions. They retain
+  declaration file/module context, including in re-exported functions. See [modules](modules.md).

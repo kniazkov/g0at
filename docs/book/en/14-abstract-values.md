@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/14-abstract-values.md) · [Previous chapter](13-builtins.md) · [Next chapter](15-abstract-state.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
 
 <a id="section-14-1"></a>
 
@@ -116,6 +116,6 @@ After the log, the program prints `3`: this run selected the first branch. With 
 Generic elements such as `TOP` and `integer` are singletons; constants, ranges, and known functions are arena-allocated. Descriptions are used as immutable values. States can share them while changing their own references to descriptions. A known user function additionally stores a body node and lexical activation identity; a built-in stores a descriptor.
 
 > [!CAUTION]
-> The domain includes `ARRAY` and `TYPED_ARRAY`, but this does not imply arrays exist in this revision's executable language. The domain also lacks real intervals and arbitrary type unions. When it cannot express a precise result, that result expands to a broader element.
+> The domain includes `ARRAY` and `TYPED_ARRAY`, and arrays are implemented in the language. Runtime support and the precision of their abstract descriptions remain separate questions. The domain also lacks real intervals and arbitrary type unions. When it cannot express a precise result, that result expands to a broader element.
 
 An abstract value answers “what is possible.” The next chapter adds “for which declaration, and at which program point, is this known?”

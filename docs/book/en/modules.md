@@ -2,9 +2,18 @@
 
 [Contents](index.md) · [Русский](../ru/modules.md)
 
-> Exact wire schemas, binary tables, ABI and golden data: [Module formats v1](../../module-format-v1/README.md). That specification completes the previously open representation details. The implementation status of the interpreter is unchanged.
+> Exact wire schemas, binary tables, ABI and golden data: [Module formats v1](../../module-format-v1/README.md).
 
-Status: design agreed on October 20, 2026; discussion continues. These are requirements for future implementation, not a description of an existing loader. Issues #154 and #169 have been superseded by the [implementation plan](../../module-implementation-checklist.md). Issue #244 fixes exact v1 schemas and reference data before their implementation is completed; #245 owns the shared cleanup service. Where earlier access-control documents disagree, this page takes precedence.
+Status: implemented module-system v1 contract, reconciled in #220. The decisions
+agreed from October 20, 2026 remain normative; imperative acceptance paragraphs
+record requirements, not a claim that their implementations are still pending.
+The [implementation checklist](../../module-implementation-checklist.md) maps them
+to completed components and test evidence. Issues #154 and #169 are historical.
+See [the runnable chapter](30-modules.md) for current commands, and
+[delivery evidence and unexecuted lower-bound checks](../../module-delivery-tests.md)
+for the precise portability boundary. User mutexes, immutable wrappers, musl and
+big-endian support are not introduced by completion of this module plan.
+Where older access-control documents disagree, this contract takes precedence.
 
 ## Build and distribution unit
 
@@ -188,7 +197,7 @@ While initialization is still in progress, calling an already declared function 
 
 ## Names, versions, and extensions
 
-Implementation clarification for #179: names are limited to 255 ASCII bytes, versions to 250 ASCII bytes; `com0` and `lpt0`, including extensions, are forbidden. Repeated internal periods and trailing `-`/`_` are allowed. Identifiers are compared exactly, without normalization. Shared `char` and `gchar_t` import parsers return borrowed slices; `string_view_t` remains unchanged. The standalone [book chapter](30-modules.md) documents the implementation incrementally.
+Implementation clarification for #179: names are limited to 255 ASCII bytes, versions to 250 ASCII bytes; `com0` and `lpt0`, including extensions, are forbidden. Repeated internal periods and trailing `-`/`_` are allowed. Identifiers are compared exactly, without normalization. Shared `char` and `gchar_t` import parsers return borrowed slices; `string_view_t` remains unchanged. The [book chapter](30-modules.md) documents the implemented pipeline and runnable commands.
 
 
 
@@ -341,7 +350,7 @@ The full native JSON schema and goat_module_descriptor_v1 data symbol are define
 
 Main and native-library hashes use SHA-256, represented as 64 lowercase hexadecimal characters. Hash JSON in canonical form: UTF-8, sorted object keys, fixed value encoding, no extraneous whitespace. Preserve array order. Formatting or field-order changes do not change the hash. Exclude only explicitly specified fields; exact canonical encoding rules still need specification.
 
-Selecting and vendoring a compact open-source ZIP library, CMake integration and a shared C wrapper in lib are tracked in [#247](https://github.com/kniazkov/g0at/issues/247). Container validation (#182) and deterministic packaging (#183) use this layer and remain separate tasks.
+Selecting and vendoring a compact open-source ZIP library, CMake integration and a shared C wrapper in lib are tracked in [#247](https://github.com/kniazkov/g0at/issues/247). Container validation (#182) and deterministic packaging (#183) are implemented as separate consumers of this shared layer.
 
 Provide third_party/ for ZIP, JSON, and SHA-256 if needed, retaining each dependency's license, source, and exact version. Builds must not download them. Goat wrappers reside in lib. JSON support must detect duplicate keys and permit canonical output; specific libraries remain unselected.
 
@@ -550,7 +559,7 @@ lib.items.push(3);  // Allowed: [1, 2, 3].
 
 Field restrictions do not prohibit operations on an obtained mutable value. A library returns a copy through a function when independent data is needed; this does not imply automatic deep copying.
 
-Include a separate task in the forthcoming GitHub task list for a function creating immutable wrapper objects, such as an array wrapper. Exact semantics, protection depth, and behavior when another reference modifies the underlying object remain undecided. Wrappers are not an already implemented part of modules.
+Immutable wrapper objects, such as an array wrapper, are deferred outside this module checklist. Exact semantics, protection depth, and behavior when another reference modifies the underlying object remain undecided. Wrappers are not an already implemented part of modules.
 
 ### 9. Assignment preserves field provenance
 
@@ -674,7 +683,7 @@ const write = func(target, key) {
 write(a.obj, "hidden"); // Access error; rhs is not called.
 ```
 
-Evaluate receiver and key once, then check access and whether writing is allowed. Evaluate the right-hand side only after a successful check. This also applies to assigning a constant or forbidden extension of another module's object. An error detected before the right-hand side prevents its side effects. This order is an implementation requirement, including optimizations; it does not claim that the new module model is already implemented.
+Evaluate receiver and key once, then check access and whether writing is allowed. Evaluate the right-hand side only after a successful check. This also applies to assigning a constant or forbidden extension of another module's object. An error detected before the right-hand side prevents its side effects. This order is enforced by the implementation, including optimizations; see [assignment checks](../../module-assignment-access.md).
 
 ## Assignment and side effects: examples 16–20
 
@@ -1506,16 +1515,17 @@ Merge validates archive structure, metadata, hashes, and merge rules. It does no
 goat-inspect geometry.gbin --json
 ```
 
-In --json mode, standard output contains only JSON, including validation results and detected errors. Exit status keeps its agreed meaning: nonzero on error. Without the flag, output is human-readable. Partial output example (the complete schema remains undecided):
+In --json mode, standard output contains only JSON, including validation results and detected errors. Exit status keeps its agreed meaning: nonzero on error. Without the flag, output is human-readable. Partial output example (only the envelope fields shown; this is not a complete report):
 
 ```json
 {
-  "name": "geometry",
-  "version": "1.2.0",
-  "validation": "ok",
-  "nativeLoad": "ok"
+  "reportVersion": 1,
+  "success": true,
+  "exitCode": 0
 }
 ```
+
+The complete [report schema](../../module-format-v1/inspect-report.schema.json) fixes `reportVersion: 1`, `input`, `target`, `modules` and `diagnostics`; per-module validation and native probe results are structured, not the historical `validation`/`nativeLoad` strings. Unknown values are null and unperformed checks are distinct from failures. See [the inspector API](../../module-inspect-api.md).
 
 Add optional author/contact information, including author name and email, to both the .gmod build description and compiled .gbin metadata. The compiler transfers supplied information into the module; missing fields do not prevent building or loading. Inspection should present it as module information, including in JSON mode.
 
@@ -1965,7 +1975,7 @@ Metadata promises integer.
 The native function returns an invalid result tag.
 ```
 
-A detected post-call ABI violation terminates execution with a diagnostic identifying the module, function, and violated requirement. Do not replay the function on the VM: it may already have performed side effects. This covers checkable contract violations and does not promise to intercept arbitrary machine-code faults.
+A detected post-call ABI violation is terminal for the entire process, with a diagnostic identifying the module, function, and violated requirement. It poisons execution: neither catch nor join may resume Goat code. Do not replay the function on the VM: it may already have performed side effects. This covers checkable contract violations and does not promise to intercept arbitrary machine-code faults.
 
 ### 100. Required permits VM calls without a specialization
 
@@ -2142,7 +2152,7 @@ CMake builds the shared validation library and links it into the interpreter and
 
 ## Further refinement
 
-The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
+The rules above are agreed. Exact schemas, canonical bytes, service symbols and system ABIs are fixed in the v1 specification; it refines representation without changing the agreed semantics.
 
 ## Dependency graph validation: decisions 126–131
 
@@ -2380,7 +2390,7 @@ Fix the canonical launch path during startup preparation. A subsequent working-d
 
 For a standalone source, the bound-native-function check already exists: src/cli/native_execution.c requires NATIVE_PREPARE_READY in required mode, and src/codegen/native_pipeline.c produces that status only when bound_functions is nonzero. Module implementation must preserve this behavior and extend ownership accounting, rather than implement the check from scratch.
 
-Current temporary native-build cleanup for direct execution uses reference counting: native_pipeline transfers its workspace to the library, release_native_library closes the loader handle after the last reference and invokes destroy_native_workspace. The latter removes the DLL/SO and directory but does not check removal results. This describes the existing implementation, not completion of the new cleanup-process protocol.
+Temporary native-build cleanup and extracted-module cleanup now use the same independent janitor. It must acknowledge readiness before temporary work begins; retained library references prevent unloading beneath active callers. The janitor removes temporary work after process death, including abnormal exit. Saved artifacts are outside its scope. See [shared cleanup](../../cleanup-service-api.md) and [native build](../../module-build-api.md).
 
 ## Cleaning up temporary native source compilation: decision 160
 
@@ -3484,7 +3494,7 @@ First validate the original structure, types, versions, required fields, referen
 
 Normalize contents before comparing summaries, detecting duplicates and hashing. Do not silently remove duplicates; the agreed summary duplicate check precedes removal of summaries without assertions. Do not turn lack of a guarantee into a guarantee: unknown effects differ from proven purity, and an unknown value differs from null, an empty string or false. Preserve exact int64 values, real bit patterns, reference identity and the distinction between an absent export and an export with unknown properties.
 
-For each reduction, document one deterministic form, application order and positive/negative examples in RU/EN and implementation issues. All consumers use the same rules; implementations do not choose their own reductions. Normalization terminates and is idempotent: applying it again does not change the result. The exact algorithm and reference bytes are in docs/module-format-v1; the production implementation remains a separate task.
+For each reduction, document one deterministic form, application order and positive/negative examples in RU/EN and implementation issues. All consumers use the same rules; implementations do not choose their own reductions. Normalization terminates and is idempotent: applying it again does not change the result. The exact algorithm and reference bytes are in docs/module-format-v1; the production implementation and tests are documented in [canonical JSON](../../module-canonical-json.md).
 
 Acceptance: equivalent valid forms yield identical canonical data and main hashes; repeated normalization leaves data unchanged; significant distinctions survive, invalid forms fail before field removal, and equivalent summaries cannot bypass duplicate detection.
 
@@ -3506,7 +3516,7 @@ In #219, add module compilation, .gbin packaging, metadata/hash validation, load
 
 Incompatibility tests must reject a variant for another architecture before OS loading; selection cannot rely only on matching bitness. Identical reference metadata and portable bytecode.bin bytes must yield the same main SHA-256 on x86-64 and ARM64. Native libraries for different architectures have their own hashes and need not be byte-identical.
 
-#208 describes actual platform requirements, #209 provides the corresponding specialization ABI, and #219 tests the complete chain in existing ARM64 GCC/Clang jobs. Failures of required ARM64 checks must not become continue-on-error or success through skipped tests. Add module checks as their dependencies are implemented; existing ARM64 CI does not mean the future module format has already been tested or implemented.
+#208 describes actual platform requirements, #209 provides the corresponding specialization ABI, and #219 tests the complete chain in existing ARM64 GCC/Clang jobs. Failures of required ARM64 checks must not become continue-on-error or success through skipped tests. The completed [delivery suite](../../module-delivery-tests.md) executes this chain on ARM64 and records actual native-call counters; older-runtime and Windows lower-bound evidence remains separate.
 
 ## Conservative default instruction set
 
@@ -3762,7 +3772,7 @@ The public lib filesystem API (#249) accepts NUL-terminated UTF-8 paths. Embedde
 
 Linux names containing malformed UTF-8 are outside the public v1 contract: encountering one returns an explicit error, without silently skipping the object or substituting its name. Traversal or cleanup failure must not be reported as success.
 
-Paths must reach the layer without prior information loss: Windows command-line input and environment paths in use are converted from their Unicode representation to UTF-8, rather than reconstructed from already lossy ANSI strings. This is a shared adapter for consumers, including goat-inspect and goat-merge. This contract does not assert that the current implementation already provides this support.
+Paths must reach the layer without prior information loss: Windows command-line input and environment paths in use are converted from their Unicode representation to UTF-8, rather than reconstructed from already lossy ANSI strings. This is a shared adapter for consumers, including goat-inspect and goat-merge. This is implemented by the common `fs_arguments` adapter and filesystem path conversion layer.
 
 Acceptance in #249/#212/#215: reading, creating, enumerating, renaming, and deleting files with Cyrillic and non-BMP characters; Windows CLI paths under different system code pages; malformed UTF-8 and unrepresentable names produce diagnosed errors without lossy substitutions.
 
@@ -3872,7 +3882,7 @@ Within one report version, do not change the meaning of an assigned code or inco
 
 The agreed output rule remains: handled errors in --json mode produce a JSON report without unrelated stdout text; errors yield a nonzero exit status. The report version is present even when opening or validating a module fails and its own metadata is unavailable.
 
-Acceptance in #212/#223/#219: parse successful and failed reports as JSON; check reportVersion and diagnostic structure. The same cause retains its code across message languages. Opening, JSON and integrity errors must have documented codes. Module versions do not replace the report version. Implementation and tests remain separate work.
+Acceptance in #212/#223/#219: parse successful and failed reports as JSON; check reportVersion and diagnostic structure. The same cause retains its code across message languages. Opening, JSON and integrity errors must have documented codes. Module versions do not replace the report version. The [inspector API and tests](../../module-inspect-api.md) implement this report contract.
 
 ## Multiple independent inspection errors
 
@@ -4070,7 +4080,7 @@ Existing binary programs and native artifacts need not remain backward compatibl
 
 Reset version numbers together with the reader/writer, tests and documentation adopting the new contract. The new format identification must distinguish all previous formats, including historical versions numbered 1. Merely replacing FORMAT_VERSION while retaining platform-dependent bytes is insufficient. Reject old files with a clear rebuild diagnostic, without a legacy reader or automatic migration.
 
-Complete the current specification and golden-data task #244 first. The first implementation task after it closes is #250: modernize the entire string library and migrate its consumers to portable 32-bit characters. Then #251 implements the portable representation of the remaining binary sections. Closing #244 does not depend on completing these implementations; #184 validates module instructions and references on top of the resulting codec.
+Historical implementation order (now completed): specification and golden data #244, then #250 to modernize the entire string library and migrate its consumers to portable 32-bit characters. Then #251 implements the portable representation of the remaining binary sections. Closing #244 does not depend on completing these implementations; #184 validates module instructions and references on top of the resulting codec.
 
 The string stage defines encoding, lengths, offsets, Unicode rules and embedded U+0000 before implementation; the accepted representation is UTF-32LE: four bytes per code point, with direct use of the buffer in the VM. U+0000 is permitted within strings; explicit length defines their contents. Changing the on-disk representation must not silently alter language string semantics. Acceptance includes golden bytes, non-BMP characters, malformed data and cross-reading on Windows/Linux. Full portability also requires explicit numeric, instruction and table serialization without raw C structures; native machine code remains platform-specific.
 

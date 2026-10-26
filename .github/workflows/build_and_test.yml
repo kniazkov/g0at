@@ -80,6 +80,8 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           BUILD_DIR: build/${{ matrix.compiler }}
+      - name: Runnable bilingual module book
+        run: python3 scripts/check_module_book.py build/${{ matrix.compiler }}/goat
       - name: Child process primitives
         run: python3 scripts/check_child_process.py build/${{ matrix.compiler }}/child_process_testing build/${{ matrix.compiler }}/goat
       - name: Bounded ZIP infrastructure
@@ -371,6 +373,11 @@ jobs:
       - name: Build and test
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
+      - name: Runnable bilingual module book
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_book.py build/goat.exe'
       - name: Child process primitives
         shell: msys2 {0}
         env:

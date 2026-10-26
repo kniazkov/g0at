@@ -45,3 +45,18 @@ This is a change index, not a reconstruction of author motives from branch names
 [Part VI and appendices, #102](https://github.com/kniazkov/g0at/pull/102), completed the book. [#103](https://github.com/kniazkov/g0at/pull/103) removed the temporary plan and superseded standalone notes. Adding println produced revision 2; support for for loops produced revision 3, pinned to commit cf51b8c; method calls with the `this` constant produce revision 4, pinned to commit ae26b84. Adding chapters alone does not extend interpreter capabilities.
 
 For a stable technical fact, prefer pinned source or a book section at a specific commit. A PR is useful when showing the transition itself: what code appeared, which checks were added, and what changed relative to the parent state.
+
+## Module-system completion (#220)
+
+The early revisions above are historical snapshots, not current feature restrictions.
+[PR #177](https://github.com/kniazkov/g0at/pull/177) established the module contract;
+[#246](https://github.com/kniazkov/g0at/pull/246) fixed v1 schemas and vectors, not the loader
+implementation by itself. The [ordered checklist](../../module-implementation-checklist.md)
+records the subsequent implementation tasks and their evidence. In particular,
+[#312](https://github.com/kniazkov/g0at/pull/312) verifies real-file AC-01–AC-28 and
+[#313](https://github.com/kniazkov/g0at/pull/313) adds delivery/portability coverage.
+The current boundaries are file-local defaults, module-local `public`, and cross-module
+`external`. Copying preserves hidden cells and provenance; observation filters by rights.
+The [delivery report](../../module-delivery-tests.md) distinguishes implemented behavior,
+measured native execution and lower-runtime validation still deferred; historical design
+status does not imply that modules, inspect or merge remain unimplemented.

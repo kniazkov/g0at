@@ -52,7 +52,7 @@ This prints `10`. Header slots can be empty; the body may be a single statement 
 Goat supports dynamically typed values, lexical scopes, functions and recursion, conditional branches and `switch`, `for`, `while`, and `do…while` loops with `break`/`continue`, block-based objects, exceptions, and mathematical and input/output built-ins. Static analysis tracks approximate values, function calls, effects, and numeric specializations. Eligible functions can be translated to C and executed as machine code through a shared library (native execution).
 
 > [!CAUTION]
-> Goat is an experimental implementation. There is no `while`, `break`, `continue`, array indexing, property-access syntax, or module import syntax. Native generation covers a restricted numeric subset; the VM executes other supported language constructs. The book marks implementation limitations with red callouts.
+> Goat is an experimental implementation. Loops, indexed/property access and the module system are implemented; [the module tutorial](docs/book/en/30-modules.md) exercises build, run, inspect and merge. Native generation covers only proven eligible specializations, not every language construct; the VM remains the fallback. The book marks actual implementation and [portability limits](docs/module-delivery-tests.md), rather than treating unexecuted lower-bound OS tests as passed.
 
 ## Build and run
 

@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/20-native-eligibility.md) · [Previous chapter](19-effects-and-purity.md) · [Next chapter](21-ast-transformations.md)
 
-Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
 
 <a id="section-20-1"></a>
 
@@ -16,16 +16,16 @@ These checks precede C generation. `supported` means proven membership in the cu
 
 <a id="section-20-2"></a>
 
-## 20.2. The numeric contract
+## 20.2. The scalar contract
 
 [c_contract.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/c_contract.c) classifies parameters and results. `integer` maps to `int64`, and `real` to `double`. `numeric` is insufficient: it combines two representations rather than selecting one. `TOP`, `not null`, and `BOTTOM` likewise specify no required concrete interface.
 
-Strings, booleans, and other known nonnumeric types are outside the current external contract. A boolean may nevertheless exist inside a body, for example as a comparison result. Call-boundary restrictions differ from internal-computation restrictions.
+The current contract also classifies strings, booleans and characters as concrete C representations. Objects, arrays and closures are not interchangeable with these scalar values. Passing a supported scalar is still insufficient without body, effect and access proofs. See [native ABI](23-native-abi.md).
 
 Purity is checked, followed by captures. An immutable reference to a statically resolvable user function is allowed: it needs no environment object to be passed. An arbitrary external numeric `const` receives no such exception.
 
 > [!CAUTION]
-> The current native interface is limited to integer and real parameters and results. Passing strings, objects, functions, or booleans through it is not implemented. Capturing an external value, even an immutable number, is also unsupported by this contract.
+> Scalar-interface support does not imply arbitrary object or closure support. Captures require an explicitly supported immutable function/built-in identity; an arbitrary captured value is not made safe by being constant. Imported metadata is analyzed without executing the dependency and does not bypass runtime access checks.
 
 <a id="section-20-3"></a>
 
@@ -41,14 +41,14 @@ A permitted result does not yet permit removing the expression. Assignment and c
 
 ## 20.4. Locals and the complete body
 
-[c_body.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/c_body.c) reanalyzes a specialization and checks body syntax. Each local declaration receives one representation: `int64`, `double`, or `bool`. Every write must agree with it. Parameters already have fixed representations from the signature.
+[c_body.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/c_body.c) reanalyzes a specialization and checks body syntax. Each local declaration receives one representation: `int64`, `double`, `bool`, character or string. Every write must agree with it. Parameters already have fixed representations from the signature.
 
 Supported constructs include numeric literals, suitable local-variable reads, unary `+` and `-`, `+`, `-`, `*`, numeric comparisons, local declarations and assignments, numeric `++`/`--`, branches, `for` loops, numeric returns, and proven static calls. Individual node methods also check operands and context; an operator-name list cannot replace these conditions.
 
 Checking covers the body, rather than only expressions successfully visited in one run. `if` has a specific allowance: if its condition is proven constant and discardable in this specialization, checking the chosen branch suffices. An arbitrary unvisited branch cannot simply be ignored.
 
 > [!CAUTION]
-> This revision's native subset has no general execution of `/`, `%`, `**`, logical and bitwise operators, `try/catch`, `throw`, closure creation, or arbitrary objects. Eliminating an unreachable branch and folding a constant are separate transformations; they do not constitute general operator support.
+> The numeric walkthrough below is not the full current subset: strings, booleans, characters and supported built-ins have dedicated proofs and emitters too. General object execution, closures and exception handling are not implied. Eliminating an unreachable branch or folding a constant is not evidence of general support for its operations. Current executable examples are registered in [test/native](../../../test/native/README.md).
 
 A loop additionally needs stable representations through its back edge. All four parts must have body/expression proofs. Prefix and postfix updates are admitted only for mutable numeric parameters or locals, with their distinct old/new results preserved. Changing a local from integer to real, writing captured storage, or exceeding the loop-analysis budget prevents this route. A body that was not visited is not automatically approved.
 
@@ -56,7 +56,7 @@ A loop additionally needs stable representations through its back edge. All four
 
 ## 20.5. Candidate dependencies
 
-A static call must identify an immutably resolvable user function with a suitable exact signature, proven purity, and a numeric result. Extra arguments remain subject to checks: their expressions still execute. These C-call records are stored separately from the general graph's may-call edges.
+A static call must identify an immutably resolvable user function with a suitable exact signature, proven purity, and a supported scalar result. Extra arguments remain subject to checks: their expressions still execute. These C-call records are stored separately from the general graph's may-call edges.
 
 First, the pass may refine unknown return types through independently proven pure targets. Then specializations needing only a body proof temporarily become `supported` candidates. This allows mutually recursive functions to be checked without requiring either to be finally approved before the other.
 

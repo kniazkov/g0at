@@ -2,9 +2,9 @@
 
 [Contents](index.md) · [Русский](../ru/30-modules.md)
 
-> Status: the module system is being implemented incrementally. Validation, module
-> snapshots, include/import execution and serialized initialization are implemented
-> through shared compiler/runtime APIs. Full `.gmod` CLI integration remains #191.
+> Status: module-system v1 is implemented: compiler, validated graph snapshots,
+> include/import, file access, serialized initialization, native build/loading,
+> command-line tools and CI delivery tests. This chapter is reconciled in #220.
 > See the complete [module design contract](modules.md).
 
 Exact formats and reference vectors: [v1 specification](../../module-format-v1/README.md).
@@ -75,8 +75,7 @@ native build settings when `mode = off`.
 
 `native.mode` and `native.target` are independently optional;
 `native: {}` and `dependencies: {}` are valid. The exact set of explicit native
-targets still needs to be fixed in issue #244; this table does not substitute
-an arbitrary string for that set. `host` resolves to a concrete platform at build time.
+targets and CPU extensions is fixed in the [v1 specification](../../module-format-v1/README.md); this table does not permit arbitrary targets. `host` resolves to a concrete platform at build time.
 
 Empty `description`, `license`, `homepage`, `email`, and `authors: []` are
 equivalent to absence; whitespace is not empty. Informational strings retain
@@ -186,7 +185,7 @@ Its 64-byte header addresses instructions, typed data descriptors, file records,
 function records, source-location runs and payload. All fields have fixed widths
 and explicit little-endian encoding. No C structure padding, pointers or `size_t`
 are persisted. Layout assertions permit direct const views after validation.
-The current compiler produces one file span; source-order function IDs retain
+The compiler records separate spans for every included source file; source-order function IDs retain
 removed-function gaps. Source positions and function ownership are recorded per
 instruction and compressed into runs. Generated positions use line/column zero.
 No source text or absolute path is stored in this image.
@@ -194,9 +193,8 @@ No source text or absolute path is stored in this image.
 A standalone `.gbin` wraps exactly those bytes in `GOATPG01` v1 with a checksum,
 optional native library SHA-256 and external binding records. It does not use a
 second bytecode codec. The loader also accepts a bare image for tools and module
-integration. ZIP module packaging and JSON/table cross-validation remain separate
-tasks. Module opcodes have reserved v1 IDs; their execution requires the future
-module loader. Native machine code remains specific to its target.
+integration. Named modules use ZIP packaging with the same bytecode image and full JSON/table
+cross-validation. INCLUDE/IMPORT execute through the validated snapshot loader. Native machine code remains specific to its target.
 
 The loader rejects previous `GOATST01`, `GOATSC01`, `GOATBI11`, `goat v.1` and
 other old images with a request to recompile. There is no migration reader.
@@ -208,7 +206,8 @@ and native attachment. Runtime identities, caches and native addresses live outs
 the buffer. Strings point directly into its UTF-32LE payload. The owner retains the
 image until all users have finished. The common codec validates bounds, overflow,
 padding, scalar values, data kinds, function/entry references and table coverage.
-Module dependency/JSON semantics belong to #184 and the subsequent loader tasks.
+Module dependency/JSON semantics are checked by the shared bytecode, container
+and graph validators before execution.
 
 `test/binary-v1/scalars.hex` and `test/unicode/scalars.gbin.hex` are independent
 Python-produced fixtures, consumed unchanged by the actual C loader on every
@@ -223,8 +222,8 @@ native preparation, fallback and worker-thread execution.
 The runtime identifies a source file by its immutable file-table index **and the
 retained module instance**, not its path, display name or a globally shared index.
 Two instances both containing file 0 therefore have independent permissions.
-The internal multi-file API creates one persistent scope per file; `include` and
-`import` execution and loader caching remain subsequent stages.
+The multifile pipeline creates one persistent scope per file; executable `include`
+and `import` reuse the validated snapshot and retained initialization state.
 
 | Declaration | Who may access the cell |
 | --- | --- |
@@ -253,7 +252,8 @@ captures; copying does not make hidden fields visible.
 
 `scripts/test_module_access.py` checks these rules through internal multi-file
 fixtures and real VM execution, including independent module instances, GC and
-unchanged wire bytes. End-to-end `include`/`import` integration is tracked by #218.
+unchanged wire bytes. Real-file `include`/`import` coverage AC-01–AC-28 is implemented in
+`scripts/check_module_multifile_access.py` (#218).
 
 
 ## Serialized initialization and equal execution threads (#217)
@@ -291,8 +291,8 @@ until **all** program threads finish, including threads created by other survivi
 threads. Completion of the entry execution does not terminate the VM.
 
 See [the implementation API](../../module-serialization-api.md). These rules do not
-introduce user mutexes or complete the separate bounded `exit`/cleanup protocol
-tracked by #230.
+introduce user mutexes. The separate bounded `exit`/cleanup protocol is implemented
+in #230; see [exit and cleanup](../../module-exit-api.md).
 
 
 ## Module command line (#191)
@@ -330,3 +330,79 @@ Build and execution share one cleanup service and its one-warning fallback polic
 See [commands, paths and verification](../../module-cli-api.md),
 [bounded exit](../../module-exit-api.md), the separate
 [inspector](../../module-inspect-api.md) and [merger](../../module-merge-api.md).
+
+
+## Reproducible module tutorial
+
+Use the checked-in [tutorial files](../examples/30-modules/). Put the built
+`goat`, `goat-inspect` and `goat-merge` executables on PATH and change directory to
+`docs/book/examples/30-modules`. The geometry library includes a source with a
+`public` square function and re-exports it with `external`; the application imports
+`geometry` using its exact `.gmod` dependency version. No C compiler is needed:
+
+<!-- module-book-cli -->
+```sh
+goat build geometry.gmod --native off
+goat build app.gmod --native off
+goat run app.gmod --native off
+goat run modules/tutorial/1.0.gbin --module-dir modules --native off
+goat-inspect --json --module-dir modules modules/tutorial/1.0.gbin
+goat-merge merged.gbin modules/geometry/1.0.gbin
+```
+
+Both run commands print `25`. Build commands do not execute initializers. The
+inspector emits a versioned JSON report, and the merge command copies the validated
+library into a new archive without executing its bytecode or native code.
+These commands and both translations are checked by
+`scripts/check_module_book.py` in the existing Linux/Windows CI matrix. Tests copy
+the example into a temporary directory; the commands above write `modules/` and
+`merged.gbin` in the tutorial directory when run manually.
+
+## Inspecting and combining deliveries
+
+`goat-inspect` validates the entire transitive graph and pinned dependency hashes.
+`--target profile.json` checks a strict target profile, not a compiler target string.
+For the current host it probes the selected native library in an isolated child;
+foreign-target loading is `not_checked`. `--probe-timeout 5` is the default positive
+seconds budget; `--no-probe` is not supported. Isolation protects the inspector from
+crashes, **not** from malicious library side effects: this is not a security sandbox.
+JSON stdout contains only the [reportVersion 1 schema](../../module-format-v1/inspect-report.schema.json),
+including structured diagnostics, unknown/null and skipped-check states. Native
+unavailability alone can be a warning; integrity, ABI and cleanup errors cannot.
+
+`goat-merge output.gbin source1.gbin source2.gbin` combines compatible variants of
+one identical main module. It checks each input autonomously, without looking up
+external dependencies or loading DLL/SO files. Metadata conflicts are errors;
+multiple nonempty author lists require an explicit interactive ordering, even when
+their authors overlap. Without required input it fails without replacing output.
+Only identical source argument strings are deduplicated, not filesystem aliases.
+Publication is atomic and preserves the destination's access permissions. See
+[inspect](../../module-inspect-api.md) and [merge](../../module-merge-api.md) for exit
+codes, author ordering and failure handling.
+
+## Verified boundaries, not blanket portability claims
+
+The [delivery suite](../../module-delivery-tests.md) exercises VM/native modes,
+actual native-call counters, separate build/run, relocated Release packages and
+mixed MINGW64/UCRT64 archives. ARM64 enhanced profiles use `host+sha2` /
+`linux-aarch64-gnu+sha2` (SHA1/SHA2, not the broader crypto/PMULL bundle).
+Control libraries execute unchanged at their measured glibc floors: 2.35 in
+Ubuntu 22.04 and 2.36 in Debian Bookworm. This does **not** prove execution of
+ordinary variants on declared glibc 2.14/2.17, nor actual execution on Windows 10;
+those lower-bound runs remain explicitly unperformed. A synthetic compatibility
+profile is not an old-OS execution test. musl and big-endian are outside v1;
+user mutexes and immutable wrappers are not supplied by this module implementation.
+
+
+## Native selection is not all-or-nothing
+
+`required` requires a compatible specialization owned by the root module; an
+imported native function does not satisfy that requirement. Selection of a library
+is validated up front, but extraction/loading remains lazy. Each call still checks
+its arguments and declarative guards; a call with no applicable specialization may
+run on the VM even in required mode. In auto, an ordinary pre-entry library loading
+failure warns once and disables only that library; janitor startup failure disables
+native for the entire invocation. Corruption and ABI violations are not fallback
+cases. Once a native adapter has entered, a detected malformed ABI result is
+terminal for the whole process: no replay, catch or join continuation is allowed.
+See [dispatch](../../module-dispatch-api.md) and [loading](../../module-loading-api.md).

@@ -1,0 +1,7 @@
+{
+  "formatVersion": 1,
+  "name": "tutorial",
+  "version": "1.0",
+  "main": "src/main.goat",
+  "dependencies": { "geometry": "1.0" }
+}

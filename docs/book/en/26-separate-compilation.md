@@ -2,139 +2,89 @@
 
 [Contents](index.md) · [Русский](../ru/26-separate-compilation.md) · [Previous chapter](25-native-dispatch-and-vm-fallback.md) · [Next chapter](27-observability.md)
 
-Revision 7. Implementation described: [commit 64c80b9](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
 
 <a id="section-26-1"></a>
 
-## 26.1. Prepare now, run later
+## 26.1. Two saved-program paths
 
-Separate compilation here means saving a prepared program and running it later with a separate command. It is not a mechanism for importing source modules or independently linking parts of a Goat program.
+Separate compilation prepares code now and executes it later without the source or a C compiler. The CLI retains two distinct paths:
 
-`--compile` creates a `.gbin` containing bytecode and, after successful native preparation, a companion `.so` or `.dll`. It does not execute the program body: output and input wait until `--run`. Later execution needs the Goat interpreter, but no longer needs the original `.goat` file or a C compiler.
+| Input | Build command | Output |
+|---|---|---|
+| Standalone `.goat` without include/import | `goat --compile program.goat` | Adjacent standalone `.gbin`, optionally a companion DLL/SO |
+| `.goat` using include/import | `goat --compile program.goat` | Adjacent ZIP `.gbin` |
+| Named `.gmod` | `goat build app.gmod` or `goat --compile app.gmod` | `modules/<name>/<version>.gbin` ZIP by default |
 
-The saved artifact is a VM program with an optional native addition. A missing library can therefore be handled under `auto`, while `off` executes saved bytecode without loading it.
+`build` requires `.gmod`. Direct `.gmod` or `run app.gmod` builds in memory and executes without publishing an archive. `--run` accepts binary input; `run` also accepts sources/descriptions. Format is distinguished by its checked signature, not merely the `.gbin` suffix. The [module CLI reference](../../module-cli-api.md) gives path and option rules.
 
 <a id="section-26-2"></a>
 
-## 26.2. Three file regions
+## 26.2. Portable bytes, not host structures
 
-The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/vm/binary.c). An outer header occupies 96 bytes. It is followed by an inner bytecode image and a native-binding table. Total size is capped at 256 MiB.
+Both paths use the portable v1 bytecode codec: explicit fixed-width little-endian fields, 32-bit Unicode scalars and checked offsets/indices. Serialized bytes contain neither VM pointers nor compiler/analysis objects. The old `GOATBI11` host-dependent images are not accepted; rebuild them from source.
 
-| Offset | Size | Outer-header field |
-|---:|---:|---|
-| 0 | 8 | Signature `GOATBI11` |
-| 8 | 8 | Format version, currently 11 |
-| 16 | 8 | Platform tag |
-| 24 | 8 | Bytecode-image size |
-| 32 | 8 | Binding count |
-| 40 | 8 | Reserved, 0 |
-| 48 | 8 | Reserved, must be 0 |
-| 56 | 8 | Checksum of the complete `.gbin` |
-| 64 | 32 | Library SHA-256; zero bytes without bindings |
+The standalone wrapper in [binary.c](../../../src/vm/binary.c) has signature `GOATPG01`, version 1, a 96-byte header, portable bytecode and optional 16-byte native bindings. The former platform-tag field is zero. Bindings relate `FUNC` instruction indices to validated function IDs. FNV-1a detects accidental wrapper corruption; SHA-256 binds an optional companion library.
 
-Numeric outer-header fields use little-endian encoding (least significant byte first). Checksum calculation treats the field at offset 56 as zero-filled. The algorithm is 64-bit FNV-1a from [binary_file.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/binary_file.c).
-
-The inner image is chapter 8's buffer: its own header, instructions, data descriptors, and data. It is not another serialization of the AST. Analysis proofs, VM-object addresses, and native-code pointers are not persisted.
-
-Each binding occupies 16 bytes: two little-endian `uint64` values, the `FUNC` instruction index and the library's `function_id`. Entries are ordered by increasing instruction index. One binding represents a function that may have several specializations.
+A ZIP module is a different container: `module.json`, `bytecode.bin` and declared native files. It carries the canonical main hash, function/file/access/dependency tables and native-variant descriptions. See [format v1](../../module-format-v1/README.md); this ZIP is not the standalone wrapper plus renamed files.
 
 <a id="section-26-3"></a>
 
-## 26.3. What compatibility means
+## 26.3. Compatibility and identity
 
-Format version 11 adds `DVAR`, `DCONST`, `BLOAD`, and `BSTORE` for declarations with access modifiers and lexical bindings.
-Its eight-byte signature is `GOATBI11`; older `.gbin` files must be recompiled.
+Bytecode portability does not make native machine code portable. Native variants carry explicit OS, CPU, bitness, runtime and ABI requirements. `off` can run portable bytecode without loading machine code; `auto` selects a compatible variant or uses VM, while `required` requires a root specialization in a compatible variant.
 
-Each declaration descriptor contains four `uint32_t` fields: tag `0x4445434c`, the name string descriptor index, module index (currently only 0), and modifier (1 public, 2 protected, 3 private). Instructions reference the descriptor index; bound reads and writes must refer to a declared descriptor. The loader checks sizes, bounds, tags, names, modifiers, module indices, and duplicate declarations. A fresh runtime identity distinguishes each loaded compilation; no C pointer or live object identity is serialized.
-
-The platform tag combines `wchar_t` size and a byte-order indicator. Inner instructions and data retain the current implementation's representation, including wide strings; outer little-endian encoding does not make the whole image portable.
-
-The loader additionally requires a suitable `double` representation and validates the inner-image signature and structure. A native library has the OS, architecture, and ABI requirements described in earlier chapters.
-
-> [!CAUTION]
-> `.gbin` is not a universal cross-platform format. The platform tag does not contain a complete CPU, OS, or build identifier. Matching tags do not promise compatibility between arbitrary implementations, and version 4 is not a commitment that every future Goat version will read the file.
+The module’s main hash excludes native additions and informational metadata, so merging compatible native variants does not change bytecode identity. Dependency entries bind exact names, versions and hashes; a consumer does not override a library’s own dependency versions. All reachable modules are checked before execution and retained as one snapshot. Separate physical copies are not silently combined into a richer variant inventory.
 
 <a id="section-26-4"></a>
 
-## 26.4. Checks before execution
+## 26.4. Validation before execution
 
-First come file size, outer signature, version, platform tag, reserved field, checksum, and exact agreement of region sizes. Counts are checked before multiplication and pointer construction so that a corrupt length cannot become an address outside the buffer.
+The validator checks the container, strict JSON schema, canonical data, bytecode structure, function/access tables, all native hashes and cross-component consistency. The dependency graph is validated iteratively, with deterministic diagnostics for missing nodes, mismatches and cycles. Unused declared dependencies are warned about without archive lookup. Include cycles between source files are distinct from forbidden module-import cycles.
 
-Next come inner offsets and record sizes, data ranges, valid instruction codes, and zero flags. Jumps must target the instruction array. `ILOAD64`, `RLOAD`, and `FUNC` require a preceding `ARG`; `FUNC` also requires a valid body address and parameter names. String references must designate correctly aligned, null-terminated strings without embedded nulls.
+Ready bytes remain immutable and are held in memory; runtime caches and bindings are separate. Changing or deleting an archive after validation cannot substitute different native bytes during lazy loading.
 
-Bindings must reference `FUNC`, have a positive `function_id`, and have strictly increasing indices. This ties the saved table to particular bytecode, not just to a source function count.
-
-> [!CAUTION]
-> These checks are not a complete bytecode verifier: they do not prove correct stack depth and every control transfer in an arbitrarily constructed program. FNV-1a is not a cryptographic signature. Someone modifying a file can recompute its checksum; a successfully checked untrusted file does not become safe to execute.
+These checks establish structure and integrity, not author identity or a security sandbox. Hashes are not signatures; an attacker replacing code and its metadata can recompute them. Validated untrusted code is still untrusted code.
 
 <a id="section-26-5"></a>
 
-## 26.5. The library must belong to this program
+## 26.5. Atomic modules and standalone companions
 
-Native compilation stores the SHA-256 of the completed library's exact bytes in `.gbin`. `--run` locates a companion with the same base name and the platform's extension. Its bytes are first read under a size limit and SHA-256 is compared before loading the library or executing its initializers. The checked bytes are then written to a private temporary directory, and that copy is loaded.
+Module builds do not execute Goat initializers or load DLL/SO. The writer publishes one deterministic ZIP by atomic replacement after validation; a failed build preserves the previous destination and permissions. `goat-merge` validates inputs and combines native/informational data without loading code or resolving external dependency archives. Conflicting metadata may require a human author-order choice; noninteractive failure leaves output untouched.
 
-This snapshot removes the gap between validating one file and loading different contents through the same path. After loading, ABI, function entries, and parameter agreement with `FUNC` instructions are checked again. All restored entries must be pure and have no named binding. Failure to install any binding clears those already installed.
-
-This checks integrity and pair consistency, not file provenance. If both files are changed and checksums recomputed, the author's authenticity cannot be established. Releasing the library removes its temporary snapshot.
-
-Publishing an individual file in [binary_file.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/binary_file.c) uses a temporary file beside the destination followed by replacement. The two output files nevertheless remain two operations.
-
-> [!CAUTION]
-> Publishing `.gbin` and its native library is not one atomic transaction. Failure between replacements can leave a mismatched pair. The loader detects the mismatch, but there is no automatic restoration of the previous pair.
+The retained standalone path still has a separate `.gbin` and optional same-base `.so`/`.dll`. Their SHA-256 relationship is checked before loading a private snapshot. Publishing two separate files is **not** one atomic transaction: an interrupted replacement may leave a mismatched pair, which is detected rather than repaired automatically. Do not apply this two-file limitation to the one-archive module path.
 
 <a id="section-26-6"></a>
 
-## 26.6. Testing execution without source
+## 26.6. Executing a saved standalone example
 
-Use the working copy `module.goat` from chapter 22. On Linux:
+From the repository root on Linux:
 
 ```sh
-./goat --compile --native required build/book-native/module.goat
 mkdir -p build/book-native/run
+cp docs/book/examples/22-native-module.goat build/book-native/module.goat
+./goat --compile --native required build/book-native/module.goat
 cp build/book-native/module.gbin build/book-native/module.so build/book-native/run/
 CC=goat-no-such-compiler ./goat --run --native required build/book-native/run/module.gbin
 ./goat --run --native off build/book-native/run/module.gbin
 ```
 
-The `run` directory has no source. The first run command also specifies a nonexistent compiler: it is never invoked. Both execution commands print:
+Both executions print `7`, `6`, `4.0` on separate lines. The run directory contains no source, and the nonexistent compiler is never invoked. On Windows use `.\goat.exe`, `Copy-Item`, and the `.dll` companion; save and restore `$env:CC` when testing compiler independence.
 
-```text
-7
-6
-4.0
-```
-
-The equivalent PowerShell sequence, after preparing the working copy as in chapter 24:
-
-```powershell
-.\goat.exe --compile --native required .\build\book-native\module.goat
-New-Item -ItemType Directory -Force .\build\book-native\run | Out-Null
-Copy-Item .\build\book-native\module.gbin, .\build\book-native\module.dll .\build\book-native\run\
-$previousCC = $env:CC
-try {
-    $env:CC = "goat-no-such-compiler"
-    .\goat.exe --run --native required .\build\book-native\run\module.gbin
-} finally {
-    $env:CC = $previousCC
-}
-.\goat.exe --run --native off .\build\book-native\run\module.gbin
-```
-
-To save bytecode alone, use `--compile` without enabling native mode. An old library beside it does not add bindings to the new `.gbin`: that decision is recorded inside the program.
+For named ZIP-module examples and relocation, follow [chapter 30](30-modules.md) and [delivery tests](../../module-delivery-tests.md). A ZIP module needs no external native companion, but used dependency archives must remain discoverable through the configured module search roots.
 
 <a id="section-26-7"></a>
 
-## 26.7. Failures and boundaries of separate execution
+## 26.7. Failure policy and evidence
 
-| Situation | `off` | `auto` | `required` |
+| Situation for a ZIP module | `off` | `auto` | `required` |
 |---|---|---|---|
-| Corrupt or incompatible `.gbin` | Failure | Failure | Failure |
-| Valid bytecode, no native bindings | VM | VM | Failure before execution |
-| Bindings exist, library is missing or mismatched | VM without loading | Diagnostic and VM | Failure before execution |
-| Valid pair | VM | Native dispatch | Native dispatch |
+| Corrupt archive, native bytes or dependency graph | Failure | Failure | Failure |
+| No compatible native root specialization | VM | VM | Failure before user code |
+| A call has no applicable specialization | VM | VM | VM |
+| Applicable library fails extraction/loading before adapter entry | No load | One warning and VM for that library | Failure |
+| Detected ABI violation after adapter entry | No entry | Terminal error; no replay | Terminal error; no replay |
 
-`--run` neither reconstructs the source nor attempts to rebuild a missing library. Even with a valid pair, individual calls may remain in the VM or fall back after a resource limit, as described in chapter 25.
+`--run` does not rebuild a missing artifact. Module loading and standalone pure-resource fallback are different contracts, as explained in [chapter 25](25-native-dispatch-and-vm-fallback.md).
 
-The CLI sequence is in [binary_program.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/cli/binary_program.c); the saved-program interface is in [binary.h](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/vm/binary.h). [check_binary_program.sh](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/scripts/check_binary_program.sh) checks moving pairs to another directory, execution without source or compiler, missing and mismatched libraries, damaged files, and failure modes. This completes the path from a proven specialization to a reusable executable artifact. The next part addresses observing, testing, and measuring this implementation.
-
-Format version 9 adds SNAPSHOT and ITER_NEXT for collection iteration; older `.gbin` files must be recompiled. Format version 8 adds the retained-address stack instructions DUPN and ROTATE; older `.gbin` files must be recompiled. Version 7 adds the method-call instruction CALLM and rejects earlier `.gbin` files, which must be recompiled. Version 6 changed CALL argument evaluation from right-to-left to left-to-right; version 5 introduced the property-access instructions GETPROP and SETPROP; version 4 introduced the character-load instruction; version 3 introduced saturating arithmetic; still older files could use wrapping arithmetic. SHA-256 binds the pair when the bytecode is trusted; it is not a digital signature and does not prevent replacement of both files and the hash. The container checksum remains FNV-1a for corruption detection.
+Tests include `check_binary_program.sh`, `check_module_cli.py`, `check_module_graph.py`, `check_module_loading.py`, and the delivery suite. Linux GCC/Clang x86-64/ARM64 and Windows MINGW32/MINGW64/UCRT64 are covered. Exact old glibc 2.14/2.17 and Windows 10 execution are not established merely by a green newer runner; [delivery evidence](../../module-delivery-tests.md) records tested environments and the remaining lower-bound plan.

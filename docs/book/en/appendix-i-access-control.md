@@ -1,14 +1,14 @@
-# Appendix I. Access Modifiers: Agreed Rules
+# Appendix I. Access Modifiers: Implemented Rules
 
-> #204 implements the [module contract](modules.md): unmodified declarations are file-local, `public` is module-local, and `external` crosses module boundaries. The visibility table below is current; later historical cross-module examples still describe the A–G model and must be read using these new boundaries. Module loading remains a separate stage.
+> The [module contract](modules.md) is implemented: file-local defaults, module-local `public`, cross-module `external`, and object-domain `private`/`protected`. Real `include`/`import` tests cover AC-01–AC-28.
 
 [Contents](index.md) · [Русский](../ru/appendix-i-access-control.md) · [Previous](appendix-h-decision-history.md)
 
-Status: agreed language design with stages A–G implemented. The examples below describe the complete target behavior; static analysis is conservative and the VM checks unknown cases; module loading remains #154.
+Status: implemented language reference. Static analysis rejects proven denials; the VM checks unknown cases. See [real-file coverage](access-control-examples.md) and the [implementation checklist](../../module-implementation-checklist.md).
 
 [Detailed examples and edge cases](access-control-examples.md) · [Implementation plan](access-control-implementation-plan.md)
 
-Stage C (#164) enables declaration modifiers in every scope, source regeneration, AST metadata, checked VM execution, and format-11 bytecode. Explicitly modified declarations use lexical cell identities: a captured prototype `x` stays bound to its original cell while `this.x` uses the receiver. Programs without modifiers retain their existing lookup behavior. Stage G (#168) adds compile errors for proven denial and native execution of proven-safe functions. Programs containing modifiers use closed-scalar folding only; checks and cell identities remain intact. Stage D (#165) adapts directly copied `clone` methods and their captures, preserving external references and rights. Stage E (#166) transfers the complete flat cell inventory and adapts methods without merging same-named fields. Stage F (#167) filters own-key enumeration and recursive printing by observer permissions, including str, concatenation, format, and Array.toString. Module loading remains in #154.
+Stages A–G introduced cells, access domains, copying, observation and conservative analysis. Module integration now preserves declaration file/module identity across archives and calls. The current portable bytecode is v1; historical format 11 is not the module format. Copying adapts transferred environments but never grants unrelated functions new rights.
 
 ## I.1. Declarations
 
@@ -90,7 +90,7 @@ print(obj.x); // Error; public Base.x is not a fallback.
 
 An object belongs to the module containing the code that creates it. If code in B calls a factory from A, the result belongs to A. If code in B creates a descendant of a prototype from A using `Prototype -> { ... }`, the new object belongs to B, and its constructor may declare own properties.
 
-Code in another module cannot add properties to a foreign object. It may modify existing public variables. Protected properties follow the descendant access rules above.
+Code in another module cannot add properties to a foreign object. It may modify existing accessible `external` variables; `public` alone does not cross the module boundary. Protected properties follow the descendant access rules above.
 
 A new property created by a permitted assignment `obj.x = ...` or `obj[key] = ...` receives default visibility. Writing an existing property preserves its modifier and checks access rights.
 
@@ -143,13 +143,13 @@ These rules apply to functions directly transferred as property values. Function
 | Function relationship | Copying result |
 | --- | --- |
 | Named capture of a transferred field | Refers to the corresponding new cell |
-| Access through `this` | Uses the call receiver and transferred private/protected access domains |
+| Access through `this` | Uses the current lexical context, including adapted transferred environments; it is not the method receiver |
 | Capture of an external variable | Remains shared with the original |
 | Explicit external reference to the original, such as `A.x` | Still addresses A; previously held access is retained |
 | Function inside a nested object | Is not adapted: the nested object stays shared |
 | Function lacking a private right | Does not gain it through copying |
 
-Thus copied methods can modify a private field of the copy both through `this.x` and through captured name `x`. Updating the copy's cell does not update the original's cell; if a cell holds a nested mutable object, that object itself remains shared.
+Copied methods modify transferred cells through captured names or adapted explicit construction-context references. The method body’s lexical `this` is not automatically the receiving object. Changing a copied cell does not change the original cell; nested mutable values remain shared.
 
 New rights correspond only to transferring existing rights to copied domains. An outside function stored in a property does not become a privileged method. The original method gains no access to the copy's private fields. However, a copied method retains previously permitted access to the original through an explicit external reference. This qualifies the earlier overly broad statement that a copy can never read the original's private fields.
 
@@ -159,6 +159,8 @@ This is shallow copying with adaptation of directly transferred functions, not r
 
 ## I.9. Native Execution and Status
 
-Native execution must enforce the same restrictions. If access rights cannot be reliably checked at compilation, the function remains in the VM for now; `--native required` reports an error if no safe native implementation remains in the program, including the access-check reason. Copying must not reuse a native specialization if its environment and access assumptions are no longer proven.
+Native execution must enforce the same restrictions. If access rights cannot be reliably checked at compilation, the function remains in the VM for now; `--native required` reports an error if no compatible safe native specialization exists in the main module, including the access-check reason. Copying must not reuse a native specialization if its environment and access assumptions are no longer proven.
 
-The identified filtering and copying contradictions are resolved by the rules above. The actual status of each stage is in the [implementation plan](access-control-implementation-plan.md). Declaration, clone, flat, and filtering examples now execute in the VM; proven denials are diagnosed at compile time and unknown cases at runtime. Multi-file examples remain acceptance criteria for #154. Adapted functions do not retain native specializations whose environment assumptions may have changed.
+The identified filtering and copying contradictions are resolved by the rules above. The actual status of each stage is in the [implementation plan](access-control-implementation-plan.md). Declaration, clone, flat, and filtering examples now execute in the VM; proven denials are diagnosed at compile time and unknown cases at runtime. Multi-file examples are exercised by #218 through actual archives, includes and imports. Adapted functions do not retain native specializations whose environment assumptions may have changed.
+
+`this` is lexical, not a JavaScript-style receiver. For copied methods, captured declarations and explicitly captured construction contexts are adapted; a method body’s own `this` is not automatically the copied object. See AC-05 and [chapter 10](10-contexts-and-closures.md).

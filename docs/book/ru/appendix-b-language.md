@@ -2,7 +2,7 @@
 
 [Оглавление](index.md) · [English](../en/appendix-b-language.md) · [Назад](appendix-a-terminology.md) · [Далее](appendix-c-vm-instructions.md)
 
-Редакция 4. Описываемая реализация: [commit 64c80b9, с оператором `for`](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
+Обновлено для реализованной модульной системы (#220); исходная версия: [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a).
 
 <a id="section-b-1"></a>
 
@@ -13,7 +13,7 @@
 Функция записывается как `func(a, b) { ... }`, вызов — `f(a, b)`, возврат — `return e;` или `return;`. Без явного возврата результат равен `null`. Условие — `if (e) statement` с необязательным `else`. Исключение — `throw e;`, обработчик — `try statement catch (name) { ... }`. Блок `{ ... }` является выражением, возвращающим объект своего контекста. Разделители `;` делают границы явными; перевод строки сам по себе не является правилом завершения инструкции.
 
 > [!CAUTION]
-> Система импортов пока не реализована. Циклы `while` / `do/while`, доступы `obj.name`, `obj[key]`, `Exceptions.INVALID_ARGUMENT` и цепочки вызовов `f()()` поддерживаются.
+> `include` и `import` реализованы; см. [главу 30](30-modules.md). Циклы `while` / `do/while`, доступы `obj.name`, `obj[key]`, `Exceptions.INVALID_ARGUMENT` и цепочки вызовов `f()()` поддерживаются.
 
 `for (initial; condition; step) statement` выполняет инициализацию один раз и проверяет условие перед каждой итерацией. После успешной проверки выполняются тело и шаг. Инициализация принимает одно выражение или объявление `var`/`const`, в том числе нескольких переменных; условие и шаг принимают по одному выражению. Любую часть можно пропустить, но обе точки с запятой обязательны. Пропущенное условие истинно; `;` обозначает пустое тело. Объявления заголовка имеют область цикла, а тело получает свежую вложенную область на каждой итерации. Возврат и исключение пропускают остаток тела и шаг. Примеры приведены в [главе 2](02-implemented-language.md).
 
@@ -51,7 +51,7 @@
 | 14 | `\|\|` | Слева направо; короткое замыкание |
 | 15 | `=` | Справа налево |
 
-Степень требует оговорки: `-2 ** 2` означает `-(2 ** 2)`, но `2 ** -2` тоже допустимо. Цепочка `2 ** 3 ** 2` означает `2 ** (3 ** 2)`. Реальный порядок проходов и разбор префиксов находятся в [parser.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/parser/parser.c) и [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/parser/parsing_unary_operations.c).
+Степень требует оговорки: `-2 ** 2` означает `-(2 ** 2)`, но `2 ** -2` тоже допустимо. Цепочка `2 ** 3 ** 2` означает `2 ** (3 ** 2)`. Реальный порядок проходов и разбор префиксов находятся в [parser.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/parser/parser.c) и [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/parser/parsing_unary_operations.c).
 
 <a id="section-b-3"></a>
 
@@ -91,7 +91,7 @@
 
 Ошибки разбора, нативного ABI и аварийная проверка пустого стека не являются этими исключениями языка. Лексические ограничения вынесены в главу 5, границы реализации — в приложение Ж.
 
-Основные источники: [integer.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/exceptions.c). Примеры в главах 2, 6, 9 и 12 показывают исполняемые случаи этих правил.
+Основные источники: [integer.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/exceptions.c). Примеры в главах 2, 6, 9 и 12 показывают исполняемые случаи этих правил.
 
 <a id="section-b-index"></a>
 
@@ -158,8 +158,8 @@ println(values[2][1]) // false
 
 ## Object.clone()
 
-Здесь описана текущая реализация. Согласованное расширение для модификаторов доступа,
-адаптации методов и переноса захватов находится в [приложении И](appendix-i-access-control.md).
+Здесь описано поверхностное копирование. Реализованные модификаторы доступа,
+адаптация методов и перенос захватов описаны в [приложении И](appendix-i-access-control.md).
 
 `obj.clone()` вызывает `clone` из виртуальной таблицы получателя. Метод наследуется
 от `Object` и может переопределяться обычным свойством, как `instanceOf`.
@@ -264,16 +264,12 @@ const point = { x = 3; y = 4; };
 for (key in point) println(key + "=" + point[key]);
 ```
 
-`object.flat()` создаёт новый пользовательский объект с единственным родителем `Object`.
-Он поверхностно копирует собственные и унаследованные свойства, кроме свойств самого
-`Object`. Совпадающие ключи разрешаются в обычном порядке поиска по прототипам,
-включая лексические контексты-прототипы. Все скопированные свойства изменяемы, даже
-если первоначально были константами. Исходный объект и его прототипы не меняются.
-Для обхода полученных свойств используется `for (key in object.flat())`.
-Для массивов и остальных встроенных типов `flat()` возвращает тот же объект.
-Как `clone` и `instanceOf`, это обычный переопределяемый метод; отдельно извлечённая
-функция принимает объект явным аргументом.
-
-Это описание текущего поведения. Проект сохранения скрытых/перекрытых ячеек и адаптации
-методов при `flat()` приведён в [приложении И](appendix-i-access-control.md);
-[примеры](access-control-examples.md) задают ожидаемую будущую семантику.
+`object.flat()` копирует все собственные и унаследованные ячейки, кроме `Object`,
+включая скрытые и перекрытые, сохраняя победителей обычного поиска. Единственный
+прототип результата — `Object`; лексические контексты поиска не являются рёбрами
+наследования. Ячейки копии изменяемы, но сохраняют модификаторы и файл/модуль
+объявления. Непосредственно переносимые методы и захваты адаптируются; вложенные
+объекты остаются общими. Перебор по-прежнему фильтруется правами наблюдателя:
+`for (key in object.flat())` не раскрывает скрытые ячейки. Непользовательские типы
+возвращают тот же объект. Реализованные правила: [приложение И](appendix-i-access-control.md)
+и [примеры](access-control-examples.md).
