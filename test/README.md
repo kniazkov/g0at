@@ -69,3 +69,30 @@ check EOF, early stdin closure, the original deadline, isolated Unicode environm
 and arguments, full replacement versus inheritance, invalid options, and launch
 failure. These checks supplement rather than replace the existing Python process
 suite and its independent process-tree observer.
+
+### Streaming process exchange
+
+`child_process_stream_testing <scenario>` / CTest label `process-stream` checks
+full binary stdout/stderr through callbacks, including a file sink, alongside
+legacy 64-KiB capture/truncation. Output callbacks enable the respective pipe even
+when capture is off; no unbounded internal capture is allocated. Input producers
+can return WAIT until a READY output is seen, DATA for the next bounded chunk, or
+EOF. One absolute deadline covers the entire dialogue. Callback errors terminate
+the owned tree and report `CHILD_IO_ERROR`; callbacks must not block or reenter
+the same child. File sinks own their files and must report write errors; the caller
+must also check flush/close errors. Full delivery is guaranteed for successful
+runs, not data the child never wrote before termination. Output order is preserved
+within each stream, but no cross-stream ordering is promised.
+
+### Child streaming and interactive exchange
+
+`child_process_stream_testing <scenario>` is registered with the `process-stream`
+label. `roundtrip` supplies over 1 MiB of binary stdin in callback-sized chunks
+while the child fills both output channels. `large`, `poll`, `capture`, `legacy`
+and `file` verify complete independent stdout/stderr byte sequences beyond 64 KiB,
+including NUL, callback-only operation, bounded legacy capture and full file
+sinks. `dialog` and `dialog-poll` wait for READY before supplying a binary reply,
+then deliver EOF. `timeout`, `stop`, `output-error`, `input-error`, `invalid-size`
+and `invalid-options` exercise failure and ownership boundaries. Callback/file
+errors must fail the child operation rather than silently discarding output.
+The existing Python process suite retains its independent tree-cleanup observer.

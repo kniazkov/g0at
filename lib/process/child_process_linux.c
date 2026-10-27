@@ -38,7 +38,10 @@ struct child_process_t {
     int control, pipes[3], input;
     unsigned char *input_data;
     size_t input_size, input_offset;
-    bool done, stopped, service;
+    bool done, stopped, service, capture, callback_failed;
+    child_input_callback_t input_callback;
+    child_output_callback_t callbacks[2];
+    void *callback_context;
 };
 
 uint64_t child_monotonic_ms(void) {
@@ -311,6 +314,11 @@ child_process_t *start_child_process(const child_options_t *options) {
         p->pipes[i] = -1;
     p->deadline = options->deadline;
     p->service = options->survive_parent;
+    p->capture = options->capture_output;
+    p->input_callback = options->stdin_callback;
+    p->callbacks[0] = options->stdout_callback;
+    p->callbacks[1] = options->stderr_callback;
+    p->callback_context = options->callback_context;
     p->result.exit_code = -1;
     int outputs[3] = {-1, -1, -1}, control[2] = {-1, -1}, input = -1, watch = -1;
     char *executable = resolve_executable(options->executable);
@@ -329,7 +337,7 @@ child_process_t *start_child_process(const child_options_t *options) {
     struct rlimit limit;
     if (!error && getrlimit(RLIMIT_NOFILE, &limit))
         error = errno;
-    if (!error && options->stdin_data) {
+    if (!error && (options->stdin_data || options->stdin_callback)) {
         int pair[2];
         /* A socket permits MSG_NOSIGNAL without changing the caller's signal disposition. */
         if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, pair))
@@ -341,9 +349,10 @@ child_process_t *start_child_process(const child_options_t *options) {
                 error = errno;
             else {
                 p->input_size = options->stdin_size;
-                p->input_data = ALLOC(p->input_size);
-                memcpy(p->input_data, options->stdin_data, p->input_size);
-                if (!p->input_size)
+                p->input_data = ALLOC(options->stdin_callback ? 4096 : p->input_size);
+                if (p->input_size)
+                    memcpy(p->input_data, options->stdin_data, p->input_size);
+                if (!p->input_size && !p->input_callback)
                     close_fd(&p->input);
             }
         }
@@ -362,7 +371,7 @@ child_process_t *start_child_process(const child_options_t *options) {
 #endif
     }
     for (int i = 0; i < 3 && !error; i++) {
-        if (!(i == 2 ? options->result_channel : options->capture_output))
+        if (!(i == 2 ? options->result_channel : (options->capture_output || p->callbacks[i])))
             continue;
         int pipe_fds[2];
         if (pipe2(pipe_fds, O_CLOEXEC)) {
@@ -468,6 +477,24 @@ child_process_t *start_child_process(const child_options_t *options) {
 
 static void feed(child_process_t *p) {
     for (int turn = 0; p->input >= 0 && turn < 16; turn++) {
+        if (p->input_callback && p->input_offset == p->input_size) {
+            size_t size = 0;
+            child_input_status_t state =
+                p->input_callback(p->callback_context, p->input_data, 4096, &size);
+            if (state == CHILD_INPUT_DATA && size && size <= 4096) {
+                p->input_size = size;
+                p->input_offset = 0;
+            } else {
+                if (state == CHILD_INPUT_WAIT && !size)
+                    break;
+                if (state != CHILD_INPUT_EOF || size) {
+                    p->callback_failed = true;
+                    p->result.system_error = EIO;
+                }
+                close_fd(&p->input);
+                break;
+            }
+        }
         size_t left = p->input_size - p->input_offset;
         ssize_t n = send(p->input,
                          p->input_data + p->input_offset,
@@ -475,38 +502,50 @@ static void feed(child_process_t *p) {
                          MSG_NOSIGNAL);
         if (n > 0) {
             p->input_offset += (size_t)n;
-            if (p->input_offset == p->input_size)
+            if (p->input_offset == p->input_size && !p->input_callback)
                 close_fd(&p->input);
         } else {
             if (n < 0 && (errno == EAGAIN || errno == EINTR))
                 break;
-            if (n < 0 && errno != EPIPE && errno != ECONNRESET)
+            if (n < 0 && errno != EPIPE && errno != ECONNRESET) {
                 p->result.system_error = errno;
+                p->callback_failed = true;
+            }
             close_fd(&p->input);
         }
     }
 }
 
-static void drain(child_process_t *p) {
+static bool drain(child_process_t *p) {
+    bool progress = false;
     child_output_t *streams[] = {&p->result.out, &p->result.err, &p->result.result};
     /* A bounded turn guarantees a noisy child cannot starve deadline/status checks. */
     for (int i = 0; i < 3; i++) {
         for (int turn = 0; p->pipes[i] >= 0 && turn < 16; turn++) {
             unsigned char data[4096];
             ssize_t n = read(p->pipes[i], data, sizeof(data));
-            if (n > 0)
-                child_capture(streams[i], data, (size_t)n);
-            else {
+            if (n > 0) {
+                progress = true;
+                if (i == 2 || p->capture)
+                    child_capture(streams[i], data, (size_t)n);
+                if (i < 2 && p->callbacks[i] && !p->callback_failed
+                    && !p->callbacks[i](p->callback_context, data, (size_t)n)) {
+                    p->callback_failed = true;
+                    p->result.system_error = EIO;
+                }
+            } else {
                 if (!n)
                     close_fd(&p->pipes[i]);
                 else if (errno != EAGAIN && errno != EINTR) {
                     p->result.system_error = errno;
+                    p->callback_failed = true;
                     close_fd(&p->pipes[i]);
                 }
                 break;
             }
         }
     }
+    return progress;
 }
 
 static const child_result_t *wait_process(child_process_t *p, bool stop, bool polling) {
@@ -514,17 +553,23 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
         return &p->result;
     uint64_t cleanup_deadline = 0;
     for (;;) {
-        if (!p->stopped && (stop || (p->deadline && child_monotonic_ms() >= p->deadline))) {
-            p->result.status = stop ? CHILD_STOPPED : CHILD_TIMED_OUT;
+        if (!p->stopped
+            && (stop || p->callback_failed
+                || (p->deadline && child_monotonic_ms() >= p->deadline))) {
+            p->result.status = p->callback_failed ? CHILD_IO_ERROR
+                               : stop             ? CHILD_STOPPED
+                                                  : CHILD_TIMED_OUT;
             p->stopped = true;
             (void)send(p->control, "s", 1, MSG_NOSIGNAL);
             cleanup_deadline = child_monotonic_ms() + 6000;
         }
         drain(p);
-        if (!p->stopped)
+        if (!p->stopped && !p->callback_failed)
             feed(p);
         else
             close_fd(&p->input);
+        if (p->callback_failed && !p->stopped)
+            continue;
         child_reply_t reply;
         ssize_t n = recv(p->control, &reply, sizeof(reply), MSG_DONTWAIT);
         if (n == sizeof(reply)) {
@@ -541,7 +586,12 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
             if (reply.error)
                 p->result.system_error = reply.error;
             /* Tree is gone: pipes have a finite buffered tail, never wait for foreign EOF. */
-            drain(p);
+            if (!reply.cleanup) {
+                while (drain(p)) {
+                }
+            } else {
+                drain(p);
+            }
             int status;
             while (p->supervisor > 0 && waitpid(p->supervisor, &status, 0) < 0 && errno == EINTR) {
             }
@@ -560,10 +610,13 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
         struct pollfd fds[5] = {{.fd = p->control, .events = POLLIN}};
         for (int i = 0; i < 3; i++)
             fds[i + 1] = (struct pollfd){.fd = p->pipes[i], .events = POLLIN};
-        fds[4] = (struct pollfd){.fd = p->input, .events = POLLOUT};
+        fds[4] = (struct pollfd){.fd = p->input_offset < p->input_size ? p->input : -1,
+                                 .events = POLLOUT};
         poll(fds, 5, 5);
     }
     close_fd(&p->input);
+    if (p->callback_failed)
+        p->result.status = CHILD_IO_ERROR;
     p->done = true;
     return &p->result;
 }
