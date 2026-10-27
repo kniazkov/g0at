@@ -48,7 +48,7 @@ Supported constructs include numeric literals, suitable local-variable reads, un
 Checking covers the body, rather than only expressions successfully visited in one run. `if` has a specific allowance: if its condition is proven constant and discardable in this specialization, checking the chosen branch suffices. An arbitrary unvisited branch cannot simply be ignored.
 
 > [!CAUTION]
-> The numeric walkthrough below is not the full current subset: strings, booleans, characters and supported built-ins have dedicated proofs and emitters too. General object execution, closures and exception handling are not implied. Eliminating an unreachable branch or folding a constant is not evidence of general support for its operations. Current executable examples are registered in [test/native](../../../test/native/README.md).
+> The numeric walkthrough below is not the full current subset: strings, booleans, characters and supported built-ins have dedicated proofs and emitters too. General object execution, closures and exception handling are not implied. Eliminating an unreachable branch or folding a constant is not evidence of general support for its operations. Current executable examples are registered in [test/data/native](../../../test/data/native/README.md).
 
 A loop additionally needs stable representations through its back edge. All four parts must have body/expression proofs. Prefix and postfix updates are admitted only for mutable numeric parameters or locals, with their distinct old/new results preserved. Changing a local from integer to real, writing captured storage, or exceeding the loop-analysis budget prevents this route. A body that was not visited is not automatically approved.
 

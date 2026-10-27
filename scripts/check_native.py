@@ -13,7 +13,8 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
-SUITE = ROOT / 'test/native'
+SUITE = ROOT / 'test/data/native'
+CHECKS = ROOT / 'test/src/native'
 
 
 def require(condition, message):
@@ -116,7 +117,7 @@ def load_cases():
         require(re.fullmatch(r'[a-z][a-z0-9_]*', name) and name not in names, f'invalid/duplicate name: {name}')
         names.add(name)
         if 'check' in case:
-            require((SUITE / case['check']).is_file(), f'missing check: {case}')
+            require((CHECKS / case['check']).is_file(), f'missing check: {case}')
         else:
             require(type(case.get('calls')) is int and case['calls'] > 0, f'positive calls required: {name}')
             require((SUITE / name / 'program.goat').is_file(), f'missing program: {name}')
@@ -146,7 +147,7 @@ def main():
         work.mkdir()
         try:
             if 'check' in case:
-                execute([sys.executable, str(SUITE / case['check']), str(exe), str(work)], work, 'check')
+                execute([sys.executable, str(CHECKS / case['check']), str(exe), str(work)], work, 'check')
             else:
                 program_case(exe, case, work)
             print(f'[ ok ] {case["name"]}', flush=True)

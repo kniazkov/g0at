@@ -10,7 +10,7 @@ python3 scripts/check_native.py build/goat "build/native functional" --only quad
 
 `list.json` — общий список. Новый обычный тест добавляется без правки CI:
 
-1. Создай `test/native/<name>/program.goat`.
+1. Создай `test/data/native/<name>/program.goat`.
 2. Добавь запись `{"name": "<name>", "calls": 1}` в `list.json`.
 3. При необходимости добавь `expected_output.txt` с точным UTF-8-выводом.
 
@@ -38,7 +38,7 @@ python3 scripts/check_native.py build/goat "build/native functional" --only quad
 `example` — пример из корня репозитория, который должен совпадать с тестом;
 `driver` — C-драйвер для проверки экспортированного адаптера с настоящим контекстом памяти.
 
-Записи `check` запускают специальные проверки из `checks/`: массовые сравнения
+Записи `check` запускают специальные проверки из `test/src/native/checks/`: массовые сравнения
 арифметики и libm, проверку строковой библиотеки через внешний хост. Они используют
 тот же список, но сохраняют свои проверки ошибок, ABI и границ. Низкоуровневые
 проверки загрузчика/компилятора и sanitizer-конфигурации остаются отдельными шагами CI.

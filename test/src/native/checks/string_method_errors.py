@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import sys
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 sys.dont_write_bytecode = True
 spec = importlib.util.spec_from_file_location('native_runner', ROOT / 'scripts/check_native.py')
 runner = importlib.util.module_from_spec(spec)

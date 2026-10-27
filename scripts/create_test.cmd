@@ -6,30 +6,30 @@
 @echo off
 setlocal
 pushd "%~dp0.." || exit /b 1
-if exist test\functional\%1\program.goat goto done
-mkdir test\functional\%1
-copy program.goat test\functional\%1
-echo %1 >> test\functional\list.txt
+if exist test\data\functional\%1\program.goat goto done
+mkdir test\data\functional\%1
+copy program.goat test\data\functional\%1
+echo %1 >> test\data\functional\list.txt
 gcc -Isrc -Iinclude -Itest\src -Ithird_party\yyjson test\src\functional\functional_testing.c third_party\yyjson\yyjson.c -o functional_testing
-cd test\functional
-..\..\functional_testing.exe ..\..\goat.exe list.txt > NUL
-cd ..\..
-for %%F in ("test\functional\%1\actual_output_all.txt") do if %%~zF NEQ 0 (
-    ren test\functional\%1\actual_output_all.txt expected_output.txt
+cd test\data\functional
+..\..\..\functional_testing.exe ..\..\..\goat.exe list.txt > NUL
+cd ..\..\..
+for %%F in ("test\data\functional\%1\actual_output_all.txt") do if %%~zF NEQ 0 (
+    ren test\data\functional\%1\actual_output_all.txt expected_output.txt
 ) else (
-    del test\functional\%1\actual_output_all.txt
+    del test\data\functional\%1\actual_output_all.txt
 )
-for %%F in ("test\functional\%1\actual_error_all.txt") do if %%~zF NEQ 0 (
-    ren test\functional\%1\actual_error_all.txt expected_error.txt
+for %%F in ("test\data\functional\%1\actual_error_all.txt") do if %%~zF NEQ 0 (
+    ren test\data\functional\%1\actual_error_all.txt expected_error.txt
 ) else (
-    del test\functional\%1\actual_error_all.txt
+    del test\data\functional\%1\actual_error_all.txt
 )
-cd test\functional
-..\..\functional_testing.exe ..\..\goat.exe list.txt
-cd ..\..
+cd test\data\functional
+..\..\..\functional_testing.exe ..\..\..\goat.exe list.txt
+cd ..\..\..
 del functional_testing.exe
 echo.
-git add test\functional\%1\*
+git add test\data\functional\%1\*
 
 :done
 popd

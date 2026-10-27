@@ -20,10 +20,15 @@ copy /Y build\goat.exe goat.exe > NUL || goto failed
 
 build\module_json_testing.exe || goto failed
 build\unit_testing.exe || goto failed
-build\analysis_testing.exe test\analysis || goto failed
+build\analysis_testing.exe test\data\analysis || goto failed
 
-pushd test\functional
-..\..\build\functional_testing.exe ..\..\goat.exe list.txt
+:make_test_work
+set "test_work=build\functional-fixtures-%random%-%random%"
+if exist "%test_work%" goto make_test_work
+mkdir "%test_work%" || goto failed
+xcopy /e /i /y /q test\data\functional "%test_work%" >nul || goto failed
+pushd "%test_work%"
+..\functional_testing.exe ..\..\goat.exe list.txt
 set "testing_result=%errorlevel%"
 popd
 if not "%testing_result%"=="0" goto failed

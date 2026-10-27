@@ -20,6 +20,6 @@ fi
 "$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" \
     "${shared[@]}" -DGOAT_NATIVE_BUILD "$repo_root/test/src/functional/native_call/provider.c" \
     -o "$output_dir/provider.$ext"
-cp "$repo_root/test/functional/native_call/program.goat" "$output_dir/program.goat"
+cp "$repo_root/test/data/functional/native_call/program.goat" "$output_dir/program.goat"
 CC="$compiler_env" "$interpreter" --save-library "$output_dir/program.goat"
 GOAT_CALL_UNLOAD="$marker_env" "$tests" --native-call-tests "$output_dir/provider.$ext" "$output_dir/program.$ext" "$output_dir/unloaded.txt"

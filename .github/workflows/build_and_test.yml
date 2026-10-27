@@ -275,7 +275,7 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
       - name: Check native strings with sanitizers
-        run: python3 test/native/checks/runtime_strings.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native strings ubsan" -fsanitize=undefined -fno-sanitize-recover=all
+        run: python3 test/src/native/checks/runtime_strings.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native strings ubsan" -fsanitize=undefined -fno-sanitize-recover=all
         env:
           CC: ${{ matrix.compiler }}
       - name: Check numeric adapter ABI with sanitizers
@@ -377,7 +377,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: failures-Linux-${{ matrix.arch }}-${{ matrix.name }}
-          path: test/functional/**/actual_*.txt
+          path: build/**/functional-fixtures-*/**/actual_*.txt
           if-no-files-found: ignore
   windows:
     name: Build and test (Windows, GCC ${{ matrix.msystem }})
@@ -640,5 +640,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: failures-Windows-GCC-${{ matrix.msystem }}
-          path: test/functional/**/actual_*.txt
+          path: build/**/functional-fixtures-*/**/actual_*.txt
           if-no-files-found: ignore

@@ -16,7 +16,7 @@ def main():
     goat = args.goat.resolve()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    fixtures = Path(__file__).resolve().parent.parent / "test" / "functional"
+    fixtures = Path(__file__).resolve().parent.parent / "test" / "data" / "functional"
     env = dict(os.environ, GOAT_LANGUAGE="en", CC="goat-index-test-no-compiler")
 
     def run(*options):

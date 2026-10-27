@@ -34,7 +34,7 @@ fi
 CC="$compiler_env" TMPDIR="$workspace_env" TMP="$workspace_env" TEMP="$workspace_env" \
 GOAT_PIPELINE_WRONG_LIBRARY="$wrong_env" "$tests" --native-pipeline-tests "$compiler_env" \
     "$output_dir/invalid-compiler$exe" "$output_dir/wrong-compiler$exe" \
-    "$repo_root/test/functional/native_pipeline/program.goat"
+    "$repo_root/test/data/functional/native_pipeline/program.goat"
 if [[ -n $(find "$output_dir/temporary" -mindepth 1 -print -quit) ]]; then
     echo 'Native pipeline left temporary files behind' >&2
     exit 1

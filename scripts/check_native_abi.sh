@@ -13,7 +13,7 @@ printf 'Starting native ABI testing...\n'
 trap 'printf "[fail] %s\nNative ABI testing done; total: %d, passed: %d, failed: 1\n" "$current" "$((passed+1))" "$passed"' ERR
 ok() { printf '[ ok ] %s\n' "$current"; passed=$((passed+1)); }
 compile() { "${CC:-gcc}" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" "${compiler_flags[@]}" "$@"; }
-cp "$repo_root/test/functional/native_abi/program.goat" "$output_dir/module.goat"
+cp "$repo_root/test/data/functional/native_abi/program.goat" "$output_dir/module.goat"
 "$interpreter" --save-c "$output_dir/module.goat"
 diff -b --strip-trailing-cr "$repo_root/include/goat/native_abi.h" "$output_dir/native_abi.h"
 diff -b --strip-trailing-cr "$repo_root/include/goat/native_runtime.h" "$output_dir/native_runtime.h"

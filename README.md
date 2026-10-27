@@ -39,7 +39,7 @@ const add_two = add(2);
 println(add_two(3));
 ```
 
-Output: `5`, followed by a newline. See the [book examples](docs/book/examples) and [functional tests](test/functional) for more programs.
+Output: `5`, followed by a newline. See the [book examples](docs/book/examples) and [functional tests](test/data/functional) for more programs.
 
 A C-style loop uses the same values and scopes:
 
@@ -236,7 +236,7 @@ For the focused book/README tutorial check after building (Python 3 required):
 python3 scripts/check_module_book.py build/goat
 ```
 
-On Windows use `python scripts/check_module_book.py build/goat.exe`. This checks the documented examples and local links, not every possible program or the semantic equivalence of all prose. See [benchmarks](test/performance/README.md) for Release performance checks.
+On Windows use `python scripts/check_module_book.py build/goat.exe`. This checks the documented examples and local links, not every possible program or the semantic equivalence of all prose. See [benchmarks](test/data/performance/README.md) for Release performance checks.
 
 Portability claims are bounded by evidence: current CI executes relocated native/VM programs, genuine mixed Windows CRT variants, control modules on glibc 2.35/2.36, and musl modules on their linked runtime version. The musl version floor is conservative; execution on an older musl is not claimed. Ordinary declared glibc 2.14/2.17 floors and actual Windows 10 execution are **not** yet demonstrated on those exact systems. The [delivery evidence and validation plan](docs/module-delivery-tests.md) separates these limits from implemented functionality. Native ELF/PE compatibility metadata is not a guarantee about every host or the interpreter executable itself.
 
