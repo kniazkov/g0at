@@ -30,3 +30,8 @@ jobs:
         run: python test/support/freeze_python_samples.py --check
       - name: Test frozen input checker rejects corruption
         run: python test/support/freeze_python_samples.py --self-test
+      - name: Build and check standalone host Unicode generator without core
+        run: |
+          cmake -S tools/unicode -B build/unicode-host
+          cmake --build build/unicode-host --config Release
+          ctest --test-dir build/unicode-host -C Release --output-on-failure

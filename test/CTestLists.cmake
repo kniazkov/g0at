@@ -144,6 +144,11 @@ foreach(scenario roundtrip stale missing reject-keyword reject-pattern reject-ty
     "$<TARGET_FILE:module_schema_generator_testing>" "${scenario}" "$<TARGET_FILE:module_schema_generator>"
     "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
 endforeach()
+foreach(scenario check roundtrip stale missing missing-input reject-unicode reject-special reject-property)
+  goat_scenario(unicode.generator.${scenario} "unicode-generator" TIMEOUT 40 COMMAND
+    "$<TARGET_FILE:unicode_generator_testing>" "${scenario}" "$<TARGET_FILE:unicode_generator>"
+    "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
+endforeach()
 if(GOAT_TEST_ALLOC_FAILURE)
   goat_python(fault.module_memory "fault" scripts/check_module_memory.py $<TARGET_FILE:module_memory_testing>)
 endif()
