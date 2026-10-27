@@ -10,6 +10,7 @@
 
 #    include <stdio.h>
 #    include <string.h>
+#    include <wchar.h>
 #    include <windows.h>
 #    ifndef PROC_THREAD_ATTRIBUTE_JOB_LIST
 #        define PROC_THREAD_ATTRIBUTE_JOB_LIST ((DWORD_PTR)0x0002000D)
@@ -19,6 +20,11 @@ struct child_process_t {
     child_result_t result;
     child_deadline_t deadline;
     HANDLE process, job, pipes[3];
+    HANDLE input;
+    OVERLAPPED input_write;
+    unsigned char *input_data;
+    size_t input_size, input_offset;
+    bool input_pending;
     bool done, service;
 };
 
@@ -42,6 +48,164 @@ static wchar_t *wide(const char *text) {
         return NULL;
     }
     return result;
+}
+
+/* Full replacement environment; Windows names are case-insensitive. */
+static wchar_t *environment_block(const char *const *environment) {
+    size_t count = 0, size = 1;
+    while (environment[count])
+        count++;
+    wchar_t **entries =
+        CALLOC(allocation_size_multiply(allocation_size_add(count, 1), sizeof(*entries)));
+    DWORD error = 0;
+    for (size_t i = 0; i < count && !error; i++) {
+        entries[i] = wide(environment[i]);
+        if (!entries[i]) {
+            error = GetLastError();
+            break;
+        }
+        size = allocation_size_add(size, allocation_size_add(wcslen(entries[i]), 1));
+        const wchar_t *equals = wcschr(entries[i], L'=');
+        size_t name_size = (size_t)(equals - entries[i]);
+        for (size_t j = 0; j < i; j++) {
+            const wchar_t *other = wcschr(entries[j], L'=');
+            if ((size_t)(other - entries[j]) == name_size
+                && CompareStringOrdinal(entries[i],
+                                        (int)name_size,
+                                        entries[j],
+                                        (int)name_size,
+                                        TRUE)
+                       == CSTR_EQUAL) {
+                error = ERROR_INVALID_PARAMETER;
+                break;
+            }
+        }
+    }
+    wchar_t *block = NULL;
+    if (!error) {
+        /* Insertion sort avoids a locale-dependent comparison callback. */
+        for (size_t i = 1; i < count; i++) {
+            wchar_t *entry = entries[i];
+            size_t j = i;
+            while (j
+                   && CompareStringOrdinal(entries[j - 1],
+                                           (int)(wcschr(entries[j - 1], L'=') - entries[j - 1]),
+                                           entry,
+                                           (int)(wcschr(entry, L'=') - entry),
+                                           TRUE)
+                          == CSTR_GREATER_THAN) {
+                entries[j] = entries[j - 1];
+                j--;
+            }
+            entries[j] = entry;
+        }
+        block = CALLOC(allocation_size_multiply(allocation_size_add(size, 1), sizeof(*block)));
+        wchar_t *next = block;
+        for (size_t i = 0; i < count; i++) {
+            size_t length = wcslen(entries[i]) + 1;
+            memcpy(next, entries[i], length * sizeof(*next));
+            next += length;
+        }
+    }
+    for (size_t i = 0; i < count; i++)
+        FREE(entries[i]);
+    FREE(entries);
+    if (error)
+        SetLastError(error);
+    return block;
+}
+
+static void close_input(child_process_t *p) {
+    if (p->input_pending) {
+        CancelIoEx(p->input, &p->input_write);
+        DWORD ignored;
+        /* Cancellation must complete before freeing the buffer/OVERLAPPED. */
+        GetOverlappedResult(p->input, &p->input_write, &ignored, TRUE);
+        p->input_pending = false;
+    }
+    close_handle(&p->input);
+    close_handle(&p->input_write.hEvent);
+    FREE(p->input_data);
+    p->input_data = NULL;
+}
+
+static DWORD create_input(child_process_t *p,
+                          HANDLE *reader,
+                          SECURITY_ATTRIBUTES *sa,
+                          const child_options_t *options) {
+    static LONG sequence;
+    wchar_t name[128];
+    swprintf(name,
+             sizeof(name) / sizeof(*name),
+             L"\\\\.\\pipe\\goat-input-%lu-%lu",
+             (unsigned long)GetCurrentProcessId(),
+             (unsigned long)InterlockedIncrement(&sequence));
+    *reader = CreateNamedPipeW(name,
+                               PIPE_ACCESS_INBOUND | FILE_FLAG_FIRST_PIPE_INSTANCE,
+                               PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT
+                                   | PIPE_REJECT_REMOTE_CLIENTS,
+                               1,
+                               4096,
+                               4096,
+                               0,
+                               sa);
+    if (*reader == INVALID_HANDLE_VALUE)
+        return GetLastError();
+    p->input = CreateFileW(name, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+    if (p->input == INVALID_HANDLE_VALUE)
+        return GetLastError();
+    /* The client is already connected: this cannot wait for another connection. */
+    if (!ConnectNamedPipe(*reader, NULL) && GetLastError() != ERROR_PIPE_CONNECTED)
+        return GetLastError();
+    p->input_write.hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+    if (!p->input_write.hEvent)
+        return GetLastError();
+    p->input_size = options->stdin_size;
+    if (p->input_size) {
+        p->input_data = ALLOC(p->input_size);
+        memcpy(p->input_data, options->stdin_data, p->input_size);
+    } else {
+        close_input(p);
+    }
+    return 0;
+}
+
+/* At most one bounded async write per turn; drain output and check deadlines between turns. */
+static void pump_input(child_process_t *p) {
+    if (!p->input || p->input == INVALID_HANDLE_VALUE)
+        return;
+    DWORD written = 0, error = 0;
+    if (p->input_pending) {
+        if (!GetOverlappedResult(p->input, &p->input_write, &written, FALSE)) {
+            error = GetLastError();
+            if (error == ERROR_IO_INCOMPLETE)
+                return;
+        }
+        p->input_pending = false;
+    } else {
+        size_t remaining = p->input_size - p->input_offset;
+        ResetEvent(p->input_write.hEvent);
+        if (!WriteFile(p->input,
+                       p->input_data + p->input_offset,
+                       remaining > 4096 ? 4096 : (DWORD)remaining,
+                       &written,
+                       &p->input_write)) {
+            error = GetLastError();
+            if (error == ERROR_IO_PENDING) {
+                p->input_pending = true;
+                return;
+            }
+        }
+    }
+    if (error) {
+        if (error != ERROR_BROKEN_PIPE && error != ERROR_NO_DATA)
+            p->result.system_error = error;
+        close_input(p);
+        return;
+    }
+    p->input_offset += written;
+    if (p->input_offset == p->input_size)
+        close_input(p);
 }
 
 static wchar_t *executable_path(const char *name) {
@@ -71,7 +235,7 @@ static wchar_t *executable_path(const char *name) {
 }
 
 child_process_t *start_child_process(const child_options_t *options) {
-    if (!options || !options->arguments || !options->arguments[0])
+    if (!child_options_valid(options))
         return NULL;
     child_process_t *p = CALLOC(sizeof(*p));
     p->result.exit_code = -1;
@@ -87,12 +251,17 @@ child_process_t *start_child_process(const child_options_t *options) {
     wchar_t *directory = options->working_directory ? wide(options->working_directory) : NULL;
     if (options->working_directory && !directory)
         error = GetLastError();
+    wchar_t *environment = options->environment ? environment_block(options->environment) : NULL;
+    if (options->environment && !environment)
+        error = GetLastError();
     STARTUPINFOEXW startup = {0};
     startup.StartupInfo.cb = sizeof(startup);
     startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
     bool initialized = false;
     for (int i = 0; i < 3 && !error; i++) {
-        if (i && options->capture_output) {
+        if (!i && options->stdin_data) {
+            error = create_input(p, &inherited[i], &sa, options);
+        } else if (i && options->capture_output) {
             if (!CreatePipe(&p->pipes[i - 1], &inherited[i], &sa, 4096)
                 || !SetHandleInformation(p->pipes[i - 1], HANDLE_FLAG_INHERIT, 0))
                 error = GetLastError();
@@ -240,8 +409,9 @@ child_process_t *start_child_process(const child_options_t *options) {
                                    NULL,
                                    NULL,
                                    TRUE,
-                                   EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW,
-                                   NULL,
+                                   EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW
+                                       | CREATE_UNICODE_ENVIRONMENT,
+                                   environment,
                                    directory,
                                    &startup.StartupInfo,
                                    &info))
@@ -255,6 +425,7 @@ child_process_t *start_child_process(const child_options_t *options) {
     FREE(startup.lpAttributeList);
     for (size_t i = 0; i < count; i++)
         close_handle(&inherited[i]);
+    FREE(environment);
     FREE(directory);
     FREE(executable);
     FREE(command);
@@ -263,6 +434,8 @@ child_process_t *start_child_process(const child_options_t *options) {
         p->result.system_error = error;
         p->done = true;
     }
+    if (p->done)
+        close_input(p);
     return p;
 }
 
@@ -305,6 +478,7 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
             break;
         }
         drain(p);
+        pump_input(p);
         DWORD state = WaitForSingleObject(p->process, 0);
         if (state == WAIT_OBJECT_0) {
             DWORD code;
@@ -328,6 +502,7 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
             return &p->result;
         Sleep(1);
     }
+    close_input(p);
     /* Even a successful root may have left descendants holding pipes or DLLs. */
     if (!TerminateJobObject(p->job, 1))
         p->result.cleanup_error = GetLastError();
@@ -371,6 +546,7 @@ const child_result_t *poll_child_process(child_process_t *p) {
 void release_child_service(child_process_t *p) {
     if (!p || !p->service)
         return;
+    close_input(p);
     close_handle(&p->process);
     close_handle(&p->job);
     for (int i = 0; i < 3; i++)
@@ -382,6 +558,7 @@ void destroy_child_process(child_process_t *p) {
     if (!p)
         return;
     stop_child_process(p);
+    close_input(p);
     close_handle(&p->process);
     close_handle(&p->job);
     for (int i = 0; i < 3; i++)

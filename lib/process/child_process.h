@@ -60,6 +60,17 @@ typedef struct {
     bool survive_parent;
     /** @brief Optional duplex endpoint; duplicated into child, caller retains its handle. */
     uintptr_t service_channel;
+    /** @brief NULL inherits the environment; otherwise a full NULL-terminated UTF-8 NAME=value
+     * replacement (an empty list means empty environment). Names must be nonempty and unique
+     * (case-insensitive on Windows). Parent environment is never changed. Executable lookup
+     * still uses the parent search path; pass an explicit path for deterministic selection. */
+    const char *const *environment;
+    /** @brief Optional bytes copied by start, pumped by wait/poll concurrently with output,
+     * followed by EOF. Non-NULL with zero size supplies immediate EOF. Takes precedence over
+     * empty_stdin; NULL with zero size preserves its legacy behavior. Early child closure is
+     * normal; delivery is not guaranteed if the child exits, closes stdin, or times out. */
+    const void *stdin_data;
+    size_t stdin_size;
 } child_options_t;
 
 uint64_t child_monotonic_ms(void);

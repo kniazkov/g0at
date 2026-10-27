@@ -28,6 +28,9 @@ target_link_libraries(zip_testing PRIVATE goat_common yyjson)
 add_executable(module_json_testing src/component/module_json_testing.c)
 target_link_libraries(module_json_testing PRIVATE goat_module)
 
+add_executable(child_process_input_testing src/component/child_process_input_testing.c)
+target_link_libraries(child_process_input_testing PRIVATE goat_common)
+
 add_executable(child_process_testing src/component/child_process_testing.c)
 target_link_libraries(child_process_testing PRIVATE core m)
 if(MINGW)

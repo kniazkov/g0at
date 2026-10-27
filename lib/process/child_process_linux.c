@@ -35,7 +35,9 @@ struct child_process_t {
     child_result_t result;
     child_deadline_t deadline;
     pid_t supervisor;
-    int control, pipes[3];
+    int control, pipes[3], input;
+    unsigned char *input_data;
+    size_t input_size, input_offset;
     bool done, stopped, service;
 };
 
@@ -160,6 +162,7 @@ static void supervise(int control,
                       const char *executable,
                       const char *working_directory,
                       char *const *args,
+                      char *const *environment,
                       int maximum,
                       bool survive_parent) {
     child_reply_t reply = {.code = -1};
@@ -213,7 +216,7 @@ static void supervise(int control,
         if (!error && working_directory && chdir(working_directory))
             error = errno;
         if (!error)
-            execve(executable, args, environ);
+            execve(executable, args, environment);
         if (!error)
             error = errno;
         (void)write(errors[1], &error, sizeof(error));
@@ -299,10 +302,11 @@ static char *resolve_executable(const char *name) {
 }
 
 child_process_t *start_child_process(const child_options_t *options) {
-    if (!options || !options->arguments || !options->arguments[0])
+    if (!child_options_valid(options))
         return NULL;
     child_process_t *p = CALLOC(sizeof(*p));
     p->control = -1;
+    p->input = -1;
     for (int i = 0; i < 3; i++)
         p->pipes[i] = -1;
     p->deadline = options->deadline;
@@ -325,7 +329,25 @@ child_process_t *start_child_process(const child_options_t *options) {
     struct rlimit limit;
     if (!error && getrlimit(RLIMIT_NOFILE, &limit))
         error = errno;
-    if (!error && options->empty_stdin) {
+    if (!error && options->stdin_data) {
+        int pair[2];
+        /* A socket permits MSG_NOSIGNAL without changing the caller's signal disposition. */
+        if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, pair))
+            error = errno;
+        else {
+            input = high_fd(pair[0]);
+            p->input = high_fd(pair[1]);
+            if (input < 0 || p->input < 0 || fcntl(p->input, F_SETFL, O_NONBLOCK))
+                error = errno;
+            else {
+                p->input_size = options->stdin_size;
+                p->input_data = ALLOC(p->input_size);
+                memcpy(p->input_data, options->stdin_data, p->input_size);
+                if (!p->input_size)
+                    close_fd(&p->input);
+            }
+        }
+    } else if (!error && options->empty_stdin) {
         input = high_fd(open("/dev/null", O_RDONLY | O_CLOEXEC));
         if (input < 0)
             error = errno;
@@ -410,6 +432,7 @@ child_process_t *start_child_process(const child_options_t *options) {
                           executable,
                           options->working_directory,
                           args,
+                          options->environment ? (char *const *)options->environment : environ,
                           limit.rlim_cur > INT_MAX ? INT_MAX : (int)limit.rlim_cur,
                           options->survive_parent);
             }
@@ -441,6 +464,27 @@ child_process_t *start_child_process(const child_options_t *options) {
     FREE(args);
     FREE(executable);
     return p;
+}
+
+static void feed(child_process_t *p) {
+    for (int turn = 0; p->input >= 0 && turn < 16; turn++) {
+        size_t left = p->input_size - p->input_offset;
+        ssize_t n = send(p->input,
+                         p->input_data + p->input_offset,
+                         left > 4096 ? 4096 : left,
+                         MSG_NOSIGNAL);
+        if (n > 0) {
+            p->input_offset += (size_t)n;
+            if (p->input_offset == p->input_size)
+                close_fd(&p->input);
+        } else {
+            if (n < 0 && (errno == EAGAIN || errno == EINTR))
+                break;
+            if (n < 0 && errno != EPIPE && errno != ECONNRESET)
+                p->result.system_error = errno;
+            close_fd(&p->input);
+        }
+    }
 }
 
 static void drain(child_process_t *p) {
@@ -477,6 +521,10 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
             cleanup_deadline = child_monotonic_ms() + 6000;
         }
         drain(p);
+        if (!p->stopped)
+            feed(p);
+        else
+            close_fd(&p->input);
         child_reply_t reply;
         ssize_t n = recv(p->control, &reply, sizeof(reply), MSG_DONTWAIT);
         if (n == sizeof(reply)) {
@@ -509,11 +557,13 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
         }
         if (polling && !p->stopped)
             return &p->result;
-        struct pollfd fds[4] = {{.fd = p->control, .events = POLLIN}};
+        struct pollfd fds[5] = {{.fd = p->control, .events = POLLIN}};
         for (int i = 0; i < 3; i++)
             fds[i + 1] = (struct pollfd){.fd = p->pipes[i], .events = POLLIN};
-        poll(fds, 4, 5);
+        fds[4] = (struct pollfd){.fd = p->input, .events = POLLOUT};
+        poll(fds, 5, 5);
     }
+    close_fd(&p->input);
     p->done = true;
     return &p->result;
 }
@@ -536,6 +586,8 @@ void release_child_service(child_process_t *p) {
     close_fd(&p->control);
     for (int i = 0; i < 3; i++)
         close_fd(&p->pipes[i]);
+    close_fd(&p->input);
+    FREE(p->input_data);
     FREE(p);
 }
 
@@ -548,6 +600,8 @@ void destroy_child_process(child_process_t *p) {
         close_fd(&p->pipes[i]);
     if (p->supervisor > 0)
         waitpid(p->supervisor, NULL, WNOHANG);
+    close_fd(&p->input);
+    FREE(p->input_data);
     FREE(p);
 }
 

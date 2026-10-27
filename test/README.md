@@ -56,3 +56,16 @@ userspaces, prerequisite artifacts and tool installation. They remain external
 CI orchestration, not default CTest commands; registering the ordinary requirement
 audit does not replace those jobs. Build scripts and `create_test.cmd` are tools,
 not tests, and are not invoked recursively from CTest.
+
+### Child environment and finite input
+
+`child_process_input_testing <scenario>` provides independent C fixtures for
+`env`, `inherit`, `empty-env`, `empty`, `binary`, `early-close`, `timeout`,
+`start-error`, `invalid`, `poll`, and `stop`. Run these via `ctest --test-dir build -L process-input
+--output-on-failure`. The binary scenario feeds more than 1 MiB (including NUL)
+while the child fills both output pipes before consuming stdin. It also destroys
+the caller's input buffer after start to check snapshot ownership. Other cases
+check EOF, early stdin closure, the original deadline, isolated Unicode environment
+and arguments, full replacement versus inheritance, invalid options, and launch
+failure. These checks supplement rather than replace the existing Python process
+suite and its independent process-tree observer.
