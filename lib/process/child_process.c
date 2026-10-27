@@ -20,3 +20,26 @@ void child_capture(child_output_t *output, const unsigned char *bytes, size_t si
     output->size += keep;
     output->truncated |= keep < size;
 }
+
+bool child_options_valid(const child_options_t *options) {
+    if (!options || !options->arguments || !options->arguments[0]
+        || (!options->stdin_data && options->stdin_size))
+        return false;
+    if (options->environment) {
+        for (size_t i = 0; options->environment[i]; i++) {
+            const char *entry = options->environment[i];
+            const char *equal = strchr(entry, '=');
+            if (!equal || equal == entry)
+                return false;
+            size_t length = (size_t)(equal - entry);
+            for (size_t j = 0; j < i; j++) {
+                const char *previous = options->environment[j];
+                const char *previous_equal = strchr(previous, '=');
+                if ((size_t)(previous_equal - previous) == length
+                    && !memcmp(entry, previous, length))
+                    return false;
+            }
+        }
+    }
+    return true;
+}

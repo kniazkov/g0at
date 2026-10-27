@@ -37,7 +37,7 @@
 - [x] 04. [#322 — Выделить общую статическую библиотеку из src/lib](https://github.com/kniazkov/g0at/issues/322)
 - [x] 05. [#323 — Переименовать Unicode-таблицу в unicode_data.h](https://github.com/kniazkov/g0at/issues/323)
 - [x] 06. [#324 — Подключить существующие наборы к CTest](https://github.com/kniazkov/g0at/issues/324)
-- [ ] 07. [#325 — Расширить общий запуск процессов: env и stdin](https://github.com/kniazkov/g0at/issues/325)
+- [x] 07. [#325 — Расширить общий запуск процессов: env и stdin](https://github.com/kniazkov/g0at/issues/325)
 - [ ] 08. [#326 — Добавить потоковый обмен и большие результаты дочерних процессов](https://github.com/kniazkov/g0at/issues/326)
 - [ ] 09. [#327 — Создать контекст сценария и управление рабочими каталогами](https://github.com/kniazkov/g0at/issues/327)
 - [ ] 10. [#328 — Добавить во фреймворк проверки, диагностику и дедлайны](https://github.com/kniazkov/g0at/issues/328)
