@@ -23,7 +23,8 @@ void child_capture(child_output_t *output, const unsigned char *bytes, size_t si
 
 bool child_options_valid(const child_options_t *options) {
     if (!options || !options->arguments || !options->arguments[0]
-        || (!options->stdin_data && options->stdin_size))
+        || (!options->stdin_data && options->stdin_size)
+        || (options->stdin_data && options->stdin_callback))
         return false;
     if (options->environment) {
         for (size_t i = 0; options->environment[i]; i++) {

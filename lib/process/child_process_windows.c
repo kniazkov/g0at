@@ -25,6 +25,10 @@ struct child_process_t {
     unsigned char *input_data;
     size_t input_size, input_offset;
     bool input_pending;
+    child_input_callback_t stdin_callback;
+    child_output_callback_t output_callbacks[2];
+    void *callback_context;
+    bool capture_output, callback_failed;
     bool done, service;
 };
 
@@ -161,7 +165,9 @@ static DWORD create_input(child_process_t *p,
     if (!p->input_write.hEvent)
         return GetLastError();
     p->input_size = options->stdin_size;
-    if (p->input_size) {
+    if (p->stdin_callback) {
+        p->input_data = ALLOC(4096);
+    } else if (p->input_size) {
         p->input_data = ALLOC(p->input_size);
         memcpy(p->input_data, options->stdin_data, p->input_size);
     } else {
@@ -183,6 +189,25 @@ static void pump_input(child_process_t *p) {
         }
         p->input_pending = false;
     } else {
+        if (p->stdin_callback && p->input_offset == p->input_size) {
+            size_t size = 0;
+            child_input_status_t state =
+                p->stdin_callback(p->callback_context, p->input_data, 4096, &size);
+            if (state == CHILD_INPUT_WAIT && !size)
+                return;
+            if (state == CHILD_INPUT_EOF && !size) {
+                close_input(p);
+                return;
+            }
+            if (state != CHILD_INPUT_DATA || !size || size > 4096) {
+                p->callback_failed = true;
+                p->result.system_error = ERROR_INVALID_DATA;
+                close_input(p);
+                return;
+            }
+            p->input_size = size;
+            p->input_offset = 0;
+        }
         size_t remaining = p->input_size - p->input_offset;
         ResetEvent(p->input_write.hEvent);
         if (!WriteFile(p->input,
@@ -198,13 +223,15 @@ static void pump_input(child_process_t *p) {
         }
     }
     if (error) {
-        if (error != ERROR_BROKEN_PIPE && error != ERROR_NO_DATA)
+        if (error != ERROR_BROKEN_PIPE && error != ERROR_NO_DATA) {
             p->result.system_error = error;
+            p->callback_failed = true;
+        }
         close_input(p);
         return;
     }
     p->input_offset += written;
-    if (p->input_offset == p->input_size)
+    if (p->input_offset == p->input_size && !p->stdin_callback)
         close_input(p);
 }
 
@@ -241,6 +268,11 @@ child_process_t *start_child_process(const child_options_t *options) {
     p->result.exit_code = -1;
     p->deadline = options->deadline;
     p->service = options->survive_parent;
+    p->stdin_callback = options->stdin_callback;
+    p->output_callbacks[0] = options->stdout_callback;
+    p->output_callbacks[1] = options->stderr_callback;
+    p->callback_context = options->callback_context;
+    p->capture_output = options->capture_output;
     HANDLE inherited[6] = {0};
     size_t count = 3;
     SECURITY_ATTRIBUTES sa = {.nLength = sizeof(sa), .bInheritHandle = TRUE};
@@ -259,9 +291,9 @@ child_process_t *start_child_process(const child_options_t *options) {
     startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
     bool initialized = false;
     for (int i = 0; i < 3 && !error; i++) {
-        if (!i && options->stdin_data) {
+        if (!i && (options->stdin_data || options->stdin_callback)) {
             error = create_input(p, &inherited[i], &sa, options);
-        } else if (i && options->capture_output) {
+        } else if (i && (options->capture_output || p->output_callbacks[i - 1])) {
             if (!CreatePipe(&p->pipes[i - 1], &inherited[i], &sa, 4096)
                 || !SetHandleInformation(p->pipes[i - 1], HANDLE_FLAG_INHERIT, 0))
                 error = GetLastError();
@@ -439,15 +471,18 @@ child_process_t *start_child_process(const child_options_t *options) {
     return p;
 }
 
-static void drain(child_process_t *p) {
+static bool drain(child_process_t *p) {
+    bool progress = false;
     child_output_t *streams[] = {&p->result.out, &p->result.err, &p->result.result};
     for (int i = 0; i < 3; i++) {
         for (int turn = 0; p->pipes[i] && turn < 16; turn++) {
             DWORD available = 0;
             if (!PeekNamedPipe(p->pipes[i], NULL, 0, NULL, &available, NULL)) {
                 DWORD error = GetLastError();
-                if (error != ERROR_BROKEN_PIPE)
+                if (error != ERROR_BROKEN_PIPE) {
                     p->result.system_error = error;
+                    p->callback_failed = true;
+                }
                 close_handle(&p->pipes[i]);
                 break;
             }
@@ -461,12 +496,21 @@ static void drain(child_process_t *p) {
                           &received,
                           NULL)) {
                 p->result.system_error = GetLastError();
+                p->callback_failed = true;
                 close_handle(&p->pipes[i]);
                 break;
             }
-            child_capture(streams[i], data, received);
+            progress |= received != 0;
+            if (i == 2 || p->capture_output)
+                child_capture(streams[i], data, received);
+            if (i < 2 && received && p->output_callbacks[i] && !p->callback_failed
+                && !p->output_callbacks[i](p->callback_context, data, received)) {
+                p->callback_failed = true;
+                p->result.system_error = ERROR_WRITE_FAULT;
+            }
         }
     }
+    return progress;
 }
 
 static const child_result_t *wait_process(child_process_t *p, bool stop, bool polling) {
@@ -478,7 +522,12 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
             break;
         }
         drain(p);
-        pump_input(p);
+        if (!p->callback_failed)
+            pump_input(p);
+        if (p->callback_failed) {
+            p->result.status = CHILD_IO_ERROR;
+            break;
+        }
         DWORD state = WaitForSingleObject(p->process, 0);
         if (state == WAIT_OBJECT_0) {
             DWORD code;
@@ -507,6 +556,7 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
     if (!TerminateJobObject(p->job, 1))
         p->result.cleanup_error = GetLastError();
     uint64_t end = child_monotonic_ms() + 5000;
+    bool tree_gone = false;
     for (;;) {
         drain(p);
         JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting;
@@ -518,15 +568,25 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
             p->result.cleanup_error = GetLastError();
             break;
         }
-        if (!accounting.ActiveProcesses)
+        if (!accounting.ActiveProcesses) {
+            tree_gone = true;
             break;
+        }
         if (child_monotonic_ms() >= end) {
             p->result.cleanup_error = WAIT_TIMEOUT;
             break;
         }
         Sleep(1);
     }
-    drain(p);
+    /* Writers are gone; consume the complete finite buffered tail, not merely one turn. */
+    if (tree_gone) {
+        while (drain(p)) {
+        }
+    } else {
+        drain(p);
+    }
+    if (p->callback_failed)
+        p->result.status = CHILD_IO_ERROR;
     p->done = true;
     return &p->result;
 }

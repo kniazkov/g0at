@@ -41,6 +41,22 @@ typedef struct {
     child_output_t out, err, result;
 } child_result_t;
 
+/** @brief Input producer result. WAIT retries on a later pump; DATA must supply 1..capacity
+ * bytes; EOF and WAIT must supply zero bytes. ERROR terminates the owned tree. */
+typedef enum {
+    CHILD_INPUT_WAIT,
+    CHILD_INPUT_DATA,
+    CHILD_INPUT_EOF,
+    CHILD_INPUT_ERROR
+} child_input_status_t;
+
+typedef child_input_status_t (*child_input_callback_t)(void *context,
+                                                       unsigned char *buffer,
+                                                       size_t capacity,
+                                                       size_t *size);
+/** @brief Full binary output chunk, valid only during the call. False terminates the tree. */
+typedef bool (*child_output_callback_t)(void *context, const unsigned char *data, size_t size);
+
 typedef struct {
     /** @brief UTF-8 executable, NULL launches this executable. No shell is involved. */
     const char *executable;
@@ -71,6 +87,20 @@ typedef struct {
      * normal; delivery is not guaranteed if the child exits, closes stdin, or times out. */
     const void *stdin_data;
     size_t stdin_size;
+    /** @brief Optional interactive producer, mutually exclusive with stdin_data. Overrides
+     * empty_stdin. Invoked synchronously by wait/poll, after output servicing. */
+    child_input_callback_t stdin_callback;
+    /** @brief Optional full-output sinks, enabling their pipe independently of capture_output.
+     * Bounded capture remains opt-in and reports truncation exactly as before. A sink may
+     * fwrite bytes to a caller-owned binary file; it must report write errors by returning false.
+     * No ordering is promised between stdout and stderr. No callbacks after destroy returns. */
+    child_output_callback_t stdout_callback, stderr_callback;
+    /** @brief Caller-owned context must outlive the child. All callbacks must return promptly,
+     * must not block, and must not reenter this child's API. Deadline enforcement resumes between
+     * bounded pump turns; arbitrary callback code cannot be preempted. Failure yields
+     * CHILD_IO_ERROR, stops the owned tree, and suppresses further callbacks. No silent fallback to
+     * truncation. */
+    void *callback_context;
 } child_options_t;
 
 uint64_t child_monotonic_ms(void);
