@@ -3,10 +3,6 @@
 # Use of this source code is governed by an MIT-style license
 # that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 
-cmake_minimum_required(VERSION 3.10)
-project(goat LANGUAGES C)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
 include(TestBigEndian)
 test_big_endian(GOAT_BIG_ENDIAN)
 if(GOAT_BIG_ENDIAN)
@@ -60,13 +56,14 @@ list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/common/module_build.c
 # Build the native runtime separately; never depend on VM internals or its allocator.
 add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c lib/unicode.c)
 set_target_properties(goat_native PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
   OUTPUT_NAME goat_native PREFIX "lib" SUFFIX ".a"
   POSITION_INDEPENDENT_CODE ON INTERPROCEDURAL_OPTIMIZATION FALSE
   C_VISIBILITY_PRESET hidden)
 target_include_directories(goat_native PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 # Bundle the matching headers and archive without modifying the source tree.
 set(native_headers_dir "${CMAKE_CURRENT_SOURCE_DIR}/../include/goat")
-set(native_runtime_data "${CMAKE_CURRENT_BINARY_DIR}/generated/native_runtime_data.inc")
+set(native_runtime_data "${CMAKE_BINARY_DIR}/generated/native_runtime_data.inc")
 add_custom_command(
   OUTPUT "${native_runtime_data}"
   COMMAND "${CMAKE_COMMAND}"
@@ -92,12 +89,13 @@ add_custom_command(
   VERBATIM
 )
 add_library(core STATIC ${core_sources} "${native_runtime_data}")
+set_target_properties(core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 target_link_libraries(core PUBLIC goat_module goat_zip)
 if(NOT WIN32)
   find_package(Threads REQUIRED)
   target_link_libraries(core PUBLIC Threads::Threads)
 endif()
-target_include_directories(core PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+target_include_directories(core PRIVATE "${CMAKE_BINARY_DIR}/generated")
 execute_process(COMMAND git rev-parse HEAD WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
   OUTPUT_VARIABLE goat_build_id OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
 if(NOT goat_build_id MATCHES "^[0-9a-f]+$")
@@ -148,8 +146,6 @@ target_link_libraries(zip_testing PRIVATE goat_zip yyjson)
 
 add_executable(module_json_testing component_test/module_json_testing.c)
 target_link_libraries(module_json_testing PRIVATE goat_module)
-
-include("${CMAKE_CURRENT_SOURCE_DIR}/../scripts/package.cmake")
 
 add_executable(child_process_testing component_test/child_process_testing.c)
 target_link_libraries(child_process_testing PRIVATE core m)
