@@ -5,7 +5,7 @@
  */
 
 #include "lib/file_system.h"
-#include "unit_test/test_output.h"
+#include "unit/test_output.h"
 
 #include <ctype.h>
 #include <stdio.h>

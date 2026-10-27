@@ -28,7 +28,7 @@ ok() { printf '[ ok ] %s\n' "$current"; passed=$((passed+1)); }
 compile() { "$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -I"$repo_root/include" -I"$repo_root/src" "$@"; }
 cp "$repo_root/test/functional/native_abi/program.goat" "$output_dir/program.goat"
 CC="$compiler_env" "$interpreter" --save-library "$output_dir/program.goat"
-provider="$repo_root/test/functional/native_loader/provider.c"
+provider="$repo_root/test/src/functional/native_loader/provider.c"
 compile "${shared[@]}" -DGOAT_NATIVE_BUILD "$provider" -o "$output_dir/provider.$ext"
 compile "${shared[@]}" -DGOAT_NATIVE_BUILD -DNO_QUERY "$provider" -o "$output_dir/no-query.$ext"
 cat > "$output_dir/dependency.c" <<'C'
@@ -40,7 +40,7 @@ C
 compile "${shared[@]}" "$output_dir/dependency.c" -o "$output_dir/dependency.$ext"
 compile "${shared[@]}" -DGOAT_NATIVE_BUILD -DNEED_DEPENDENCY "$provider" "$output_dir/dependency.$ext" -o "$output_dir/needs-dependency.$ext"
 mv "$output_dir/dependency.$ext" "$output_dir/dependency.hidden"
-compile -DMEMORY_DEBUG "$repo_root/test/functional/native_loader/driver.c" \
+compile -DMEMORY_DEBUG "$repo_root/test/src/functional/native_loader/driver.c" \
     "$repo_root/src/model/native_library.c" "$repo_root/src/model/native_library_linux.c" \
     "$repo_root/src/model/native_library_windows.c" "$repo_root/src/lib/allocate.c" \
     "${file_sources[@]}" "${libs[@]}" -o "$output_dir/loader-host"

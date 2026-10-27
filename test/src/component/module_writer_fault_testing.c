@@ -71,7 +71,7 @@ static bool fault_publish(const char *prepared, const char *destination, fs_erro
 #define validate_module_file fault_validate
 #define prepare_fs_replace fault_prepare
 #define publish_fs_replace fault_publish
-#include "../vm/module_writer.c"
+#include "vm/module_writer.c"
 #undef write_fs_file
 #undef close_fs_file
 #undef validate_module_file

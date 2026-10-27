@@ -10,7 +10,7 @@ if exist test\functional\%1\program.goat goto done
 mkdir test\functional\%1
 copy program.goat test\functional\%1
 echo %1 >> test\functional\list.txt
-gcc src\functional_testing.c -o functional_testing
+gcc -Isrc -Iinclude -Itest\src -Ithird_party\yyjson test\src\functional\functional_testing.c third_party\yyjson\yyjson.c -o functional_testing
 cd test\functional
 ..\..\functional_testing.exe ..\..\goat.exe list.txt > NUL
 cd ..\..

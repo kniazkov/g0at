@@ -8,14 +8,14 @@
 #include "lib/cleanup_service.h"
 #include "lib/file_system.h"
 #include "lib/string_ext.h"
-#include "unit_test/test_c_emission.h"
-#include "unit_test/test_file_system.h"
-#include "unit_test/test_list.h"
-#include "unit_test/test_native_call.h"
-#include "unit_test/test_native_pipeline.h"
-#include "unit_test/test_os_thread.h"
-#include "unit_test/test_output.h"
-#include "unit_test/test_stack_underflow.h"
+#include "unit/test_c_emission.h"
+#include "unit/test_file_system.h"
+#include "unit/test_list.h"
+#include "unit/test_native_call.h"
+#include "unit/test_native_pipeline.h"
+#include "unit/test_os_thread.h"
+#include "unit/test_output.h"
+#include "unit/test_stack_underflow.h"
 
 #include <stdio.h>
 #include <stdlib.h>

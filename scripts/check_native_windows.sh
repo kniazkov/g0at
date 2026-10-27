@@ -21,7 +21,7 @@ CC="$REAL_CC" "$interpreter" --lang en --save-library "$output_dir/program.goat"
 test ! -s "$output_dir/stdout.txt"
 test ! -s "$output_dir/stderr.txt"
 test ! -e "$output_dir/program.c"
-compile -static -static-libgcc -DGOAT_ABI_NO_MAIN "$repo_root/test/functional/native_abi/driver.c" "$repo_root/test/functional/native_windows/dll_host.c" -lm -o "$output_dir/host.exe"
+compile -static -static-libgcc -DGOAT_ABI_NO_MAIN "$repo_root/test/src/functional/native_abi/driver.c" "$repo_root/test/src/functional/native_windows/dll_host.c" -lm -o "$output_dir/host.exe"
 "$output_dir/host.exe" "$output_dir/program.dll"
 ok
 current='native DLL runs without MinGW runtime DLLs or compiler PATH'
@@ -32,7 +32,7 @@ ok
 current='numeric compatibility on the current Windows target'
 cp "$repo_root/test/functional/native_numeric/program.goat" "$output_dir/numeric.goat"
 CC="$REAL_CC" "$interpreter" --save-library "$output_dir/numeric.goat"
-compile "$repo_root/test/functional/native_numeric/driver.c" "$output_dir/numeric.dll" -lm -o "$output_dir/numeric-host.exe"
+compile "$repo_root/test/src/functional/native_numeric/driver.c" "$output_dir/numeric.dll" -lm -o "$output_dir/numeric-host.exe"
 "$output_dir/numeric-host.exe"
 ok
 current='default compiler, repeat publication and source export'
@@ -41,7 +41,7 @@ cmp "$output_dir/printed.c" "$output_dir/program.c"
 "$output_dir/host.exe" "$output_dir/program.dll"
 ok
 current='literal metacharacters and executable paths with spaces'
-compile -I"$repo_root/src" "$repo_root/test/functional/native_windows/compiler_fixture.c" "$repo_root/src/lib/windows_command_line.c" "$repo_root/src/lib/allocate.c" -o "$output_dir/compiler & fixture.exe"
+compile -I"$repo_root/src" "$repo_root/test/src/functional/native_windows/compiler_fixture.c" "$repo_root/src/lib/windows_command_line.c" "$repo_root/src/lib/allocate.c" -o "$output_dir/compiler & fixture.exe"
 fixture="$(cygpath -am "$output_dir/compiler & fixture.exe")"
 strange='name & (literal) %PATH% ! space'
 mkdir -p "$output_dir/$strange"

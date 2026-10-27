@@ -4,11 +4,11 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Native selection, bytecode fallback and descriptor ownership through FUNC/CALL.
  */
-#include "../../test/functional/native_abi/test_allocator.h"
 #include "analysis/analysis.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "codegen/linker.h"
+#include "functional/native_abi/test_allocator.h"
 /* The metadata reader and public adapter ABI independently name their zero status.
  * This test joins both APIs; keep the metadata enum local to this translation unit. */
 #define GOAT_NATIVE_OK GOAT_MODULE_NATIVE_OK

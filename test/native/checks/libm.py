@@ -298,7 +298,7 @@ def main():
         host.write_text(host_source, encoding='utf-8')
         exe = output / ('host-' + name + '.exe')
         compiled = subprocess.run([env.get('CC', 'gcc'), '-std=c11', '-I' + str(Path(__file__).resolve().parents[3] / 'include'),
-                         '-I' + str(Path(__file__).resolve().parents[3] / 'test/functional/native_abi'), '-Wall', '-Wextra', '-Werror',
+                         '-I' + str(Path(__file__).resolve().parents[3] / 'test/src/functional/native_abi'), '-Wall', '-Wextra', '-Werror',
                                    '-O2', str(host), '-lm', '-o', str(exe)], capture_output=True,
                                   text=True, timeout=60)
         assert compiled.returncode == 0, compiled

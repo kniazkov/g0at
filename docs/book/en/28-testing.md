@@ -1,5 +1,7 @@
 # 28. Testing
 
+Test C sources now live in `test/src/unit/`, `test/src/component/`, `test/src/analysis/`, `test/src/functional/` and `test/src/native/`. `test/CMakeLists.txt` retains the existing executable target names. Native C drivers and helper headers moved with the code; Goat programs and expected outputs have not moved yet. Commit-pinned links below document earlier revisions.
+
 [Contents](index.md) · [Русский](../ru/28-testing.md) · [Previous](27-observability.md) · [Next](29-performance-measurement.md)
 
 Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
@@ -16,7 +18,7 @@ The repository has three main runners: `unit_testing`, `analysis_testing`, and `
 
 ## 28.2. Unit tests and memory accounting
 
-[unit_testing.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/unit_testing.c) registers tests from `src/test`. They cover containers, arenas, UTF-8, the lattice, states, parsing, objects, generation, ABI, and the binary format. Assertion failure reports its line and case name; a summary gives passed and failed case counts.
+[unit_testing.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/unit_testing.c) registers tests from `test/src/unit`. They cover containers, arenas, UTF-8, the lattice, states, parsing, objects, generation, ABI, and the binary format. Assertion failure reports its line and case name; a summary gives passed and failed case counts.
 
 Ordinary Debug builds enable `MEMORY_DEBUG`: allocation wrappers maintain accounting. This helps check restoration of the initial allocation total after cleanup and locate lost blocks. Release disables this mode. Timings from these builds cannot be mixed without qualification.
 
