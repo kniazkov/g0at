@@ -170,7 +170,7 @@ Unicode casing is pinned to **17.0.0**: strings use full default mappings
 (`ß → SS`, contextual Greek final sigma), single characters use simple mappings.
 Compiler folding, VM and native runtime share tables and algorithms. UCD inputs,
 license and SHA-256 manifest are in `third_party/unicode`; regenerate with
-`python scripts/generate_unicode.py`. Builds never download Unicode data.
+`build/native/unicode_generator --update`. Builds never download Unicode data.
 
 String payloads are explicitly serialized as UTF-32LE without BOM, with one
 four-byte terminator outside the declared content length. The loader checks

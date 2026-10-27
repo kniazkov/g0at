@@ -1,0 +1,2 @@
+# UCD checksums cover exact vendored bytes on every host (including Windows).
+third_party/unicode/17.0.0/*.txt text eol=lf

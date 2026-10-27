@@ -15,6 +15,10 @@ add_executable(module_schema_generator_testing src/component/module_schema_gener
 target_link_libraries(module_schema_generator_testing PRIVATE goat_test_support)
 add_dependencies(module_schema_generator_testing module_schema_generator)
 
+add_executable(unicode_generator_testing src/component/unicode_generator_testing.c)
+target_link_libraries(unicode_generator_testing PRIVATE goat_test_support)
+add_dependencies(unicode_generator_testing unicode_generator)
+
 add_executable(scenario_registry_testing src/component/scenario_registry_testing.c)
 target_link_libraries(scenario_registry_testing PRIVATE goat_test_support)
 
