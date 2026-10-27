@@ -66,6 +66,15 @@ git clone https://github.com/kniazkov/g0at.git
 cd g0at
 ```
 
+The CMake entry point is the repository root, not `src/`. For a clean direct build:
+
+```bash
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2
+```
+
+From another working directory, pass an absolute repository path to `-S` and an absolute build path to `-B`. Build scripts locate the repository relative to themselves. Existing build directories configured with `-S src` cannot be reused: choose a fresh build directory (or remove only the old generated build directory). Executables remain directly in the selected build directory; Release packages remain in its `packages/` subdirectory. Publishing binaries to `target/` is tracked separately in [#317](https://github.com/kniazkov/g0at/issues/317).
+
 ### Linux
 
 Install GCC or Clang, GNU Make, Bash, CMake 3.13 or newer, and the standard C development libraries, including pthread and libm. Linux native backends support glibc and musl on x86-64 and AArch64; build Goat and its native modules for the same runtime family. Installing a second libc does not change the runtime of an already-built Goat process. On Alpine, install `build-base`, `cmake`, `bash`, `python3` and `linux-headers` before using the same build commands. Ordinary glibc users do not need musl installed.

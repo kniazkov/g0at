@@ -60,7 +60,7 @@ jobs:
           test "$(uname -m)" = "${{ matrix.arch }}"
           sudo apt-get update
           sudo apt-get install -y gcc cmake make python3
-          cmake -S src -B build/libc-control -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build/libc-control -DCMAKE_BUILD_TYPE=Release
           cmake --build build/libc-control --parallel 2 --target goat goat-inspect goat-merge module_native_testing
           python3 scripts/check_module_musl.py produce build/libc-control/goat build/libc-control/module_native_testing glibc build/libc-delivery
       - name: Build, package and execute under real musl
@@ -113,8 +113,13 @@ jobs:
           test "$(uname -m)" = "${{ matrix.arch }}"
           sudo apt-get update
           sudo apt-get install -y gcc clang cmake make python3
-      - name: Build and test
-        run: bash scripts/build.sh
+      - name: Build and test from outside the checkout
+        run: |
+          repo_root="$PWD"
+          cd "$RUNNER_TEMP"
+          bash "$repo_root/scripts/build.sh"
+          grep -Fx "CMAKE_HOME_DIRECTORY:INTERNAL=$repo_root" "$repo_root/$BUILD_DIR/CMakeCache.txt"
+          test -f "$repo_root/$BUILD_DIR/CPackConfig.cmake"
         env:
           CC: ${{ matrix.compiler }}
           BUILD_DIR: build/${{ matrix.compiler }}
@@ -189,7 +194,7 @@ jobs:
             -v "$PWD:/source:ro" "$runtime_image" bash -euxo pipefail -c '
               apt-get update
               DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc libc6-dev cmake make python3
-              cmake -S /source/src -B /tmp/goat-floor -DCMAKE_BUILD_TYPE=Release
+              cmake -S /source -B /tmp/goat-floor -DCMAKE_BUILD_TYPE=Release
               cmake --build /tmp/goat-floor --parallel 2 --target goat
               python3 /source/scripts/check_module_delivery_requirements.py verify-floor /tmp/goat-floor/goat /source/build/runtime-floor
             '
@@ -200,13 +205,13 @@ jobs:
           python3 scripts/check_module_hash.py build/${{ matrix.compiler }}/module_json_testing
       - name: Module loading allocation failures
         run: |
-          cmake -S src -B build/memory-fault -DCMAKE_BUILD_TYPE=Debug \
+          cmake -S . -B build/memory-fault -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DGOAT_TEST_ALLOC_FAILURE=ON
           cmake --build build/memory-fault --parallel 2 --target module_memory_testing
           python3 scripts/check_module_memory.py build/memory-fault/module_memory_testing
       - name: Module JSON with nonzero automatic-variable initialization
         run: |
-          cmake -S src -B build/json-stack-pattern \
+          cmake -S . -B build/json-stack-pattern \
             -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=${{ matrix.compiler }} \
             -DCMAKE_C_FLAGS=-ftrivial-auto-var-init=pattern
           cmake --build build/json-stack-pattern --parallel 2 --target module_json_testing
@@ -497,7 +502,7 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: |
-          cmake -S src -B build/memory-fault -G "MinGW Makefiles" \
+          cmake -S . -B build/memory-fault -G "MinGW Makefiles" \
             -DCMAKE_BUILD_TYPE=Debug -DGOAT_TEST_ALLOC_FAILURE=ON
           cmake --build build/memory-fault --parallel 2 --target module_memory_testing
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_memory.py build/memory-fault/module_memory_testing.exe
