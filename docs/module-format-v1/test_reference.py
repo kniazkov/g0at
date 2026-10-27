@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import struct
+import tempfile
 import unittest
 import zipfile
 from pathlib import Path
@@ -17,9 +18,40 @@ class FormatTests(unittest.TestCase):
     def test_schema_snapshots(self):
         from schema import ROOTS, schema
         for kind in ROOTS:
-            self.assertEqual(json.loads((ROOT/(kind+'.schema.json')).read_text()), schema(kind))
+            self.assertEqual((ROOT/(kind+'.schema.json')).read_text(encoding="utf-8"),
+                             json.dumps(schema(kind), ensure_ascii=False, indent=2) + "\n")
         self.assertEqual(json.loads((ROOT/'opcodes.json').read_text()),
                          {name:i for i,name in enumerate(r.OPCODES)})
+
+    def test_declarative_schema_source(self):
+        import schema as s
+        source = s._load_source(ROOT/'schema-source.json')
+        self.assertEqual(list(source), ['DEFS', 'ROOTS'])
+        self.assertEqual(list(s.ROOTS), ['gmod', 'module', 'native', 'target'])
+        self.assertEqual(json.dumps(source['DEFS']), json.dumps(s.DEFS))
+        self.assertEqual(json.dumps(source['ROOTS']), json.dumps(s.ROOTS))
+        self.assertIs(s.NAME, s.ROOTS['gmod']['properties']['name'])
+        self.assertIs(s.HASH, s.ROOTS['module']['properties']['mainHash'])
+        for bound in s.DEFS['facts']['properties']['range']['properties'].values():
+            self.assertIs(type(bound['minimum']), int)
+            self.assertIs(type(bound['maximum']), int)
+            self.assertEqual((bound['minimum'], bound['maximum']), (-(1 << 63), (1 << 63)-1))
+
+    def test_schema_source_rejects_lossy_input(self):
+        from schema import _load_source
+        invalid = ['[]', 'null', '{"DEFS":{},"ROOTS":[]}',
+                   '{"DEFS":{},"ROOTS":{},"extra":{}}',
+                   '{"DEFS":{},"ROOTS":{},"DEFS":{}}',
+                   '{"DEFS":{"a":1,"\\u0061":2},"ROOTS":{}}']
+        invalid += ['{"DEFS":{"n":' + token + '},"ROOTS":{}}'
+                    for token in ['1.0', '1e0', 'NaN', 'Infinity', '-Infinity']]
+        with tempfile.TemporaryDirectory(prefix='goat-schema-source-') as work:
+            path = Path(work)/'source.json'
+            for text in invalid:
+                with self.subTest(text=text):
+                    path.write_text(text, encoding='utf-8')
+                    with self.assertRaises(ValueError):
+                        _load_source(path)
 
     def module(self):
         return r.parse((ROOT/'vectors/empty.module.json').read_bytes())
