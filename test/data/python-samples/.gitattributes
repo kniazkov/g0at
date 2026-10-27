@@ -1,0 +1,3 @@
+# Fixtures are byte-addressed by manifest.json even on autocrlf Windows checkouts.
+*.json text eol=lf
+*.bin -text
