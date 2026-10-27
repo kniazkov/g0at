@@ -26,7 +26,7 @@ printf 'Starting native loader testing...\n'
 trap 'printf "[fail] %s\nNative loader testing done; total: %d, passed: %d, failed: 1\n" "$current" "$((passed+1))" "$passed"' ERR
 ok() { printf '[ ok ] %s\n' "$current"; passed=$((passed+1)); }
 compile() { "$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -I"$repo_root/include" -I"$repo_root/src" "$@"; }
-cp "$repo_root/test/functional/native_abi/program.goat" "$output_dir/program.goat"
+cp "$repo_root/test/data/functional/native_abi/program.goat" "$output_dir/program.goat"
 CC="$compiler_env" "$interpreter" --save-library "$output_dir/program.goat"
 provider="$repo_root/test/src/functional/native_loader/provider.c"
 compile "${shared[@]}" -DGOAT_NATIVE_BUILD "$provider" -o "$output_dir/provider.$ext"

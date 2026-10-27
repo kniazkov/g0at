@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 spec = importlib.util.spec_from_file_location('check_native', ROOT / 'scripts/check_native.py')
 runner = importlib.util.module_from_spec(spec)
 sys.dont_write_bytecode = True

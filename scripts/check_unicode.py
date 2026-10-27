@@ -63,7 +63,7 @@ def main():
     unicode_source.with_suffix('.gbin').unlink()
     unicode_source.unlink()
     unicode_dir.rmdir()
-    image = bytes.fromhex((ROOT/'test/unicode/scalars.gbin.hex').read_text())
+    image = bytes.fromhex((ROOT/'test/data/unicode/scalars.gbin.hex').read_text())
     assert image == fixture()
     path = work/'scalars.gbin'
     path.write_bytes(image)
@@ -109,7 +109,7 @@ println("%0\\0%1".format("A\\0B", "C"));
 
 if __name__ == '__main__':
     if len(sys.argv) == 2 and sys.argv[1] == '--generate':
-        target = ROOT/'test/unicode/scalars.gbin.hex'
+        target = ROOT/'test/data/unicode/scalars.gbin.hex'
         target.parent.mkdir(exist_ok=True)
         target.write_text(fixture().hex()+'\n')
     else:

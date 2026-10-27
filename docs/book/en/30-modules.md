@@ -209,7 +209,7 @@ padding, scalar values, data kinds, function/entry references and table coverage
 Module dependency/JSON semantics are checked by the shared bytecode, container
 and graph validators before execution.
 
-`test/binary-v1/scalars.hex` and `test/unicode/scalars.gbin.hex` are independent
+`test/data/binary-v1/scalars.hex` and `test/data/unicode/scalars.gbin.hex` are independent
 Python-produced fixtures, consumed unchanged by the actual C loader on every
 Linux/Windows CI target. `scripts/check_bytecode_v1.py` checks numeric bits,
 function metadata, malformed records and raw/wrapped equivalence. Unit/native

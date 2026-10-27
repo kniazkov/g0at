@@ -33,7 +33,7 @@
 
 - [x] 01. [#319 — Ввести корневой CMakeLists.txt](https://github.com/kniazkov/g0at/issues/319) — [PR #396](https://github.com/kniazkov/g0at/pull/396), зелёный CI: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/40448768780), [векторы формата](https://github.com/kniazkov/g0at/actions/runs/40448768760).
 - [x] 02. [#320 — Перенести исходники тестов в test/src](https://github.com/kniazkov/g0at/issues/320)
-- [ ] 03. [#321 — Разделить тестовые данные и код в test](https://github.com/kniazkov/g0at/issues/321)
+- [x] 03. [#321 — Разделить тестовые данные и код в test](https://github.com/kniazkov/g0at/issues/321)
 - [ ] 04. [#322 — Выделить общую статическую библиотеку из src/lib](https://github.com/kniazkov/g0at/issues/322)
 - [ ] 05. [#323 — Переименовать Unicode-таблицу unicode_data.inc в unicode_data.h](https://github.com/kniazkov/g0at/issues/323)
 - [ ] 06. [#324 — Подключить существующие наборы к CTest](https://github.com/kniazkov/g0at/issues/324)
@@ -198,11 +198,11 @@
 | `scripts/module_interface_fixtures.py` | [#336](https://github.com/kniazkov/g0at/issues/336), [#394](https://github.com/kniazkov/g0at/issues/394) |
 | `scripts/process_test_support.py` | [#338](https://github.com/kniazkov/g0at/issues/338) |
 | `scripts/test_module_access.py` | [#358](https://github.com/kniazkov/g0at/issues/358) |
-| `test/native/checks/access.py` | [#384](https://github.com/kniazkov/g0at/issues/384) |
-| `test/native/checks/libm.py` | [#384](https://github.com/kniazkov/g0at/issues/384) |
-| `test/native/checks/runner.py` | [#383](https://github.com/kniazkov/g0at/issues/383) |
-| `test/native/checks/runtime_strings.py` | [#385](https://github.com/kniazkov/g0at/issues/385) |
-| `test/native/checks/saturation.py` | [#386](https://github.com/kniazkov/g0at/issues/386) |
-| `test/native/checks/string_method_errors.py` | [#385](https://github.com/kniazkov/g0at/issues/385) |
+| `test/src/native/checks/access.py` | [#384](https://github.com/kniazkov/g0at/issues/384) |
+| `test/src/native/checks/libm.py` | [#384](https://github.com/kniazkov/g0at/issues/384) |
+| `test/src/native/checks/runner.py` | [#383](https://github.com/kniazkov/g0at/issues/383) |
+| `test/src/native/checks/runtime_strings.py` | [#385](https://github.com/kniazkov/g0at/issues/385) |
+| `test/src/native/checks/saturation.py` | [#386](https://github.com/kniazkov/g0at/issues/386) |
+| `test/src/native/checks/string_method_errors.py` | [#385](https://github.com/kniazkov/g0at/issues/385) |
 
 Встроенная Python-проверка SVG: [#393](https://github.com/kniazkov/g0at/issues/393). Финальная проверка охватывает также импорты, манифесты, sys.executable, heredoc и команды CI.

@@ -16,7 +16,7 @@ trap 'printf "[fail] %s\nNative library testing done; total: %d, passed: %d, fai
 clean() { test -z "$(find "$output_dir" -type d -name '*.goat-*' -print -quit)"; }
 ok() { clean; printf '[ ok ] %s\n' "$current"; passed=$((passed+1)); }
 compile() { "$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" "$@"; }
-cp "$repo_root/test/functional/native_abi/program.goat" "$output_dir/program.goat"
+cp "$repo_root/test/data/functional/native_abi/program.goat" "$output_dir/program.goat"
 CC="$compiler" "$interpreter" --lang en --save-library "$output_dir/program.goat" > "$output_dir/stdout.txt" 2> "$output_dir/stderr.txt"
 test ! -s "$output_dir/stdout.txt"
 test ! -s "$output_dir/stderr.txt"
@@ -25,7 +25,7 @@ compile "$repo_root/test/src/functional/native_abi/driver.c" "$output_dir/progra
 "$output_dir/host"
 ok
 current='numeric compatibility across shared-library calls'
-cp "$repo_root/test/functional/native_numeric/program.goat" "$output_dir/numeric.goat"
+cp "$repo_root/test/data/functional/native_numeric/program.goat" "$output_dir/numeric.goat"
 CC="$compiler" "$interpreter" --save-library "$output_dir/numeric.goat"
 compile "$repo_root/test/src/functional/native_numeric/driver.c" "$output_dir/numeric.so" -lm -o "$output_dir/numeric-host"
 "$output_dir/numeric-host"

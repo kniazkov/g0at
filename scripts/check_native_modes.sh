@@ -7,7 +7,7 @@ functional="$(realpath "${2:?functional test executable required}")"
 mkdir -p "${3:?output directory required}"
 output_dir="$(realpath "$3")"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-fixtures="$repo_root/test/functional/native_modes"
+fixtures="$repo_root/test/data/functional/native_modes"
 compiler="$(command -v "${CC:-gcc}")"
 compiler_env="$compiler"
 ext=so
@@ -27,7 +27,9 @@ workspace_env="$output_dir/temporary"
 if [[ ${OS:-} == Windows_NT ]]; then workspace_env="$(cygpath -am "$workspace_env")"; fi
 export TMPDIR="$workspace_env" TMP="$workspace_env" TEMP="$workspace_env"
 # All existing expectations also apply to mixed native/bytecode execution.
-(cd "$repo_root/test/functional" && "$functional" "$interpreter" list.txt auto)
+functional_work="$(mktemp -d "$output_dir/functional-fixtures-XXXXXX")"
+cp -R "$repo_root/test/data/functional/." "$functional_work/"
+(cd "$functional_work" && "$functional" "$interpreter" list.txt auto)
 passed=0
 current=''
 printf 'Starting native modes testing...\n'

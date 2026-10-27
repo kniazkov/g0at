@@ -130,7 +130,7 @@ test -s "$output_dir/error.txt"
 ok
 current='replacement proofs survive compilation and unobserved arguments'
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-"$interpreter" --print-c "$repo_root/test/functional/native_modes/replacement.goat" > "$output_dir/replacement.c"
+"$interpreter" --print-c "$repo_root/test/data/functional/native_modes/replacement.goat" > "$output_dir/replacement.c"
 cat > "$output_dir/replacement_driver.c" <<'C'
 #include "test_allocator.h"
 #include "replacement.c"

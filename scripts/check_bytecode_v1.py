@@ -58,7 +58,7 @@ def main():
             assert result.stdout == b'', 'invalid image executed user code before rejection'
         assert path.read_bytes() == data
         return result.stdout.replace(b'\r\n', b'\n')
-    image = bytes.fromhex((ROOT/'test/binary-v1/scalars.hex').read_text())
+    image = bytes.fromhex((ROOT/'test/data/binary-v1/scalars.hex').read_text())
     assert image == fixture()
     expected = '-9223372036854775808\n9223372036854775807\n-0\ninf\nnan\nA\0Ж😀\n'.encode()
     assert run(image) == expected
@@ -130,7 +130,7 @@ def main():
 
 if __name__ == '__main__':
     if sys.argv[1:] == ['--generate']:
-        path = ROOT/'test/binary-v1/scalars.hex'
+        path = ROOT/'test/data/binary-v1/scalars.hex'
         path.parent.mkdir(exist_ok=True)
         path.write_text(fixture().hex()+'\n')
     else:

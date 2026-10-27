@@ -34,9 +34,11 @@ cmake --build "$build_dir" --parallel "$build_jobs" \
 cp "$build_dir/goat" "$repo_root/goat"
 "$build_dir/module_json_testing"
 "$build_dir/unit_testing"
-"$build_dir/analysis_testing" "$repo_root/test/analysis"
+"$build_dir/analysis_testing" "$repo_root/test/data/analysis"
 (
-    cd "$repo_root/test/functional"
+    work="$(mktemp -d "$build_dir/functional-fixtures-XXXXXX")"
+    cp -R "$repo_root/test/data/functional/." "$work/"
+    cd "$work"
     "$build_dir/functional_testing" "$build_dir/goat" list.txt
 )
 printf '\nDone.\n'
