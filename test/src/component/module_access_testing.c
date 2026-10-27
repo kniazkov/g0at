@@ -8,7 +8,7 @@
 #include "lib/wire.h"
 #include "model/module_files.h"
 #include "model/thread.h"
-#include "unit_test/analysis_test_support.h"
+#include "unit/analysis_test_support.h"
 #include "vm/gc.h"
 #include "vm/vm.h"
 

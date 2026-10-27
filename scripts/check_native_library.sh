@@ -21,13 +21,13 @@ CC="$compiler" "$interpreter" --lang en --save-library "$output_dir/program.goat
 test ! -s "$output_dir/stdout.txt"
 test ! -s "$output_dir/stderr.txt"
 test ! -e "$output_dir/program.c"
-compile "$repo_root/test/functional/native_abi/driver.c" "$output_dir/program.so" -lm -o "$output_dir/host"
+compile "$repo_root/test/src/functional/native_abi/driver.c" "$output_dir/program.so" -lm -o "$output_dir/host"
 "$output_dir/host"
 ok
 current='numeric compatibility across shared-library calls'
 cp "$repo_root/test/functional/native_numeric/program.goat" "$output_dir/numeric.goat"
 CC="$compiler" "$interpreter" --save-library "$output_dir/numeric.goat"
-compile "$repo_root/test/functional/native_numeric/driver.c" "$output_dir/numeric.so" -lm -o "$output_dir/numeric-host"
+compile "$repo_root/test/src/functional/native_numeric/driver.c" "$output_dir/numeric.so" -lm -o "$output_dir/numeric-host"
 "$output_dir/numeric-host"
 ok
 current='ordinary interpretation needs no compiler'

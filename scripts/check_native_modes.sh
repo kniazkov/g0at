@@ -124,9 +124,9 @@ for mode in auto required; do
 done
 current='build compiler substitutes'
 "$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" \
-    "${shared[@]}" -DGOAT_NATIVE_BUILD "$repo_root/test/functional/native_pipeline/empty.c" -o "$output_dir/empty.$ext"
+    "${shared[@]}" -DGOAT_NATIVE_BUILD "$repo_root/test/src/functional/native_pipeline/empty.c" -o "$output_dir/empty.$ext"
 "$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 \
-    "$repo_root/test/functional/native_pipeline/compiler.c" -I"$repo_root/src" \
+    "$repo_root/test/src/functional/native_pipeline/compiler.c" -I"$repo_root/src" \
     "$repo_root/src/lib/windows_command_line.c" "$repo_root/src/lib/allocate.c" -o "$output_dir/invalid-compiler$exe"
 cp "$output_dir/invalid-compiler$exe" "$output_dir/wrong-compiler$exe"
 cp "$output_dir/invalid-compiler$exe" "$output_dir/failing-compiler$exe"

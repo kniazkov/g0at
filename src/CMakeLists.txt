@@ -18,15 +18,6 @@ if(NOT GOAT_UTF32_TARGET)
 endif()
 include_directories(. ../include)
 
-# Separate fault-injection builds only. Production binaries expose no failure knob.
-option(GOAT_TEST_ALLOC_FAILURE "Instrument allocations for loader resource tests" OFF)
-if(GOAT_TEST_ALLOC_FAILURE)
-  add_library(goat_allocation_fault STATIC component_test/allocation_fault.c)
-  link_libraries(goat_allocation_fault)
-  add_compile_options("-include" "${CMAKE_CURRENT_SOURCE_DIR}/component_test/allocation_fault.h")
-  add_compile_definitions(GOAT_TEST_ALLOC_FAILURE)
-endif()
-
 add_library(yyjson STATIC ../third_party/yyjson/yyjson.c)
 target_include_directories(yyjson PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/yyjson")
 set_target_properties(yyjson PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -119,159 +110,10 @@ add_executable(goat-merge merge.c)
 target_link_libraries(goat-merge core goat_validation goat_module m)
 add_executable(goat-inspect inspect.c)
 target_link_libraries(goat-inspect core goat_validation goat_module m)
-# Fault hooks are compiled only into this dedicated inspector test host.
-add_executable(inspect_probe_testing component_test/inspect_probe_testing.c cli/inspect_probe.c lib/cleanup_service.c)
-target_compile_definitions(inspect_probe_testing PRIVATE GOAT_INSPECT_PROBE_TESTING=1)
-target_link_libraries(inspect_probe_testing PRIVATE core goat_validation goat_module m)
-
 add_executable(goat ${goat_exe})
 target_link_libraries (goat core goat_validation goat_module m)
-
-file(GLOB unit_testing_exe unit_testing.c unit_test/*.c)
-message(STATUS "Found unit testing sources: ${unit_testing_exe}")
-add_executable(unit_testing ${unit_testing_exe})
-target_link_libraries (unit_testing core goat_validation yyjson m)
-
-add_executable(analysis_testing analysis_testing.c)
-target_link_libraries(analysis_testing core yyjson m)
-
-add_executable(functional_testing functional_testing.c)
-target_link_libraries(functional_testing PRIVATE yyjson)
-
-add_executable(module_container_testing component_test/module_container_testing.c)
-target_link_libraries(module_container_testing PRIVATE goat_module)
-
-add_executable(zip_testing component_test/zip_testing.c)
-target_link_libraries(zip_testing PRIVATE goat_zip yyjson)
-
-add_executable(module_json_testing component_test/module_json_testing.c)
-target_link_libraries(module_json_testing PRIVATE goat_module)
-
-add_executable(child_process_testing component_test/child_process_testing.c)
-target_link_libraries(child_process_testing PRIVATE core m)
-if(MINGW)
-  set_property(TARGET child_process_testing APPEND_STRING PROPERTY LINK_FLAGS " -municode")
-endif()
-
-add_executable(cleanup_service_testing component_test/cleanup_service_testing.c)
-target_link_libraries(cleanup_service_testing PRIVATE core m)
-
-add_executable(module_bytecode_testing component_test/module_bytecode_testing.c)
-target_link_libraries(module_bytecode_testing PRIVATE core m)
-
-add_executable(module_abi_testing component_test/module_abi_testing.c)
-target_link_libraries(module_abi_testing PRIVATE goat_module ${CMAKE_DL_LIBS})
-
-add_executable(module_native_testing component_test/module_native_testing.c)
-target_link_libraries(module_native_testing PRIVATE goat_module ${CMAKE_DL_LIBS})
-
-add_executable(module_library_testing component_test/module_library_testing.c)
-target_link_libraries(module_library_testing PRIVATE goat_validation m)
-
-add_executable(module_loading_testing component_test/module_loading_testing.c)
-target_link_libraries(module_loading_testing PRIVATE goat_validation m)
-
-add_executable(module_dispatch_testing component_test/module_dispatch_testing.c component_test/module_dispatch_identity_testing.c)
-target_link_libraries(module_dispatch_testing PRIVATE goat_validation m)
-
-add_executable(module_consistency_testing component_test/module_consistency_testing.c)
-target_link_libraries(module_consistency_testing PRIVATE core m)
 
 # One validation library for compiler, loader, inspect and merge.
 add_library(goat_validation STATIC common/module_build.c common/module_compilation.c vm/module_validation.c vm/module_writer.c vm/module_search.c vm/module_dependencies.c vm/module_graph.c vm/module_graph_diagnostics.c vm/module_snapshot.c vm/module_loading.c)
 target_link_libraries(goat_validation PUBLIC core)
 target_include_directories(goat_validation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-add_executable(module_validation_testing component_test/module_validation_testing.c)
-target_link_libraries(module_validation_testing PRIVATE goat_validation m)
-
-add_executable(module_writer_testing component_test/module_writer_testing.c)
-target_link_libraries(module_writer_testing PRIVATE goat_validation m)
-
-add_executable(module_writer_fault_testing component_test/module_writer_fault_testing.c)
-target_link_libraries(module_writer_fault_testing PRIVATE goat_validation m)
-
-add_executable(module_sources_testing component_test/module_sources_testing.c)
-target_link_libraries(module_sources_testing PRIVATE core m)
-
-add_executable(module_files_testing component_test/module_files_testing.c)
-target_link_libraries(module_files_testing PRIVATE core m)
-
-add_executable(module_access_testing component_test/module_access_testing.c unit_test/analysis_test_support.c)
-target_link_libraries(module_access_testing PRIVATE core m)
-
-add_executable(module_imports_testing component_test/module_imports_testing.c)
-target_link_libraries(module_imports_testing PRIVATE core m)
-
-add_executable(module_search_testing
-  component_test/module_search_testing.c
-  component_test/module_search_permissions.c)
-target_link_libraries(module_search_testing PRIVATE goat_validation m)
-
-add_executable(module_dependencies_testing component_test/module_dependencies_testing.c)
-target_link_libraries(module_dependencies_testing PRIVATE goat_validation m)
-
-add_executable(module_graph_testing component_test/module_graph_testing.c)
-target_link_libraries(module_graph_testing PRIVATE goat_validation m)
-
-add_executable(module_snapshot_testing component_test/module_snapshot_testing.c)
-target_link_libraries(module_snapshot_testing PRIVATE goat_validation m)
-add_executable(module_identity_testing component_test/module_identity_testing.c)
-target_link_libraries(module_identity_testing PRIVATE goat_validation m)
-add_executable(module_initialization_testing component_test/module_initialization_testing.c)
-target_link_libraries(module_initialization_testing PRIVATE goat_validation m)
-add_executable(module_initialization_errors_testing component_test/module_initialization_errors_testing.c)
-target_link_libraries(module_initialization_errors_testing PRIVATE goat_validation m)
-add_executable(module_exception_propagation_testing component_test/module_exception_propagation_testing.c)
-target_link_libraries(module_exception_propagation_testing PRIVATE goat_validation m)
-
-add_executable(module_initialization_contract_testing component_test/module_initialization_contract_testing.c)
-target_link_libraries(module_initialization_contract_testing PRIVATE goat_validation m)
-add_executable(module_incomplete_scopes_testing component_test/module_incomplete_scopes_testing.c)
-target_link_libraries(module_incomplete_scopes_testing PRIVATE goat_validation m)
-add_executable(module_failed_prototypes_testing component_test/module_failed_prototypes_testing.c)
-target_link_libraries(module_failed_prototypes_testing PRIVATE goat_validation m)
-
-if(GOAT_TEST_ALLOC_FAILURE)
-  add_executable(module_memory_testing component_test/module_memory_testing.c)
-  target_link_libraries(module_memory_testing PRIVATE goat_validation m)
-endif()
-
-add_executable(source_include_testing component_test/source_include_testing.c)
-target_link_libraries(source_include_testing PRIVATE goat_validation m)
-add_executable(module_import_execution_testing component_test/module_import_execution_testing.c)
-target_link_libraries(module_import_execution_testing PRIVATE goat_validation m)
-# Instrument only this acceptance executable, not production libraries. GNU ld
-# and lld (including the existing MinGW targets) wrap external call sites.
-set_property(TARGET module_import_execution_testing APPEND_STRING PROPERTY LINK_FLAGS
-  " -Wl,--wrap=analyze,--wrap=interpret_module,--wrap=run,--wrap=run_module_file")
-
-add_executable(module_serialization_testing component_test/module_serialization_testing.c)
-target_link_libraries(module_serialization_testing PRIVATE goat_validation m)
-add_library(module_thread_native_fixture SHARED component_test/module_thread_native_fixture.c)
-target_include_directories(module_thread_native_fixture PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
-add_executable(module_thread_lifetime_testing component_test/module_thread_lifetime_testing.c)
-target_link_libraries(module_thread_lifetime_testing PRIVATE goat_validation m)
-target_compile_definitions(module_thread_lifetime_testing PRIVATE LIFETIME_NATIVE_PATH="$<TARGET_FILE:module_thread_native_fixture>")
-add_dependencies(module_thread_lifetime_testing module_thread_native_fixture)
-
-add_executable(native_toolchain_testing component_test/native_toolchain_testing.c)
-target_link_libraries(native_toolchain_testing PRIVATE core m)
-add_executable(native_requirements_testing component_test/native_requirements_testing.c)
-target_link_libraries(native_requirements_testing PRIVATE core m)
-add_executable(native_cleanup_testing component_test/native_cleanup_testing.c)
-target_link_libraries(native_cleanup_testing PRIVATE core goat_validation m)
-add_executable(module_native_values_testing component_test/module_native_values_testing.c)
-target_link_libraries(module_native_values_testing PRIVATE goat_validation m)
-add_executable(native_artifact_testing component_test/native_artifact_testing.c)
-target_link_libraries(native_artifact_testing PRIVATE core m)
-
-add_executable(process_exit_testing component_test/process_exit_testing.c)
-target_link_libraries(process_exit_testing PRIVATE core goat_validation m)
-
-add_executable(process_exit_failure_testing component_test/process_exit_testing.c lib/process_exit.c)
-target_compile_definitions(process_exit_failure_testing PRIVATE GOAT_TEST_PROCESS_EXIT_FAILURE=1)
-target_link_libraries(process_exit_failure_testing PRIVATE core goat_validation m)
-
-add_executable(process_exit_delayed_testing component_test/process_exit_testing.c lib/process_exit.c)
-target_compile_definitions(process_exit_delayed_testing PRIVATE GOAT_TEST_PROCESS_EXIT_FAILURE=2)
-target_link_libraries(process_exit_delayed_testing PRIVATE core goat_validation m)

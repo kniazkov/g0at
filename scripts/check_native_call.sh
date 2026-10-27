@@ -18,7 +18,7 @@ if [[ ${OS:-} == Windows_NT ]]; then
     marker_env="$(cygpath -am "$marker_env")"
 fi
 "$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" \
-    "${shared[@]}" -DGOAT_NATIVE_BUILD "$repo_root/test/functional/native_call/provider.c" \
+    "${shared[@]}" -DGOAT_NATIVE_BUILD "$repo_root/test/src/functional/native_call/provider.c" \
     -o "$output_dir/provider.$ext"
 cp "$repo_root/test/functional/native_call/program.goat" "$output_dir/program.goat"
 CC="$compiler_env" "$interpreter" --save-library "$output_dir/program.goat"

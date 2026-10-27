@@ -60,7 +60,7 @@ def main():
         built = subprocess.run([compiler, '-std=c11', '-Wall', '-Wextra', '-Werror',
                                 '-pedantic-errors', '-O2', '-DGOAT_NATIVE_BUILD',
                                 '-I' + str(repository / 'include'), *flags,
-                                str(repository / 'test/functional/native_exit/provider.c'),
+                                str(repository / 'test/src/functional/native_exit/provider.c'),
                                 '-o', str(library)], capture_output=True, timeout=60)
         assert built.returncode == 0, (built.stdout, built.stderr)
         function = 'const stop = func(x) { return 100; }; '

@@ -69,7 +69,7 @@ int main(void) {
     for flags, name in [([], 'host'), (['-fshort-wchar'], 'short-wchar')]:
         executable = output / (name + ('.exe' if os.name == 'nt' else ''))
         subprocess.run([*shlex.split(os.environ.get('CC', 'gcc')), '-std=c11', '-I' + str(Path(__file__).resolve().parent.parent / 'include'),
-                         '-I' + str(Path(__file__).resolve().parent.parent / 'test/functional/native_abi'),
+                         '-I' + str(Path(__file__).resolve().parent.parent / 'test/src/functional/native_abi'),
                         *flags, str(host), '-o', str(executable)], check=True, timeout=30)
         subprocess.run([str(executable)], check=True, timeout=30)
     print('[ ok ] characters: Unicode, source/binary round trips, VM/native, 16-bit system wchar_t')

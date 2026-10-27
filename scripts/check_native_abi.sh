@@ -23,7 +23,7 @@ diff -b --strip-trailing-cr "$repo_root/include/goat/native_strings.h" "$output_
 ok
 current='separately compiled host calls numeric adapters'
 compile -c "$output_dir/module.c" -o "$output_dir/module.o"
-compile "$repo_root/test/functional/native_abi/driver.c" "$output_dir/module.o" -lm -o "$output_dir/driver.exe"
+compile "$repo_root/test/src/functional/native_abi/driver.c" "$output_dir/module.o" -lm -o "$output_dir/driver.exe"
 "$output_dir/driver.exe"
 ok
 current='exported C compiles using only its companion headers'
@@ -64,7 +64,7 @@ compile "$output_dir/empty.c" "$output_dir/empty_driver.c" -lm -o "$output_dir/e
 "$output_dir/empty.exe"
 ok
 current='handwritten adapter links a precompiled vendor archive'
-manual="$repo_root/test/functional/native_abi/manual"
+manual="$repo_root/test/src/functional/native_abi/manual"
 compile -c "$manual/vendor.c" -o "$output_dir/vendor.o"
 "${AR:-ar}" rcs "$output_dir/libvendor.a" "$output_dir/vendor.o"
 compile -c "$manual/adapter.c" -o "$output_dir/adapter.o"
@@ -75,7 +75,7 @@ current='lazy allocator lifetime, alignment and concurrent instances'
 thread_flags=()
 if [[ ${OS:-} != Windows_NT ]]; then thread_flags=(-pthread); fi
 host_sources=("$repo_root/src/model/native_services.c" "$repo_root/src/lib/unicode.c" "$repo_root/src/lib/allocate.c")
-compile -DMEMORY_DEBUG -I"$repo_root/src" "${host_sources[@]}" "$repo_root/test/functional/native_allocator/driver.c" "${thread_flags[@]}" -o "$output_dir/allocator.exe"
+compile -DMEMORY_DEBUG -I"$repo_root/src" "${host_sources[@]}" "$repo_root/test/src/functional/native_allocator/driver.c" "${thread_flags[@]}" -o "$output_dir/allocator.exe"
 "$output_dir/allocator.exe"
 for mode in overflow corrupt; do
     if "$output_dir/allocator.exe" "$mode" > "$output_dir/$mode.log" 2>&1; then false; fi
@@ -88,13 +88,13 @@ done
 "$output_dir/allocator.exe" report > "$output_dir/accounting.log" 2>&1
 grep -q 'native_services.c' "$output_dir/accounting.log"
 # Also cover the release accounting path under concurrent allocations.
-compile -I"$repo_root/src" "${host_sources[@]}" "$repo_root/test/functional/native_allocator/driver.c" "${thread_flags[@]}" -o "$output_dir/allocator-release.exe"
+compile -I"$repo_root/src" "${host_sources[@]}" "$repo_root/test/src/functional/native_allocator/driver.c" "${thread_flags[@]}" -o "$output_dir/allocator-release.exe"
 "$output_dir/allocator-release.exe"
 
 ok
 current='nested calls share memory through success and stack-limit recovery'
 sed 's/(void)g_context;/goat_native_allocate(g_context, 17);/' "$output_dir/module.c" > "$output_dir/instrumented.c"
-compile -DMEMORY_DEBUG -I"$repo_root/src" "${host_sources[@]}" -I"$output_dir" "$repo_root/test/functional/native_allocator/context.c" -lm -o "$output_dir/context.exe"
+compile -DMEMORY_DEBUG -I"$repo_root/src" "${host_sources[@]}" -I"$output_dir" "$repo_root/test/src/functional/native_allocator/context.c" -lm -o "$output_dir/context.exe"
 "$output_dir/context.exe"
 ok
 printf 'Native ABI testing done; total: %d, passed: %d, failed: 0\n' "$passed" "$passed"

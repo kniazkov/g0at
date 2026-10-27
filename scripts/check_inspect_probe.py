@@ -108,7 +108,7 @@ def custom(root, original, kind='valid'):
     if kind == 'descriptor-overflow':
         blob = b'GOATND01' + b'\xff' * 8 + b'\0'
     parts = ['#include "goat/module_abi.h"',
-             '#include "' + str(ROOT / 'src/component_test/inspect_probe_library.c').replace('\\', '/') + '"']
+             '#include "' + str(ROOT / 'test/src/component/inspect_probe_library.c').replace('\\', '/') + '"']
     if kind != 'descriptor-missing':
         parts.append('GOAT_MODULE_EXPORT const unsigned char goat_module_descriptor_v1[]={'
                      + ','.join(map(str, blob)) + '};')
@@ -222,7 +222,7 @@ class Case:
 with tempfile.TemporaryDirectory(prefix='goat-inspect-probe-') as temporary:
     root = Path(temporary)
     worker = root / ('worker.exe' if os.name == 'nt' else 'worker')
-    compile_c(ROOT / 'src/component_test/inspect_probe_worker.c', worker, shared=False)
+    compile_c(ROOT / 'test/src/component/inspect_probe_worker.c', worker, shared=False)
     original = build(root, 'probe')
     valid = custom(root, original)
 

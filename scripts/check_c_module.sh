@@ -14,7 +14,7 @@ ok() {
     passed=$((passed+1))
 }
 compile() {
-    "${CC:-gcc}" -I"$runtime_include" -I"$runtime_include/../../test/functional/native_abi" -I"$runtime_include/.." -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "$@"
+    "${CC:-gcc}" -I"$runtime_include" -I"$runtime_include/../../test/src/functional/native_abi" -I"$runtime_include/.." -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "$@"
 }
 cat > "$output_dir/recursive sample.goat" <<'GOAT'
 const fib=func(n){if(n<1)return 0;if(n==1)return 1;return fib(n-1)+fib(n-2);};

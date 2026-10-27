@@ -4,12 +4,12 @@
  */
 #include "test_native_pipeline.h"
 
-#include "../../test/functional/native_abi/test_allocator.h"
 #include "analysis/analysis.h"
 #include "analysis_test_support.h"
 #include "cli/launcher.h"
 #include "codegen/linker.h"
 #include "codegen/native_pipeline.h"
+#include "functional/native_abi/test_allocator.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "lib/file_system.h"
