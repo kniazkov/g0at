@@ -33,6 +33,12 @@ function(goat_shell name labels script)
     set_tests_properties(${name} PROPERTIES DISABLED TRUE)
   endif()
 endfunction()
+foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash timeout cumulative invalid-timeout host-hang host-crash command start-error cleanup-failure)
+  goat_suite(framework.execution.${scenario} "scenario-execution" "$<TARGET_FILE:scenario_execution_testing>"
+    "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+  # Internal deadlines are at most 5 seconds; leave time for process-tree cleanup and artifacts.
+  set_tests_properties(framework.execution.${scenario} PROPERTIES TIMEOUT 30)
+endforeach()
 foreach(scenario success failure keep-work isolation invalid cleanup-error parallel)
   goat_suite(framework.context.${scenario} "scenario-context" "$<TARGET_FILE:scenario_context_testing>"
     "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")

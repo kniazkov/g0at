@@ -3,10 +3,13 @@
 
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/src" "${PROJECT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-add_library(goat_test_support STATIC support/scenario.c)
+add_library(goat_test_support STATIC support/scenario.c support/execution.c)
 target_link_libraries(goat_test_support PUBLIC goat_common)
 add_executable(scenario_context_testing src/framework/scenario_context_testing.c)
 target_link_libraries(scenario_context_testing PRIVATE goat_test_support)
+
+add_executable(scenario_execution_testing src/framework/scenario_execution_testing.c)
+target_link_libraries(scenario_execution_testing PRIVATE goat_test_support)
 
 # Fault hooks are compiled only into this dedicated inspector test host.
 add_executable(inspect_probe_testing src/component/inspect_probe_testing.c "${PROJECT_SOURCE_DIR}/src/cli/inspect_probe.c" "${PROJECT_SOURCE_DIR}/lib/process/cleanup_service.c")

@@ -115,7 +115,8 @@ is refused; recursive deletion uses the shared filesystem's no-link traversal.
 This is cooperative isolation, not protection against malicious concurrent
 renames. Tests own any open files and must close them before finishing, especially
 on Windows. Abnormal termination can leave a directory behind. Mandatory-check,
-process ownership and deadline policies are introduced by the next framework step.
+process ownership and deadline policies are implemented in `support/execution.h`;
+see [the execution contract](support/README.md#execution-and-diagnostics).
 
 `ctest --test-dir build -L scenario-context --output-on-failure` runs the stable
 self-tests in Debug and Release, including simultaneous contexts and repeated
