@@ -186,6 +186,22 @@ static bool log_contains(const char *work, const char *needle) {
     return ok;
 }
 
+/* Removal is intentionally immediate and single-attempt: a returned child result
+ * must mean its processes no longer hold the workspace open. */
+static bool remove_work(const char *work) {
+    fs_error_t error = {0};
+    bool ok = remove_fs_tree(work, &error);
+    if (!ok)
+        fprintf(stderr,
+                "Workspace cleanup failed: operation=%s path=%s status=%d native=%lu\n",
+                error.operation ? error.operation : "unknown",
+                error.path ? error.path : work,
+                error.status,
+                error.native_code);
+    clear_fs_error(&error);
+    return ok;
+}
+
 static int supervised(scenario_options_t options, FILE *diagnostics, bool crash) {
     const char *args[] =
         {"scenario_execution_testing", "--worker", crash ? "crash" : "hang", "", "", NULL};
@@ -204,9 +220,13 @@ static int supervised(scenario_options_t options, FILE *diagnostics, bool crash)
     work[strcspn(work, "\r\n")] = 0;
     CHECK(exists(work));
     CHECK(artifact(work, "command-1.stdout", "", 0));
-    fs_error_t error = {0};
-    CHECK(remove_fs_tree(work, &error));
-    clear_fs_error(&error);
+    if (!crash) {
+        char status[64];
+        snprintf(status, sizeof(status), "result status=%d", CHILD_TIMED_OUT);
+        CHECK(log_contains(work, status));
+    }
+    CHECK(log_contains(work, "cleanup=0\n"));
+    CHECK(remove_work(work));
     return 0;
 }
 
@@ -263,6 +283,7 @@ static int run_test(int argc, char **argv) {
             char status[64];
             snprintf(status, sizeof(status), "result status=%d", CHILD_TIMED_OUT);
             CHECK(log_contains(state.work, status));
+            CHECK(log_contains(state.work, "cleanup=0\n"));
         }
         if (!strcmp(mode, "crash")) {
 #ifdef _WIN32
@@ -271,9 +292,7 @@ static int run_test(int argc, char **argv) {
             CHECK(log_contains(state.work, "signal=9"));
 #endif
         }
-        fs_error_t error = {0};
-        CHECK(remove_fs_tree(state.work, &error));
-        clear_fs_error(&error);
+        CHECK(remove_work(state.work));
     }
     free(state.work);
     CHECK(fclose(diagnostics) == 0);
