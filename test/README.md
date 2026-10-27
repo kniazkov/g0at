@@ -96,3 +96,27 @@ then deliver EOF. `timeout`, `stop`, `output-error`, `input-error`, `invalid-siz
 and `invalid-options` exercise failure and ownership boundaries. Callback/file
 errors must fail the child operation rather than silently discarding output.
 The existing Python process suite retains its independent tree-cleanup observer.
+
+### Scenario contexts
+
+`goat_test_support` is a test-only static library linked to `goat_common`, never
+into the interpreter. `test/support/scenario.h` copies the scenario name and
+canonical data directory and atomically allocates a fresh work directory beneath
+the supplied existing build directory. Build and data directories must be disjoint.
+The data path is read-only by contract; the context never changes cwd, writes data
+or alters process-global environment. Runners recognize the exact `--keep-work`
+flag with `scenario_keep_work_argument` and pass the resulting option.
+
+Call `scenario_finish` exactly once, on every normal success/failure path. It
+consumes the context, removes only its owned work directory on success, and
+preserves failures or `--keep-work` runs with their absolute path in diagnostics.
+Cleanup errors are explicit failures, not successful tests. Identity replacement
+is refused; recursive deletion uses the shared filesystem's no-link traversal.
+This is cooperative isolation, not protection against malicious concurrent
+renames. Tests own any open files and must close them before finishing, especially
+on Windows. Abnormal termination can leave a directory behind. Mandatory-check,
+process ownership and deadline policies are introduced by the next framework step.
+
+`ctest --test-dir build -L scenario-context --output-on-failure` runs the stable
+self-tests in Debug and Release, including simultaneous contexts and repeated
+runs. No test uses `assert` for required checks or creates results in `test/data`.
