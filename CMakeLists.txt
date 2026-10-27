@@ -20,5 +20,6 @@ endif()
 
 add_subdirectory(lib)
 add_subdirectory(src)
+include(CTest)
 add_subdirectory(test)
 include("${CMAKE_CURRENT_SOURCE_DIR}/scripts/package.cmake")

@@ -152,3 +152,7 @@ target_link_libraries(process_exit_failure_testing PRIVATE core goat_validation 
 add_executable(process_exit_delayed_testing src/component/process_exit_testing.c "${PROJECT_SOURCE_DIR}/lib/process/process_exit.c")
 target_compile_definitions(process_exit_delayed_testing PRIVATE GOAT_TEST_PROCESS_EXIT_FAILURE=2)
 target_link_libraries(process_exit_delayed_testing PRIVATE core goat_validation m)
+
+if(BUILD_TESTING)
+  include("${CMAKE_CURRENT_SOURCE_DIR}/CTestLists.cmake")
+endif()

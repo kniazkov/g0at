@@ -255,3 +255,7 @@ See [switch selection](docs/switch.md) for ordered variants, branch scopes, diag
 Created by [Ivan Kniazkov](https://github.com/kniazkov).
 
 Goat is distributed under the [MIT license](LICENSE.txt).
+
+## CTest suites
+
+Build all targets, then use `ctest --test-dir build --output-on-failure`. Use `ctest --test-dir build -N` for the inventory and `-L integration` to select the existing integration runners. Python and Bash remain transitional test dependencies. See [test prerequisites, labels and platform coverage](test/README.md).
