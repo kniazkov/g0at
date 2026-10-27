@@ -2,7 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Built-in exception constants, lookup and lifetime.
  */
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/context.h"
 #include "model/object.h"
 #include "model/process.h"

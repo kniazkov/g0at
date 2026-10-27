@@ -1,4 +1,4 @@
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
 #include "module_container.h"
 
 #include <assert.h>

@@ -2,16 +2,16 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Direct service fixtures; no native consumer policy or module loader dependency.
  */
-#include "lib/allocate.h"
-#include "lib/cleanup_service_internal.h"
-#include "lib/os_thread.h"
-#include "lib/process_channel.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/process/cleanup_service_internal.h"
+#include "lib/process/process_channel.h"
+#include "lib/strings/string_ext.h"
+#include "lib/threads/os_thread.h"
 
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-#    include "lib/windows_target.h"
+#    include "lib/platform/windows_target.h"
 
 #    include <windows.h>
 #else

@@ -21,8 +21,8 @@ fi
     "${shared[@]}" -DGOAT_NATIVE_BUILD "$repo_root/test/src/functional/native_pipeline/empty.c" \
     -o "$output_dir/empty.$ext"
 "$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 \
-    "$repo_root/test/src/functional/native_pipeline/compiler.c" -I"$repo_root/src" \
-    "$repo_root/src/lib/windows_command_line.c" "$repo_root/src/lib/allocate.c" -o "$output_dir/invalid-compiler$exe"
+    "$repo_root/test/src/functional/native_pipeline/compiler.c" -I"$repo_root" -I"$repo_root/src" \
+    "$repo_root/lib/process/windows_command_line.c" "$repo_root/lib/memory/allocate.c" -o "$output_dir/invalid-compiler$exe"
 cp "$output_dir/invalid-compiler$exe" "$output_dir/wrong-compiler$exe"
 mkdir -p "$output_dir/temporary"
 workspace_env="$output_dir/temporary"

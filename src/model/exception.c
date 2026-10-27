@@ -5,7 +5,7 @@
 #include "exception.h"
 
 #include "context.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "module_files.h"
 
 #include <stdatomic.h>

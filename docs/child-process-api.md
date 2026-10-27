@@ -2,7 +2,7 @@
 
 ## Русский
 
-`src/lib/child_process.h` — общий API Linux/Windows 10 для запуска одного исполняемого файла без shell. `executable = NULL` запускает текущий исполняемый файл. Аргументы и пути имеют кодировку UTF-8; Windows использует `CreateProcessW` и экранирование CRT. `start_child_process` возвращает владеющий объект; `wait_child_process` обслуживает потоки и возвращает результат, `stop_child_process` принудительно завершает дерево, `destroy_child_process` освобождает объект (сначала останавливая незавершённый запуск). Один объект обслуживается одним потоком.
+`lib/process/child_process.h` — общий API Linux/Windows 10 для запуска одного исполняемого файла без shell. `executable = NULL` запускает текущий исполняемый файл. Аргументы и пути имеют кодировку UTF-8; Windows использует `CreateProcessW` и экранирование CRT. `start_child_process` возвращает владеющий объект; `wait_child_process` обслуживает потоки и возвращает результат, `stop_child_process` принудительно завершает дерево, `destroy_child_process` освобождает объект (сначала останавливая незавершённый запуск). Один объект обслуживается одним потоком.
 
 `child_deadline_after(ms)` создаёт абсолютный монотонный срок; ноль означает отсутствие ограничения. Срок создаётся **до** запуска и передаётся всем командам одной пробы, включая запрос сведений, компиляцию и линковку. Печать, сообщения и переход к следующей команде не обновляют срок. После таймаута поздний успех не принимается. Остановка и подтверждение уборки имеют отдельный ограниченный период; неисправность уборки возвращается в `cleanup_error`. Ненулевой `cleanup_error` запрещает потребителю удалять файлы, которые могли остаться в использовании.
 
@@ -32,7 +32,7 @@ endpoint (владение исходным дескриптором остаё�
 
 ## English
 
-`src/lib/child_process.h` provides shell-free launch on Linux and Windows 10. A NULL executable launches the current executable. Paths and arguments are UTF-8; Windows uses `CreateProcessW` with CRT quoting. Start returns an owning object, wait pumps its streams, stop terminates its tree, and destroy stops unfinished work before releasing resources. Calls on one object must be serialized.
+`lib/process/child_process.h` provides shell-free launch on Linux and Windows 10. A NULL executable launches the current executable. Paths and arguments are UTF-8; Windows uses `CreateProcessW` with CRT quoting. Start returns an owning object, wait pumps its streams, stop terminates its tree, and destroy stops unfinished work before releasing resources. Calls on one object must be serialized.
 
 Create one absolute monotonic deadline with `child_deadline_after(ms)` **before** launch and reuse it for every command in a probe, including compiler identification, compilation and linking. Zero means unlimited. Output, protocol messages and phase changes never reset the deadline. Timeout is sticky. Cleanup has its own bounded period; `cleanup_error` means absence of surviving writers was not confirmed, so callers must retain affected files.
 

@@ -12,7 +12,7 @@
 #include "graph/common_methods.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>

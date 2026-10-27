@@ -1,5 +1,5 @@
-#include "lib/file_system.h"
-#include "lib/zip_archive.h"
+#include "lib/archive/zip_archive.h"
+#include "lib/files/file_system.h"
 #include "yyjson.h"
 
 #include <assert.h>

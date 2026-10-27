@@ -4,9 +4,9 @@
  */
 #include "addition.h"
 
-#include "lib/allocate.h"
-#include "lib/integer_math.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/numbers/integer_math.h"
+#include "lib/strings/string_ext.h"
 
 /** @brief Calculates integer constant plus integer constant. */
 static const lattice_element_t *add_integer_constants(arena_t *arena,

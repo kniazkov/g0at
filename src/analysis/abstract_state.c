@@ -10,7 +10,7 @@
 #include "graph/member_access.h"
 #include "graph/variable.h"
 #include "lattice.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 #include <assert.h>
 

@@ -9,7 +9,7 @@
 #include "common/types.h"
 #include "exception.h"
 #include "goat/unicode.h"
-#include "lib/value.h"
+#include "lib/collections/value.h"
 #include "model_status.h"
 
 typedef struct object_t object_t;

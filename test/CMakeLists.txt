@@ -1,10 +1,10 @@
 # Copyright 2026 Ivan Kniazkov
 # Distributed under the MIT license; see LICENSE.txt.
 
-include_directories("${PROJECT_SOURCE_DIR}/src" "${PROJECT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/src" "${PROJECT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # Fault hooks are compiled only into this dedicated inspector test host.
-add_executable(inspect_probe_testing src/component/inspect_probe_testing.c "${PROJECT_SOURCE_DIR}/src/cli/inspect_probe.c" "${PROJECT_SOURCE_DIR}/src/lib/cleanup_service.c")
+add_executable(inspect_probe_testing src/component/inspect_probe_testing.c "${PROJECT_SOURCE_DIR}/src/cli/inspect_probe.c" "${PROJECT_SOURCE_DIR}/lib/process/cleanup_service.c")
 target_compile_definitions(inspect_probe_testing PRIVATE GOAT_INSPECT_PROBE_TESTING=1)
 target_link_libraries(inspect_probe_testing PRIVATE core goat_validation goat_module m)
 
@@ -23,7 +23,7 @@ add_executable(module_container_testing src/component/module_container_testing.c
 target_link_libraries(module_container_testing PRIVATE goat_module)
 
 add_executable(zip_testing src/component/zip_testing.c)
-target_link_libraries(zip_testing PRIVATE goat_zip yyjson)
+target_link_libraries(zip_testing PRIVATE goat_common yyjson)
 
 add_executable(module_json_testing src/component/module_json_testing.c)
 target_link_libraries(module_json_testing PRIVATE goat_module)
@@ -35,7 +35,7 @@ if(MINGW)
 endif()
 
 add_executable(cleanup_service_testing src/component/cleanup_service_testing.c)
-target_link_libraries(cleanup_service_testing PRIVATE core m)
+target_link_libraries(cleanup_service_testing PRIVATE goat_common m)
 
 add_executable(module_bytecode_testing src/component/module_bytecode_testing.c)
 target_link_libraries(module_bytecode_testing PRIVATE core m)
@@ -145,10 +145,10 @@ target_link_libraries(native_artifact_testing PRIVATE core m)
 add_executable(process_exit_testing src/component/process_exit_testing.c)
 target_link_libraries(process_exit_testing PRIVATE core goat_validation m)
 
-add_executable(process_exit_failure_testing src/component/process_exit_testing.c "${PROJECT_SOURCE_DIR}/src/lib/process_exit.c")
+add_executable(process_exit_failure_testing src/component/process_exit_testing.c "${PROJECT_SOURCE_DIR}/lib/process/process_exit.c")
 target_compile_definitions(process_exit_failure_testing PRIVATE GOAT_TEST_PROCESS_EXIT_FAILURE=1)
 target_link_libraries(process_exit_failure_testing PRIVATE core goat_validation m)
 
-add_executable(process_exit_delayed_testing src/component/process_exit_testing.c "${PROJECT_SOURCE_DIR}/src/lib/process_exit.c")
+add_executable(process_exit_delayed_testing src/component/process_exit_testing.c "${PROJECT_SOURCE_DIR}/lib/process/process_exit.c")
 target_compile_definitions(process_exit_delayed_testing PRIVATE GOAT_TEST_PROCESS_EXIT_FAILURE=2)
 target_link_libraries(process_exit_delayed_testing PRIVATE core goat_validation m)

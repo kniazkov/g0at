@@ -12,7 +12,7 @@
 #include "codegen/source_builder.h"
 #include "graph/update_expression.h"
 #include "graph/variable.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/process.h"
 #include "model/thread.h"
 #include "test_macro.h"

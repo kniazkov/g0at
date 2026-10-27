@@ -6,7 +6,7 @@
 
 #include "position.h"
 
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 
 /**
  * @brief Copies a full position into arena memory.

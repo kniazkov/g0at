@@ -4,7 +4,7 @@
  */
 #include "graph/statement_list.h"
 #include "graph/switch.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 #include "parser.h"
 #include "resources/messages.h"
 

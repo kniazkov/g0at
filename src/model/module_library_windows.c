@@ -2,7 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Windows mapped-image checks isolated from VM opcode names.
  */
-#include "lib/windows_target.h"
+#include "lib/platform/windows_target.h"
 #include "module_library_platform.h"
 
 #ifdef _WIN32

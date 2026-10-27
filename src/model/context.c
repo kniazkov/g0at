@@ -7,7 +7,7 @@
 
 #include "context.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "object.h"
 #include "process.h"
 

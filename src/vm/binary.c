@@ -5,8 +5,8 @@
 #include "binary.h"
 
 #include "codegen/native_compiler.h"
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
+#include "lib/files/binary_file.h"
+#include "lib/memory/allocate.h"
 #include "model/native_library.h"
 
 #include <float.h>

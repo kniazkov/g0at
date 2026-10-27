@@ -1,4 +1,4 @@
-#include "lib/string_ext.h"
+#include "lib/strings/string_ext.h"
 /**
  * @file test_codegen.c
  * @copyright 2026 Ivan Kniazkov
@@ -10,7 +10,7 @@
 #include "codegen/linker.h"
 #include "codegen/source_builder.h"
 #include "graph/expression.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 #include "test_codegen.h"
 #include "test_macro.h"
 

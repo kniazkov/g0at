@@ -4,7 +4,7 @@
  */
 #include "array_internal.h"
 #include "common_methods.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "object_state.h"
 #include "process.h"
 

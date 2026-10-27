@@ -8,7 +8,7 @@
 
 #include "common/compilation_error.h"
 #include "graph/statement.h"
-#include "lib/linked_list.h"
+#include "lib/collections/linked_list.h"
 #include "scanner/scanner.h"
 
 /** @brief Checks whether a name view is the reserved `this` identifier. */

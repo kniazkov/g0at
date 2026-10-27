@@ -5,7 +5,7 @@
  */
 #include "analysis_test_support.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "parser/parser.h"
 #include "scanner/scanner.h"
 

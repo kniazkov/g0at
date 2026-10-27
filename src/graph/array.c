@@ -9,9 +9,9 @@
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 
 /** @brief Counts array elements. */
 static size_t get_child_count(const node_t *node) {

@@ -10,8 +10,8 @@
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "expression.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 
 /** @brief Boolean literals are temporaries, not part of the numeric interface. */
 static bool can_generate_c_code(const node_t *node,

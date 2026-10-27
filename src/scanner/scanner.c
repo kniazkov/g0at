@@ -8,9 +8,9 @@
 
 #include "goat/unicode.h"
 #include "graph/expression.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 #include "resources/messages.h"
 
 #include <assert.h>

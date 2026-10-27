@@ -4,18 +4,18 @@
  */
 #include "cli/launcher.h"
 #include "codegen/native_compiler.h"
-#include "lib/allocate.h"
-#include "lib/cleanup_service.h"
-#include "lib/file_system.h"
-#include "lib/io.h"
-#include "lib/process_channel.h"
-#include "lib/string_ext.h"
+#include "lib/files/file_system.h"
+#include "lib/files/io.h"
+#include "lib/memory/allocate.h"
+#include "lib/process/cleanup_service.h"
+#include "lib/process/process_channel.h"
+#include "lib/strings/string_ext.h"
 #include "resources/messages.h"
 
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-#    include "lib/windows_target.h"
+#    include "lib/platform/windows_target.h"
 
 #    include <windows.h>
 #else

@@ -4,7 +4,7 @@
  */
 #include "transfer.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 typedef struct {
     void *source;

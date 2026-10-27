@@ -11,7 +11,7 @@
 #include "codegen/c_module_v1.h"
 #include "goat/unicode.h"
 #include "graph/replacement.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>

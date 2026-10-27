@@ -4,8 +4,8 @@
  */
 #include "linker.h"
 
-#include "lib/allocate.h"
-#include "lib/wire.h"
+#include "lib/memory/allocate.h"
+#include "lib/wire/wire.h"
 
 #include <stdlib.h>
 #include <string.h>

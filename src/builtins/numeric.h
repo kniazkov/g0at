@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "analysis/lattice.h"
-#include "lib/integer_math.h"
+#include "lib/numbers/integer_math.h"
 
 #include <math.h>
 

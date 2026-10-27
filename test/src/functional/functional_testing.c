@@ -4,7 +4,7 @@
  * @brief A program for performing functional tests on the project's output.
  */
 
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
 #include "unit/test_output.h"
 
 #include <ctype.h>

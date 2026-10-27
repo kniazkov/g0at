@@ -4,8 +4,8 @@
  */
 #include "native_runtime.h"
 
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "native_runtime_data.inc"
 
 #include <errno.h>

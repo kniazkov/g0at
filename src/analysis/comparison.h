@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "lattice.h"
-#include "lib/comparison.h"
+#include "lib/collections/comparison.h"
 
 const lattice_element_t *lattice_compare(const lattice_element_t *left,
                                          const lattice_element_t *right,

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "goat/unicode.h"
-#include "lib/value.h"
+#include "lib/collections/value.h"
 
 typedef struct expression_t expression_t;
 

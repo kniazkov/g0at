@@ -12,9 +12,9 @@
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 #include "variable.h"
 
 /** @brief Implements node_vtbl_t::get_child_count. */

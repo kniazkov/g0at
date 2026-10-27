@@ -4,15 +4,15 @@
  */
 #include "cli/inspect.h"
 #include "cli/inspect_probe.h"
-#include "lib/file_system.h"
-#include "lib/process_channel.h"
-#include "lib/string_ext.h"
+#include "lib/files/file_system.h"
+#include "lib/process/process_channel.h"
+#include "lib/strings/string_ext.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-#    include "lib/windows_target.h"
+#    include "lib/platform/windows_target.h"
 
 #    include <windows.h>
 #else

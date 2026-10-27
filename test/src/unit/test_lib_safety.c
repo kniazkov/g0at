@@ -4,7 +4,7 @@
  * @brief Regression tests for allocation, paths, search boundaries, and UTF-8 I/O.
  */
 
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -19,12 +19,12 @@
 #    include <unistd.h>
 #endif
 
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/io.h"
-#include "lib/pair.h"
-#include "lib/path.h"
-#include "lib/string_ext.h"
+#include "lib/collections/pair.h"
+#include "lib/files/io.h"
+#include "lib/files/path.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 #include "test_lib.h"
 #include "test_macro.h"
 

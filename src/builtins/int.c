@@ -4,7 +4,7 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/thread.h"
 #include "registry.h"
 

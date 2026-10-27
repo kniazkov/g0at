@@ -4,7 +4,7 @@
  * @brief Defines reduction rules for creating variable reference nodes.
  */
 #include "graph/expression.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 #include "parser.h"
 #include "resources/messages.h"
 

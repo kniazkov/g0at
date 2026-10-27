@@ -4,7 +4,7 @@
  */
 #include "unary_operation.h"
 
-#include "lib/integer_math.h"
+#include "lib/numbers/integer_math.h"
 
 const lattice_element_t *
 lattice_unary(arena_t *arena, const lattice_element_t *value, bool negate) {

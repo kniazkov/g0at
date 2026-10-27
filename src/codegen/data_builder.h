@@ -8,7 +8,7 @@
 #pragma once
 
 #include "goat/unicode.h"
-#include "lib/avl_tree.h"
+#include "lib/collections/avl_tree.h"
 #include "vm/bytecode.h"
 
 #include <stddef.h>

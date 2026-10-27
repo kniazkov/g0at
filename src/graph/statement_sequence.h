@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "lib/linked_list.h"
-#include "lib/string_ext.h"
-#include "lib/value.h"
+#include "lib/collections/linked_list.h"
+#include "lib/collections/value.h"
+#include "lib/strings/string_ext.h"
 
 typedef struct node_t node_t;
 

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "lib/value.h"
+#include "lib/collections/value.h"
 
 /** @brief Enumeration of non-child relations between AST nodes. */
 typedef enum {

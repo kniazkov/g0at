@@ -15,9 +15,9 @@ if [[ ${OS:-} == Windows_NT ]]; then
     ext=dll
     shared=(-shared -Wl,--exclude-all-symbols)
     libs=(-lbcrypt -ladvapi32 -lshell32 -lm)
-    file_sources=("$repo_root/src/lib/file_system.c" "$repo_root/src/lib/file_system_windows.c"
-                  "$repo_root/src/lib/string_ext.c" "$repo_root/src/lib/unicode.c"
-                  "$repo_root/src/lib/number_format.c")
+    file_sources=("$repo_root/lib/files/file_system.c" "$repo_root/lib/files/file_system_windows.c"
+                  "$repo_root/lib/strings/string_ext.c" "$repo_root/lib/strings/unicode.c"
+                  "$repo_root/lib/numbers/number_format.c")
     compiler_env="$(cygpath -am "$compiler")"
 fi
 passed=0
@@ -25,7 +25,7 @@ current='build generated and handwritten providers'
 printf 'Starting native loader testing...\n'
 trap 'printf "[fail] %s\nNative loader testing done; total: %d, passed: %d, failed: 1\n" "$current" "$((passed+1))" "$passed"' ERR
 ok() { printf '[ ok ] %s\n' "$current"; passed=$((passed+1)); }
-compile() { "$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -I"$repo_root/include" -I"$repo_root/src" "$@"; }
+compile() { "$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -I"$repo_root/include" -I"$repo_root" -I"$repo_root/src" "$@"; }
 cp "$repo_root/test/data/functional/native_abi/program.goat" "$output_dir/program.goat"
 CC="$compiler_env" "$interpreter" --save-library "$output_dir/program.goat"
 provider="$repo_root/test/src/functional/native_loader/provider.c"
@@ -42,7 +42,7 @@ compile "${shared[@]}" -DGOAT_NATIVE_BUILD -DNEED_DEPENDENCY "$provider" "$outpu
 mv "$output_dir/dependency.$ext" "$output_dir/dependency.hidden"
 compile -DMEMORY_DEBUG "$repo_root/test/src/functional/native_loader/driver.c" \
     "$repo_root/src/model/native_library.c" "$repo_root/src/model/native_library_linux.c" \
-    "$repo_root/src/model/native_library_windows.c" "$repo_root/src/lib/allocate.c" \
+    "$repo_root/src/model/native_library_windows.c" "$repo_root/lib/memory/allocate.c" \
     "${file_sources[@]}" "${libs[@]}" -o "$output_dir/loader-host"
 ok
 current='ABI rejection, metadata snapshots, descriptor ownership and actual unload'

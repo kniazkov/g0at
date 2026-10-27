@@ -8,7 +8,7 @@
 #include "builtin_function.h"
 #include "common_methods.h"
 #include "context.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "module_files.h"
 #include "module_native.h"
 #include "native_library.h"

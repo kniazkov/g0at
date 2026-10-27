@@ -5,7 +5,7 @@
 #include "module_graph.h"
 
 #include "goat/module_identity.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "module/module_json_internal.h"
 
 #include <stdlib.h>

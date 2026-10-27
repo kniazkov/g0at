@@ -7,8 +7,8 @@
 #include "c_contract.h"
 #include "c_expression.h"
 #include "graph/declarations.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 #include <assert.h>
 #include <string.h>

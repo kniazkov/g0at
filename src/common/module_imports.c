@@ -5,7 +5,7 @@
 #include "module_imports.h"
 
 #include "goat/module_identity.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 #include <stdint.h>
 #include <stdlib.h>

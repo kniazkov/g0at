@@ -4,8 +4,8 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
-#include "lib/allocate.h"
-#include "lib/io.h"
+#include "lib/files/io.h"
+#include "lib/memory/allocate.h"
 #include "model/context.h"
 #include "model/process.h"
 #include "model/thread.h"

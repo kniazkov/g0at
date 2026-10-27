@@ -2,7 +2,7 @@
 
 ## Русский
 
-`src/lib/zip_archive.h` — общий API цели `goat_zip`, независимый от VM и её
+`lib/archive/zip_archive.h` — общий API цели `goat_common`, независимый от VM и её
 аллокатора. Использует закреплённую zlib 1.3.2 с classic MiniZip.
 [Сравнение, лицензии, происхождение и checksum](../third_party/zlib/README.goat.md).
 Сборка CMake полностью локальная; zip/unzip и системная ZIP-библиотека не нужны.
@@ -75,7 +75,7 @@ stored/Deflate, data descriptors, дубли/NUL/длинные имена, би
 
 ## English
 
-`src/lib/zip_archive.h` is the VM-independent `goat_zip` API, using pinned
+`lib/archive/zip_archive.h` is the VM-independent `goat_common` API, using pinned
 zlib 1.3.2 and classic MiniZip. The [vendor README](../third_party/zlib/README.goat.md)
 records alternatives, licenses, exact commit/checksums, files and local changes.
 CMake builds offline, without system zlib or external archive commands.

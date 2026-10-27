@@ -6,7 +6,7 @@
 
 #include "analysis/addition.h"
 #include "codegen/linker.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/object.h"
 #include "model/process.h"
 #include "model/thread.h"

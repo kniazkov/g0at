@@ -2,8 +2,8 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Common consumer fixtures for the nonexecuting validation API.
  */
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "vm/module_validation.h"
 
 #include <assert.h>

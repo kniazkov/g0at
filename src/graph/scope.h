@@ -7,8 +7,8 @@
 #pragma once
 
 #include "goat/unicode.h"
-#include "lib/avl_tree.h"
-#include "lib/value.h"
+#include "lib/collections/avl_tree.h"
+#include "lib/collections/value.h"
 
 typedef struct scope_t scope_t;
 typedef struct node_t node_t;

@@ -21,7 +21,7 @@
 ## Explicit termination / Явное завершение
 
 `request_program_exit` performs the shared language/context checks, then calls
-`process_exit_request` (`src/lib/process_exit.h`), which never returns. Its
+`process_exit_request` (`lib/process/process_exit.h`), which never returns. Its
 `process_exit_select`/`process_exit_selected` arbiter uses one atomic encoded
 state/status, independently testable without terminating a process.
 

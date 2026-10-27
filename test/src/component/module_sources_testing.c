@@ -3,8 +3,8 @@
  * @brief JSON output harness for source graph fixtures.
  */
 #include "common/module_sources.h"
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
+#include "lib/files/binary_file.h"
+#include "lib/memory/allocate.h"
 
 #include <assert.h>
 #include <stdio.h>

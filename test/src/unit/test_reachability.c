@@ -14,7 +14,7 @@
 #include "graph/replacement.h"
 #include "graph/statement.h"
 #include "graph/visualization.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>

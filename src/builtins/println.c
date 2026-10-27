@@ -2,7 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Runtime and abstract implementations of println.
  */
-#include "lib/io.h"
+#include "lib/files/io.h"
 #include "model/process.h"
 #include "model/thread.h"
 #include "registry.h"

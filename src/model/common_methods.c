@@ -6,9 +6,9 @@
 
 #include "common_methods.h"
 
-#include "lib/allocate.h"
-#include "lib/comparison.h"
-#include "lib/string_ext.h"
+#include "lib/collections/comparison.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 #include <math.h>
 

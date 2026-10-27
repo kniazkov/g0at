@@ -11,7 +11,7 @@
 #include "goat/unicode.h"
 #include "graph/expression.h"
 #include "graph/visualization.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 #include "test_specialization_graph.h"
 

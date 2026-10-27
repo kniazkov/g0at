@@ -10,7 +10,7 @@
 #include "cli/options.h"
 #include "codegen/linker.h"
 #include "graph/logic.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/process.h"
 #include "model/thread.h"
 #include "test_macro.h"

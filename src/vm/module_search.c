@@ -5,7 +5,7 @@
 #include "module_search.h"
 
 #include "goat/module_identity.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 #include <stdarg.h>
 #include <stdio.h>

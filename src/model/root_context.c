@@ -7,8 +7,8 @@
 #include "builtins/registry.h"
 #include "common_methods.h"
 #include "context.h"
-#include "lib/pair.h"
-#include "lib/string_ext.h"
+#include "lib/collections/pair.h"
+#include "lib/strings/string_ext.h"
 #include "object.h"
 
 /** @brief Global names of the built-in type prototypes. */

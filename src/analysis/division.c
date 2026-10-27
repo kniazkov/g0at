@@ -4,7 +4,7 @@
  */
 #include "division.h"
 
-#include "lib/integer_math.h"
+#include "lib/numbers/integer_math.h"
 #include "unary_operation.h"
 
 static bool is_constant(const lattice_element_t *value) {

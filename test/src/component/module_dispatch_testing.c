@@ -5,11 +5,11 @@
 #define GOAT_NATIVE_OK GOAT_MODULE_NATIVE_OK
 #include "common/module_compilation.h"
 #undef GOAT_NATIVE_OK
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
-#include "lib/file_system.h"
-#include "lib/io.h"
-#include "lib/process_channel.h"
+#include "lib/files/binary_file.h"
+#include "lib/files/file_system.h"
+#include "lib/files/io.h"
+#include "lib/memory/allocate.h"
+#include "lib/process/process_channel.h"
 #include "model/module_native.h"
 #include "model/native_library.h"
 #include "model/native_services.h"

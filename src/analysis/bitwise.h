@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "lattice.h"
-#include "lib/bitwise.h"
+#include "lib/numbers/bitwise.h"
 const lattice_element_t *lattice_boolean(const lattice_element_t *value, bool negate);
 const lattice_element_t *lattice_bitwise_not(arena_t *arena, const lattice_element_t *value);
 const lattice_element_t *lattice_bitwise(arena_t *arena,

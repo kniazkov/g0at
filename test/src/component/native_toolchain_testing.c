@@ -3,8 +3,8 @@
  * @brief Compiler discovery harness and controllable compiler subprocess.
  */
 #include "codegen/native_toolchain.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 
 #include <assert.h>
 #include <stdio.h>

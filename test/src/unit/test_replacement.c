@@ -14,7 +14,7 @@
 #include "graph/binary_operation.h"
 #include "graph/replacement.h"
 #include "graph/visualization.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 
 #include <math.h>

@@ -2,10 +2,10 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Deterministically coordinated OS-thread file initialization tests.
  */
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/os_thread.h"
-#include "lib/wire.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
+#include "lib/threads/os_thread.h"
+#include "lib/wire/wire.h"
 #include "model/module_files.h"
 #include "model/process.h"
 #include "model/thread.h"

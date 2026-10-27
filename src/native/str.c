@@ -3,7 +3,7 @@
  * @brief Native primitive-to-string conversions using host-owned storage.
  */
 #include "goat/native_strings.h"
-#include "lib/number_format.h"
+#include "lib/numbers/number_format.h"
 
 #include <inttypes.h>
 #include <stdio.h>

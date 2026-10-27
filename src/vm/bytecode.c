@@ -6,8 +6,8 @@
 
 #include "bytecode.h"
 
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 #include "model/access.h"
 #include "model/native_library.h"
 

@@ -3,8 +3,8 @@
  * @brief Compiler substitutes for invalid and unrelated artifacts.
  */
 #ifdef _WIN32
-#    include "lib/allocate.h"
-#    include "lib/windows_command_line.h"
+#    include "lib/memory/allocate.h"
+#    include "lib/process/windows_command_line.h"
 
 #    include <windows.h>
 #else

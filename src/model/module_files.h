@@ -6,7 +6,7 @@
 
 #include "context.h"
 #include "exception.h"
-#include "lib/string_ext.h"
+#include "lib/strings/string_ext.h"
 #include "vm/module_bytecode.h"
 
 typedef struct module_files_t module_files_t;

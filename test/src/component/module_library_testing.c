@@ -2,9 +2,9 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Exercise the production mapped-range loader with controlled real images.
  */
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
-#include "lib/file_system.h"
+#include "lib/files/binary_file.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "model/module_library.h"
 
 #include <assert.h>

@@ -33,6 +33,6 @@ for name, spans in props.items():
     out.append(f'static const scalar_range_t {name}[] = {{')
     out.extend('    {0x%x,0x%x},' % x for x in sorted(spans))
     out.append('};')
-(root/'src/lib/unicode_data.inc').write_text('\n'.join(out)+'\n')
+(root/'lib/strings/unicode_data.inc').write_text('\n'.join(out)+'\n')
 manifest = ''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in sorted(ucd.glob('*.txt')))
 (ucd/'SHA256SUMS').write_text(manifest)

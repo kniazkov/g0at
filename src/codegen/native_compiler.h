@@ -4,8 +4,8 @@
  */
 #pragma once
 #include "goat/unicode.h"
-#include "lib/child_process.h"
-#include "lib/cleanup_service.h"
+#include "lib/process/child_process.h"
+#include "lib/process/cleanup_service.h"
 
 #include <stdbool.h>
 #include <stddef.h>

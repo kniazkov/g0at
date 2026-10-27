@@ -5,7 +5,7 @@
 #define GOAT_NATIVE_OK GOAT_MODULE_NATIVE_OK
 #include "common/module_compilation.h"
 #undef GOAT_NATIVE_OK
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/module_native.h"
 #include "module/module_hash.h"
 #include "vm/vm.h"

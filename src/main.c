@@ -5,11 +5,11 @@
  */
 
 #include "cli/launcher.h"
-#include "lib/allocate.h"
-#include "lib/cleanup_service.h"
-#include "lib/file_system.h"
-#include "lib/io.h"
-#include "lib/string_ext.h"
+#include "lib/files/file_system.h"
+#include "lib/files/io.h"
+#include "lib/memory/allocate.h"
+#include "lib/process/cleanup_service.h"
+#include "lib/strings/string_ext.h"
 #include "resources/messages.h"
 
 #include <stdlib.h>

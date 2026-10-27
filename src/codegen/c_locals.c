@@ -10,8 +10,8 @@
 #include "graph/replacement.h"
 #include "graph/update_expression.h"
 #include "graph/variable.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 static const c_generation_binding_t *find_binding(const c_generation_context_t *context,
                                                   const node_t *declaration) {

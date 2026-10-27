@@ -4,7 +4,7 @@
  */
 #include "access.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 #include <assert.h>
 

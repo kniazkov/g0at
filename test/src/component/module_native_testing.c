@@ -7,8 +7,8 @@
 #ifdef NDEBUG
 #    undef NDEBUG
 #endif
-#include "lib/file_system.h"
-#include "lib/wire.h"
+#include "lib/files/file_system.h"
+#include "lib/wire/wire.h"
 #include "module_native.h"
 
 #include <assert.h>

@@ -3,8 +3,8 @@
  * @brief Windows fixture token isolation, separate from VM opcode names.
  */
 #ifdef _WIN32
-#    include "lib/allocate.h"
-#    include "lib/file_system_internal.h"
+#    include "lib/files/file_system_internal.h"
+#    include "lib/memory/allocate.h"
 
 #    include <assert.h>
 #    include <windows.h>

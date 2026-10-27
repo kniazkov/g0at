@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lib/zip_archive.h"
+#include "lib/archive/zip_archive.h"
 #include "module_json.h"
 
 typedef enum {

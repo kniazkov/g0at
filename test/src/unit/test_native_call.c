@@ -1,5 +1,5 @@
-#include "lib/file_system.h"
-#include "lib/string_ext.h"
+#include "lib/files/file_system.h"
+#include "lib/strings/string_ext.h"
 /** @file test_native_call.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Native selection, bytecode fallback and descriptor ownership through FUNC/CALL.
@@ -14,7 +14,7 @@
 #define GOAT_NATIVE_OK GOAT_MODULE_NATIVE_OK
 #include "common/module_compilation.h"
 #undef GOAT_NATIVE_OK
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/context.h"
 #include "model/module_files.h"
 #include "model/native_library.h"

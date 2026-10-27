@@ -2,7 +2,7 @@
 
 ## Русский
 
-`src/lib/file_system.h` — общий C API Linux/Windows. Пути — UTF-8 без нормализации и изменения регистра. Для строк с известной длиной сначала вызывается `validate_fs_path`: встроенный NUL, пустая строка и неверный UTF-8 отклоняются. Функции с C-строкой видят только байты до завершающего NUL. Windows использует строгие UTF-8/UTF-16 преобразования и W API; Linux передаёт байты без изменения. Непредставимое имя при перечислении или уборке означает ошибку, а не пропуск.
+`lib/files/file_system.h` — общий C API Linux/Windows. Пути — UTF-8 без нормализации и изменения регистра. Для строк с известной длиной сначала вызывается `validate_fs_path`: встроенный NUL, пустая строка и неверный UTF-8 отклоняются. Функции с C-строкой видят только байты до завершающего NUL. Windows использует строгие UTF-8/UTF-16 преобразования и W API; Linux передаёт байты без изменения. Непредставимое имя при перечислении или уборке означает ошибку, а не пропуск.
 
 `fs_error_t error = {0}` хранит категорию, платформенную причину, операцию и собственную копию пути. После использования нужен `clear_fs_error`. Ошибки stream-операций содержат CRT errno, прочие — errno Linux / Win32 error Windows. Слой не выводит диагностику и не завершает процесс из-за файловой ошибки; выделение памяти сохраняет общую политику ALLOC проекта. Ошибка остаётся до явной очистки или следующей ошибки: успех не очищает предыдущую. NULL вместо error отключает сохранение диагностики.
 
@@ -52,7 +52,7 @@ Unit-проверки запускаются в дочернем процесс�
 
 ## English
 
-`src/lib/file_system.h` provides UTF-8 filesystem operations for Linux and Windows. Bounded input must pass `validate_fs_path`, which rejects embedded NUL, empty paths and malformed UTF-8. C-string APIs necessarily stop at NUL. Windows uses strict UTF-16 conversion and W APIs; Linux preserves bytes, case and normalization. Unrepresentable directory names fail enumeration/cleanup explicitly.
+`lib/files/file_system.h` provides UTF-8 filesystem operations for Linux and Windows. Bounded input must pass `validate_fs_path`, which rejects embedded NUL, empty paths and malformed UTF-8. C-string APIs necessarily stop at NUL. Windows uses strict UTF-16 conversion and W APIs; Linux preserves bytes, case and normalization. Unrepresentable directory names fail enumeration/cleanup explicitly.
 
 Initialize errors with `{0}` and release them with `clear_fs_error`. Errors retain category, operation, owned path and native reason (CRT errno for stream operations, otherwise errno/Win32). Successful calls do not erase earlier errors. No filesystem failure prints or exits; allocation retains the project's ALLOC policy. Path joining is not a confinement check. Absolute paths are lexical and need not exist.
 

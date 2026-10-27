@@ -5,8 +5,8 @@
 #include "c_control.h"
 #include "c_lowering.h"
 #include "graph/node.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 c_generated_expression_t c_conditional(const node_t *node, c_generation_context_t *context) {
     abstract_truth_t truth = c_generation_condition_truth(context, get_node_child(node, 0));

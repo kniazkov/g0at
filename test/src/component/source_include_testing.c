@@ -3,9 +3,9 @@
  * @brief End-to-end source include compilation, packaging and memory-only execution.
  */
 #include "common/module_compilation.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/io.h"
+#include "lib/files/file_system.h"
+#include "lib/files/io.h"
+#include "lib/memory/allocate.h"
 #include "model/module_files.h"
 #include "model/thread.h"
 #include "vm/module_writer.h"

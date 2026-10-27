@@ -5,8 +5,8 @@
 #define GOAT_NATIVE_OK GOAT_MODULE_NATIVE_OK
 #include "common/module_compilation.h"
 #undef GOAT_NATIVE_OK
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "model/builtin_function.h"
 #include "model/native_library.h"
 #include "model/thread.h"

@@ -8,9 +8,9 @@
 #include "builtins/registry.h"
 #include "c_lowering.h"
 #include "graph/replacement.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
-#include "lib/wire.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
+#include "lib/wire/wire.h"
 
 #include <stdio.h>
 #include <stdlib.h>

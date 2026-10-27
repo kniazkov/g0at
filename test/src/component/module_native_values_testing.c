@@ -3,9 +3,9 @@
  * @brief Same-bitness test-only loading of freshly built module-v1 adapters.
  */
 #include "goat/module_abi.h"
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
-#include "lib/file_system.h"
+#include "lib/files/binary_file.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "module/module_abi.h"
 #include "module/module_json.h"
 

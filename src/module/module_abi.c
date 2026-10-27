@@ -4,7 +4,7 @@
  */
 #include "module_abi.h"
 
-#include "lib/wire.h"
+#include "lib/wire/wire.h"
 #include "module_guards.h"
 #include "module_json_internal.h"
 

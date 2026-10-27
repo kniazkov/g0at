@@ -3,7 +3,7 @@
  * @brief Bounded native-load trials; process isolation is not a security sandbox.
  */
 #pragma once
-#include "lib/cleanup_service.h"
+#include "lib/process/cleanup_service.h"
 #include "module/module_container.h"
 
 typedef enum {

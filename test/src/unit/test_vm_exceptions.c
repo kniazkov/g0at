@@ -3,7 +3,7 @@
  * @brief Context-based VM exception dispatch and ownership.
  */
 #include "codegen/linker.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/context.h"
 #include "model/object.h"
 #include "model/process.h"

@@ -3,7 +3,7 @@
  * @brief Generated string adapter validation and borrowed argument/result lifetimes.
  */
 #include "goat/native_strings.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/native_services.h"
 
 #include <assert.h>

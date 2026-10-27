@@ -10,8 +10,8 @@
 #include "graph/comparison.h"
 #include "graph/loop.h"
 #include "graph/replacement.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 void c_emit_prelude(const source_builder_t *prelude, source_builder_t *builder, size_t indent) {
     for (size_t i = 0; prelude && i < prelude->count; i++) {

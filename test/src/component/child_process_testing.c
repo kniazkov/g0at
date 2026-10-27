@@ -6,10 +6,10 @@
 #    define _GNU_SOURCE
 #endif
 #include "codegen/native_compiler.h"
-#include "lib/allocate.h"
-#include "lib/child_process.h"
-#include "lib/file_system.h"
-#include "lib/windows_target.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
+#include "lib/platform/windows_target.h"
+#include "lib/process/child_process.h"
 
 #include <signal.h>
 #include <stdio.h>

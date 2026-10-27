@@ -6,7 +6,7 @@
 
 #include "code_builder.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 #include <stdlib.h>
 

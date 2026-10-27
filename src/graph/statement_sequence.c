@@ -6,9 +6,9 @@
 
 #include "statement_sequence.h"
 
-#include "lib/allocate.h"
-#include "lib/linked_list.h"
-#include "lib/string_ext.h"
+#include "lib/collections/linked_list.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 #include "node.h"
 #include "statement.h"
 

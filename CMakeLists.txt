@@ -18,6 +18,7 @@ if(GOAT_TEST_ALLOC_FAILURE)
   add_compile_definitions(GOAT_TEST_ALLOC_FAILURE)
 endif()
 
+add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(test)
 include("${CMAKE_CURRENT_SOURCE_DIR}/scripts/package.cmake")

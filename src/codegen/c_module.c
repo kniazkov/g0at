@@ -5,9 +5,9 @@
 #include "c_module.h"
 
 #include "graph/replacement.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 
 #include <string.h>
 

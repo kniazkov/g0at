@@ -16,20 +16,14 @@ int main(void) { return 0; }" GOAT_UTF32_TARGET)
 if(NOT GOAT_UTF32_TARGET)
   message(FATAL_ERROR "Goat requires known little-endian UTF-32 char32_t and 8-bit bytes")
 endif()
-include_directories(. ../include)
+include_directories(. .. ../include)
 
 add_library(yyjson STATIC ../third_party/yyjson/yyjson.c)
 target_include_directories(yyjson PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/yyjson")
 set_target_properties(yyjson PROPERTIES POSITION_INDEPENDENT_CODE ON)
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../third_party/zlib" "${CMAKE_CURRENT_BINARY_DIR}/third_party/zlib")
-add_library(goat_zip STATIC lib/zip_archive.c)
-target_include_directories(goat_zip PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(goat_zip PRIVATE goat_minizip)
-set_target_properties(goat_zip PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(module)
 
 file(GLOB core_sources
-  lib/*.c
   resources/*.c
   common/*.c
   scanner/*.c
@@ -42,10 +36,9 @@ file(GLOB core_sources
   vm/*.c
   cli/*.c
 )
-list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/lib/sha256.c" "${CMAKE_CURRENT_SOURCE_DIR}/lib/zip_archive.c")
 list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/common/module_build.c" "${CMAKE_CURRENT_SOURCE_DIR}/common/module_compilation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_validation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_writer.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_search.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_dependencies.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph_diagnostics.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_snapshot.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_loading.c")
 # Build the native runtime separately; never depend on VM internals or its allocator.
-add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c lib/unicode.c)
+add_library(goat_native STATIC native/strings.c native/str.c ../lib/numbers/number_format.c ../lib/strings/unicode.c)
 set_target_properties(goat_native PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
   OUTPUT_NAME goat_native PREFIX "lib" SUFFIX ".a"
@@ -71,17 +64,17 @@ add_custom_command(
     "${native_headers_dir}/module_abi.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/native/strings.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/native/str.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/lib/number_format.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/lib/number_format.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/lib/unicode.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/lib/unicode_data.inc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../lib/numbers/number_format.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../lib/numbers/number_format.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../lib/strings/unicode.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../lib/strings/unicode_data.inc"
     "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/embed_native_runtime.cmake"
   COMMENT "Embedding native runtime headers and static library"
   VERBATIM
 )
 add_library(core STATIC ${core_sources} "${native_runtime_data}")
 set_target_properties(core PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-target_link_libraries(core PUBLIC goat_module goat_zip)
+target_link_libraries(core PUBLIC goat_module goat_common)
 if(NOT WIN32)
   find_package(Threads REQUIRED)
   target_link_libraries(core PUBLIC Threads::Threads)
@@ -100,8 +93,7 @@ endif()
 if(WIN32)
   target_link_libraries(core PUBLIC bcrypt advapi32 shell32)
 endif()
-# Keep the allocator API consistent between core and its consumers.
-target_compile_definitions(core PUBLIC "$<$<NOT:$<CONFIG:Release>>:MEMORY_DEBUG>")
+
 message(STATUS "Found core sources: ${core_sources}")
 
 file(GLOB goat_exe main.c)

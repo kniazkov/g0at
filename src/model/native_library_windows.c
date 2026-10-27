@@ -2,12 +2,12 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Explicit-path Windows loading and exact ABI query lookup.
  */
-#include "lib/windows_target.h"
+#include "lib/platform/windows_target.h"
 #include "native_library.h"
 
 #ifdef _WIN32
-#    include "lib/allocate.h"
-#    include "lib/file_system_internal.h"
+#    include "lib/files/file_system_internal.h"
+#    include "lib/memory/allocate.h"
 
 #    include <stdio.h>
 #    include <string.h>

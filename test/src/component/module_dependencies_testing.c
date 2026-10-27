@@ -3,7 +3,7 @@
  * @brief Per-consumer exact dependency binding contract and fixture driver.
  */
 #include "common/module_imports.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "vm/module_dependencies.h"
 
 #include <assert.h>

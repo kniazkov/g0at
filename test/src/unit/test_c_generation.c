@@ -10,8 +10,8 @@
 #include "codegen/c_generation.h"
 #include "goat/unicode.h"
 #include "graph/expression.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 #include "test_macro.h"
 
 #include <stdio.h>

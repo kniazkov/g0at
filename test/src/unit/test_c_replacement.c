@@ -13,7 +13,7 @@
 #include "graph/binary_operation.h"
 #include "graph/common_methods.h"
 #include "graph/replacement.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 
 #include <math.h>

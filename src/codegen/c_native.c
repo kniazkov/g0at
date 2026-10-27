@@ -11,8 +11,8 @@
 #include "c_strings.h"
 #include "goat/unicode.h"
 #include "graph/replacement.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 typedef c_generated_expression_t (*c_native_generator_t)(const node_t *node,
                                                          c_generation_context_t *context);

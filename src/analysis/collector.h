@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include "lib/arena.h"
-#include "lib/value.h"
+#include "lib/collections/value.h"
+#include "lib/memory/arena.h"
 
 #include <stdint.h>
 

@@ -23,9 +23,9 @@
 #include "common_methods.h"
 #include "expression.h"
 #include "index_access.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 #include "member_access.h"
 #include "model/builtin_function.h"
 

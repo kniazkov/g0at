@@ -5,7 +5,7 @@
 #ifndef _WIN32
 #    define _POSIX_C_SOURCE 200809L
 #endif
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "vm/module_search.h"
 
 #include <assert.h>

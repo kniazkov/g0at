@@ -12,8 +12,8 @@
 #include "c_string_methods.h"
 #include "goat/unicode.h"
 #include "graph/replacement.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 static bool same_signature(const function_summary_t *a, const function_summary_t *b) {
     if (!a || !b || a->function != b->function || a->parameter_count != b->parameter_count)

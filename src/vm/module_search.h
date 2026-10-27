@@ -3,7 +3,7 @@
  * @brief Fixed program-wide search paths and first-candidate module validation.
  */
 #pragma once
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
 #include "module_validation.h"
 
 typedef enum {

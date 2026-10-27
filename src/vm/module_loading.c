@@ -4,8 +4,8 @@
  */
 #include "module_loading.h"
 
-#include "lib/allocate.h"
-#include "lib/sha256.h"
+#include "lib/hash/sha256.h"
+#include "lib/memory/allocate.h"
 #include "model/module_library.h"
 #include "model/process.h"
 #include "module/module_native.h"

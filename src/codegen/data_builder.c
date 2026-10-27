@@ -7,8 +7,8 @@
 #include "data_builder.h"
 
 #include "graph/declarations.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 #include <memory.h>
 #include <stdlib.h>
