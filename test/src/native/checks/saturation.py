@@ -2,9 +2,9 @@
 # Copyright 2026 Ivan Kniazkov
 """Check saturation against exact Python integers, including portable generated C."""
 import itertools
+import json
 import os
 from pathlib import Path
-import random
 import subprocess
 import sys
 
@@ -38,8 +38,9 @@ def main():
     edges = [MIN, MIN + 1, MIN + 2, -3037000500, -2, -1, 0, 1, 2,
              3037000499, 3037000500, MAX - 2, MAX - 1, MAX]
     pairs = list(itertools.product(edges, repeat=2))
-    rng = random.Random(20261006)
-    pairs += [(rng.randint(MIN, MAX), rng.randint(MIN, MAX)) for _ in range(1000)]
+    frozen = json.loads((root / 'test/data/python-samples/saturation-pairs.json').read_text(encoding='utf-8'))
+    assert len(frozen) == 1000
+    pairs += frozen
     definitions = ('const add=func(a,b){return a+b;};'
                    'const sub=func(a,b){return a-b;};'
                    'const mul=func(a,b){return a*b;};'

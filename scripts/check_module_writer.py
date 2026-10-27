@@ -7,7 +7,6 @@ import io
 import json
 import os
 from pathlib import Path
-import random
 import stat
 import struct
 import subprocess
@@ -16,6 +15,7 @@ import tempfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+SAMPLES = ROOT / 'test/data/python-samples'
 sys.path.insert(0, str(ROOT / 'docs/module-format-v1'))
 import reference as ref
 EXE = str(Path(sys.argv[1]).resolve())
@@ -133,9 +133,9 @@ code = function_image()
 m = dict(copy.deepcopy(BASE), functions=[dict(functionId=1, file=0, instruction=1,
                                              parameters=[])], native=[])
 m['mainHash'] = ref.main_hash(m, code)
-rng = random.Random(183)
 contents = [b'', b'x', b'xy', b'abc' * 10000, bytes(range(256)),
-            bytes(rng.randrange(256) for _ in range(65537))]
+            (SAMPLES / 'writer-payload.bin').read_bytes()]
+assert len(contents[-1]) == 65537
 # Twelve names exercise lexical variant-10 < variant-2 ordering, not numeric ZIP order.
 payloads = {}
 for i in range(12):
@@ -160,7 +160,10 @@ full = run(pack(m, code, payloads)); inspect(full, expected)
 # short, compressible and seeded incompressible native payloads.
 assert hashlib.sha256(full).hexdigest() == '98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102'
 assert run(pack(m, code, payloads, True)) == full
-shuffled = copy.deepcopy(m); rng.shuffle(shuffled['native'])
+shuffled = copy.deepcopy(m)
+order = json.loads((SAMPLES / 'writer-native-order.json').read_text(encoding='utf-8'))
+assert sorted(order) == list(range(12))
+shuffled['native'] = [shuffled['native'][i] for i in order]
 assert run(pack(shuffled, code, dict(reversed(list(payloads.items()))))) == full
 # Repack already normalized, renamed inputs without changing any archive byte/hash.
 normalized = json.loads(expected['module.json'])

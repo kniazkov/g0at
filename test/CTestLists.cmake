@@ -215,3 +215,6 @@ endforeach()
 if(NOT goat_integration_count EQUAL 59)
   message(FATAL_ERROR "Expected all 59 transitional integration suites; found ${goat_integration_count}")
 endif()
+# Read-only provenance/reproduction check; ordinary consumers never generate inputs.
+goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
+goat_python(tool.python-frozen-samples-self-test "tool;frozen-samples" "test/support/freeze_python_samples.py" --self-test)
