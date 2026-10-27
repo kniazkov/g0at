@@ -67,7 +67,7 @@ add_custom_command(
     "${CMAKE_CURRENT_SOURCE_DIR}/../lib/numbers/number_format.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../lib/numbers/number_format.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../lib/strings/unicode.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../lib/strings/unicode_data.inc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../lib/strings/unicode_data.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/embed_native_runtime.cmake"
   COMMENT "Embedding native runtime headers and static library"
   VERBATIM

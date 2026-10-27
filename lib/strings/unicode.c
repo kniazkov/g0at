@@ -16,7 +16,7 @@ typedef struct {
     uint32_t first, last;
 } scalar_range_t;
 
-#include "lib/strings/unicode_data.inc"
+#include "lib/strings/unicode_data.h"
 #define COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
 static const case_entry_t *lookup(const case_entry_t *table, size_t count, uint32_t c) {

@@ -35,7 +35,7 @@
 - [x] 02. [#320 — Перенести исходники тестов в test/src](https://github.com/kniazkov/g0at/issues/320)
 - [x] 03. [#321 — Разделить тестовые данные и код в test](https://github.com/kniazkov/g0at/issues/321)
 - [x] 04. [#322 — Выделить общую статическую библиотеку из src/lib](https://github.com/kniazkov/g0at/issues/322)
-- [ ] 05. [#323 — Переименовать Unicode-таблицу unicode_data.inc в unicode_data.h](https://github.com/kniazkov/g0at/issues/323)
+- [x] 05. [#323 — Переименовать Unicode-таблицу в unicode_data.h](https://github.com/kniazkov/g0at/issues/323)
 - [ ] 06. [#324 — Подключить существующие наборы к CTest](https://github.com/kniazkov/g0at/issues/324)
 - [ ] 07. [#325 — Расширить общий запуск процессов: env и stdin](https://github.com/kniazkov/g0at/issues/325)
 - [ ] 08. [#326 — Добавить потоковый обмен и большие результаты дочерних процессов](https://github.com/kniazkov/g0at/issues/326)
