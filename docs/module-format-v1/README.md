@@ -12,7 +12,8 @@ the language contract are mandatory in addition to JSON Schema shape checks.
 ## Deliverables and versions
 
 `gmod.schema.json`, `module.schema.json`, `native.schema.json`, and
-`target.schema.json` are generated from the reviewed `schema.py`. Every property
+`target.schema.json` are generated from the reviewed `schema-source.json` through the transitional
+`schema.py` reader. Every property
 appears there with its type, requiredness, range and closed nested object shape.
 Schema omission does not authorize new fields. `reference.py` fixes canonical
 bytes and generates the text/hex vectors under `vectors/`; `test_reference.py`
@@ -25,6 +26,15 @@ native call ABI each start at version 1 and evolve independently. Module version
 strings remain opaque identifiers. No reader for the previous `GOATBI11` /
 `goat v.1` images is required. New bytecode magic is `GOATBC01`; this avoids
 confusion with old images even when their numeric version was 1.
+
+`schema-source.json` has exactly two objects, `DEFS` and `ROOTS`. Their member
+order (including nested properties), array order, integer tokens, references and
+patterns are part of the reproducible generator input: do not sort keys or pass
+integers through floating point. Duplicate decoded keys and non-integer numeric
+tokens are rejected. The reader resolves the source relative to its own file,
+not the working directory. `reference.py` and the temporary Python C-table
+generator keep their existing API; #332 replaces the generator, while #335/#336
+migrate the reference consumer. Normal C builds still use the checked-in header.
 
 ## JSON fields and semantic constraints
 
