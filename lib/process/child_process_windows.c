@@ -578,6 +578,18 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
         }
         Sleep(1);
     }
+    /* Job accounting is not a process-completion barrier. In particular, forced
+     * termination can remove the root from active accounting before its handles
+     * (including the current-directory handle) have been closed. Wait for its
+     * process object as well, sharing the same bounded cleanup budget. */
+    uint64_t now = child_monotonic_ms();
+    DWORD remaining = now < end ? (DWORD)(end - now) : 0;
+    DWORD root_state = WaitForSingleObject(p->process, remaining);
+    if (root_state != WAIT_OBJECT_0) {
+        if (!p->result.cleanup_error)
+            p->result.cleanup_error = root_state == WAIT_FAILED ? GetLastError() : WAIT_TIMEOUT;
+        tree_gone = false;
+    }
     /* Writers are gone; consume the complete finite buffered tail, not merely one turn. */
     if (tree_gone) {
         while (drain(p)) {
