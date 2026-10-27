@@ -20,8 +20,12 @@ jobs:
           python-version: '3.13'
       - name: Check portable format vectors without regenerating them
         run: python docs/module-format-v1/test_reference.py
-      - name: Check production JSON schema tables
-        run: python scripts/generate_module_json_schema.py --check
+      - name: Build standalone host schema generator without core
+        run: |
+          cmake -S tools/module-schema -B build/schema-host
+          cmake --build build/schema-host --config Release
+      - name: Check public schemas and production tables without rewriting them
+        run: ctest --test-dir build/schema-host -C Release --output-on-failure
       - name: Check frozen Python inputs without rewriting fixtures
         run: python test/support/freeze_python_samples.py --check
       - name: Test frozen input checker rejects corruption

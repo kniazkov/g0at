@@ -1,8 +1,7 @@
 """Transitional Python API for schema-source.json; no third-party dependency.
 
-reference.py consumes DEFS/ROOTS/schema; generate_module_json_schema.py also
-consumes NAME/HASH. The declarative source preserves insertion order and exact
-integer tokens for the C generator migration (#332).
+reference.py consumes DEFS/ROOTS/schema until its migration (#335/#336).
+The declarative source preserves insertion order and exact integer tokens.
 """
 import json
 from pathlib import Path
@@ -34,7 +33,7 @@ def _load_source(path):
 _SOURCE = _load_source(Path(__file__).with_name("schema-source.json"))
 DEFS = _SOURCE["DEFS"]
 ROOTS = _SOURCE["ROOTS"]
-# Compatibility aliases for the transitional C-table generator; not new sources.
+# Compatibility aliases retained with the transitional reference API.
 NAME = ROOTS["gmod"]["properties"]["name"]
 HASH = ROOTS["module"]["properties"]["mainHash"]
 

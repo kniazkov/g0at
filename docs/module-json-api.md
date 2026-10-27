@@ -19,10 +19,10 @@
 компилятор, не разрешает зависимости и не обращается к сети или файлам.
 
 Таблицы C автоматически получаются из зафиксированной схемы
-[`module-format-v1/schema.py`](module-format-v1/schema.py). Они включают все
+[`module-format-v1/schema-source.json`](module-format-v1/schema-source.json). Они включают все
 вложенные записи v1: файлы, зависимости, функции, аналитику, экспорты, нативные
 варианты, цели и специализации. Обычная сборка не требует Python.
-`python scripts/generate_module_json_schema.py --check` проверяет отсутствие
+`build/module_schema_generator --check` проверяет отсутствие
 расхождений; без `--check` команда обновляет таблицы после изменения спецификации.
 
 Числа остаются `YYJSON_TYPE_RAW`: это точные десятичные токены, **не double**.
@@ -62,7 +62,7 @@ ID функций и внутренних имён файлов, отсутст�
 
 Проверки: `module_json_testing` (C),
 `python scripts/check_module_json.py <путь-к-module_json_testing>` (реальный C API
-через stdin), `python scripts/generate_module_json_schema.py --check`.
+через stdin), `build/module_schema_generator --check`.
 В CI проверки выполняются на Linux x86_64/aarch64 с GCC/Clang и Windows
 MINGW32/MINGW64/UCRT64. Проверяются положительные эталоны, обязательность и типы,
 вложенные неизвестные поля, Unicode/NUL, точные границы чисел, значения по
@@ -86,10 +86,10 @@ entire schema is validated before normalization or future CLI overrides. Reading
 performs no compilation, dependency resolution, filesystem or network access.
 
 Committed C tables are generated from the frozen
-[`module-format-v1/schema.py`](module-format-v1/schema.py), covering every nested
+[`module-format-v1/schema-source.json`](module-format-v1/schema-source.json), covering every nested
 v1 record: files, dependencies, functions, analysis, exports, native variants,
 targets and specializations. Normal builds require no Python. Run
-`python scripts/generate_module_json_schema.py --check` to detect drift; omit
+`build/module_schema_generator --check` to detect drift; omit
 `--check` to regenerate after a specification change.
 
 Numbers remain `YYJSON_TYPE_RAW` decimal tokens, never doubles. Consumers must
@@ -128,7 +128,7 @@ schema does not imply passing those later validators. Source builder and merge
 integration likewise belongs to their implementation tasks.
 
 Run `module_json_testing`, `python scripts/check_module_json.py <executable>` and
-`python scripts/generate_module_json_schema.py --check`. CI runs the production
+`build/module_schema_generator --check`. CI runs the production
 reader on Linux x86_64/aarch64 GCC/Clang and Windows MINGW32/MINGW64/UCRT64. Tests
 cover valid vectors, required fields/types, nested unknown fields, Unicode/NUL,
 exact integer boundaries, defaults, normalization and independent output ownership.
