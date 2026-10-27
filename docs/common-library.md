@@ -18,7 +18,7 @@ no implementation needed to stay in `src/lib`. Headers remain beside sources.
 | `lib/memory` | allocate, alignment, arena |
 | `lib/collections` | avl_tree, comparison, linked_list, pair, queue, value, vector |
 | `lib/numbers` | bitwise, integer_math, number_format, split64 |
-| `lib/strings` | string_ext, unicode, unicode_data.inc |
+| `lib/strings` | string_ext, unicode, unicode_data.h |
 | `lib/files` | binary_file, file_system, io, path |
 | `lib/process` | child_process, cleanup_service, process_channel, process_exit, windows_command_line |
 | `lib/threads` | os_thread |

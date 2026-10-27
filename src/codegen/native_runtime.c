@@ -106,7 +106,7 @@ bool write_native_runtime_sources(const char *source_path) {
         {"runtime_number_format.c", runtime_number_format_data, sizeof(runtime_number_format_data)},
         {"runtime_unicode.c", runtime_unicode_data, sizeof(runtime_unicode_data)},
         {"number_format.h", number_format_header_data, sizeof(number_format_header_data)},
-        {"unicode_data.inc", unicode_table_data, sizeof(unicode_table_data)}};
+        {"unicode_data.h", unicode_table_data, sizeof(unicode_table_data)}};
 
     for (size_t i = 0; i < sizeof(sources) / sizeof(*sources); ++i) {
         char *path = runtime_path(source_path, sources[i].name);
