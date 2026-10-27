@@ -3,7 +3,7 @@
  * @brief Deterministic, bounded compiler discovery without loading generated libraries.
  */
 #pragma once
-#include "lib/cleanup_service.h"
+#include "lib/process/cleanup_service.h"
 #include "module/native_environment.h"
 
 #define NATIVE_PROBE_DEFAULT_SECONDS 10

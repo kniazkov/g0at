@@ -2,8 +2,8 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Native executable wrapper for Windows process and failure tests.
  */
-#include "lib/allocate.h"
-#include "lib/windows_command_line.h"
+#include "lib/memory/allocate.h"
+#include "lib/process/windows_command_line.h"
 
 #include <stdbool.h>
 #include <stdio.h>

@@ -10,7 +10,7 @@
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "goat/unicode.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>

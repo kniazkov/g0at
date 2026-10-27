@@ -1,4 +1,4 @@
-#include "lib/string_ext.h"
+#include "lib/strings/string_ext.h"
 /**
  * @file root_object.c
  * @copyright 2026 Ivan Kniazkov

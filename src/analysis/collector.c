@@ -10,8 +10,8 @@
 #include "function_summary.h"
 #include "graph/declarations.h"
 #include "lattice.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 #include <assert.h>
 #include <string.h>

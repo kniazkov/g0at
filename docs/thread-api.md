@@ -2,7 +2,7 @@
 
 ## Русский
 
-`src/lib/os_thread.h` предоставляет отдельный API потоков, нерекурсивных мьютексов и условных переменных. Типы непрозрачны; заголовок не экспортирует pthread/Windows-типы. Это системные потоки C, не `model/thread.h`, не процессы и не пул потоков.
+`lib/threads/os_thread.h` предоставляет отдельный API потоков, нерекурсивных мьютексов и условных переменных. Типы непрозрачны; заголовок не экспортирует pthread/Windows-типы. Это системные потоки C, не `model/thread.h`, не процессы и не пул потоков.
 
 `create_os_thread(&thread, callback, argument, stack_size)` запускает callback сразу; его сигнатура — `void *callback(void *)`. Ноль в размере стека выбирает системное значение; ненулевой размер запрашивает стек в байтах (платформа может округлять его и отклонять неподдерживаемые размеры). Windows использует `_beginthreadex` с резервированием стека, Linux — pthread attributes. Callback возвращается обычным `return`; отмена потока, detach и сторонние функции завершения потока не поддерживаются.
 
@@ -30,7 +30,7 @@ Linux использует pthread mutex/condition; Windows — SRWLOCK/CONDITIO
 
 ## English
 
-`src/lib/os_thread.h` is an independent C API for OS threads, nonrecursive mutexes and condition variables. Opaque types expose no platform headers. It introduces neither a thread pool nor a VM lifetime policy.
+`lib/threads/os_thread.h` is an independent C API for OS threads, nonrecursive mutexes and condition variables. Opaque types expose no platform headers. It introduces neither a thread pool nor a VM lifetime policy.
 
 `create_os_thread(&thread, callback, argument, stack_size)` immediately starts a `void *callback(void *)`. Zero selects the default stack; a nonzero byte count requests a stack size subject to platform rounding/validation. Windows uses `_beginthreadex` with stack reservation; Linux uses pthread attributes. Callbacks return normally. Cancellation, detach and external thread-exit functions are unsupported.
 

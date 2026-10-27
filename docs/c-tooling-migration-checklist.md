@@ -34,7 +34,7 @@
 - [x] 01. [#319 — Ввести корневой CMakeLists.txt](https://github.com/kniazkov/g0at/issues/319) — [PR #396](https://github.com/kniazkov/g0at/pull/396), зелёный CI: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/40448768780), [векторы формата](https://github.com/kniazkov/g0at/actions/runs/40448768760).
 - [x] 02. [#320 — Перенести исходники тестов в test/src](https://github.com/kniazkov/g0at/issues/320)
 - [x] 03. [#321 — Разделить тестовые данные и код в test](https://github.com/kniazkov/g0at/issues/321)
-- [ ] 04. [#322 — Выделить общую статическую библиотеку из src/lib](https://github.com/kniazkov/g0at/issues/322)
+- [x] 04. [#322 — Выделить общую статическую библиотеку из src/lib](https://github.com/kniazkov/g0at/issues/322)
 - [ ] 05. [#323 — Переименовать Unicode-таблицу unicode_data.inc в unicode_data.h](https://github.com/kniazkov/g0at/issues/323)
 - [ ] 06. [#324 — Подключить существующие наборы к CTest](https://github.com/kniazkov/g0at/issues/324)
 - [ ] 07. [#325 — Расширить общий запуск процессов: env и stdin](https://github.com/kniazkov/g0at/issues/325)

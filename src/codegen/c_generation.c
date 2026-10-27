@@ -8,7 +8,7 @@
 #include "graph/node.h"
 #include "graph/replacement.h"
 #include "graph/variable.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 c_value_type_t c_generation_parameter_type(const c_generation_context_t *context, size_t index) {
     const function_summary_t *summary = context ? context->summary : NULL;

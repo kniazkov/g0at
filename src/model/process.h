@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "lib/os_thread.h"
+#include "lib/threads/os_thread.h"
 #include "object_list.h"
 
 #include <stdint.h>

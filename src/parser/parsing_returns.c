@@ -5,7 +5,7 @@
  */
 
 #include "graph/expression.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 #include "parser.h"
 
 #include <assert.h>

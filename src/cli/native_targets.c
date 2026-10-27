@@ -6,7 +6,7 @@
 
 #include "codegen/native_compiler.h"
 #include "codegen/native_toolchain.h"
-#include "lib/io.h"
+#include "lib/files/io.h"
 #include "resources/messages.h"
 
 #include <stdio.h>

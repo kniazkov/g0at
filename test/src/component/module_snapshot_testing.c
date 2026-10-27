@@ -2,9 +2,9 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Whole-snapshot lifetime, immutable image and memory-only VM checks.
  */
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/sha256.h"
+#include "lib/files/file_system.h"
+#include "lib/hash/sha256.h"
+#include "lib/memory/allocate.h"
 #include "model/thread.h"
 #include "vm/gc.h"
 #include "vm/module_snapshot.h"

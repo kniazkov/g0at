@@ -30,12 +30,13 @@ endforeach()
 
 # Embed the exact same runtime sources so cross builds compile every instruction with
 # the selected target flags, rather than linking a host-specific prebuilt archive.
-foreach(pair "runtime_strings;native/strings.c" "runtime_str;native/str.c" "runtime_number_format;lib/number_format.c" "runtime_unicode;lib/unicode.c" "number_format_header;lib/number_format.h" "unicode_table;lib/unicode_data.inc")
+foreach(pair "runtime_strings;src/native/strings.c" "runtime_str;src/native/str.c" "runtime_number_format;lib/numbers/number_format.c" "runtime_unicode;lib/strings/unicode.c" "number_format_header;lib/numbers/number_format.h" "unicode_table;lib/strings/unicode_data.inc")
   list(GET pair 0 name)
   list(GET pair 1 relative)
-  file(READ "${INPUT_DIR}/../../src/${relative}" contents)
+  file(READ "${INPUT_DIR}/../../${relative}" contents)
   string(REPLACE "\"goat/" "\"" contents "${contents}")
-  string(REPLACE "\"lib/number_format.h\"" "\"number_format.h\"" contents "${contents}")
+  string(REPLACE "\"lib/numbers/number_format.h\"" "\"number_format.h\"" contents "${contents}")
+  string(REPLACE "\"lib/strings/unicode_data.inc\"" "\"unicode_data.inc\"" contents "${contents}")
   file(WRITE "${OUTPUT_FILE}.${name}.source" "${contents}")
   file(READ "${OUTPUT_FILE}.${name}.source" data HEX)
   file(REMOVE "${OUTPUT_FILE}.${name}.source")

@@ -8,8 +8,8 @@
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "graph/switch.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>

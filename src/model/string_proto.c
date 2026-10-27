@@ -1,4 +1,4 @@
-#include "lib/string_ext.h"
+#include "lib/strings/string_ext.h"
 /** @file string_proto.c
  * @copyright 2026 Ivan Kniazkov
  * @brief The built-in String prototype and its method/property lookup.

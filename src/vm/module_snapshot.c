@@ -5,7 +5,7 @@
 #include "module_snapshot.h"
 
 #include "goat/module_identity.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/process.h"
 
 #include <stdlib.h>

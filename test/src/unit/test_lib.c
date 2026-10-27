@@ -7,11 +7,11 @@
 #include "test_lib.h"
 
 #include "goat/unicode.h"
-#include "lib/allocate.h"
-#include "lib/avl_tree.h"
-#include "lib/pair.h"
-#include "lib/string_ext.h"
-#include "lib/vector.h"
+#include "lib/collections/avl_tree.h"
+#include "lib/collections/pair.h"
+#include "lib/collections/vector.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 #include "test_macro.h"
 
 #include <stdint.h>

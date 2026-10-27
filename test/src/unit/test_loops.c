@@ -6,8 +6,8 @@
 
 #include "analysis_test_support.h"
 #include "codegen/linker.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 #include "vm/binary.h"
 #include "vm/vm.h"

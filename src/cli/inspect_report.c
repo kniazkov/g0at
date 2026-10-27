@@ -4,7 +4,7 @@
  */
 #include "inspect_report.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "vm/module_graph_diagnostics.h"
 
 #include <stdio.h>

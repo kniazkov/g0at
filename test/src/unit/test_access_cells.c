@@ -4,7 +4,7 @@
  */
 #include "test_access_cells.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/access.h"
 #include "model/context.h"
 #include "model/object_stack.h"

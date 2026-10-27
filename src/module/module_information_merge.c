@@ -3,7 +3,7 @@
  */
 #include "module_information_merge.h"
 
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
 
 #include <stdint.h>
 #include <stdlib.h>

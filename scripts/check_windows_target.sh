@@ -11,7 +11,7 @@ current=''
 printf 'Starting Windows API target testing...\n'
 trap 'printf "[fail] %s\nWindows API target testing done; total: %d, passed: %d, failed: 1\n" "$current" "$((passed+1))" "$passed"' ERR
 cat > "$output_dir/probe.c" <<'C'
-#include "lib/windows_target.h"
+#include "lib/platform/windows_target.h"
 #include <windows.h>
 _Static_assert(_WIN32_WINNT == EXPECTED_TARGET, "Windows API target");
 _Static_assert(WINVER == EXPECTED_TARGET, "Windows version target");
@@ -22,13 +22,13 @@ for target in 0x0501 0x0A00; do
     current="native backend with initial Windows API target $target"
     expected="$target"
     if [[ "$target" == 0x0501 ]]; then expected=0x0A00; fi
-    flags=(-std=c11 -Isrc -Iinclude -D_WIN32_WINNT="$target" -DWINVER="$target" -Werror=implicit-function-declaration)
+    flags=(-std=c11 -I. -Isrc -Iinclude -D_WIN32_WINNT="$target" -DWINVER="$target" -Werror=implicit-function-declaration)
     "$compiler" "${flags[@]}" -DEXPECTED_TARGET="$expected" -c "$output_dir/probe.c" -o "$output_dir/probe-$target.o"
     "$compiler" "${flags[@]}" -c src/codegen/native_compiler.c -o "$output_dir/compiler-$target.o"
-    "$compiler" "${flags[@]}" -c src/lib/file_system_windows.c -o "$output_dir/filesystem-$target.o"
-    "$compiler" "${flags[@]}" -c src/lib/child_process_windows.c -o "$output_dir/process-$target.o"
-    "$compiler" "${flags[@]}" -c src/lib/process_channel_windows.c -o "$output_dir/channel-$target.o"
-    "$compiler" "${flags[@]}" -c src/lib/cleanup_service.c -o "$output_dir/cleanup-$target.o"
+    "$compiler" "${flags[@]}" -c lib/files/file_system_windows.c -o "$output_dir/filesystem-$target.o"
+    "$compiler" "${flags[@]}" -c lib/process/child_process_windows.c -o "$output_dir/process-$target.o"
+    "$compiler" "${flags[@]}" -c lib/process/process_channel_windows.c -o "$output_dir/channel-$target.o"
+    "$compiler" "${flags[@]}" -c lib/process/cleanup_service.c -o "$output_dir/cleanup-$target.o"
     "$compiler" "${flags[@]}" -c src/model/native_library_windows.c -o "$output_dir/loader-$target.o"
     printf '[ ok ] %s\n' "$current"
     passed=$((passed+1))

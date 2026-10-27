@@ -11,8 +11,8 @@
 #include "goat/unicode.h"
 #include "graph/member_access.h"
 #include "graph/replacement.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 typedef enum { DIRECT, CHECKED, BUFFER, FORMAT } method_kind_t;
 

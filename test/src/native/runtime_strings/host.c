@@ -3,14 +3,14 @@
  * @brief Loads string operations from a separate library and supplies host services.
  */
 #include "goat/native_abi.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/native_services.h"
 
 #include <stdio.h>
 
 #ifdef TEST_NATIVE_COMPILER
 #    include "codegen/native_compiler.h"
-#    include "lib/io.h"
+#    include "lib/files/io.h"
 
 #endif
 #include <assert.h>

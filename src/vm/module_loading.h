@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "cli/options.h"
-#include "lib/cleanup_service.h"
+#include "lib/process/cleanup_service.h"
 #include "module/native_environment.h"
 #include "module_snapshot.h"
 

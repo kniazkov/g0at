@@ -7,8 +7,8 @@
 #include "c_arithmetic.h"
 #include "c_lowering.h"
 #include "graph/node.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 string_value_t c_string_from_value(source_builder_t *prelude,
                                    c_generation_context_t *context,

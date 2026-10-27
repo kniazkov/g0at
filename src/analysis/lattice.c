@@ -6,7 +6,7 @@
 
 #include "lattice.h"
 
-#include "lib/string_ext.h"
+#include "lib/strings/string_ext.h"
 
 #include <assert.h>
 #include <goat/integer_range.h>

@@ -7,7 +7,7 @@
 #include "comparison.h"
 #include "graph/expression.h"
 #include "graph/switch.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 #include "resources/messages.h"
 
 /** @brief Excludes variable lookup, mutable objects, calls, and assignments. */

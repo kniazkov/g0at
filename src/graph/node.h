@@ -11,7 +11,7 @@
 #include "common/position.h"
 #include "common/types.h"
 #include "goat/unicode.h"
-#include "lib/value.h"
+#include "lib/collections/value.h"
 #include "node_type.h"
 #include "relation_type.h"
 #include "scope.h"

@@ -5,8 +5,8 @@
  */
 
 #include "graph/node.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
 #include "parser/parser.h"
 #include "scanner/scanner.h"
 #include "test_macro.h"

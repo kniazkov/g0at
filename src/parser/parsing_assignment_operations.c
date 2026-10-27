@@ -6,7 +6,7 @@
 
 #include "graph/assignment.h"
 #include "graph/compound_assignment.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 #include "parser.h"
 #include "resources/messages.h"
 

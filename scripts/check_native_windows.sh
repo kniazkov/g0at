@@ -41,7 +41,7 @@ cmp "$output_dir/printed.c" "$output_dir/program.c"
 "$output_dir/host.exe" "$output_dir/program.dll"
 ok
 current='literal metacharacters and executable paths with spaces'
-compile -I"$repo_root/src" "$repo_root/test/src/functional/native_windows/compiler_fixture.c" "$repo_root/src/lib/windows_command_line.c" "$repo_root/src/lib/allocate.c" -o "$output_dir/compiler & fixture.exe"
+compile -I"$repo_root" -I"$repo_root/src" "$repo_root/test/src/functional/native_windows/compiler_fixture.c" "$repo_root/lib/process/windows_command_line.c" "$repo_root/lib/memory/allocate.c" -o "$output_dir/compiler & fixture.exe"
 fixture="$(cygpath -am "$output_dir/compiler & fixture.exe")"
 strange='name & (literal) %PATH% ! space'
 mkdir -p "$output_dir/$strange"

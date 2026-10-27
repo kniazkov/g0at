@@ -6,7 +6,7 @@
 #include "codegen/c_control.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 #include "loop.h"
 
 #include <assert.h>

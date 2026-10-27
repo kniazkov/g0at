@@ -2,8 +2,8 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Native services use interpreter accounting, alignment and per-thread lifetimes.
  */
-#include "lib/alignment.h"
-#include "lib/allocate.h"
+#include "lib/memory/alignment.h"
+#include "lib/memory/allocate.h"
 #include "model/native_services.h"
 
 #include <assert.h>

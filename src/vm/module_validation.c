@@ -4,7 +4,7 @@
  */
 #include "module_validation.h"
 
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
 
 #include <errno.h>
 #include <stdlib.h>

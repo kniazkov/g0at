@@ -7,7 +7,7 @@
 #include "c_adapter.h"
 #include "c_call.h"
 #include "c_lowering.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 static c_module_output_t generate(arena_t *arena, const c_module_t *module, bool legacy_metadata) {
     c_module_output_t output = {0};

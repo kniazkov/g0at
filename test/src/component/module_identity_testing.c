@@ -2,7 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Runtime instance identity, access boundaries and whole-copy selection.
  */
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/process.h"
 #include "vm/module_snapshot.h"
 

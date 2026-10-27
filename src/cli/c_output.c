@@ -8,9 +8,9 @@
 #include "codegen/native_compiler.h"
 #include "codegen/native_runtime.h"
 #include "codegen/native_toolchain.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/io.h"
+#include "lib/files/file_system.h"
+#include "lib/files/io.h"
+#include "lib/memory/allocate.h"
 #include "resources/messages.h"
 
 #include <stdio.h>

@@ -9,7 +9,7 @@
 #include "codegen/linker.h"
 #include "codegen/source_builder.h"
 #include "graph/comparison.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/common_methods.h"
 #include "model/process.h"
 #include "model/thread.h"

@@ -7,8 +7,8 @@
 #include "graph/array.h"
 #include "graph/expression.h"
 #include "graph/index_access.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
 #include "parser.h"
 #include "resources/messages.h"
 

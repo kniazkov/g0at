@@ -3,7 +3,7 @@
  * @brief Allocator propagation through generated calls and stack-limit recovery.
  */
 #include "instrumented.c"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/native_services.h"
 
 #include <assert.h>

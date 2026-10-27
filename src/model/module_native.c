@@ -4,9 +4,9 @@
  */
 #include "module_native.h"
 
-#include "lib/alignment.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/alignment.h"
+#include "lib/memory/allocate.h"
 #include "module/module_guards.h"
 #include "module/module_json_internal.h"
 #include "native_library.h"

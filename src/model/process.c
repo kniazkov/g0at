@@ -8,8 +8,8 @@
 
 #include "access.h"
 #include "context.h"
-#include "lib/allocate.h"
-#include "lib/process_exit.h"
+#include "lib/memory/allocate.h"
+#include "lib/process/process_exit.h"
 #include "module_files.h"
 #include "object_list.h"
 #include "thread.h"

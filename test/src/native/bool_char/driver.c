@@ -3,7 +3,7 @@
  * @brief Exact scalar ABI tags, canonical booleans and full-width characters.
  */
 #include "goat/native_abi.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/native_services.h"
 
 #include <assert.h>

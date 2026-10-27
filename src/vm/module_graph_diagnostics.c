@@ -4,7 +4,7 @@
  */
 #include "module_graph_diagnostics.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 #include <stdarg.h>
 #include <stdio.h>

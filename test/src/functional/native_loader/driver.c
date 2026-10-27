@@ -6,7 +6,7 @@
 #    define _POSIX_C_SOURCE 200809L
 #endif
 #include "../native_abi/test_allocator.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/native_library.h"
 
 #include <assert.h>

@@ -15,9 +15,9 @@
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "goat/unicode.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 #include "replacement.h"
 
 /** @brief Implements @ref node_vtbl_t::get_data. */

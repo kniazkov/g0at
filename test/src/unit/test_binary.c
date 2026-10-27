@@ -6,8 +6,8 @@
 
 #include "cli/options.h"
 #include "codegen/linker.h"
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
+#include "lib/files/binary_file.h"
+#include "lib/memory/allocate.h"
 #include "model/access.h"
 #include "test_macro.h"
 #include "vm/binary.h"

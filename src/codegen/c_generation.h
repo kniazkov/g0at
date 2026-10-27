@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "analysis/c_expression.h"
-#include "lib/vector.h"
+#include "lib/collections/vector.h"
 #include "source_builder.h"
 
 /** @brief Backend outcomes, independent of analyzer eligibility. */

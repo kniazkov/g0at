@@ -5,10 +5,10 @@
  */
 
 #include "common_methods.h"
-#include "lib/allocate.h"
-#include "lib/bitwise.h"
-#include "lib/integer_math.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/numbers/bitwise.h"
+#include "lib/numbers/integer_math.h"
+#include "lib/strings/string_ext.h"
 #include "object.h"
 #include "object_state.h"
 #include "process.h"

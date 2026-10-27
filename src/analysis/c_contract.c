@@ -8,7 +8,7 @@
 #include "function_call_graph.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
-#include "lib/string_ext.h"
+#include "lib/strings/string_ext.h"
 #include "native_builtin.h"
 
 c_value_type_t classify_c_value_type(lattice_type_t type) {

@@ -6,8 +6,8 @@
 
 #include "scope.h"
 
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 
 scope_t *create_scope(arena_t *arena, scope_t *parent) {
     static unsigned int last_id = 0;

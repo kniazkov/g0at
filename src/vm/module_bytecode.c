@@ -5,9 +5,9 @@
 #include "module_bytecode.h"
 
 #include "goat/module_identity.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
-#include "lib/wire.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
+#include "lib/wire/wire.h"
 #include "model/module_file_declarations.h"
 #include "module/module_json_internal.h"
 

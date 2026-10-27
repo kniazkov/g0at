@@ -6,7 +6,7 @@
 
 #include "gc.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/context.h"
 #include "model/module_files.h"
 #include "model/object.h"

@@ -4,8 +4,8 @@
  */
 #include "native_artifact.h"
 
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
+#include "lib/files/binary_file.h"
+#include "lib/memory/allocate.h"
 
 #include <stdint.h>
 #include <string.h>

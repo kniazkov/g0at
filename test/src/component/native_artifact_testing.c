@@ -4,9 +4,9 @@
  */
 #include "codegen/native_artifact.h"
 #include "codegen/native_artifact_validation.h"
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
-#include "lib/file_system.h"
+#include "lib/files/binary_file.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 
 #include <assert.h>
 #include <stdio.h>

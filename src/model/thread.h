@@ -8,7 +8,7 @@
 
 #include "common/types.h"
 #include "exception.h"
-#include "lib/os_thread.h"
+#include "lib/threads/os_thread.h"
 #include "object_stack.h"
 
 #include <stddef.h>

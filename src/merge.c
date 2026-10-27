@@ -2,9 +2,9 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Nonexecuting module merge with validated atomic publication.
  */
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/string_ext.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 #include "module/module_information_merge.h"
 #include "module/module_native_merge.h"
 #include "vm/module_writer.h"

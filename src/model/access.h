@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include "lib/vector.h"
+#include "lib/collections/vector.h"
 #include "object.h"
 
 typedef struct module_t module_t;

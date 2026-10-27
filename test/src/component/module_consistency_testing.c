@@ -2,9 +2,9 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Independent archive/descriptor/graph fixture harness, without OS loading.
  */
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/wire.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
+#include "lib/wire/wire.h"
 #include "vm/module_consistency.h"
 
 #include <assert.h>

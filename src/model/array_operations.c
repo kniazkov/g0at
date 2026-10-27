@@ -4,8 +4,8 @@
  */
 #include "array.h"
 #include "array_internal.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 #include <stdint.h>
 #include <stdlib.h>

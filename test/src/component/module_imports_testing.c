@@ -3,7 +3,7 @@
  * @brief Static dependency collector contract and fixture harness.
  */
 #include "common/module_imports.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 #include <assert.h>
 #include <stdio.h>

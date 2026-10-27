@@ -6,9 +6,9 @@
 
 #include "codegen/c_module_v1.h"
 #include "codegen/native_artifact_validation.h"
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
-#include "lib/sha256.h"
+#include "lib/files/binary_file.h"
+#include "lib/hash/sha256.h"
+#include "lib/memory/allocate.h"
 #include "module/module_hash.h"
 #include "vm/binary.h"
 

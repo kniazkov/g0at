@@ -11,8 +11,8 @@
 #include "c_lowering.h"
 #include "graph/replacement.h"
 #include "graph/switch.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 static bool number(c_value_type_t type) {
     return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE;

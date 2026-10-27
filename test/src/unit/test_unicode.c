@@ -3,10 +3,10 @@
  * @brief Portable scalar strings, bounded operations, casing and binary validation.
  */
 #include "codegen/linker.h"
-#include "lib/allocate.h"
-#include "lib/comparison.h"
-#include "lib/io.h"
-#include "lib/string_ext.h"
+#include "lib/collections/comparison.h"
+#include "lib/files/io.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 #include "test_lib.h"
 #include "test_macro.h"
 #include "vm/binary.h"

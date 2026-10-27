@@ -5,9 +5,9 @@
 #include "source_includes.h"
 
 #include "graph/node.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 #include "scanner/scanner.h"
 
 #include <stdint.h>

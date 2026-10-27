@@ -4,11 +4,11 @@
  */
 #include "inspect_probe.h"
 
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "model/module_library.h"
 #ifdef GOAT_INSPECT_PROBE_TESTING
-#    include "lib/process_channel.h"
+#    include "lib/process/process_channel.h"
 #endif
 
 #include <errno.h>

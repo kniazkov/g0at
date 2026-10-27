@@ -91,9 +91,9 @@ def program_case(exe, case, work):
         goat('export', '--save-c', source)
         driver = work / 'adapter.exe'
         execute([os.environ.get('CC', 'gcc'), '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror',
-                 '-DMEMORY_DEBUG', '-I' + str(ROOT / 'include'), '-I' + str(ROOT / 'src'),
+                 '-DMEMORY_DEBUG', '-I' + str(ROOT / 'include'), '-I' + str(ROOT), '-I' + str(ROOT / 'src'),
                  str(ROOT / 'test/src/native' / case['name'] / case['driver']), str(source.with_suffix('.c')),
-                 str(ROOT / 'src/model/native_services.c'), str(ROOT / 'src/lib/unicode.c'), str(ROOT / 'src/lib/allocate.c'),
+                 str(ROOT / 'src/model/native_services.c'), str(ROOT / 'lib/strings/unicode.c'), str(ROOT / 'lib/memory/allocate.c'),
                  str(work / 'libgoat_native.a'), '-lm', '-o', str(driver)], work, 'driver-build')
         execute([str(driver)], work, 'driver')
     compare_output(goat('compile', '--compile', '--native', 'required', source), b'', 'compile')

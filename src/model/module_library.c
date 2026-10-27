@@ -7,9 +7,9 @@
 #endif
 #include "module_library.h"
 
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/wire.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
+#include "lib/wire/wire.h"
 #include "module_library_platform.h"
 #include "native_library_platform.h"
 #include "vm/module_consistency.h"

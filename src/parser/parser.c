@@ -7,7 +7,7 @@
 #include "parser.h"
 
 #include "graph/node.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 #include "resources/messages.h"
 #include "scanner/scanner.h"
 #include "scanner/token.h"

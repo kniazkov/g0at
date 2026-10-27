@@ -7,7 +7,7 @@
 #pragma once
 
 #include "goat/unicode.h"
-#include "lib/value.h"
+#include "lib/collections/value.h"
 #include "position.h"
 
 typedef struct compilation_error_t compilation_error_t;

@@ -6,8 +6,8 @@
 
 #include "source_builder.h"
 
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 #include <memory.h>
 

@@ -7,8 +7,8 @@
 #include "c_lowering.h"
 #include "c_strings.h"
 #include "graph/node.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 static bool numeric(c_value_type_t type) {
     return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE;

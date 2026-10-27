@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "lib/path.h"
-#include "lib/vector.h"
+#include "lib/collections/vector.h"
+#include "lib/files/path.h"
 
 #include <stdbool.h>
 #include <stdint.h>

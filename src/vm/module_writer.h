@@ -3,7 +3,7 @@
  * @brief Deterministic, validated module-v1 packaging and atomic publication.
  */
 #pragma once
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
 #include "module_validation.h"
 
 typedef enum {

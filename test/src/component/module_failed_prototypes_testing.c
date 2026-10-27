@@ -2,9 +2,9 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Rules 41--45 with cyclic file initialization and real VM copying.
  */
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/wire.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
+#include "lib/wire/wire.h"
 #include "model/module_files.h"
 #include "model/thread.h"
 #include "vm/gc.h"

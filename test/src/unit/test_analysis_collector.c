@@ -6,7 +6,7 @@
 #include "analysis/collector.h"
 #include "analysis/lattice.h"
 #include "graph/declarations.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_analysis.h"
 #include "test_macro.h"
 

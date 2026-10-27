@@ -8,8 +8,8 @@
 
 #include "collector.h"
 #include "common/control_flow.h"
-#include "lib/avl_tree.h"
-#include "lib/value.h"
+#include "lib/collections/avl_tree.h"
+#include "lib/collections/value.h"
 
 typedef struct abstract_state_t abstract_state_t;
 typedef struct declarator_t declarator_t;

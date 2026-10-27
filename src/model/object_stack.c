@@ -6,8 +6,8 @@
 
 #include "object_stack.h"
 
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "object.h"
 
 #include <stdio.h>

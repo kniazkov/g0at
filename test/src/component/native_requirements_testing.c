@@ -6,9 +6,9 @@
 #    define _GNU_SOURCE
 #endif
 #include "codegen/native_requirements.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/os_thread.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
+#include "lib/threads/os_thread.h"
 #include "model/native_library.h"
 
 #include <stdio.h>

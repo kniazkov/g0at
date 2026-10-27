@@ -8,7 +8,7 @@
 #include "graph/declarations.h"
 #include "graph/statement.h"
 #include "graph/variable.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>

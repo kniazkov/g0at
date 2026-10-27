@@ -2,9 +2,9 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Deterministic writer and atomic-publication component harness.
  */
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
-#include "lib/file_system.h"
+#include "lib/files/binary_file.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "vm/module_writer.h"
 
 #include <assert.h>

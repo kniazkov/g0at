@@ -3,8 +3,8 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief String growth and Unicode conversion regression tests.
  */
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 #include "test_lib.h"
 #include "test_macro.h"
 

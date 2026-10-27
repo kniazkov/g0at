@@ -7,7 +7,7 @@
 #include "goat/unicode.h"
 #include "graph/binary_operation.h"
 #include "graph/logic.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 #include "parser.h"
 #include "resources/messages.h"
 

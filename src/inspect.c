@@ -6,8 +6,8 @@
 
 #include "cli/inspect_probe.h"
 #include "cli/inspect_report.h"
-#include "lib/file_system.h"
-#include "lib/string_ext.h"
+#include "lib/files/file_system.h"
+#include "lib/strings/string_ext.h"
 
 #include <stdio.h>
 

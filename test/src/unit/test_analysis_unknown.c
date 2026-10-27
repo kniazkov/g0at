@@ -10,8 +10,8 @@
 #include "cli/options.h"
 #include "graph/binary_operation.h"
 #include "graph/declarations.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 #include "test_analysis.h"
 #include "test_macro.h"
 

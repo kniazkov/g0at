@@ -8,7 +8,7 @@
 
 #include "common/position.h"
 #include "goat/unicode.h"
-#include "lib/value.h"
+#include "lib/collections/value.h"
 
 #include <stddef.h>
 

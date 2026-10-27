@@ -1,12 +1,12 @@
-#include "lib/file_system.h"
-#include "lib/string_ext.h"
+#include "lib/files/file_system.h"
+#include "lib/strings/string_ext.h"
 /** @file test_access_checks.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Exercises two artificial modules through real bytecode and shared model operations.
  */
 #include "analysis_test_support.h"
 #include "codegen/linker.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/context.h"
 #include "model/thread.h"
 #include "test_access_checks.h"

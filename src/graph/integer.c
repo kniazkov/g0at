@@ -11,9 +11,9 @@
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "expression.h"
-#include "lib/arena.h"
-#include "lib/split64.h"
-#include "lib/string_ext.h"
+#include "lib/memory/arena.h"
+#include "lib/numbers/split64.h"
+#include "lib/strings/string_ext.h"
 
 /** @brief An integer literal expression node. */
 typedef struct {

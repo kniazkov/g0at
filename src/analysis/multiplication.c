@@ -4,7 +4,7 @@
  */
 #include "multiplication.h"
 
-#include "lib/integer_math.h"
+#include "lib/numbers/integer_math.h"
 
 static bool is_constant(const lattice_element_t *value) {
     return value->type == LATTICE_INTEGER_CONSTANT || value->type == LATTICE_REAL_CONSTANT;

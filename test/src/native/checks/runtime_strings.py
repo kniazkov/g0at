@@ -138,17 +138,17 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
     if flags:
         runtime = work / "libgoat_native-instrumented.a"
         objects = []
-        for name in ("native/strings.c", "native/str.c", "lib/number_format.c", "lib/unicode.c"):
+        for name in ("src/native/strings.c", "src/native/str.c", "lib/numbers/number_format.c", "lib/strings/unicode.c"):
             obj = work / (Path(name).stem + "-runtime.o")
-            subprocess.run([*common, "-I" + str(ROOT / "src"), "-fPIC", "-c", str(ROOT / "src" / name),
+            subprocess.run([*common, "-I" + str(ROOT), "-I" + str(ROOT / "src"), "-fPIC", "-c", str(ROOT / name),
                             "-o", str(obj)], check=True)
             objects.append(str(obj))
         subprocess.run([os.environ.get("AR", "ar"), "rcs", str(runtime), *objects], check=True)
     subprocess.run([*common, *shared, "-I" + str(ROOT / "test/src/native/runtime_strings"),
                     str(module), str(runtime), "-o", str(library)], check=True)
-    subprocess.run([*common, "-DMEMORY_DEBUG", "-I" + str(ROOT / "src"),
+    subprocess.run([*common, "-DMEMORY_DEBUG", "-I" + str(ROOT), "-I" + str(ROOT / "src"),
                     str(ROOT / "test/src/native/runtime_strings/host.c"),
-                    str(ROOT / "src/model/native_services.c"), str(ROOT / "src/lib/unicode.c"), str(ROOT / "src/lib/allocate.c"),
+                    str(ROOT / "src/model/native_services.c"), str(ROOT / "lib/strings/unicode.c"), str(ROOT / "lib/memory/allocate.c"),
                     "-o", str(host), *([] if os.name == "nt" else ["-ldl"])], check=True)
     native = subprocess.run([str(host), str(library)], check=True, capture_output=True, timeout=90)
     reference = subprocess.run([str(interpreter), "--optimize", "none", "--native", "off", str(program)],
@@ -166,9 +166,9 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
                                     .replace('#include "checks.h"', checks.replace('#pragma once', '')),
                                     encoding="utf-8")
         automatic_host = work / "compiler-host.exe"
-        subprocess.run([*common, "-DTEST_NATIVE_COMPILER", "-I" + str(ROOT / "src"),
+        subprocess.run([*common, "-DTEST_NATIVE_COMPILER", "-I" + str(ROOT), "-I" + str(ROOT / "src"),
                         str(ROOT / "test/src/native/runtime_strings/host.c"),
-                        str(interpreter.parent / "libcore.a"), "-o", str(automatic_host),
+                        str(interpreter.parent / "libcore.a"), str(interpreter.parent / "libcommon.a"), "-o", str(automatic_host),
                         "-lpthread", "-lm", *( ["-lbcrypt"] if os.name == "nt" else ["-ldl"])],
                        check=True)
         automatic_library = work / ("automatic.dll" if os.name == "nt" else "automatic.so")

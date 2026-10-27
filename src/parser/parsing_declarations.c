@@ -6,9 +6,9 @@
 #include "graph/assignment.h"
 #include "graph/declarations.h"
 #include "graph/statement.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/vector.h"
+#include "lib/collections/vector.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
 #include "parser.h"
 #include "resources/messages.h"
 

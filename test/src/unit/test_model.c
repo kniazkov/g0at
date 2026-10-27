@@ -7,8 +7,8 @@
 #include "test_model.h"
 
 #include "codegen/linker.h"
-#include "lib/allocate.h"
-#include "lib/split64.h"
+#include "lib/memory/allocate.h"
+#include "lib/numbers/split64.h"
 #include "model/context.h"
 #include "model/object.h"
 #include "model/process.h"

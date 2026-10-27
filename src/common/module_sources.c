@@ -4,7 +4,7 @@
  */
 #include "module_sources.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 
 #include <stdint.h>
 #include <string.h>

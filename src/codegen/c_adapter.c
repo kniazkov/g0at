@@ -5,8 +5,8 @@
 #include "c_adapter.h"
 
 #include "c_lowering.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 
 static const gchar_t *type_tag(c_value_type_t type) {
     return type == C_VALUE_INT64    ? U"GOAT_NATIVE_I64"

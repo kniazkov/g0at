@@ -5,8 +5,8 @@
 #include "inspect.h"
 
 #include "inspect_report.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
 #include "module/module_native.h"
 #include "vm/module_graph_diagnostics.h"
 

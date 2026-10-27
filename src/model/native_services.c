@@ -5,9 +5,9 @@
 #include "native_services.h"
 
 #include "goat/unicode.h"
-#include "lib/alignment.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/alignment.h"
+#include "lib/memory/allocate.h"
 
 #include <stdio.h>
 #include <stdlib.h>

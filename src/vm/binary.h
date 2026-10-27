@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "bytecode.h"
-#include "lib/sha256.h"
+#include "lib/hash/sha256.h"
 
 #define GOAT_BINARY_LIMIT (256u * 1024u * 1024u)
 

@@ -6,8 +6,8 @@
 
 #include "analysis_test_support.h"
 #include "codegen/linker.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
+#include "lib/memory/allocate.h"
+#include "lib/memory/arena.h"
 #include "model/process.h"
 #include "test_macro.h"
 #include "vm/binary.h"

@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "binary_operation.h"
-#include "lib/bitwise.h"
+#include "lib/numbers/bitwise.h"
 bitwise_kind_t node_bitwise_kind(node_type_t type);
 expression_t *create_logical_not_node(arena_t *arena, expression_t *left);
 expression_t *create_boolean_conversion_node(arena_t *arena, expression_t *left);

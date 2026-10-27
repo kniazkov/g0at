@@ -4,7 +4,7 @@
  */
 #include "module_files.h"
 
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "module/module_json_internal.h"
 #include "module_file_declarations.h"
 #include "module_native.h"

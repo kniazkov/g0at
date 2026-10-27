@@ -4,7 +4,7 @@
  */
 #include "native_test_thread.h"
 
-#include "lib/os_thread.h"
+#include "lib/threads/os_thread.h"
 
 bool run_on_small_stack(void *(*callback)(void *), void *data) {
     os_thread_t *thread;

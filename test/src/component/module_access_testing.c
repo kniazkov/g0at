@@ -3,9 +3,9 @@
  * @brief File/module visibility through model operations, real VM calls and wire images.
  */
 #include "codegen/linker.h"
-#include "lib/allocate.h"
-#include "lib/file_system.h"
-#include "lib/wire.h"
+#include "lib/files/file_system.h"
+#include "lib/memory/allocate.h"
+#include "lib/wire/wire.h"
 #include "model/module_files.h"
 #include "model/thread.h"
 #include "unit/analysis_test_support.h"

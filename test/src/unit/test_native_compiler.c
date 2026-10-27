@@ -5,8 +5,8 @@
 #include "test_native_compiler.h"
 
 #include "codegen/native_compiler.h"
-#include "lib/allocate.h"
-#include "lib/windows_command_line.h"
+#include "lib/memory/allocate.h"
+#include "lib/process/windows_command_line.h"
 #include "test_macro.h"
 
 #include <errno.h>

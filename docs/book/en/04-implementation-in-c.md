@@ -14,7 +14,7 @@ A single Goat operation involves several files. The scanner recognizes `+`, the 
 
 The implementation is written in C. There are no C++ classes, but there are structures, shared interfaces, and tables of function pointers. There is no separate parser generator either: parsing rules are handwritten. This chapter explains the conventions needed to read this code before we turn to individual algorithms.
 
-The main entry point is [main.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/main.c); the preparation and execution sequence lives in [launcher.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/launcher.c). The [CMake build](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/CMakeLists.txt) combines shared sources into the `core` library, used by the interpreter, unit tests, and analysis tests. The functional test runner launches a separate Goat executable.
+The main entry point is [main.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/main.c); the preparation and execution sequence lives in [launcher.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/launcher.c). The [CMake build](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/CMakeLists.txt) combines shared sources into the `core` library, used by the interpreter, unit tests, and analysis tests. The functional test runner launches a separate Goat executable. In the current tree, universal utilities have a separate `goat_common` static target under `lib/`; `core`, module infrastructure and test hosts link it rather than compiling duplicate utility objects. The source links in this chapter are pinned to historical revisions.
 
 <a id="section-4-2"></a>
 
@@ -22,7 +22,7 @@ The main entry point is [main.c](https://github.com/kniazkov/g0at/blob/cf51b8cb2
 
 | Directory | What to look for |
 |---|---|
-| `src/lib` | Allocation, strings, containers, paths, and input/output |
+| `lib/` | Thematic, VM-independent utilities built as the `goat_common` static library (`libcommon.a`) |
 | `src/common` | Source coordinates, compilation errors, shared types, and control-flow kinds |
 | `src/scanner` | Token recognition and token-list operations |
 | `src/parser` | Bracket grouping and tree-construction rules |
@@ -33,7 +33,7 @@ The main entry point is [main.c](https://github.com/kniazkov/g0at/blob/cf51b8cb2
 | `src/vm` | Bytecode, the execution loop, binary format, and garbage collection |
 | `src/builtins` | Built-in functions with their runtime and abstract implementations |
 | `src/cli`, `src/resources` | Launch options, stage coordination, and message texts |
-| `src/test`, `test` | C unit tests and programs with expected results |
+| `test/src`, `test/data` | C test sources and read-only programs with expected results |
 
 This separates responsibilities rather than imposing a strict call sequence between directories. In particular, an operation's bytecode-generation method lives alongside its node in `graph`, while shared instruction builders live in `codegen`. A node may similarly contain an abstract-evaluation method that uses operations from `analysis`.
 

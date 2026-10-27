@@ -9,8 +9,8 @@
 #include "common_methods.h"
 #include "declarations.h"
 #include "expression.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
+#include "lib/memory/allocate.h"
+#include "lib/strings/string_ext.h"
 #include "statement.h"
 #include "statement_list.h"
 

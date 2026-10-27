@@ -3,7 +3,7 @@
  * @brief Subprocess allocation failures across complete snapshot preparation.
  */
 #include "allocation_fault.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "model/thread.h"
 #include "vm/module_snapshot.h"
 #include "vm/vm.h"

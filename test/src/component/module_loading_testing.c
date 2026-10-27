@@ -2,11 +2,11 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Real snapshot, cleaner, native loader and VM acceptance fixture.
  */
-#include "lib/allocate.h"
-#include "lib/cleanup_service.h"
-#include "lib/file_system.h"
-#include "lib/io.h"
-#include "lib/process_channel.h"
+#include "lib/files/file_system.h"
+#include "lib/files/io.h"
+#include "lib/memory/allocate.h"
+#include "lib/process/cleanup_service.h"
+#include "lib/process/process_channel.h"
 #include "model/thread.h"
 #include "vm/module_loading.h"
 #include "vm/vm.h"

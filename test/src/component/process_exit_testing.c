@@ -5,9 +5,9 @@
 #ifndef _POSIX_C_SOURCE
 #    define _POSIX_C_SOURCE 200809L
 #endif
-#include "lib/file_system.h"
-#include "lib/os_thread.h"
-#include "lib/process_exit.h"
+#include "lib/files/file_system.h"
+#include "lib/process/process_exit.h"
+#include "lib/threads/os_thread.h"
 
 #include <assert.h>
 #include <stdio.h>

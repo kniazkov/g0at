@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "binary_operation.h"
-#include "lib/comparison.h"
+#include "lib/collections/comparison.h"
 
 comparison_kind_t node_comparison_kind(node_type_t type);
 expression_t *create_comparison_node(arena_t *arena,

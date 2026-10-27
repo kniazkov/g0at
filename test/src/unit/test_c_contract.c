@@ -7,7 +7,7 @@
 #include "analysis/c_contract.h"
 #include "goat/unicode.h"
 #include "graph/expression.h"
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "test_macro.h"
 
 #include <math.h>

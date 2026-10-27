@@ -3,7 +3,7 @@
  * @brief Owned, syntax-only source graph for a module build or direct source input.
  */
 #pragma once
-#include "lib/file_system.h"
+#include "lib/files/file_system.h"
 #include "module/module_json.h"
 #include "parser/source_includes.h"
 

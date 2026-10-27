@@ -5,7 +5,7 @@
 #include "c_expression.h"
 
 #include "graph/node.h"
-#include "lib/arena.h"
+#include "lib/memory/arena.h"
 
 #include <math.h>
 

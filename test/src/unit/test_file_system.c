@@ -7,12 +7,12 @@
 #endif
 #include "test_file_system.h"
 
-#include "lib/allocate.h"
-#include "lib/binary_file.h"
-#include "lib/child_process.h"
-#include "lib/file_system.h"
-#include "lib/file_system_internal.h"
-#include "lib/os_thread.h"
+#include "lib/files/binary_file.h"
+#include "lib/files/file_system.h"
+#include "lib/files/file_system_internal.h"
+#include "lib/memory/allocate.h"
+#include "lib/process/child_process.h"
+#include "lib/threads/os_thread.h"
 #include "test_macro.h"
 
 #include <errno.h>

@@ -1,6 +1,6 @@
 #include "module_hash.h"
 
-#include "../lib/sha256.h"
+#include "lib/hash/sha256.h"
 
 #include <string.h>
 

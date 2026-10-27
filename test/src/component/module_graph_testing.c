@@ -2,7 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Whole-graph preflight contract and independent fixture driver.
  */
-#include "lib/allocate.h"
+#include "lib/memory/allocate.h"
 #include "vm/module_graph.h"
 #include "vm/module_graph_diagnostics.h"
 

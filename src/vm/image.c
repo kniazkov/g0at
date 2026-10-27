@@ -3,8 +3,8 @@
  * @brief Shared checked decoder for standalone and module v1 bytecode images.
  */
 #include "bytecode.h"
-#include "lib/allocate.h"
-#include "lib/wire.h"
+#include "lib/memory/allocate.h"
+#include "lib/wire/wire.h"
 
 #include <float.h>
 #include <string.h>
