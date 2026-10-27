@@ -256,3 +256,7 @@ python3 scripts/check_module_book.py build/goat
 Автор — [Иван Князьков](https://github.com/kniazkov).
 
 Goat распространяется по [лицензии MIT](LICENSE.txt).
+
+## Наборы CTest
+
+После сборки всех целей запускайте `ctest --test-dir build --output-on-failure`. Команда `ctest --test-dir build -N` показывает список, а `-L integration` выбирает существующие интеграционные наборы. Python и Bash пока остаются зависимостями тестирования. [Условия запуска, метки и платформенное покрытие](test/README.md).

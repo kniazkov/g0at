@@ -123,67 +123,16 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           BUILD_DIR: build/${{ matrix.compiler }}
-      - name: Runnable bilingual module book
-        run: python3 scripts/check_module_book.py build/${{ matrix.compiler }}/goat
-      - name: Child process primitives
-        run: python3 scripts/check_child_process.py build/${{ matrix.compiler }}/child_process_testing build/${{ matrix.compiler }}/goat
-      - name: Bounded ZIP infrastructure
+      - name: List registered test suites
+        run: |
+          cmake -S . -B build/${{ matrix.compiler }} -DGOAT_TEST_REQUIRE_PYTHON=ON
+          ctest --test-dir build/${{ matrix.compiler }} -N
+      - name: Run registered integration suites
+        run: ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -L integration
         env:
           CC: ${{ matrix.compiler }}
-        run: |
-          python3 scripts/check_zip.py build/${{ matrix.compiler }}/zip_testing
-          python3 scripts/check_module_container.py build/${{ matrix.compiler }}/module_container_testing
-          python3 scripts/check_module_bytecode.py build/${{ matrix.compiler }}/module_bytecode_testing
-          python3 scripts/check_module_native.py build/${{ matrix.compiler }}/module_native_testing
-          python3 scripts/check_module_abi.py build/${{ matrix.compiler }}/module_abi_testing
-          python3 scripts/check_native_artifact.py build/${{ matrix.compiler }}/native_artifact_testing ${{ matrix.compiler }}
-          python3 scripts/check_native_requirements.py build/${{ matrix.compiler }}/native_requirements_testing
-          python3 scripts/check_native_toolchains.py build/${{ matrix.compiler }}/native_toolchain_testing ${{ matrix.compiler }}
-          python3 scripts/check_native_cleanup.py build/${{ matrix.compiler }}/native_cleanup_testing ${{ matrix.compiler }}
-          python3 scripts/check_module_native_values.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/module_native_values_testing ${{ matrix.compiler }}
-          python3 scripts/check_module_build.py build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }}
-          python3 scripts/check_module_library.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/module_library_testing ${{ matrix.compiler }}
-          python3 scripts/check_module_loading.py build/${{ matrix.compiler }}/module_loading_testing build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }}
-          python3 scripts/check_module_inspect.py build/${{ matrix.compiler }}/goat-inspect ${{ matrix.compiler }}
-          python3 scripts/check_inspect_probe.py build/${{ matrix.compiler }}/goat-inspect build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }} build/${{ matrix.compiler }}/inspect_probe_testing
-          python3 scripts/check_module_cli.py build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing ${{ matrix.compiler }}
-          python3 scripts/check_module_delivery.py build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/goat-inspect ${{ matrix.compiler }}
-          python3 scripts/check_module_delivery_requirements.py audit build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing build/${{ matrix.compiler }}/module_native_testing ${{ matrix.compiler }}
-          python3 scripts/check_native_exit.py build/${{ matrix.compiler }}/module_dispatch_testing ${{ matrix.compiler }}
-          python3 scripts/check_module_dispatch.py build/${{ matrix.compiler }}/module_dispatch_testing
-          python3 scripts/check_module_consistency.py build/${{ matrix.compiler }}/module_consistency_testing
-          python3 scripts/check_module_validation.py build/${{ matrix.compiler }}/module_validation_testing
-          python3 scripts/check_module_writer.py build/${{ matrix.compiler }}/module_writer_testing
-          python3 scripts/check_module_sources.py build/${{ matrix.compiler }}/module_sources_testing
-          python3 scripts/check_module_search.py build/${{ matrix.compiler }}/module_search_testing
-          python3 scripts/check_module_dependencies.py build/${{ matrix.compiler }}/module_dependencies_testing
-          python3 scripts/check_module_graph.py build/${{ matrix.compiler }}/module_graph_testing
-          python3 scripts/check_module_snapshot.py build/${{ matrix.compiler }}/module_snapshot_testing
-          python3 scripts/check_module_identity.py build/${{ matrix.compiler }}/module_identity_testing
-          python3 scripts/check_module_initialization.py build/${{ matrix.compiler }}/module_initialization_testing
-          python3 scripts/check_module_serialization.py build/${{ matrix.compiler }}/module_serialization_testing
-          python3 scripts/check_module_initialization_errors.py build/${{ matrix.compiler }}/module_initialization_errors_testing
-          python3 scripts/check_module_exception_propagation.py build/${{ matrix.compiler }}/module_exception_propagation_testing
-          python3 scripts/check_module_initialization_contract.py build/${{ matrix.compiler }}/module_initialization_contract_testing
-          python3 scripts/check_module_incomplete_scopes.py build/${{ matrix.compiler }}/module_incomplete_scopes_testing
-          python3 scripts/check_module_failed_prototypes.py build/${{ matrix.compiler }}/module_failed_prototypes_testing
-          python3 scripts/check_source_include.py build/${{ matrix.compiler }}/source_include_testing
-          python3 scripts/check_module_import_execution.py build/${{ matrix.compiler }}/module_import_execution_testing
-          python3 scripts/check_module_interface.py build/${{ matrix.compiler }}/module_import_execution_testing
-          python3 scripts/check_module_source_diagnostics.py build/${{ matrix.compiler }}/module_import_execution_testing
-          python3 scripts/check_process_exit.py build/${{ matrix.compiler }}/process_exit_testing build/${{ matrix.compiler }}/process_exit_failure_testing build/${{ matrix.compiler }}/process_exit_delayed_testing
-          python3 scripts/check_module_exit.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
-          python3 scripts/check_module_threads.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
-          python3 scripts/check_module_context_constants.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
-          python3 scripts/check_module_function_provenance.py build/${{ matrix.compiler }}/module_import_execution_testing
-          python3 scripts/check_module_assignment_access.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
-          python3 scripts/check_module_multifile_access.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
-          python3 scripts/check_module_imports.py build/${{ matrix.compiler }}/module_imports_testing
-          python3 scripts/check_module_files.py build/${{ matrix.compiler }}/module_files_testing
-          python3 scripts/test_module_access.py build/${{ matrix.compiler }}/module_access_testing
-          python3 scripts/check_module_information.py build/${{ matrix.compiler }}/module_json_testing build/${{ matrix.compiler }}/module_writer_testing
-          python3 scripts/check_module_information_merge.py build/${{ matrix.compiler }}/module_json_testing
-          python3 scripts/check_module_merge.py build/${{ matrix.compiler }}/goat-merge ${{ matrix.compiler }}
+      - name: Verify registered native runner
+        run: ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -R "^native.c_module$"
       - name: Execute newer-built module at its declared glibc minimum
         # Select a controlled userspace from the actual produced requirement.
         # Require exact equality with the module minimum, not just a newer libc.
@@ -198,11 +147,6 @@ jobs:
               cmake --build /tmp/goat-floor --parallel 2 --target goat
               python3 /source/scripts/check_module_delivery_requirements.py verify-floor /tmp/goat-floor/goat /source/build/runtime-floor
             '
-      - name: Strict module JSON
-        run: |
-          python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
-          python3 scripts/check_module_canonical.py build/${{ matrix.compiler }}/module_json_testing
-          python3 scripts/check_module_hash.py build/${{ matrix.compiler }}/module_json_testing
       - name: Module loading allocation failures
         run: |
           cmake -S . -B build/memory-fault -DCMAKE_BUILD_TYPE=Debug \
@@ -219,8 +163,6 @@ jobs:
           python3 scripts/check_module_json.py build/json-stack-pattern/module_json_testing
           python3 scripts/check_module_canonical.py build/json-stack-pattern/module_json_testing
           python3 scripts/check_module_hash.py build/json-stack-pattern/module_json_testing
-      - name: Cleanup service
-        run: python3 scripts/check_cleanup_service.py build/${{ matrix.compiler }}/cleanup_service_testing
       - name: Compile Linux shared libraries
         run: bash scripts/check_native_library.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native-library
         env:
@@ -415,88 +357,22 @@ jobs:
           echo "GOAT_DELIVERY_UCRT64_CC=$(cygpath -w /ucrt64/bin/gcc.exe)" >> "$GITHUB_ENV"
       - name: Build and test
         shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
-      - name: Runnable bilingual module book
-        shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_book.py build/goat.exe'
-      - name: Child process primitives
-        shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_child_process.py build/child_process_testing.exe build/goat.exe'
-      - name: Bounded ZIP infrastructure
+      - name: List registered test suites
         shell: msys2 {0}
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: |
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_zip.py build/zip_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_container.py build/module_container_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_bytecode.py build/module_bytecode_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_native.py build/module_native_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_abi.py build/module_abi_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_artifact.py build/native_artifact_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_requirements.py build/native_requirements_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_toolchains.py build/native_toolchain_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_cleanup.py build/native_cleanup_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_native_values.py build/module_import_execution_testing.exe build/module_native_values_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_build.py build/module_import_execution_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_library.py build/module_import_execution_testing.exe build/module_library_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_loading.py build/module_loading_testing.exe build/module_import_execution_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_inspect.py build/goat-inspect.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_inspect_probe.py build/goat-inspect.exe build/module_import_execution_testing.exe gcc build/inspect_probe_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_cli.py build/goat.exe build/native_toolchain_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_delivery.py build/goat.exe build/goat-inspect.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_delivery_requirements.py audit build/goat.exe build/native_toolchain_testing.exe build/module_native_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_exit.py build/module_dispatch_testing.exe gcc
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_dispatch.py build/module_dispatch_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_consistency.py build/module_consistency_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_validation.py build/module_validation_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_writer.py build/module_writer_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_sources.py build/module_sources_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_search.py build/module_search_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_dependencies.py build/module_dependencies_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_graph.py build/module_graph_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_snapshot.py build/module_snapshot_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_identity.py build/module_identity_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_initialization.py build/module_initialization_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_serialization.py build/module_serialization_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_initialization_errors.py build/module_initialization_errors_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_exception_propagation.py build/module_exception_propagation_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_initialization_contract.py build/module_initialization_contract_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_incomplete_scopes.py build/module_incomplete_scopes_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_failed_prototypes.py build/module_failed_prototypes_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_source_include.py build/source_include_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_import_execution.py build/module_import_execution_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_interface.py build/module_import_execution_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_source_diagnostics.py build/module_import_execution_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_process_exit.py build/process_exit_testing.exe build/process_exit_failure_testing.exe build/process_exit_delayed_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_exit.py build/module_import_execution_testing.exe build/goat.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_threads.py build/module_import_execution_testing.exe build/goat.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_context_constants.py build/module_import_execution_testing.exe build/goat.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_function_provenance.py build/module_import_execution_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_assignment_access.py build/module_import_execution_testing.exe build/goat.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_multifile_access.py build/module_import_execution_testing.exe build/goat.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_imports.py build/module_imports_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_files.py build/module_files_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/test_module_access.py build/module_access_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_information.py build/module_json_testing.exe build/module_writer_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_information_merge.py build/module_json_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_merge.py build/goat-merge.exe gcc
-      - name: Strict module JSON
+          cmake -S . -B build -DPython3_EXECUTABLE="$BENCHMARK_PYTHON" -DGOAT_TEST_REQUIRE_PYTHON=ON
+          ctest --test-dir build -N
+      - name: Run registered integration suites
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: |
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_json.py build/module_json_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_canonical.py build/module_json_testing.exe
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_hash.py build/module_json_testing.exe
-      - name: Cleanup service
+        run: ctest --test-dir build --output-on-failure -L integration
+      - name: Verify registered native runner
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_cleanup_service.py build/cleanup_service_testing.exe'
+        run: ctest --test-dir build --output-on-failure -R "^native.c_module$"
       - name: Module loading allocation failures
         shell: msys2 {0}
         env:
