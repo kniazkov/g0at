@@ -135,7 +135,15 @@ goat_python(integration.module_canonical "integration" scripts/check_module_cano
 goat_python(integration.module_hash "integration" scripts/check_module_hash.py "$<TARGET_FILE:module_json_testing>")
 goat_python(integration.cleanup_service "integration;process" scripts/check_cleanup_service.py $<TARGET_FILE:cleanup_service_testing>)
 goat_python(format.reference "format" docs/module-format-v1/test_reference.py)
-goat_python(format.schema "format" scripts/generate_module_json_schema.py --check)
+goat_scenario(format.schema "format;module-schema" TIMEOUT 40 COMMAND
+  "$<TARGET_FILE:module_schema_generator_testing>" check "$<TARGET_FILE:module_schema_generator>"
+  "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
+foreach(scenario roundtrip stale missing reject-keyword reject-pattern reject-type reject-ref reject-float reject-duplicate
+    reject-array-items reject-ref-siblings reject-zero-items reject-zero-length reject-unique-nonstrings reject-ref-cycle)
+  goat_scenario(format.schema.${scenario} "format;module-schema" TIMEOUT 40 COMMAND
+    "$<TARGET_FILE:module_schema_generator_testing>" "${scenario}" "$<TARGET_FILE:module_schema_generator>"
+    "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
+endforeach()
 if(GOAT_TEST_ALLOC_FAILURE)
   goat_python(fault.module_memory "fault" scripts/check_module_memory.py $<TARGET_FILE:module_memory_testing>)
 endif()

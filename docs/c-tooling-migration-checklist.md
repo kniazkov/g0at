@@ -44,7 +44,7 @@
 - [x] 11. [#329 — Ввести регистрацию отдельных сценариев и ограничения параллелизма](https://github.com/kniazkov/g0at/issues/329)
 - [x] 12. [#330 — Зафиксировать Python-выборки как тестовые входные данные](https://github.com/kniazkov/g0at/issues/330)
 - [x] 13. [#331 — Перенести описание схем из schema.py в JSON](https://github.com/kniazkov/g0at/issues/331)
-- [ ] 14. [#332 — Перенести генератор схем на Си](https://github.com/kniazkov/g0at/issues/332)
+- [x] 14. [#332 — Перенести генератор схем на Си](https://github.com/kniazkov/g0at/issues/332)
 - [ ] 15. [#333 — Перенести Unicode-генератор на Си](https://github.com/kniazkov/g0at/issues/333)
 - [ ] 16. [#334 — Создать независимый точный эталон арифметики](https://github.com/kniazkov/g0at/issues/334)
 - [ ] 17. [#335 — Перенести JSON-часть эталона формата на Си](https://github.com/kniazkov/g0at/issues/335)

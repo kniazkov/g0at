@@ -11,6 +11,10 @@ target_link_libraries(scenario_context_testing PRIVATE goat_test_support)
 add_executable(scenario_execution_testing src/framework/scenario_execution_testing.c)
 target_link_libraries(scenario_execution_testing PRIVATE goat_test_support)
 
+add_executable(module_schema_generator_testing src/component/module_schema_generator_testing.c)
+target_link_libraries(module_schema_generator_testing PRIVATE goat_test_support)
+add_dependencies(module_schema_generator_testing module_schema_generator)
+
 add_executable(scenario_registry_testing src/component/scenario_registry_testing.c)
 target_link_libraries(scenario_registry_testing PRIVATE goat_test_support)
 
