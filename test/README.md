@@ -28,7 +28,8 @@ ctest --test-dir build --output-on-failure -L performance
 
 Legacy runners share some resources, so registrations use `RUN_SERIAL` and a
 bounded timeout. Performance is run separately in CI and must not compete with
-other jobs on the same machine. This is not the later parallel scenario framework.
+other jobs on the same machine. The individually registered C framework/process scenarios use owned workspaces
+and process-local state, and run with `--parallel 4` in Linux and Windows CI.
 Functional inputs are copied under the selected build directory; failed copies
 are retained with their path in the output. Inputs under `test/data` stay read-only.
 
@@ -121,3 +122,48 @@ see [the execution contract](support/README.md#execution-and-diagnostics).
 `ctest --test-dir build -L scenario-context --output-on-failure` runs the stable
 self-tests in Debug and Release, including simultaneous contexts and repeated
 runs. No test uses `assert` for required checks or creates results in `test/data`.
+
+## Stable scenario registry and scheduling
+
+`support/registry.h` dispatches exactly one stable ASCII ID per invocation. IDs
+must start with a letter and contain only letters, digits, `.`, `_` and `-`;
+duplicates, invalid definitions, unknown IDs and extra arguments fail explicitly.
+`--list` lists the available IDs. Related assertions remain in one scenario body,
+using the existing fail-fast execution/deadline and owned-workspace contract.
+A failure does not suppress another CTest registration. Bodies that can crash or
+hang run inside a supervised process; CTest timeouts include cleanup margin.
+
+The registry returns 0 for success, 1 for failure and 77 only for an explicit
+skip with a nonempty reason printed as `SKIP`. A skip is not a pass or a disabled
+test. The registry self-tests include both direct selection and CTest scheduling:
+
+```sh
+build/scenario_registry_testing selection build test/data
+build/scenario_registry_testing --list
+ctest --test-dir build --output-on-failure -R '^framework.registry.selection$'
+ctest --test-dir build --output-on-failure --parallel 4 -L scenario-registry
+```
+
+`test/ScenarioRegistration.cmake` is the scheduling authority. New standalone
+scenarios use `goat_scenario(name labels TIMEOUT seconds COMMAND runner id ...)`;
+each name/ID is stable and each registration executes only that scenario.
+`LOCKS resource...` declares shared resources via CTest `RESOURCE_LOCK`; all
+users of a shared resource must declare the same lock. `PERFORMANCE` adds the
+performance label and `RUN_SERIAL`, preventing any concurrent test in the same
+CTest invocation. Ordinary scenarios run in parallel; legacy suite registrations
+remain serial until individually migrated. Do not use `--stop-on-failure` when
+collecting independent results. The nested scheduler acceptance test deliberately
+runs a failing scenario and checks that the following one still completes.
+
+Performance isolation is stronger than a CTest lock: locks do **not** coordinate
+separate CTest invocations or runner services. Managed GitHub CI uses one job per
+GitHub-hosted VM (`ubuntu-24.04`, `ubuntu-24.04-arm`, `windows-latest`); its steps
+are sequential, all correctness processes finish before the dedicated performance
+step, and no background test invocation is launched. Matrix jobs use distinct VMs.
+Performance remains a separate Release step, not part of the parallel correctness
+label selection. A self-hosted replacement must provide a dedicated otherwise-idle
+machine/VM, one runner service per machine and exclusive scheduling through the
+whole performance step; a mere unique runner label is not sufficient. Locally run
+`ctest -LE performance --parallel 4` to completion, then `ctest -L performance`
+without other competing work. Transitional unavailable tools remain explicit
+configure-time disabled registrations rather than silently passing scenarios.

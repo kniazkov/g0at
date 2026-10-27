@@ -41,7 +41,7 @@
 - [x] 08. [#326 — Добавить потоковый обмен и большие результаты дочерних процессов](https://github.com/kniazkov/g0at/issues/326)
 - [x] 09. [#327 — Создать контекст сценария и управление рабочими каталогами](https://github.com/kniazkov/g0at/issues/327)
 - [x] 10. [#328 — Добавить во фреймворк проверки, диагностику и дедлайны](https://github.com/kniazkov/g0at/issues/328)
-- [ ] 11. [#329 — Ввести регистрацию отдельных сценариев и ограничения параллелизма](https://github.com/kniazkov/g0at/issues/329)
+- [x] 11. [#329 — Ввести регистрацию отдельных сценариев и ограничения параллелизма](https://github.com/kniazkov/g0at/issues/329)
 - [ ] 12. [#330 — Зафиксировать Python-выборки как тестовые входные данные](https://github.com/kniazkov/g0at/issues/330)
 - [ ] 13. [#331 — Перенести описание схем из schema.py в JSON](https://github.com/kniazkov/g0at/issues/331)
 - [ ] 14. [#332 — Перенести генератор схем на Си](https://github.com/kniazkov/g0at/issues/332)
