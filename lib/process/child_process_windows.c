@@ -5,8 +5,8 @@
 #include "lib/platform/windows_target.h"
 #include "lib/process/child_process_internal.h"
 #ifdef _WIN32
-#    include "allocate.h"
-#    include "windows_command_line.h"
+#    include "lib/memory/allocate.h"
+#    include "lib/process/windows_command_line.h"
 
 #    include <stdio.h>
 #    include <string.h>

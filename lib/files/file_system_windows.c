@@ -4,7 +4,7 @@
  */
 #include "lib/files/file_system_internal.h"
 #ifdef _WIN32
-#    include "allocate.h"
+#    include "lib/memory/allocate.h"
 
 #    include <aclapi.h>
 #    include <bcrypt.h>
