@@ -17,6 +17,7 @@ function(goat_suite name labels)
     LABELS "${labels}" TIMEOUT 600 RUN_SERIAL TRUE
     ENVIRONMENT "CC=${CMAKE_C_COMPILER};PYTHONDONTWRITEBYTECODE=1")
 endfunction()
+include("${CMAKE_CURRENT_SOURCE_DIR}/ScenarioRegistration.cmake")
 function(goat_python name labels script)
   if(Python3_Interpreter_FOUND)
     goat_suite(${name} "${labels}" "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/${script}" ${ARGN})
@@ -34,24 +35,39 @@ function(goat_shell name labels script)
   endif()
 endfunction()
 foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash timeout cumulative invalid-timeout host-hang host-crash command start-error cleanup-failure)
-  goat_suite(framework.execution.${scenario} "scenario-execution" "$<TARGET_FILE:scenario_execution_testing>"
+  goat_scenario(framework.execution.${scenario} "scenario-execution" TIMEOUT 30 COMMAND "$<TARGET_FILE:scenario_execution_testing>"
     "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
   # Internal deadlines are at most 5 seconds; leave time for process-tree cleanup and artifacts.
   set_tests_properties(framework.execution.${scenario} PROPERTIES TIMEOUT 30)
 endforeach()
 foreach(scenario success failure keep-work isolation invalid cleanup-error parallel)
-  goat_suite(framework.context.${scenario} "scenario-context" "$<TARGET_FILE:scenario_context_testing>"
+  goat_scenario(framework.context.${scenario} "scenario-context" TIMEOUT 30 COMMAND "$<TARGET_FILE:scenario_context_testing>"
     "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
   set_tests_properties(framework.context.${scenario} PROPERTIES TIMEOUT 30)
 endforeach()
 foreach(scenario roundtrip large poll capture legacy file dialog dialog-poll timeout stop output-error input-error invalid-size invalid-options)
-  goat_suite(process.stream.${scenario} "process-stream" "$<TARGET_FILE:child_process_stream_testing>" "${scenario}")
+  goat_scenario(process.stream.${scenario} "process-stream" TIMEOUT 20 COMMAND "$<TARGET_FILE:child_process_stream_testing>" "${scenario}")
   set_tests_properties(process.stream.${scenario} PROPERTIES TIMEOUT 20)
 endforeach()
 foreach(scenario env inherit empty-env empty binary early-close timeout start-error invalid poll stop)
-  goat_suite(process.input.${scenario} "process-input" "$<TARGET_FILE:child_process_input_testing>" "${scenario}")
+  goat_scenario(process.input.${scenario} "process-input" TIMEOUT 20 COMMAND "$<TARGET_FILE:child_process_input_testing>" "${scenario}")
   set_tests_properties(process.input.${scenario} PROPERTIES TIMEOUT 20)
 endforeach()
+foreach(scenario validation selection unknown list skip continuation keep-work explicit-skip)
+  goat_scenario(framework.registry.${scenario} "scenario-registry" TIMEOUT 30 COMMAND
+    "$<TARGET_FILE:scenario_registry_testing>" "${scenario}"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+file(RELATIVE_PATH registry_relative_data "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+goat_scenario(framework.registry.relative-paths "scenario-registry" TIMEOUT 30 COMMAND
+  "$<TARGET_FILE:scenario_registry_testing>" selection . "${registry_relative_data}")
+set_tests_properties(framework.registry.relative-paths PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+goat_scenario(framework.registry.scheduling "scenario-registry" TIMEOUT 180 COMMAND
+  "${CMAKE_COMMAND}" "-DCTEST=${CMAKE_CTEST_COMMAND}" "-DGENERATOR=${CMAKE_GENERATOR}"
+  "-DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+  "-DRUNNER=$<TARGET_FILE:scenario_registry_testing>" "-DBUILD=${CMAKE_BINARY_DIR}"
+  "-DDATA=${PROJECT_SOURCE_DIR}/test/data"
+  -P "${CMAKE_CURRENT_SOURCE_DIR}/check_scenario_scheduling.cmake")
 goat_suite(core.unit "core" $<TARGET_FILE:unit_testing>)
 goat_suite(core.json "core;json" $<TARGET_FILE:module_json_testing>)
 goat_suite(core.analysis "core;analysis" $<TARGET_FILE:analysis_testing> "${PROJECT_SOURCE_DIR}/test/data/analysis")
