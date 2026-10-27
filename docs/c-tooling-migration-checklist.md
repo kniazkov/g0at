@@ -42,7 +42,7 @@
 - [x] 09. [#327 — Создать контекст сценария и управление рабочими каталогами](https://github.com/kniazkov/g0at/issues/327)
 - [x] 10. [#328 — Добавить во фреймворк проверки, диагностику и дедлайны](https://github.com/kniazkov/g0at/issues/328)
 - [x] 11. [#329 — Ввести регистрацию отдельных сценариев и ограничения параллелизма](https://github.com/kniazkov/g0at/issues/329)
-- [ ] 12. [#330 — Зафиксировать Python-выборки как тестовые входные данные](https://github.com/kniazkov/g0at/issues/330)
+- [x] 12. [#330 — Зафиксировать Python-выборки как тестовые входные данные](https://github.com/kniazkov/g0at/issues/330)
 - [ ] 13. [#331 — Перенести описание схем из schema.py в JSON](https://github.com/kniazkov/g0at/issues/331)
 - [ ] 14. [#332 — Перенести генератор схем на Си](https://github.com/kniazkov/g0at/issues/332)
 - [ ] 15. [#333 — Перенести Unicode-генератор на Си](https://github.com/kniazkov/g0at/issues/333)
@@ -206,3 +206,14 @@
 | `test/src/native/checks/string_method_errors.py` | [#385](https://github.com/kniazkov/g0at/issues/385) |
 
 Встроенная Python-проверка SVG: [#393](https://github.com/kniazkov/g0at/issues/393). Финальная проверка охватывает также импорты, манифесты, sys.executable, heredoc и команды CI.
+
+### Временные инструменты фиксации выборок (#330)
+
+К исходному реестру 89 файлов добавлены четыре временных Python-инструмента:
+`test/support/freeze_python_samples.py`, `test/support/python_samples_binary.py`,
+`test/support/python_samples_structured.py`, `test/support/verify_original_python_samples.py`.
+Они воспроизводят/проверяют исходные выборки; обычные потребители только читают
+`test/data/python-samples/`. Удаление этих инструментов входит в финальный
+Python-free gate [#395](https://github.com/kniazkov/g0at/issues/395), не меняя порядка задач.
+Происхождение, форматы, соответствие сценариев и команды проверки описаны в
+[`test/data/python-samples/README.md`](../test/data/python-samples/README.md).

@@ -3,7 +3,6 @@ import hashlib
 import io
 import json
 from pathlib import Path
-import random
 import struct
 import subprocess
 import sys
@@ -13,6 +12,7 @@ import zlib
 
 EXE = str(Path(sys.argv[1]).resolve())
 ROOT = Path(__file__).resolve().parents[1]
+SAMPLES = ROOT / 'test/data/python-samples'
 COUNT = 0
 OK, INVALID, MEMORY, FORMAT, ZIP64, MULTIDISK, UNSUPPORTED, CAPACITY, SIZE, CRC, DEFLATE, HEADER = range(12)
 
@@ -160,9 +160,9 @@ bad = patch(patch(bad, c+1+20, '<I', e['compressed']+1), l+18, '<I', e['compress
 bad = patch(bad, bad.rfind(b'PK\x05\x06')+16, '<I', c+1)
 read(bad, 0, 10000, DEFLATE)
 # Writer parameters, binary comments, exact dates/flags/attrs and both methods.
-rng = random.Random(247)
 contents = [b'', b'x', b'xy', b'xyz', bytes(range(256)), b'abc'*10000,
-            bytes(rng.randrange(256) for _ in range(65537))]
+            (SAMPLES / 'zip-payload.bin').read_bytes()]
+assert len(contents[-1]) == 65537
 for method in (0, 8):
     entries = [entry(f'part-{i}'.encode(), content, method, comment=b'x\0y'.hex(),
                      localExtra=b'\xfe\xca\x01\x00L'.hex(), centralExtra=b'\xfe\xca\x01\x00C'.hex())
@@ -217,9 +217,14 @@ e = inspect(base)['entries'][0]
 for offset, fmt, value in [(e['centralOffset']+28, '<H', 65535), (e['centralOffset']+42, '<I', 0xfffffffe),
                            (eocd+12, '<I', 0xfffffffe), (eocd+16, '<I', 0xfffffffe)]:
     run('inspect', patch(base, offset, fmt, value), status=FORMAT)
-for _ in range(60):
-    damaged = bytearray(deflated)
-    for _ in range(3):
-        damaged[rng.randrange(len(damaged))] ^= 1 << rng.randrange(8)
+damage_name = 'zip-damage-base-windows.bin' if sys.platform == 'win32' else 'zip-damage-base.bin'
+damage_base = (SAMPLES / damage_name).read_bytes()
+damage_cases = json.loads((SAMPLES / 'zip-damage.json').read_text(encoding='utf-8'))
+assert len(damage_cases) == 60
+for mutations in damage_cases:
+    assert len(mutations) == 3
+    damaged = bytearray(damage_base)
+    for offset, mask in mutations:
+        damaged[offset] ^= mask
     run('read', bytes(damaged), (0, 10000), tuple(range(12)))
 print(f'ZIP checks passed: {COUNT}')

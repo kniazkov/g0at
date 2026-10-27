@@ -4,7 +4,6 @@ import json
 import math
 import os
 from pathlib import Path
-import random
 import struct
 import subprocess
 import sys
@@ -128,19 +127,8 @@ for kind, constants in values.items():
 
 # Seeded differential checks use the independent executable format specification.
 # Batch once: Windows process startup must not dominate the CI matrix.
-rng = random.Random(209)
-pairs = []
-for kind, constants in values.items():
-    operations = ['equal', 'notEqual']
-    if kind in ('integer', 'real', 'character'):
-        operations += ['less', 'lessEqual', 'greater', 'greaterEqual']
-    for _ in range(100):
-        pair = []
-        for _ in range(2):
-            pair.append(dict(argumentTypes=[kind], conditions=[
-                predicate(kind, rng.choice(constants), rng.choice(operations))
-                for _ in range(rng.randrange(6))]))
-        pairs.append(pair)
+pairs = json.loads((ROOT / 'test/data/python-samples/abi-guard-pairs.json').read_text(encoding='utf-8'))
+assert len(pairs) == 600
 actual = run('overlap', json.dumps(pairs, ensure_ascii=False).encode()).splitlines()
 assert len(actual) == len(pairs)
 for pair, got in zip(pairs, actual):

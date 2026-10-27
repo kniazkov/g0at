@@ -2,7 +2,6 @@
 import copy
 import itertools
 import json
-import random
 import subprocess
 import sys
 from pathlib import Path
@@ -210,10 +209,11 @@ def main():
     variant['target']['cpuFeatures'] = ['z','sse2','a']
     canonical(v)
     # Seeded permutations of object keys have byte-for-byte identical output.
-    rng = random.Random(180)
-    for _ in range(20):
-        pairs = list(enriched.items()); rng.shuffle(pairs)
-        assert run(dict(pairs),'main-metadata') == expected
+    orders = json.loads((ROOT / 'test/data/python-samples/canonical-key-orders.json').read_text(encoding='utf-8'))
+    assert len(orders) == 20
+    for keys in orders:
+        assert len(keys) == len(enriched) and set(keys) == set(enriched)
+        assert run({key: enriched[key] for key in keys}, 'main-metadata') == expected
     print(f'Canonical JSON checks passed: {COUNT}')
 
 

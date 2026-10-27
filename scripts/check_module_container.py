@@ -4,7 +4,6 @@ import hashlib
 import io
 import json
 from pathlib import Path
-import random
 import struct
 import subprocess
 import sys
@@ -12,6 +11,7 @@ import warnings
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+SAMPLES = ROOT / 'test/data/python-samples'
 sys.path.insert(0, str(ROOT / 'docs/module-format-v1'))
 import reference as ref
 EXE = str(Path(sys.argv[1]).resolve())
@@ -246,9 +246,13 @@ check(forced.getvalue(),ZIP,zip_error=4)
 for n in range(len(base)):
     check(base[:n],ZIP)
 # Deterministic damage must never crash, return partial output, or write files.
-rng = random.Random(182)
-for _ in range(100):
-    bad = bytearray(base)
-    for _ in range(3): bad[rng.randrange(len(bad))] ^= 1 << rng.randrange(8)
+damage_base = (SAMPLES / 'container-damage-base.bin').read_bytes()
+damage_cases = json.loads((SAMPLES / 'container-damage.json').read_text(encoding='utf-8'))
+assert len(damage_cases) == 100
+for mutations in damage_cases:
+    assert len(mutations) == 3
+    bad = bytearray(damage_base)
+    for offset, mask in mutations:
+        bad[offset] ^= mask
     check(bytes(bad),tuple(range(14)))
 print(f'Module container checks passed: {COUNT}')
