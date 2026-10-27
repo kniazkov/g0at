@@ -100,7 +100,7 @@ typedef struct {
     FILE *out_file, *err_file;
 } context_t;
 
-static bool accept(context_t *ctx, const unsigned char *data, size_t size, bool err) {
+static bool accept_stream_data(context_t *ctx, const unsigned char *data, size_t size, bool err) {
     ctx->output_calls++;
     if (ctx->fail_output)
         return false;
@@ -123,11 +123,11 @@ static bool accept(context_t *ctx, const unsigned char *data, size_t size, bool 
 }
 
 static bool accept_out(void *arg, const unsigned char *data, size_t size) {
-    return accept(arg, data, size, false);
+    return accept_stream_data(arg, data, size, false);
 }
 
 static bool accept_err(void *arg, const unsigned char *data, size_t size) {
-    return accept(arg, data, size, true);
+    return accept_stream_data(arg, data, size, true);
 }
 
 static child_input_status_t provide(void *arg, unsigned char *data, size_t capacity, size_t *size) {
