@@ -14,7 +14,7 @@ ctest --test-dir /work/debug --output-on-failure -L "language-roundtrip|unicode-
 # Includes real default-worker native calls and explicit small-stack fallback.
 bash scripts/check_native_pipeline.sh /work/debug/goat /work/debug/unit_testing /work/native-pipeline
 python3 scripts/check_native_requirements.py /work/debug/native_requirements_testing
-python3 scripts/check_module_native.py /work/debug/module_native_testing
+ctest --test-dir /work/debug --output-on-failure -R '^integration.module_native$'
 python3 scripts/check_native_toolchains.py /work/debug/native_toolchain_testing gcc
 python3 scripts/check_module_build.py /work/debug/module_import_execution_testing gcc
 python3 scripts/check_module_library.py /work/debug/module_import_execution_testing /work/debug/module_library_testing gcc

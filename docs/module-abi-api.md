@@ -72,7 +72,7 @@ Exit не является самостоятельным C exit: общий м�
 специализаций, защита от неоднозначности при вызове, преобразование VM-аргументов,
 сохранение/потеря привязки clone/flat реализованы в [#232](module-dispatch-api.md).
 
-`python3 scripts/check_module_abi.py build/<config>/module_abi_testing` проверяет
+`ctest --test-dir build/<config> --output-on-failure -R '^integration.module_abi$'` проверяет
 описания, повреждённые значения, границы условий и реальную библиотеку с экспортом
 описания и адаптера. Вызов проходит через новый ABI, а не старый query ABI или VM
 fallback. Существующая матрица Linux GCC/Clang x86-64/ARM64 и Windows
@@ -139,7 +139,7 @@ library before copying. #233 compares embedded and archive metadata. Runtime
 ambiguity checks, VM argument conversion and clone/flat binding retention are
 implemented in [#232](module-dispatch-api.md). The legacy runtime remains separate.
 
-Run `python3 scripts/check_module_abi.py build/<config>/module_abi_testing` for
+Run `ctest --test-dir build/<config> --output-on-failure -R '^integration.module_abi$'` for
 malformed envelopes/values, guard boundaries and a real shared library exporting
 the descriptor and fixed adapter. Actual calls use the new ABI, not VM fallback
 or the legacy query ABI. Every existing Linux GCC/Clang x86-64/ARM64 and Windows

@@ -472,3 +472,76 @@ Python discovery disabled passed the migrated scenario. Release `--keep-work`
 retained successful diagnostics; copied vectors with a flipped bytecode magic
 byte or `{}` metadata both failed with exit 1 and retained diagnostic files.
 Clang-format 18 and strict C11 `-Wall -Wextra -Werror` syntax checks passed.
+
+## Module ABI and native selection (#347)
+
+`module_abi_scenarios` and `module_native_scenarios` replace
+`scripts/check_module_abi.py` and `scripts/check_module_native.py`. The existing
+component hosts remain the production subprocesses. Fixtures use the independent
+format oracle for descriptor JSON, guard intersections, hashes and ZIP assembly;
+no production selector/guard/writer computes an expected result.
+
+| Original check | Stable CTest ID |
+|---|---|
+| Direct API layout, scalar values, services and one-shot invocation | `integration.module_abi` |
+| Canonical descriptor envelope, nine wire damages, six malformed/noncanonical JSON inputs | `integration.module_abi` |
+| ABI versions, required/unknown fields, invalid specialization IDs/signatures/guards, maximum IDs and overlap precedence | `integration.module_abi` |
+| All six scalar types, missing/extra/wrong-type arguments, equality/inequality, int64 limits, NaN/infinities/signed zero/subnormal, NUL/Unicode strings and characters | `integration.module_abi` |
+| All 600 frozen guard pairs, independently recalculated intersections | `integration.module_abi` |
+| Real baseline shared library compiled against the public ABI header, descriptor export and services-backed result 42 | `integration.module_abi` |
+| Direct selector API, exact ABI membership including empty/duplicate/maximum version lists | `integration.module_native` |
+| Every individual and combined compatibility reason, missing CPU bit masks and unknown host knowledge | `integration.module_native` |
+| Six OS/architecture/runtime profiles, all cross-profile pairs, 32/64-bit mismatch | `integration.module_native` |
+| Numeric OS/runtime tuples, zero extension, uint32 limits, Windows build floors | `integration.module_native` |
+| Inherent CPU baselines, unknown/NUL/Unicode features, impossible architecture features, AVX/SSE/SVE prerequisite chains | `integration.module_native` |
+| OS library suffix, invalid foreign variant precedence, order-independent ambiguity and unique selection | `integration.module_native` |
+| Payload/hash corruption of compatible and incompatible variants before filtering | `integration.module_native` |
+| Compiler information retained but excluded from main hash/selection; malformed compiler metadata | `integration.module_native` |
+| Strict profiles: missing fields, duplicate keys, closed objects, wrong types/versions/runtime | `integration.module_native` |
+| Host facts unaffected by MSYSTEM/PATH changes; process architecture/runtime, compiler macro baselines | `integration.module_native` |
+| Detected-host selection and real baseline shared-library call returning 42 | `integration.module_native` |
+
+Both original standalone CTest IDs are preserved. The common scenario framework
+provides unique build workspaces, cumulative deadlines, command/stdout/stderr
+artifacts, cleanup, failure retention and `--keep-work`. Input vectors and the
+frozen guard pairs remain read-only. Checks and component-host assertions remain
+active in Release. The same suites apply to Linux x86-64/AArch64 and Windows
+MinGW i686/x86-64/UCRT; no platform is silently skipped. The unchanged dispatch,
+loading and native-mode suites retain `off`/`auto`/`required` coverage; those
+modes were not implemented by either replaced Python script.
+
+Debug build scripts and Release CI explicitly build both runners. Release CI
+selects the `module-abi-native-migration` label. No imported helpers are exported
+by these two Python scripts, so neither needs a compatibility shim.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_abi_scenarios module_native_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-abi-native-migration
+build/manual/module_abi_scenarios integration.module_abi build/manual/module_abi_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+build/manual/module_native_scenarios integration.module_native build/manual/module_native_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Differential reproduction (restore only temporarily):
+git show a6e02fe8595ec09696d27e97800ae5ef1b92bd96:scripts/check_module_abi.py > scripts/check_module_abi.py
+git show a6e02fe8595ec09696d27e97800ae5ef1b92bd96:scripts/check_module_native.py > scripts/check_module_native.py
+python3 scripts/check_module_abi.py build/manual/module_abi_testing
+python3 scripts/check_module_native.py build/manual/module_native_testing
+```
+
+Before removal, unchanged Python and C passed the same Debug and Release hosts:
+716 ABI checks (including 600 guard pairs) and 209 native-selection checks, plus
+both API self-tests and real shared-library calls. Temporary request capture
+matched all 115 ABI subprocess inputs before the platform-built library load
+byte-for-byte for descriptor envelopes, and after JSON key/whitespace
+normalization for scalar/overlap metadata. Native requests matched their profile,
+ABI list, expanded archive entries and metadata after JSON formatting
+normalization; ZIP compression and freshly compiled library bytes are not used
+as expected outputs. All captured semantic outputs matched. No capture tool or
+generated expectation corpus is shipped.
+
+Fresh UBSan builds with Python discovery disabled passed both scenarios. Release
+`--keep-work` retained successful diagnostics. Replacing a copied frozen guard
+file by `{}` and flipping a copied bytecode magic byte each failed with exit 1
+and retained diagnostics. Empty/malformed host output also fails rather than
+being interpreted as a zero status. Related metadata/hash/container/bytecode and
+format-oracle tests passed 38/38. Clang-format 18 and strict C11
+`-Wall -Wextra -Werror` syntax checks passed.

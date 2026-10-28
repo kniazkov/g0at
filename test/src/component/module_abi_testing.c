@@ -2,6 +2,10 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Controlled module ABI fixtures; no untrusted native library is loaded.
  */
+/* Fixture setup and ABI validation must remain active in Release. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include "lib/files/file_system.h"
 #include "module_abi.h"
 #include "module_guards.h"

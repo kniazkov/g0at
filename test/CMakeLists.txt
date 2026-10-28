@@ -276,3 +276,13 @@ add_dependencies(module_container_scenarios module_container_testing)
 add_executable(module_bytecode_scenarios src/functional/module_bytecode_scenarios.c)
 target_link_libraries(module_bytecode_scenarios PRIVATE goat_language_execution_support goat_format_oracle)
 add_dependencies(module_bytecode_scenarios module_bytecode_testing)
+
+add_executable(module_abi_scenarios src/functional/module_abi_scenarios.c src/functional/module_abi_real.c)
+target_link_libraries(module_abi_scenarios PRIVATE goat_language_execution_support goat_format_oracle)
+add_dependencies(module_abi_scenarios module_abi_testing)
+target_compile_definitions(module_abi_scenarios PRIVATE MIGRATION_CC="${CMAKE_C_COMPILER}" MIGRATION_ROOT="${PROJECT_SOURCE_DIR}")
+
+add_executable(module_native_scenarios src/functional/module_native_scenarios.c)
+target_link_libraries(module_native_scenarios PRIVATE goat_language_execution_support goat_format_oracle)
+add_dependencies(module_native_scenarios module_native_testing)
+target_compile_definitions(module_native_scenarios PRIVATE MIGRATION_CC="${CMAKE_C_COMPILER}")
