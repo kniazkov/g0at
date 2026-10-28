@@ -5,6 +5,10 @@
 #include "common/module_imports.h"
 #include "lib/memory/allocate.h"
 
+/* Fixture setup and API checks must also execute in Release builds. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

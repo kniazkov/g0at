@@ -129,7 +129,13 @@ goat_python(integration.module_exception_propagation "integration" scripts/check
 goat_python(integration.module_initialization_contract "integration" scripts/check_module_initialization_contract.py "$<TARGET_FILE:module_initialization_contract_testing>")
 goat_python(integration.module_incomplete_scopes "integration" scripts/check_module_incomplete_scopes.py "$<TARGET_FILE:module_incomplete_scopes_testing>")
 goat_python(integration.module_failed_prototypes "integration" scripts/check_module_failed_prototypes.py "$<TARGET_FILE:module_failed_prototypes_testing>")
-goat_python(integration.source_include "integration" scripts/check_source_include.py "$<TARGET_FILE:source_include_testing>")
+foreach(include_case nested repeat lexical private lazy expression arguments closure-include
+    failed-callback same-content cycle-ready cycle-early-caught failed-repeated finally
+    throwing-function unicode empty outside invalid hardlinks symlinks diagnostic-mapping deep)
+  goat_scenario(integration.source_include.${include_case} "integration;imports-include-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:source_include_scenarios>" integration.source_include.${include_case}
+    "$<TARGET_FILE:source_include_testing>" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 goat_python(integration.module_import_execution "integration" scripts/check_module_import_execution.py "$<TARGET_FILE:module_import_execution_testing>")
 goat_python(integration.module_interface "integration" scripts/check_module_interface.py "$<TARGET_FILE:module_import_execution_testing>")
 goat_python(integration.module_source_diagnostics "integration" scripts/check_module_source_diagnostics.py "$<TARGET_FILE:module_import_execution_testing>")
@@ -140,7 +146,9 @@ goat_python(integration.module_context_constants "integration" scripts/check_mod
 goat_python(integration.module_function_provenance "integration" scripts/check_module_function_provenance.py "$<TARGET_FILE:module_import_execution_testing>")
 goat_python(integration.module_assignment_access "integration" scripts/check_module_assignment_access.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 goat_python(integration.module_multifile_access "integration" scripts/check_module_multifile_access.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
-goat_python(integration.module_imports "integration" scripts/check_module_imports.py "$<TARGET_FILE:module_imports_testing>")
+goat_scenario(integration.module_imports "integration;imports-include-migration" TIMEOUT 240 COMMAND
+  "$<TARGET_FILE:module_imports_scenarios>" integration.module_imports "$<TARGET_FILE:module_imports_testing>"
+  "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 goat_scenario(integration.module_files "integration;module-sources-files-migration" TIMEOUT 240 COMMAND
   "$<TARGET_FILE:module_files_scenarios>" integration.module_files "$<TARGET_FILE:module_files_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
@@ -250,8 +258,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 56)
-  message(FATAL_ERROR "Expected all 56 transitional integration suites; found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 78)
+  message(FATAL_ERROR "Expected all 78 integration scenarios (source includes split in #349); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
