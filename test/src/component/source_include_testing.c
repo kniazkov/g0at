@@ -11,6 +11,10 @@
 #include "vm/module_writer.h"
 #include "vm/vm.h"
 
+/* Fixture setup and API checks must also execute in Release builds. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

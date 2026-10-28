@@ -608,3 +608,92 @@ graph or wrong file-entry output are rejected in Release, preserving diagnostics
 Host assertions deliberately remain enabled in optimized builds: these legacy
 hosts perform fixture setup and VM execution inside assertions, so disabling
 them would remove checks (and break file-fixture execution).
+
+## Static imports and source includes (#349)
+
+`module_imports_scenarios` and `source_include_scenarios` replace
+`scripts/check_module_imports.py` and `scripts/check_source_include.py`.
+They retain the existing `module_imports_testing` and `source_include_testing`
+production API hosts. No production implementation, language semantics, or
+module format is changed. Neither removed script exports helpers to remaining
+Python consumers.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| Import API self-test, empty graph, descriptor defaults, unused defaults, explicit/implicit versions, missing defaults, source vs descriptor mode | `integration.module_imports` |
+| Static collection without execution, comments/member/string decoys, Unicode locations, escapes, all order permutations and exact version strings | `integration.module_imports` |
+| Include graph order, cycles/deduplication/external files, shared sites, missing import location and cwd independence with poisoned module path | `integration.module_imports` |
+| Custom/default import limits (65,536/65,537), 16,384 dependencies, invalid syntax/specifiers/UTF-8/tokens/brackets/defaults | `integration.module_imports` |
+
+Each source-include row below has the prefix `integration.source_include.`:
+
+| Old source-include case/check | CTest ID suffix |
+| --- | --- |
+| Nested DFS/load order and saved file ordering | `nested` |
+| Alias caching, shared mutation and function mapping, descriptor compilation | `repeat` |
+| Lexical isolation and function source membership | `lexical` |
+| Private/public access | `private` |
+| Lazy/unexecuted inclusion and cached execution | `lazy` |
+| Include expression values and argument boundaries | `expression`, `arguments` |
+| Closure boundaries, callback failure/recovery | `closure-include`, `failed-callback` |
+| Equal bytes remain different identities | `same-content` |
+| Ready/early cycle access | `cycle-ready`, `cycle-early-caught` |
+| Cached exception identity, finally, throwing included function | `failed-repeated`, `finally`, `throwing-function` |
+| Unicode filenames/content and empty included file | `unicode`, `empty` |
+| External equal basenames, descriptor compilation and path redaction | `outside` |
+| Ten invalid literals/missing paths and invalid unexecuted child before any effects | `invalid` |
+| Hard-link path identities and relative include bases | `hardlinks` |
+| Symlink canonical source bases, deduplication and saved image | `symlinks` |
+| Nested/anonymous/160 named function labels, source locations and byte-identical relocation | `diagnostic-mapping` |
+| 100-deep chain, file count and saved execution after source removal | `deep` |
+
+Every archived case independently checks ZIP entries, metadata/bytecode file and
+function mappings, entry ranges, path redaction, then executes the saved image
+after deleting its source directory (the diagnostic-mapping case instead compares
+relocated archives byte-for-byte).
+
+Both runners use the shared scenario framework: unique work directories under
+the build root, one scenario deadline, captured command/stdout/stderr diagnostics,
+deferred resource cleanup and `--keep-work`. Successful runs clean up; failures
+retain their diagnostics. Test inputs are generated in those work directories,
+not written into `test/data`. Assertions in the legacy component hosts remain
+enabled in Release because they execute fixture setup and production API checks.
+
+The `imports-include-migration` label runs the new C tests without Python.
+Full Debug integration, explicit Linux and MinGW build targets, Release CI
+selection and Alpine/musl Debug and Release all include the new runners.
+Windows symlink creation can skip only the missing-privilege error; hard-link
+checks remain required.
+
+Reproduce (also repeat with `-DCMAKE_BUILD_TYPE=Release`):
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_imports_scenarios source_include_scenarios
+ctest --test-dir build/manual --output-on-failure -L imports-include-migration
+build/manual/module_imports_scenarios integration.module_imports build/manual/module_imports_testing build/manual test/data --keep-work
+build/manual/source_include_scenarios --list
+# Historical differential runs (remove the restored scripts afterwards):
+git show c63e677637ee04cc79390aa65152a0c834298586:scripts/check_module_imports.py > scripts/check_module_imports.py
+git show c63e677637ee04cc79390aa65152a0c834298586:scripts/check_source_include.py > scripts/check_source_include.py
+python3 scripts/check_module_imports.py build/manual/module_imports_testing
+python3 scripts/check_source_include.py build/manual/source_include_testing
+```
+
+CI links and exact final-commit verification are recorded in the PR/issue,
+without an extra checklist-only push.
+
+Local verification: original Python and new C pass on the same Debug and Release
+hosts (63 import fixtures plus the API self-test; 69 include invocations).
+Temporary differential capture matched all 64 import subprocess requests and
+results, including descriptor JSON, transitive source bytes, limits and outputs.
+All 69 include requests match source bytes, descriptor JSON, output/status,
+diagnostics (normalizing only workspace directory prefixes) and compiled archive
+SHA-256. Independent scenario ordering was compared as a multiset, with no
+mismatches. No capture tool or generated expectation corpus is shipped.
+
+The 24 CTest scenarios pass in Debug, Release and a fresh UBSan build with Python
+discovery disabled. Deliberately wrong output and a corrupted compiled archive
+are rejected in Release with command diagnostics retained. Release
+`--keep-work` retains successful fixtures. Clang-format 18 and strict C11
+`-Wall -Wextra -Werror` syntax checks pass.
