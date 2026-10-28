@@ -280,3 +280,23 @@ if(TARGET format_binary_ubsan_testing)
     "$<TARGET_FILE:format_binary_ubsan_testing>" all "${CMAKE_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
 endif()
+
+# Stable scenario IDs for the shared execution/report migration (#337).
+foreach(scenario parity parsing)
+  goat_scenario(helpers.inspect.${scenario} "migration-helpers" TIMEOUT 40 COMMAND
+    "$<TARGET_FILE:inspect_report_testing>" "${scenario}" "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/inspect-report/cases.json"
+    "${PROJECT_SOURCE_DIR}/docs/module-format-v1/inspect-report.schema.json"
+    "${PROJECT_SOURCE_DIR}/docs/module-format-v1")
+endforeach()
+goat_scenario(helpers.inspect.reject-mutant "migration-helpers" TIMEOUT 40 COMMAND
+  "$<TARGET_FILE:inspect_report_testing>" parity "${CMAKE_BINARY_DIR}"
+  "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/inspect-report/cases.json"
+  "${PROJECT_SOURCE_DIR}/docs/module-format-v1/inspect-report.schema.json"
+  "${PROJECT_SOURCE_DIR}/docs/module-format-v1" accept-invalid)
+set_tests_properties(helpers.inspect.reject-mutant PROPERTIES WILL_FAIL TRUE)
+foreach(scenario real compile-failure capture environment mismatch expected-crlf invalid-utf8 missing-diagnostic unexpected-success unexpected-failure invalid-path)
+  goat_scenario(helpers.execution.${scenario} "migration-helpers" TIMEOUT 90 COMMAND
+    "$<TARGET_FILE:module_execution_testing>" "${scenario}" "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "$<TARGET_FILE:module_import_execution_testing>")
+endforeach()
