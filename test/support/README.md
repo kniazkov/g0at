@@ -38,3 +38,21 @@ Run `ctest --test-dir build -L scenario-execution --output-on-failure` for frame
 self-tests. Each deliberate failure is observed by an independent outer test,
 which checks the failure result, retained artifacts and skipped subsequent steps.
 No existing Python test is removed by this framework addition.
+
+## Independent integer arithmetic (#334)
+
+`integer_oracle.h` / `integer_oracle.c` provide exact sign/magnitude results in
+four little-endian 32-bit limbs, then explicit int64 saturation. The test-only
+`goat_integer_oracle` target has no production dependency and is never linked
+into the interpreter. There is no `__int128` requirement or signed overflow.
+See `test/data/integer-oracle/README.md` for Python provenance, reproduction,
+scenario mapping and deliberate-corruption self-tests. The existing
+`test/src/native/checks/saturation.py` consumer is unchanged until #386;
+this step supplies its future independent C oracle, not a replacement runner.
+
+Run `ctest --test-dir build -L integer-oracle --output-on-failure` after building
+`integer_oracle_testing` (and `integer_oracle_ubsan_testing` on Unix GCC/Clang).
+The same label runs in Debug/Release on Linux x86-64/AArch64 and Windows
+MinGW i686/x86-64/UCRT. UBSan instruments the oracle and caller on Linux;
+Windows uses the same portable uninstrumented tests, since MinGW's configured
+CI toolchains do not provide the Unix UBSan runtime.
