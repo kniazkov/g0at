@@ -212,3 +212,49 @@ a copied data directory whose scalar fixture contained only `00` failed with
 exit 1 at the independent fixture comparison. Both retained diagnostics. These
 negative checks demonstrate that Release does not compile away the assertions.
 The migrated source also passes `gcc -std=c11 -Wall -Wextra -Werror` syntax checks.
+
+## Metadata JSON (#342)
+
+`module_json_scenarios` replaces `scripts/check_module_json.py`. The production
+host remains `module_json_testing`; no production parser/validator is used to
+calculate expected results. The read-only corpus has 440 original requests,
+93 independently normalized expected values and 347 required rejections.
+See [provenance](../../data/module-json/README.md).
+
+| Original check / original source lines | Stable CTest ID |
+|---|---|
+| Summary consistency in both orders: overlap/disjointness, arity 0/1/2, exact int64 and >2^53, Boolean, Unicode/NUL, real bit patterns, ranges, arrays, normal return and effects (65–114) | `native.module_json` |
+| Gmod defaults, absent/null required fields, optional metadata emptiness, Unicode/NUL and author validation (119–147) | `native.module_json` |
+| Integer lexemes/bounds, unsupported versions, BOM, trailing input, comments, invalid UTF-8/surrogates and duplicate escaped keys (148–161) | `native.module_json` |
+| Exact untrimmed main path, including POSIX real-file lookup; Windows keeps original omission of only that file-system branch (162–173) | `native.module_json` |
+| Native options and dependency shapes, identities, hashes and duplicate versions (174–191) | `native.module_json` |
+| uint32 entry/main boundaries, negative zero versus exponent, bytecode version (192–202) | `native.module_json` |
+| Rich nested descriptor and every closed record's unknown/NUL-suffixed keys; open maps retain schema-checked entries (203–218) | `native.module_json` |
+| int64 summary bounds, nested target/specialization/function/effect corruption, duplicates and nesting limit (219–238) | `native.module_json` |
+| Four original module vectors, every identity position, 255/250-byte boundaries and distinct version strings (239–258) | `native.module_json` |
+
+The C scenario uses a unique build work directory, a cumulative 180-second
+deadline (CTest 200), scenario-owned processes/resources and retained diagnostics
+on failure. `--keep-work` preserves successful work. Checks remain active under
+`NDEBUG`. Debug and Release CI plus the nonzero automatic-variable initialization
+job use the C runner. Linux x86-64/AArch64 and MinGW i686/x86-64/UCRT use the same
+corpus; no structural error is converted to a successful parse or skipped.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_json_scenarios
+ctest --test-dir build/manual --output-on-failure -R '^native.module_json$'
+build/manual/module_json_scenarios native.module_json build/manual/module_json_testing build/manual test/data --keep-work
+# Differential reproduction before deleting the restored original:
+git show 5e56f72c57c5df34237dd330e9bd420d4d2131e7:scripts/check_module_json.py > scripts/check_module_json.py
+python3 scripts/check_module_json.py build/manual/module_json_testing
+```
+
+Verification before removal: the unchanged Python runner and new C runner both
+passed all 440 requests against Debug and Release hosts. Every positive fixture
+also matched the independent Python reference. Direct Release `--keep-work`
+passed and retained artifacts. Two copied-corpus Release runs were deliberately
+corrupted: one changed an expected module name, the other replaced an accepted
+input with `{`. Both exited 1 and retained diagnostics, proving that bad expected
+results and structural errors are detected with `NDEBUG`. The source passes
+`gcc -std=c11 -Wall -Wextra -Werror` syntax checks.

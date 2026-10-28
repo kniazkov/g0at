@@ -256,3 +256,7 @@ target_compile_definitions(unicode_interactive_testing PRIVATE CHARACTER_CC="${C
 add_executable(bytecode_v1_testing src/functional/bytecode_v1_testing.c)
 target_link_libraries(bytecode_v1_testing PRIVATE goat_language_execution_support goat_format_oracle)
 add_dependencies(bytecode_v1_testing goat)
+
+add_executable(module_json_scenarios src/functional/module_json_scenarios.c)
+target_link_libraries(module_json_scenarios PRIVATE goat_language_execution_support yyjson)
+add_dependencies(module_json_scenarios module_json_testing)
