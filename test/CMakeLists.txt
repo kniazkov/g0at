@@ -3,6 +3,17 @@
 
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/src" "${PROJECT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+# Shared Python-to-C execution/report helpers remain test-only.
+add_library(goat_module_execution_support STATIC support/module_execution.c)
+target_link_libraries(goat_module_execution_support PUBLIC goat_test_support yyjson)
+add_executable(module_execution_testing src/support/module_execution_testing.c)
+target_link_libraries(module_execution_testing PRIVATE goat_module_execution_support)
+add_dependencies(module_execution_testing module_import_execution_testing)
+add_library(goat_inspect_report_support STATIC support/inspect_report.c)
+target_link_libraries(goat_inspect_report_support PUBLIC goat_format_oracle goat_common)
+add_executable(inspect_report_testing src/support/inspect_report_testing.c)
+target_link_libraries(inspect_report_testing PRIVATE goat_inspect_report_support goat_test_support)
+
 # Independent JSON format reference: yyjson is only the syntax/DOM substrate.
 # No production module validator or canonicalizer is linked into this oracle.
 add_library(goat_format_oracle STATIC support/format_json.c support/format_analysis.c

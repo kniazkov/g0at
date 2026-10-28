@@ -104,3 +104,92 @@ See `test/data/binary-oracle/README.md` for the old/new scenario map, provenance
 corpus hashes, remaining Python fixture consumers and reproduction commands.
 The `format-binary` CTest label selects the new tests, also included in
 `format-oracle` for the full existing cross-platform CI matrix.
+
+## Shared execution and inspection helpers (#337)
+
+`module_execution.h` / `.c` migrate `ExecutionSuite`, `Project` and `put` from
+`scripts/module_execution_support.py` into the test-only support layer. They use
+one scenario-owned work directory and deadline, preserve command/output
+artifacts, compile real module descriptors, and execute verified binaries from
+an unrelated working directory with a per-project `GOAT_MODULE_PATH`. The parent
+environment and working directory are never changed. Output comparisons retain
+explicit byte lengths and normalize only CRLF, not whitespace or trailing lines.
+
+`inspect_report.h` / `.c` migrate the structural schema checks from
+`scripts/inspect_report_test_support.py`. Published schemas and referenced JSON
+schemas are read as data; reports are parsed structurally and duplicate object
+keys are rejected, including escaped spellings. This is test policy, not a new
+production inspector or a change to the JSON report contract.
+
+The `migration-helpers` CTest label selects the new independently selectable
+self-tests. Both runner targets are built by the existing shell/cmd entry points
+and tested by Linux x86-64/AArch64 GCC/Clang and Windows MinGW i686/x86-64/UCRT
+Debug/Release CI. Python helpers remain untouched until their last consumer is
+migrated and #394 removes the transitional layer.
+
+Remaining `module_execution_support` consumers:
+`scripts/check_module_threads.py`, `check_module_assignment_access.py`,
+`check_module_exit.py`, `check_module_context_constants.py`,
+`check_module_source_diagnostics.py`, `check_module_function_provenance.py`,
+`check_module_multifile_access.py`, `module_access_basic_cases.py`,
+`check_module_delivery.py`, `check_module_interface.py`,
+`check_module_import_execution.py`, `check_module_cli.py`, and
+`check_module_dispatch.py`.
+
+Remaining `inspect_report_test_support` consumers:
+`scripts/check_module_inspect.py`, `check_module_book.py`,
+`check_module_merge.py`, `check_module_delivery.py`, and `check_inspect_probe.py`.
+These keep their existing IDs and entry points; this step does not migrate their
+scenario bodies or remove any Python test.
+
+### Execution contract scenario map
+
+| Original Python operation | New CTest ID |
+| --- | --- |
+| `ExecutionSuite.project`, `Project.compile/run`, `put`, files/defaults, real import | `helpers.execution.real` |
+| Expected compiler failure and absent artifact | `helpers.execution.compile-failure` |
+| Full raw stdout/stderr, NUL, CRLF and trailing lines | `helpers.execution.capture` |
+| Inherited environment, module-path override, unrelated cwd and project isolation | `helpers.execution.environment`, `helpers.execution.real` |
+| Exact stdout mismatch and actual-only CRLF normalization | `helpers.execution.mismatch`, `helpers.execution.expected-crlf` |
+| Strict UTF-8 decoding of stdout | `helpers.execution.invalid-utf8` |
+| Nonzero exit with required diagnostic; unexpected exit state | `helpers.execution.missing-diagnostic`, `helpers.execution.unexpected-success`, `helpers.execution.unexpected-failure` |
+| Confine fixture writes to scenario work | `helpers.execution.invalid-path` |
+
+The negative cases check that the scenario fails and never reaches the statement
+after the rejected operation. A crashed/timed-out child is always an infrastructure
+failure under the shared scenario contract, not an expected language/compiler
+failure. Relative fixture paths reject traversal instead of writing outside the
+scenario. These intentional safety constraints do not alter existing Python
+consumers. `scenario_command_capture` extends the common process layer with
+complete scenario-owned byte spans, preserving its shared deadline and artifacts.
+The inspection scenario map and 96-case frozen Python parity reproduction live
+in [`test/data/inspect-report/README.md`](../data/inspect-report/README.md).
+
+Build and run:
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --target module_execution_testing inspect_report_testing
+ctest --test-dir build/manual -L migration-helpers --output-on-failure --parallel 4
+```
+
+The same real-project inputs were checked with the unchanged Python helpers:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
+import sys, tempfile
+from pathlib import Path
+sys.path.insert(0, 'scripts')
+from module_execution_support import ExecutionSuite
+with tempfile.TemporaryDirectory(dir='build') as root:
+    suite = ExecutionSuite('build/manual/module_import_execution_testing', Path(root).resolve())
+    p = suite.project('project with spaces')
+    p.compile('library', 'external answer = (include "nested/other.goat").answer;',
+              version='2', files={'nested/other.goat': 'public answer = 42;'}, defaults={})
+    p.run('const lib = import "library"; println(lib.answer); println(" a\\0b " ); println("");',
+          '42\n a\0b \n\n', defaults={'library': '2'})
+    suite.project('isolated').run('println(7);', '7\n')
+    p.compile('broken', 'const = ;', fail=True)
+    assert suite.count == 6
+PY
+```

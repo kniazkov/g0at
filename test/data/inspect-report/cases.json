@@ -1,0 +1,1550 @@
+[
+  {
+    "name": "report.empty",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": true
+  },
+  {
+    "name": "report.missing.reportVersion",
+    "value": {
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.missing.success",
+    "value": {
+      "reportVersion": 1,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.missing.exitCode",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.missing.input",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.missing.target",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.missing.modules",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.missing.diagnostics",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.invalid.reportVersion",
+    "value": {
+      "reportVersion": true,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.invalid.reportVersion",
+    "value": {
+      "reportVersion": 1.0,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.invalid.success",
+    "value": {
+      "reportVersion": 1,
+      "success": 1,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.invalid.exitCode",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 3,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.invalid.target",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": {},
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.invalid.modules",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": {},
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.invalid.input",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": 42,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.invalid.diagnostics",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {}
+      ]
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.extra",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [],
+      "unexpected": 1
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.diagnostic",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "x",
+          "message": "bad",
+          "check": "input",
+          "path": []
+        }
+      ]
+    },
+    "schema": null,
+    "valid": true
+  },
+  {
+    "name": "report.diagnostic.code.18",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "",
+          "message": "bad",
+          "check": "input",
+          "path": []
+        }
+      ]
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.diagnostic.severity.19",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {
+          "severity": "fatal",
+          "code": "x",
+          "message": "bad",
+          "check": "input",
+          "path": []
+        }
+      ]
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.diagnostic.index.20",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "x",
+          "message": "bad",
+          "check": "input",
+          "index": -1,
+          "path": []
+        }
+      ]
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.diagnostic.entryBase64.21",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "x",
+          "message": "bad",
+          "check": "input",
+          "entryBase64": "%%%=",
+          "path": []
+        }
+      ]
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.diagnostic.expectedHash.22",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "x",
+          "message": "bad",
+          "check": "input",
+          "expectedHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": []
+        }
+      ]
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.diagnostic.actualHash.23",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "x",
+          "message": "bad",
+          "check": "input",
+          "actualHash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "path": []
+        }
+      ]
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.diagnostic.entryBase64.24",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "x",
+          "message": "bad",
+          "check": "input",
+          "entryBase64": "QQ==",
+          "path": []
+        }
+      ]
+    },
+    "schema": null,
+    "valid": true
+  },
+  {
+    "name": "report.diagnostic.entryBase64.25",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "x",
+          "message": "bad",
+          "check": "input",
+          "entryBase64": "Q===",
+          "path": []
+        }
+      ]
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "probe.good",
+    "value": {
+      "state": "passed",
+      "stage": "exit",
+      "exitCode": 0,
+      "signal": null,
+      "capture": {
+        "stdout": {
+          "dataBase64": "QQ==",
+          "truncated": false
+        },
+        "stderr": {
+          "dataBase64": "",
+          "truncated": false
+        }
+      },
+      "diagnostics": [],
+      "completedStages": [
+        "load",
+        "descriptor",
+        "symbols",
+        "unload"
+      ]
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/probe"
+    },
+    "valid": true
+  },
+  {
+    "name": "probe.bad.27",
+    "value": {
+      "state": "passed",
+      "stage": "exit",
+      "exitCode": 0,
+      "signal": null,
+      "capture": {
+        "stdout": {
+          "dataBase64": "A===",
+          "truncated": false
+        },
+        "stderr": {
+          "dataBase64": "",
+          "truncated": false
+        }
+      },
+      "diagnostics": [],
+      "completedStages": [
+        "load",
+        "descriptor",
+        "symbols",
+        "unload"
+      ]
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/probe"
+    },
+    "valid": false
+  },
+  {
+    "name": "probe.bad.28",
+    "value": {
+      "state": "passed",
+      "stage": "exit",
+      "exitCode": 0,
+      "signal": null,
+      "capture": {
+        "stdout": {
+          "dataBase64": "A",
+          "truncated": false
+        },
+        "stderr": {
+          "dataBase64": "",
+          "truncated": false
+        }
+      },
+      "diagnostics": [],
+      "completedStages": [
+        "load",
+        "descriptor",
+        "symbols",
+        "unload"
+      ]
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/probe"
+    },
+    "valid": false
+  },
+  {
+    "name": "probe.bad.29",
+    "value": {
+      "state": "passed",
+      "stage": "exit",
+      "exitCode": 0,
+      "signal": null,
+      "capture": {
+        "stdout": {
+          "dataBase64": "QQ==\n",
+          "truncated": false
+        },
+        "stderr": {
+          "dataBase64": "",
+          "truncated": false
+        }
+      },
+      "diagnostics": [],
+      "completedStages": [
+        "load",
+        "descriptor",
+        "symbols",
+        "unload"
+      ]
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/probe"
+    },
+    "valid": true
+  },
+  {
+    "name": "probe.bad.30",
+    "value": {
+      "state": "passed",
+      "stage": "exit",
+      "exitCode": 0,
+      "signal": null,
+      "capture": {
+        "stdout": {
+          "dataBase64": "QQ==",
+          "truncated": 0
+        },
+        "stderr": {
+          "dataBase64": "",
+          "truncated": false
+        }
+      },
+      "diagnostics": [],
+      "completedStages": [
+        "load",
+        "descriptor",
+        "symbols",
+        "unload"
+      ]
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/probe"
+    },
+    "valid": false
+  },
+  {
+    "name": "probe.bad.31",
+    "value": {
+      "state": "passed",
+      "stage": "exit",
+      "exitCode": 0,
+      "signal": null,
+      "capture": {
+        "stdout": {
+          "dataBase64": "QQ==",
+          "truncated": false
+        },
+        "stderr": {
+          "dataBase64": "",
+          "truncated": false
+        }
+      },
+      "diagnostics": [],
+      "completedStages": [
+        "load",
+        "load"
+      ]
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/probe"
+    },
+    "valid": false
+  },
+  {
+    "name": "probe.bad.32",
+    "value": {
+      "state": "passed",
+      "stage": "exit",
+      "exitCode": 0,
+      "signal": null,
+      "capture": {
+        "stdout": {
+          "dataBase64": "QQ==",
+          "truncated": false
+        },
+        "stderr": {
+          "dataBase64": "",
+          "truncated": false
+        }
+      },
+      "diagnostics": [],
+      "completedStages": [
+        "future"
+      ]
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/probe"
+    },
+    "valid": false
+  },
+  {
+    "name": "probe.bad.33",
+    "value": {
+      "state": "passed",
+      "stage": "future",
+      "exitCode": 0,
+      "signal": null,
+      "capture": {
+        "stdout": {
+          "dataBase64": "QQ==",
+          "truncated": false
+        },
+        "stderr": {
+          "dataBase64": "",
+          "truncated": false
+        }
+      },
+      "diagnostics": [],
+      "completedStages": [
+        "load",
+        "descriptor",
+        "symbols",
+        "unload"
+      ]
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/probe"
+    },
+    "valid": false
+  },
+  {
+    "name": "base64.34",
+    "value": {
+      "dataBase64": "",
+      "truncated": false
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/stream"
+    },
+    "valid": true
+  },
+  {
+    "name": "base64.35",
+    "value": {
+      "dataBase64": "AAAA",
+      "truncated": false
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/stream"
+    },
+    "valid": true
+  },
+  {
+    "name": "base64.36",
+    "value": {
+      "dataBase64": "AA==",
+      "truncated": false
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/stream"
+    },
+    "valid": true
+  },
+  {
+    "name": "base64.37",
+    "value": {
+      "dataBase64": "AAA=",
+      "truncated": false
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/stream"
+    },
+    "valid": true
+  },
+  {
+    "name": "base64.38",
+    "value": {
+      "dataBase64": "AB==",
+      "truncated": false
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/stream"
+    },
+    "valid": true
+  },
+  {
+    "name": "base64.39",
+    "value": {
+      "dataBase64": "AAB=",
+      "truncated": false
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/stream"
+    },
+    "valid": true
+  },
+  {
+    "name": "base64.40",
+    "value": {
+      "dataBase64": "====",
+      "truncated": false
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/stream"
+    },
+    "valid": false
+  },
+  {
+    "name": "base64.41",
+    "value": {
+      "dataBase64": "AA=A",
+      "truncated": false
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/stream"
+    },
+    "valid": false
+  },
+  {
+    "name": "base64.42",
+    "value": {
+      "dataBase64": "😀AAA",
+      "truncated": false
+    },
+    "schema": {
+      "$ref": "inspect-report.schema.json#/$defs/stream"
+    },
+    "valid": false
+  },
+  {
+    "name": "external.metadata",
+    "value": {
+      "bytecodeVersion": 1,
+      "files": [
+        {
+          "entry": 0,
+          "external": false,
+          "name": "main.goat"
+        }
+      ],
+      "formatVersion": 1,
+      "main": 0,
+      "mainHash": "72d3cefa18d306a696a64a3a825101ffa99277b90147763acfb8b8eea1fe641f",
+      "name": "empty",
+      "version": "1.0"
+    },
+    "schema": {
+      "$ref": "module.schema.json"
+    },
+    "valid": true
+  },
+  {
+    "name": "union.44",
+    "value": null,
+    "schema": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "valid": true
+  },
+  {
+    "name": "const.45",
+    "value": null,
+    "schema": {
+      "const": 1
+    },
+    "valid": false
+  },
+  {
+    "name": "union.46",
+    "value": true,
+    "schema": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "const.47",
+    "value": true,
+    "schema": {
+      "const": 1
+    },
+    "valid": false
+  },
+  {
+    "name": "union.48",
+    "value": 1,
+    "schema": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "valid": true
+  },
+  {
+    "name": "const.49",
+    "value": 1,
+    "schema": {
+      "const": 1
+    },
+    "valid": true
+  },
+  {
+    "name": "union.50",
+    "value": 1.0,
+    "schema": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "const.51",
+    "value": 1.0,
+    "schema": {
+      "const": 1
+    },
+    "valid": false
+  },
+  {
+    "name": "union.52",
+    "value": 2,
+    "schema": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "valid": true
+  },
+  {
+    "name": "const.53",
+    "value": 2,
+    "schema": {
+      "const": 1
+    },
+    "valid": false
+  },
+  {
+    "name": "union.54",
+    "value": "x",
+    "schema": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "const.55",
+    "value": "x",
+    "schema": {
+      "const": 1
+    },
+    "valid": false
+  },
+  {
+    "name": "union.56",
+    "value": [],
+    "schema": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "const.57",
+    "value": [],
+    "schema": {
+      "const": 1
+    },
+    "valid": false
+  },
+  {
+    "name": "union.58",
+    "value": {},
+    "schema": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "const.59",
+    "value": {},
+    "schema": {
+      "const": 1
+    },
+    "valid": false
+  },
+  {
+    "name": "oneOf.overlap",
+    "value": 1,
+    "schema": {
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "minimum": 0
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "allOf.fail",
+    "value": 1,
+    "schema": {
+      "allOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "minimum": 2
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "conditional.62",
+    "value": {
+      "a": true,
+      "b": "yes"
+    },
+    "schema": {
+      "if": {
+        "properties": {
+          "a": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "b": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "b": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "conditional.63",
+    "value": {
+      "a": true,
+      "b": 1
+    },
+    "schema": {
+      "if": {
+        "properties": {
+          "a": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "b": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "b": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "conditional.64",
+    "value": {
+      "a": false,
+      "b": 1
+    },
+    "schema": {
+      "if": {
+        "properties": {
+          "a": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "b": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "b": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "conditional.65",
+    "value": {
+      "a": false,
+      "b": "no"
+    },
+    "schema": {
+      "if": {
+        "properties": {
+          "a": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "b": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "b": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "escaped.pointer",
+    "value": 1,
+    "schema": {
+      "$defs": {
+        "a/b~c": {
+          "type": "integer"
+        }
+      },
+      "$ref": "#/$defs/a~1b~0c"
+    },
+    "valid": true
+  },
+  {
+    "name": "ref.sibling",
+    "value": 1,
+    "schema": {
+      "$defs": {
+        "x": {
+          "type": "integer"
+        }
+      },
+      "$ref": "#/$defs/x",
+      "minimum": 2
+    },
+    "valid": false
+  },
+  {
+    "name": "propertyNames.68",
+    "value": {
+      "a": 2
+    },
+    "schema": {
+      "propertyNames": {
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "propertyNames.69",
+    "value": {
+      "": 2
+    },
+    "schema": {
+      "propertyNames": {
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "propertyNames.70",
+    "value": {
+      "a": "x"
+    },
+    "schema": {
+      "propertyNames": {
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "array.71",
+    "value": [],
+    "schema": {
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "valid": false
+  },
+  {
+    "name": "array.72",
+    "value": [
+      1
+    ],
+    "schema": {
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "valid": true
+  },
+  {
+    "name": "array.73",
+    "value": [
+      1,
+      1
+    ],
+    "schema": {
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "valid": false
+  },
+  {
+    "name": "array.74",
+    "value": [
+      1,
+      2,
+      3
+    ],
+    "schema": {
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "valid": false
+  },
+  {
+    "name": "unicode.75",
+    "value": "😀",
+    "schema": {
+      "minLength": 2,
+      "maxLength": 2
+    },
+    "valid": false
+  },
+  {
+    "name": "unicode.76",
+    "value": "😀x",
+    "schema": {
+      "minLength": 2,
+      "maxLength": 2
+    },
+    "valid": true
+  },
+  {
+    "name": "unicode.77",
+    "value": "x",
+    "schema": {
+      "minLength": 2,
+      "maxLength": 2
+    },
+    "valid": false
+  },
+  {
+    "name": "number.78",
+    "value": 1.5,
+    "schema": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "valid": true
+  },
+  {
+    "name": "number.79",
+    "value": -0.5,
+    "schema": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "valid": false
+  },
+  {
+    "name": "number.80",
+    "value": 2.5,
+    "schema": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "valid": false
+  },
+  {
+    "name": "report.module.valid",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [
+        {
+          "archive": "empty.gbin",
+          "validation": "passed",
+          "metadata": {
+            "bytecodeVersion": 1,
+            "files": [
+              {
+                "entry": 0,
+                "external": false,
+                "name": "main.goat"
+              }
+            ],
+            "formatVersion": 1,
+            "main": 0,
+            "mainHash": "72d3cefa18d306a696a64a3a825101ffa99277b90147763acfb8b8eea1fe641f",
+            "name": "empty",
+            "version": "1.0"
+          },
+          "exports": [],
+          "native": []
+        }
+      ],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": true
+  },
+  {
+    "name": "report.module.coupling.metadata",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [
+        {
+          "archive": "empty.gbin",
+          "validation": "passed",
+          "metadata": null,
+          "exports": [],
+          "native": []
+        }
+      ],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.module.coupling.exports",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [
+        {
+          "archive": "empty.gbin",
+          "validation": "passed",
+          "metadata": {
+            "bytecodeVersion": 1,
+            "files": [
+              {
+                "entry": 0,
+                "external": false,
+                "name": "main.goat"
+              }
+            ],
+            "formatVersion": 1,
+            "main": 0,
+            "mainHash": "72d3cefa18d306a696a64a3a825101ffa99277b90147763acfb8b8eea1fe641f",
+            "name": "empty",
+            "version": "1.0"
+          },
+          "exports": null,
+          "native": []
+        }
+      ],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.module.coupling.native",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [
+        {
+          "archive": "empty.gbin",
+          "validation": "passed",
+          "metadata": {
+            "bytecodeVersion": 1,
+            "files": [
+              {
+                "entry": 0,
+                "external": false,
+                "name": "main.goat"
+              }
+            ],
+            "formatVersion": 1,
+            "main": 0,
+            "mainHash": "72d3cefa18d306a696a64a3a825101ffa99277b90147763acfb8b8eea1fe641f",
+            "name": "empty",
+            "version": "1.0"
+          },
+          "exports": [],
+          "native": null
+        }
+      ],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.module.external.failure",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [
+        {
+          "archive": "empty.gbin",
+          "validation": "passed",
+          "metadata": {
+            "bytecodeVersion": 1,
+            "files": [
+              {
+                "entry": 0,
+                "external": false,
+                "name": "main.goat"
+              }
+            ],
+            "formatVersion": 1,
+            "main": 0,
+            "mainHash": "72d3cefa18d306a696a64a3a825101ffa99277b90147763acfb8b8eea1fe641f",
+            "name": "INVALID",
+            "version": "1.0"
+          },
+          "exports": [],
+          "native": []
+        }
+      ],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.exit.86",
+    "value": {
+      "reportVersion": 1,
+      "success": true,
+      "exitCode": 1,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.exit.87",
+    "value": {
+      "reportVersion": 1,
+      "success": false,
+      "exitCode": 0,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": false
+  },
+  {
+    "name": "report.exit.88",
+    "value": {
+      "reportVersion": 1,
+      "success": false,
+      "exitCode": 1,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": true
+  },
+  {
+    "name": "report.exit.89",
+    "value": {
+      "reportVersion": 1,
+      "success": false,
+      "exitCode": 2,
+      "input": null,
+      "target": null,
+      "modules": [],
+      "diagnostics": []
+    },
+    "schema": null,
+    "valid": true
+  },
+  {
+    "name": "scalar.parity.90",
+    "value": 0,
+    "schema": {
+      "minimum": 0.5
+    },
+    "valid": false
+  },
+  {
+    "name": "scalar.parity.91",
+    "value": 1,
+    "schema": {
+      "minimum": 0.5
+    },
+    "valid": true
+  },
+  {
+    "name": "scalar.parity.92",
+    "value": 2,
+    "schema": {
+      "maximum": 1.5
+    },
+    "valid": false
+  },
+  {
+    "name": "scalar.parity.93",
+    "value": 1,
+    "schema": {
+      "maximum": 1.5
+    },
+    "valid": true
+  },
+  {
+    "name": "scalar.parity.94",
+    "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n",
+    "schema": {
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "valid": true
+  },
+  {
+    "name": "scalar.parity.95",
+    "value": "ab\n",
+    "schema": {
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?$"
+    },
+    "valid": true
+  }
+]

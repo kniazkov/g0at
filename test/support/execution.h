@@ -47,6 +47,20 @@ void scenario_require_bytes(scenario_run_t *run,
  * and explicit env are supported. Arguments and results are logged to execution.log.
  */
 void scenario_command(scenario_run_t *run, const child_options_t *options, int64_t expected_exit);
+
+/** @brief Full binary command result, owned by the scenario until it finishes. */
+typedef struct {
+    int64_t exit_code;
+    const void *out, *err;
+    size_t out_size, err_size;
+} scenario_command_result_t;
+
+/** @brief Run a normal child to completion without requiring a particular exit code.
+ * Start errors, crashes, timeouts and cleanup errors still fail the scenario.
+ * Both complete streams are persisted and returned; no bounded-capture truncation.
+ */
+scenario_command_result_t scenario_command_capture(scenario_run_t *run,
+                                                   const child_options_t *options);
 /** @brief Supervise a separate scenario host, requiring exit zero.
  * Prefer this top-level entry for arbitrary test hosts: a crash, exit error or hang becomes
  * failure while the outer process preserves output and stops the owned process tree.

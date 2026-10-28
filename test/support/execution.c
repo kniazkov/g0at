@@ -162,7 +162,15 @@ static void log_string(FILE *file, const char *label, const char *value) {
     fputc('\n', file);
 }
 
-void scenario_command(scenario_run_t *run, const child_options_t *options, int64_t expected_exit) {
+static bool free_capture(void *data) {
+    FREE(data);
+    return true;
+}
+
+static scenario_command_result_t command(scenario_run_t *run,
+                                         const child_options_t *options,
+                                         bool check_exit,
+                                         int64_t expected_exit) {
     scenario_checkpoint(run);
     if (!options || !options->arguments || !options->arguments[0] || options->survive_parent
         || options->service_channel || options->result_channel || options->parent_watch
@@ -179,7 +187,10 @@ void scenario_command(scenario_run_t *run, const child_options_t *options, int64
     if (!child.stdin_data)
         child.empty_stdin = true;
     unsigned index = ++run->command;
-    fprintf(run->log, "command %u expected_exit=%" PRId64 "\n", index, expected_exit);
+    if (check_exit)
+        fprintf(run->log, "command %u expected_exit=%" PRId64 "\n", index, expected_exit);
+    else
+        fprintf(run->log, "command %u expected_exit=any-normal\n", index);
     log_string(run->log, "executable", child.executable);
     log_string(run->log, "cwd", child.working_directory);
     for (size_t i = 0; child.arguments[i]; ++i)
@@ -197,8 +208,8 @@ void scenario_command(scenario_run_t *run, const child_options_t *options, int64
     if (!run->child)
         fail(run, "cannot start scenario command");
     const child_result_t *result = wait_child_process(run->child);
-    bool ok = result && result->status == CHILD_EXITED && result->exit_code == expected_exit
-              && !result->cleanup_error;
+    bool ok = result && result->status == CHILD_EXITED
+              && (!check_exit || result->exit_code == expected_exit) && !result->cleanup_error;
     if (result)
         fprintf(run->log,
                 "result status=%d exit=%" PRId64 " signal=%d system=%lu cleanup=%lu\n",
@@ -207,6 +218,7 @@ void scenario_command(scenario_run_t *run, const child_options_t *options, int64
                 result->signal_number,
                 result->system_error,
                 result->cleanup_error);
+    int64_t exit_code = result ? result->exit_code : 0;
     destroy_child_process(run->child);
     run->child = NULL;
     bool out_ok = close_file(&run->out), err_ok = close_file(&run->err);
@@ -215,6 +227,42 @@ void scenario_command(scenario_run_t *run, const child_options_t *options, int64
     if (!ok)
         fail(run, "command failed (see status and output artifacts)");
     scenario_checkpoint(run);
+    scenario_command_result_t captured = {exit_code, NULL, NULL, 0, 0};
+    if (!check_exit) {
+        fs_error_t error = {0};
+        void *data = NULL;
+        size_t size = 0;
+        snprintf(name, sizeof(name), "command-%u.stdout", index);
+        char *path = join_fs_path(scenario_work_directory(run->context), name, &error);
+        bool read_ok = path && read_fs_regular_file(path, SIZE_MAX - 1, &data, &size, &error);
+        FREE(path);
+        clear_fs_error(&error);
+        if (!read_ok)
+            fail(run, "cannot read complete stdout artifact");
+        scenario_defer(run, free_capture, data);
+        captured.out = data;
+        captured.out_size = size;
+        snprintf(name, sizeof(name), "command-%u.stderr", index);
+        path = join_fs_path(scenario_work_directory(run->context), name, &error);
+        read_ok = path && read_fs_regular_file(path, SIZE_MAX - 1, &data, &size, &error);
+        FREE(path);
+        clear_fs_error(&error);
+        if (!read_ok)
+            fail(run, "cannot read complete stderr artifact");
+        scenario_defer(run, free_capture, data);
+        captured.err = data;
+        captured.err_size = size;
+    }
+    return captured;
+}
+
+void scenario_command(scenario_run_t *run, const child_options_t *options, int64_t expected_exit) {
+    (void)command(run, options, true, expected_exit);
+}
+
+scenario_command_result_t scenario_command_capture(scenario_run_t *run,
+                                                   const child_options_t *options) {
+    return command(run, options, false, 0);
 }
 
 bool scenario_execute(const scenario_options_t *options,
