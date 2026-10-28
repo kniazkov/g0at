@@ -42,7 +42,7 @@ use the same image decoder. No legacy conversion or source lookup is added.
 After `bash scripts/build.sh` (or `scripts\build_mingw.cmd`):
 
 ```sh
-python3 scripts/check_bytecode_v1.py build/goat build/bytecode-v1
+ctest --test-dir build --output-on-failure -R "^native.bytecode_v1$"
 python3 scripts/check_module_bytecode.py build/module_bytecode_testing
 ```
 

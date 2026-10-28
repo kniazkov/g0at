@@ -80,8 +80,8 @@ The old-to-new scenario map and corpus provenance are in
 `test/data/format-oracle/README.md`.
 
 Remaining Python import consumers (including dynamic imports) are:
-`docs/module-format-v1/test_reference.py` and `scripts/check_bytecode_v1.py`,
-`check_module_abi.py`, `check_module_canonical.py`, `check_module_consistency.py`,
+`docs/module-format-v1/test_reference.py`,
+`scripts/check_module_abi.py`, `check_module_canonical.py`, `check_module_consistency.py`,
 `check_module_container.py`, `check_module_delivery.py`,
 `check_module_dependencies.py`, `check_module_graph.py`, `check_module_hash.py`,
 `check_module_import_execution.py`, `check_module_inspect.py`,
