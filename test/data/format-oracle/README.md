@@ -225,7 +225,6 @@ subsequent migrations still depend on them. Direct consumers at this step:
 
 - `docs/module-format-v1/test_reference.py`
 - `scripts/check_inspect_probe.py`
-- `scripts/check_module_abi.py`
 - `scripts/check_module_canonical.py`
 - `scripts/check_module_consistency.py`
 - `scripts/check_module_container.py`
@@ -239,7 +238,6 @@ subsequent migrations still depend on them. Direct consumers at this step:
 - `scripts/check_module_memory.py`
 - `scripts/check_module_merge.py`
 - `scripts/check_module_musl.py`
-- `scripts/check_module_native.py`
 - `scripts/check_module_search.py`
 - `scripts/check_module_snapshot.py`
 - `scripts/check_module_validation.py`
