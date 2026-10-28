@@ -156,10 +156,7 @@ endforeach()
 if(GOAT_TEST_ALLOC_FAILURE)
   goat_python(fault.module_memory "fault" scripts/check_module_memory.py $<TARGET_FILE:module_memory_testing>)
 endif()
-goat_python(native.interactive "native" scripts/check_interactive.py $<TARGET_FILE:goat>)
-goat_python(native.characters "native" scripts/check_characters.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/characters")
 goat_python(native.bytecode_v1 "native" scripts/check_bytecode_v1.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/bytecode_v1")
-goat_python(native.unicode "native" scripts/check_unicode.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/unicode")
 goat_python(native.native_integrity "native" scripts/check_native_integrity.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_integrity")
 foreach(scenario native.for native.index)
   goat_scenario(${scenario} "native;language-roundtrip" TIMEOUT 200 COMMAND
@@ -306,4 +303,10 @@ foreach(scenario real compile-failure capture environment mismatch expected-crlf
   goat_scenario(helpers.execution.${scenario} "migration-helpers" TIMEOUT 90 COMMAND
     "$<TARGET_FILE:module_execution_testing>" "${scenario}" "${CMAKE_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "$<TARGET_FILE:module_import_execution_testing>")
+endforeach()
+
+foreach(scenario native.characters native.unicode native.interactive)
+  goat_scenario(${scenario} "native;unicode-interactive" TIMEOUT 200 COMMAND
+    "$<TARGET_FILE:unicode_interactive_testing>" "${scenario}" "$<TARGET_FILE:goat>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()

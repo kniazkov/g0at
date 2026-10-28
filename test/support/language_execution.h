@@ -23,3 +23,6 @@ void language_check(scenario_run_t *run,
                     size_t size,
                     const char *error,
                     size_t error_size);
+
+const char *const *
+language_environment_override(scenario_run_t *run, const char *name, const char *replacement);
