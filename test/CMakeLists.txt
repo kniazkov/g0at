@@ -268,3 +268,7 @@ add_dependencies(module_canonical_hash_scenarios module_json_testing)
 add_executable(zip_scenarios src/functional/zip_scenarios.c)
 target_link_libraries(zip_scenarios PRIVATE goat_language_execution_support goat_format_oracle)
 add_dependencies(zip_scenarios zip_testing)
+
+add_executable(module_container_scenarios src/functional/module_container_scenarios.c)
+target_link_libraries(module_container_scenarios PRIVATE goat_language_execution_support goat_format_oracle)
+add_dependencies(module_container_scenarios module_container_testing)

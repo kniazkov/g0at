@@ -360,3 +360,61 @@ statuses and required stdout. Writer JSON matched after normalizing object key
 order and omitted versus explicit empty optional fields. This includes the
 hand-built local-only ZIP64 archive and the frozen damage requests; no generated
 expectation corpus or temporary capture helper is retained in the repository.
+
+## Module container (#345)
+
+`module_container_scenarios` replaces `scripts/check_module_container.py`;
+`module_container_testing` remains the production subprocess host. The C runner
+builds ZIPs and hashes with the independent `test/support/format_zip.c` and
+format oracle, not production container/writer/hash routines. Frozen damage
+inputs under `test/data/python-samples` remain unchanged and read-only.
+
+| Original check | Stable CTest ID |
+|---|---|
+| Direct API invalid arguments, null accessors and snapshot ownership after overwriting/freeing the ZIP | `integration.module_container` |
+| Golden empty container; Stored/Deflate, signed/unsigned descriptors, three extras, binary comments, mixed order/methods and optional native directory | `integration.module_container` |
+| Five bytecode lengths including empty and 1,024 bytes, independent main hashes | `integration.module_container` |
+| Both foreign native variants, independent SHA-256; corrupt payload/hash and missing/undeclared libraries regardless of host | `integration.module_container` |
+| Exact expanded limit, minus-one/zero, sum overflow and huge declared entry before allocation | `integration.module_container` |
+| Empty/missing mandatory parts, unknown/duplicate JSON keys, wrong main hash and altered bytecode | `integration.module_container` |
+| Seventeen forbidden paths including embedded NUL/backslash/Unicode; five case-fold collisions, duplicate and nonempty native directory | `integration.module_container` |
+| Unix special-file kinds, DOS directory/reparse/device/volume flags, mismatched directory attrs and six unsafe extras | `integration.module_container` |
+| Nine local field mutations in both streaming modes, five flags, unsupported method/version, three descriptor fields | `integration.module_container` |
+| Native/directory CRC errors, invalid Deflate, four advertised sizes and bounded huge-size rejection | `integration.module_container` |
+| Prefix/suffix, alias offset, overlapping/short physical spans and absent/corrupt descriptor | `integration.module_container` |
+| ZIP64/multidisk sentinels, local-only forced ZIP64 and every truncated prefix | `integration.module_container` |
+| All 100 frozen three-XOR damage recipes, bounded status set and no partial output | `integration.module_container` |
+
+The previous standalone scenario ID is preserved; related inner assertions stay
+together. The common framework supplies a unique workspace under the build,
+a cumulative 180-second deadline (CTest 200), command/stdout/stderr diagnostics,
+resource cleanup, failure retention and `--keep-work`. Checks remain active in
+Release, including API assertions in the subprocess host. The suite has no
+host-specific skip paths: Linux x86-64/AArch64, MinGW i686/x86-64/UCRT and musl
+use the same cases. Debug build scripts and Release CI explicitly build the
+runner; Release CI selects the `container-migration` label.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_container_scenarios
+ctest --test-dir build/manual --output-on-failure -R '^integration.module_container$'
+build/manual/module_container_scenarios integration.module_container build/manual/module_container_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Differential reproduction (restore only temporarily):
+git show 8d5479ba6499e7909c1b4e39582d37657fe67cb2:scripts/check_module_container.py > scripts/check_module_container.py
+python3 scripts/check_module_container.py build/manual/module_container_testing
+```
+
+Verification before removal: unchanged Python and C each passed all 714
+validations in Debug and Release. Temporary request capture matched 701 C
+requests byte-for-byte (including all 470 truncations, 100 frozen mutations and
+local-only ZIP64). The remaining 13 native fixtures contain identical expanded
+bytes and metadata; independent zlib level 9 versus Python's default level 6
+changes only compressed sizes/derived offsets. Replaying those C inputs through
+the original Python `check()` preserved accepted statuses, limits, output and ZIP
+diagnostics. No temporary capture/replay helper or generated corpus is shipped.
+
+Release `--keep-work` retained successful diagnostics. A copied frozen-recipe
+file replaced by `{}` and a flipped expected bytecode byte both failed with
+exit 1 and retained diagnostics. Related Debug format/ZIP tests passed 50/50;
+clang-format 18 and strict C11 `-Wall -Wextra -Werror` syntax checks passed.
+A fresh UBSan build with Python discovery disabled also passed the scenario.
