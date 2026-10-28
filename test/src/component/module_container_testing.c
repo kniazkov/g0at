@@ -1,6 +1,10 @@
 #include "lib/files/file_system.h"
 #include "module_container.h"
 
+/* Keep API calls and validation assertions active in Release builds. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
