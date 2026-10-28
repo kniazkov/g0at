@@ -161,8 +161,11 @@ goat_python(native.characters "native" scripts/check_characters.py $<TARGET_FILE
 goat_python(native.bytecode_v1 "native" scripts/check_bytecode_v1.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/bytecode_v1")
 goat_python(native.unicode "native" scripts/check_unicode.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/unicode")
 goat_python(native.native_integrity "native" scripts/check_native_integrity.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_integrity")
-goat_python(native.for "native" scripts/check_for.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/for")
-goat_python(native.index "native" scripts/check_index.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/index")
+foreach(scenario native.for native.index)
+  goat_scenario(${scenario} "native;language-roundtrip" TIMEOUT 200 COMMAND
+    "$<TARGET_FILE:loop_index_testing>" "${scenario}" "$<TARGET_FILE:goat>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 goat_python(native.native "native" scripts/check_native.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native")
 if(NOT WIN32)
 goat_shell(native.native_library "native" check_native_library.sh $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_library")

@@ -203,12 +203,12 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
       - name: Check for loops and source round trips
-        run: python3 scripts/check_for.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/for loops"
+        run: ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -R '^native[.]for$'
         env:
           CC: ${{ matrix.compiler }}
 
       - name: Check indexed access and source/binary round trips
-        run: python3 scripts/check_index.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/index access"
+        run: ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -R '^native[.]index$'
         env:
           CC: ${{ matrix.compiler }}
       - name: Compile and execute persisted programs
@@ -274,8 +274,8 @@ jobs:
           if-no-files-found: error
       - name: Check release multifile access
         run: |
-          cmake --build build/release-${{ matrix.compiler }} --target format_binary_ubsan_testing format_oracle_ubsan_testing integer_oracle_ubsan_testing module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing
-          ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch"
+          cmake --build build/release-${{ matrix.compiler }} --target format_binary_ubsan_testing format_oracle_ubsan_testing integer_oracle_ubsan_testing module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing
+          ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch|language-roundtrip"
           python3 scripts/check_module_multifile_access.py build/release-${{ matrix.compiler }}/module_import_execution_testing build/release-${{ matrix.compiler }}/goat
           python3 scripts/check_module_interface.py build/release-${{ matrix.compiler }}/module_import_execution_testing
       - name: Smoke test release
@@ -438,15 +438,11 @@ jobs:
         run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_integrity.py build/goat.exe "build/native integrity"'
       - name: Check for loops and source round trips
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_for.py build/goat.exe "build/for loops"'
+        run: ctest --test-dir build --output-on-failure -R '^native[.]for$'
 
       - name: Check indexed access and source/binary round trips
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ env.pythonLocation }}/python.exe
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_index.py build/goat.exe "build/index access"'
+        run: ctest --test-dir build --output-on-failure -R '^native[.]index$'
       - name: Compile and execute persisted programs
         shell: msys2 {0}
         run: bash scripts/check_binary_program.sh build/goat.exe build/functional_testing.exe "build/binary programs"
@@ -490,8 +486,8 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: |
-          cmake --build build/release --target module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing
-          ctest --test-dir build/release --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch"
+          cmake --build build/release --target module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing
+          ctest --test-dir build/release --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch|language-roundtrip"
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_multifile_access.py build/release/module_import_execution_testing.exe build/release/goat.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_interface.py build/release/module_import_execution_testing.exe
       - name: Compare release native modes

@@ -26,7 +26,7 @@ Each iteration has its own body scope. Closures keep captured iteration locals a
 
 All three loops and both transfers work in VM bytecode and in eligible native functions. Native lowering supports existing scalar types, including strings, with the usual purity and type-proof requirements. `try/catch` and object/array operations still use the VM. `--native required` only requires a native binding globally; the grouped native tests additionally verify actual native calls and compare their output with VM output.
 
-Run `python3 scripts/check_index.py build/goat build/loop-check` for scope/control-flow fixtures, including source and bytecode round trips at both optimization levels. Run `python3 scripts/check_native.py build/goat build/native-check --only loops` for the native comparisons. The regular functional suite and CI discover these fixtures through their existing lists.
+Run `build/loop_index_testing native.index build/goat build test/data` for scope/control-flow fixtures, including source and bytecode round trips at both optimization levels. Run `python3 scripts/check_native.py build/goat build/native-check --only loops` for the native comparisons. The regular functional suite and CI discover these fixtures through their existing lists.
 
 ## Циклы и переходы
 

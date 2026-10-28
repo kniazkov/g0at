@@ -167,3 +167,9 @@ whole performance step; a mere unique runner label is not sufficient. Locally ru
 `ctest -LE performance --parallel 4` to completion, then `ctest -L performance`
 without other competing work. Transitional unavailable tools remain explicit
 configure-time disabled registrations rather than silently passing scenarios.
+
+## Loop and index C scenarios
+
+The former Python loop/index runners are now `loop_index_testing`, registered as
+`native.for` and `native.index` (label `language-roundtrip`). See the
+[scenario correspondence and parity commands](src/functional/README.md).
