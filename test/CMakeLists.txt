@@ -3,6 +3,23 @@
 
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/src" "${PROJECT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+# Independent JSON format reference: yyjson is only the syntax/DOM substrate.
+# No production module validator or canonicalizer is linked into this oracle.
+add_library(goat_format_oracle STATIC support/format_json.c support/format_analysis.c
+  support/format_metadata.c)
+target_link_libraries(goat_format_oracle PUBLIC yyjson m)
+add_executable(format_oracle_testing src/support/format_oracle_testing.c)
+target_link_libraries(format_oracle_testing PRIVATE goat_format_oracle goat_test_support)
+if(UNIX AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+  add_executable(format_oracle_ubsan_testing EXCLUDE_FROM_ALL src/support/format_oracle_testing.c
+    support/format_json.c support/format_analysis.c support/format_metadata.c)
+  target_link_libraries(format_oracle_ubsan_testing PRIVATE yyjson goat_test_support m)
+  target_compile_options(format_oracle_ubsan_testing PRIVATE -fsanitize=undefined -fno-sanitize-recover=all)
+  set_property(TARGET format_oracle_ubsan_testing APPEND_STRING PROPERTY LINK_FLAGS
+    " -fsanitize=undefined -fno-sanitize-recover=all")
+endif()
+
+
 # Independent exact arithmetic belongs only to the test layer, never goat_common.
 add_library(goat_integer_oracle STATIC support/integer_oracle.c)
 add_executable(integer_oracle_testing src/framework/integer_oracle_testing.c)

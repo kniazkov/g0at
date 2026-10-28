@@ -129,9 +129,9 @@ jobs:
           ctest --test-dir build/${{ matrix.compiler }} -N
       - name: Run registered integration suites
         run: |
-          cmake --build build/${{ matrix.compiler }} --target integer_oracle_ubsan_testing
+          cmake --build build/${{ matrix.compiler }} --target format_oracle_ubsan_testing integer_oracle_ubsan_testing
           ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -L integration
-          ctest --test-dir build/${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle"
+          ctest --test-dir build/${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle"
         env:
           CC: ${{ matrix.compiler }}
       - name: Verify registered native runner
@@ -274,8 +274,8 @@ jobs:
           if-no-files-found: error
       - name: Check release multifile access
         run: |
-          cmake --build build/release-${{ matrix.compiler }} --target integer_oracle_ubsan_testing module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing
-          ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle"
+          cmake --build build/release-${{ matrix.compiler }} --target format_oracle_ubsan_testing integer_oracle_ubsan_testing module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing
+          ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle"
           python3 scripts/check_module_multifile_access.py build/release-${{ matrix.compiler }}/module_import_execution_testing build/release-${{ matrix.compiler }}/goat
           python3 scripts/check_module_interface.py build/release-${{ matrix.compiler }}/module_import_execution_testing
       - name: Smoke test release
@@ -375,7 +375,7 @@ jobs:
         shell: msys2 {0}
         run: |
           ctest --test-dir build --output-on-failure -L integration
-          ctest --test-dir build --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle"
+          ctest --test-dir build --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle"
       - name: Verify registered native runner
         shell: msys2 {0}
         run: ctest --test-dir build --output-on-failure -R "^native.c_module$"
@@ -490,8 +490,8 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: |
-          cmake --build build/release --target module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing
-          ctest --test-dir build/release --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle"
+          cmake --build build/release --target module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing
+          ctest --test-dir build/release --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle"
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_multifile_access.py build/release/module_import_execution_testing.exe build/release/goat.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_interface.py build/release/module_import_execution_testing.exe
       - name: Compare release native modes

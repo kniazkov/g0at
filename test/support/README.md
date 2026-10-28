@@ -58,3 +58,35 @@ the target is opt-in and excluded from default/package builds because Alpine
 musl does not ship the UBSan runtime in its build toolchain.
 Windows uses the same portable uninstrumented tests, since MinGW's configured
 CI toolchains do not provide the Unix UBSan runtime.
+
+## Independent JSON format oracle (#335)
+
+`format_json.h` / `format_json.c` implement strict parsing, canonical bytes and
+schema-subset validation using the shared declarative
+`docs/module-format-v1/schema-source.json`, not generated production tables.
+`format_analysis.h` / `format_analysis.c` implement scalar/facts normalization and
+summary consistency. `format_metadata.h` / `format_metadata.c` implement metadata,
+native guards, hash projection and the length-delimited main-hash input.
+These files form the test-only `goat_format_oracle` target. Its sole parser/DOM
+substrate is yyjson; it has no dependency on `goat_module`, `goat_validation` or
+`core`. No production canonicalizer or validator computes expected results.
+
+The new runner `format_oracle_testing` selects individual scenarios through
+`ctest --test-dir build -L format-oracle --output-on-failure`. It only reads frozen
+inputs and schemas; normal tests never regenerate vectors or source files.
+The existing Python reference remains unchanged for the binary migration (#336)
+and later consumers. `docs/module-format-v1/test_reference.py` still runs in CI.
+The old-to-new scenario map and corpus provenance are in
+`test/data/format-oracle/README.md`.
+
+Remaining Python import consumers (including dynamic imports) are:
+`docs/module-format-v1/test_reference.py` and `scripts/check_bytecode_v1.py`,
+`check_module_abi.py`, `check_module_canonical.py`, `check_module_consistency.py`,
+`check_module_container.py`, `check_module_delivery.py`,
+`check_module_dependencies.py`, `check_module_graph.py`, `check_module_hash.py`,
+`check_module_import_execution.py`, `check_module_inspect.py`,
+`check_module_loading.py`, `check_module_memory.py`, `check_module_merge.py`,
+`check_module_musl.py`, `check_module_native.py`, `check_module_search.py`,
+`check_module_snapshot.py`, `check_module_validation.py`,
+`check_module_writer.py`, and `check_inspect_probe.py`. They retain their current
+API and data paths; their migration remains in the ordered checklist.
