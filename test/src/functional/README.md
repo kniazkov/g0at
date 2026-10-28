@@ -418,3 +418,57 @@ file replaced by `{}` and a flipped expected bytecode byte both failed with
 exit 1 and retained diagnostics. Related Debug format/ZIP tests passed 50/50;
 clang-format 18 and strict C11 `-Wall -Wextra -Werror` syntax checks passed.
 A fresh UBSan build with Python discovery disabled also passed the scenario.
+
+## Module bytecode (#346)
+
+`module_bytecode_scenarios` replaces `scripts/check_module_bytecode.py`;
+`module_bytecode_testing` remains the production subprocess host. The runner
+constructs independent wire images and metadata in C, using the test-only
+external-declaration fixture helper. No production writer, validator or compiler
+is used to calculate expected inputs or results.
+
+| Original check | Stable CTest ID |
+|---|---|
+| Direct API invalid arguments, null outputs, snapshot ownership and allocation balance | `integration.module_bytecode` |
+| Golden empty/two-version vectors, empty function table and container-owned main hash | `integration.module_bytecode` |
+| Logical main file versus relocated instruction entry, nonexistent/repeated filenames, FILE references | `integration.module_bytecode` |
+| Invalid/missing file metadata, seven main values, five entry mismatches and table counts | `integration.module_bytecode` |
+| Two retained functions, legal ID gap, maximum uint32 ID, reordered metadata, function and parameter mismatches | `integration.module_bytecode` |
+| Embedded NUL/supplementary Unicode parameter names and exact-length comparison | `integration.module_bytecode` |
+| Own export IDs, fabricated entry mismatch, deferred foreign reference and native specialization IDs | `integration.module_bytecode` |
+| IMPORT after END, duplicate uses, two dependency versions, eleven malformed imports and removed/unused imports | `integration.module_bytecode` |
+| Assignment preflight descriptor kinds/bounds, maximum count, CHECKBOUND declaration membership and reserved operands | `integration.module_bytecode` |
+| File-scope external cells, names/mutability/modifiers, abrupt transfer, nested blocks, post-END padding, duplicates and function-body declarations | `integration.module_bytecode` |
+| Reserved launch names in lexical declarations versus legal strings/properties, exact NUL/prefix distinctions | `integration.module_bytecode` |
+| Invalid opcodes/references/operands, empty/truncated/trailing bytecode and exact JSON integer syntax | `integration.module_bytecode` |
+
+The original standalone scenario ID is preserved. Its shared scenario framework
+provides one cumulative 180-second deadline (CTest 200), a unique build workspace,
+command/stdout/stderr diagnostics, cleanup, failure retention and `--keep-work`.
+Input vectors remain read-only. Checks, including host API assertions, remain
+active in Release. There are no platform-specific skip paths: the same suite
+runs on Linux x86-64/AArch64, MinGW i686/x86-64/UCRT and musl. Debug scripts and
+Release CI explicitly build the runner; Release selects `module-bytecode-migration`.
+The shared Python external-declaration helper remains for other suites listed in
+`test/data/binary-oracle/README.md`, pending #394; this runner exports no helpers.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_bytecode_scenarios
+ctest --test-dir build/manual --output-on-failure -R '^integration.module_bytecode$'
+build/manual/module_bytecode_scenarios integration.module_bytecode build/manual/module_bytecode_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Differential reproduction (restore only temporarily):
+git show b30c7be31f4cea93377d4682e82dbada81803cf4:scripts/check_module_bytecode.py > scripts/check_module_bytecode.py
+python3 scripts/check_module_bytecode.py build/manual/module_bytecode_testing
+```
+
+Before removal, unchanged Python and C each passed all 182 validations plus the
+host API invocation in Debug and Release. Temporary subprocess request capture
+matched all 182 images byte-for-byte and all metadata after JSON whitespace/key
+order normalization, with identical expected statuses and entry outputs. No
+capture helper or generated expectation corpus is shipped. Twelve related
+format-binary/metadata/hash/container CTests passed. A fresh UBSan build with
+Python discovery disabled passed the migrated scenario. Release `--keep-work`
+retained successful diagnostics; copied vectors with a flipped bytecode magic
+byte or `{}` metadata both failed with exit 1 and retained diagnostic files.
+Clang-format 18 and strict C11 `-Wall -Wextra -Werror` syntax checks passed.

@@ -43,7 +43,7 @@ After `bash scripts/build.sh` (or `scripts\build_mingw.cmd`):
 
 ```sh
 ctest --test-dir build --output-on-failure -R "^native.bytecode_v1$"
-python3 scripts/check_module_bytecode.py build/module_bytecode_testing
+ctest --test-dir build --output-on-failure -R "^integration.module_bytecode$"
 ```
 
 The component harness consumes independent JSON/image fixtures without running
