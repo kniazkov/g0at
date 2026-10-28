@@ -34,6 +34,10 @@ function(goat_shell name labels script)
     set_tests_properties(${name} PROPERTIES DISABLED TRUE)
   endif()
 endfunction()
+foreach(scenario alive-wait kill deadline close owner-death condition)
+  goat_scenario(process.watch.${scenario} "process-watch" TIMEOUT 20 COMMAND
+    "$<TARGET_FILE:process_watch_testing>" "${scenario}")
+endforeach()
 foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash timeout cumulative invalid-timeout host-hang host-crash command start-error cleanup-failure)
   goat_scenario(framework.execution.${scenario} "scenario-execution" TIMEOUT 30 COMMAND "$<TARGET_FILE:scenario_execution_testing>"
     "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")

@@ -193,3 +193,124 @@ with tempfile.TemporaryDirectory(dir='build') as root:
     assert suite.count == 6
 PY
 ```
+
+## Independent process observation (#338)
+
+`process_watch.h` / `.c` replace the `ProcessWatch` and `until` contracts from
+`scripts/process_test_support.py` for C consumers. The standalone
+`goat_process_watch_support` library depends only on OS/C APIs, **not**
+`goat_common`, `child_process`, or `cleanup_service`. Linux pins a pidfd and signals
+through `pidfd_send_signal`; Windows pins a process handle and uses kernel wait
+and terminate operations. There is no numeric-PID signalling fallback. Unsupported
+Linux kernels return an explicit native error, not a passing test or silent SKIP.
+
+Callers must establish readiness before opening a watch, and keep the process
+waiting until its identity is pinned. A PID received without such synchronization
+cannot prove identity before `process_watch_open`. Once pinned, death and PID reuse
+cannot redirect a signal to another process. The observer does not launch or reap
+processes; the launcher owns those responsibilities. `close` consumes and nulls
+the pointer, is repeatable, and never kills an observed process.
+
+Waits take an absolute monotonic millisecond deadline, shared across operations.
+Exit is observed by pidfd readiness / process-handle signalling, not by sleeping.
+The condition helper polls a caller-supplied bounded predicate like Python `until`;
+only the predicate proves completion. Timeout and OS failure are distinct results.
+
+The existing Python helper stays unchanged for these remaining consumers:
+
+| Consumer | Scheduled migration |
+| --- | --- |
+| `scripts/check_module_loading.py` | #369 |
+| `scripts/check_module_cli.py` (`until` only) | #371 |
+| `scripts/check_inspect_probe.py` | #373 |
+| `scripts/check_cleanup_service.py` | #376 |
+| `scripts/check_native_cleanup.py` | #381 |
+
+Final removal remains #394. No existing consumer, scenario, sanitizer, fault test,
+or musl test is removed in this step. The new C runner is added to the existing
+Linux x86-64/AArch64 GCC/Clang and Windows MinGW i686/x86-64/UCRT Debug/Release
+matrix. It uses direct OS launch and synchronization, independently of production
+process/cleanup implementation, so a shared production bug cannot make it pass.
+
+```sh
+cmake -S . -B build/338-debug -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/338-debug --target process_watch_testing
+ctest --test-dir build/338-debug -L process-watch --output-on-failure --parallel 4
+```
+
+### Original operation → stable CTest ID
+
+| Python helper contract | New CTest ID |
+| --- | --- |
+| `ProcessWatch.alive`, normal completion and `wait` | `process.watch.alive-wait` |
+| `ProcessWatch.kill`, retained identity after reap | `process.watch.kill` |
+| Bounded wait rejects a still-live process | `process.watch.deadline` |
+| `ProcessWatch.close`, repeated close, native handle count | `process.watch.close` |
+| Independently launched watcher observes owner death | `process.watch.owner-death` |
+| `until` success, deadline and predicate error | `process.watch.condition` |
+
+All process cases also reject closed/null watch operations where applicable,
+check OS resources are restored, and retain a dead watch while launching another
+process to verify signalling cannot target that new process. This does not force
+OS PID reuse; the identity guarantee comes from the pinned kernel object, with no
+PID-based signal path. Fixture cleanup can signal its own unreaped POSIX child
+(which cannot yet reuse its PID); this is not the observer implementation.
+
+### Python/C parity on identical live processes (Linux)
+
+This temporary comparison loads the standalone C observer and unchanged Python
+helper against **the same process identity** in each case: graceful exit, C kill,
+and Python kill. Both reject a live-process deadline and agree on death before
+and after reaping. No Python dependency is added to the new CTest cases.
+
+```sh
+mkdir -p build/338-parity
+cc -std=c11 -shared -fPIC -I. test/support/process_watch.c -o build/338-parity/watch.so
+PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
+import ctypes as c
+import subprocess, sys
+sys.path.insert(0, 'scripts')
+from process_test_support import ProcessWatch, until
+lib=c.CDLL('build/338-parity/watch.so')
+lib.process_watch_open.argtypes=[c.c_uint64,c.POINTER(c.c_ulong)]
+lib.process_watch_open.restype=c.c_void_p
+lib.process_watch_now_ms.restype=c.c_uint64
+lib.process_watch_alive.argtypes=[c.c_void_p,c.POINTER(c.c_bool),c.POINTER(c.c_ulong)]
+lib.process_watch_wait.argtypes=[c.c_void_p,c.c_uint64,c.POINTER(c.c_ulong)]
+lib.process_watch_kill.argtypes=[c.c_void_p,c.POINTER(c.c_ulong)]
+lib.process_watch_close.argtypes=[c.POINTER(c.c_void_p),c.POINTER(c.c_ulong)]
+for mode in ('exit', 'c-kill', 'python-kill'):
+ p=subprocess.Popen(['build/338-debug/process_watch_testing','fixture-stdio'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+ py=None; w=c.c_void_p(); e=c.c_ulong(); alive=c.c_bool()
+ try:
+  assert p.stdout.readline()==b'READY\n'
+  py=ProcessWatch(p.pid); w=c.c_void_p(lib.process_watch_open(p.pid,c.byref(e))); assert w
+  assert py.alive() and lib.process_watch_alive(w,c.byref(alive),c.byref(e))==1 and alive.value
+  assert lib.process_watch_wait(w,lib.process_watch_now_ms()+25,c.byref(e))==0
+  try: py.wait(timeout=.025)
+  except AssertionError: pass
+  else: raise AssertionError('Python timeout was accepted')
+  if mode=='exit': p.stdin.close()
+  elif mode=='c-kill': assert lib.process_watch_kill(w,c.byref(e))==1
+  else: py.kill()
+  py.wait(); assert lib.process_watch_wait(w,lib.process_watch_now_ms()+5000,c.byref(e))==1
+  assert not py.alive() and lib.process_watch_alive(w,c.byref(alive),c.byref(e))==1 and not alive.value
+  p.wait(timeout=5)
+  assert lib.process_watch_wait(w,0,c.byref(e))==1
+  print('PASS identical Python/C process:',mode)
+ finally:
+  if py: py.close()
+  assert lib.process_watch_close(c.byref(w),c.byref(e))==1
+  if p.poll() is None: p.kill();p.wait()
+  if p.stdin and not p.stdin.closed:p.stdin.close()
+  p.stdout.close()
+
+PY
+```
+
+A deliberately broken observer that always reports `alive=true` was also rejected
+by `process.watch.alive-wait` after the real fixture exited (nonzero runner exit).
+The unmodified runner passed Debug/Release and ASan/UBSan locally; LeakSanitizer
+cannot run under this executor's ptrace, so local sanitizer runs disabled LSAN.
+Each process scenario independently verifies native handle counts return to their
+initial value. Windows execution is verified by the existing GitHub CI matrix.

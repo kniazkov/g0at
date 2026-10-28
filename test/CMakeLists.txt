@@ -3,6 +3,11 @@
 
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/src" "${PROJECT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+# OS observer is independent of all production process and cleanup implementations.
+add_library(goat_process_watch_support STATIC support/process_watch.c)
+add_executable(process_watch_testing src/support/process_watch_testing.c)
+target_link_libraries(process_watch_testing PRIVATE goat_process_watch_support)
+
 # Shared Python-to-C execution/report helpers remain test-only.
 add_library(goat_module_execution_support STATIC support/module_execution.c)
 target_link_libraries(goat_module_execution_support PUBLIC goat_test_support yyjson)
