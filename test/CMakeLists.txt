@@ -3,6 +3,19 @@
 
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/src" "${PROJECT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+# Independent exact arithmetic belongs only to the test layer, never goat_common.
+add_library(goat_integer_oracle STATIC support/integer_oracle.c)
+add_executable(integer_oracle_testing src/framework/integer_oracle_testing.c)
+target_link_libraries(integer_oracle_testing PRIVATE goat_integer_oracle)
+if(UNIX AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+  # Instrument the oracle itself, not merely its caller.
+  add_executable(integer_oracle_ubsan_testing EXCLUDE_FROM_ALL src/framework/integer_oracle_testing.c
+    support/integer_oracle.c)
+  target_compile_options(integer_oracle_ubsan_testing PRIVATE -fsanitize=undefined -fno-sanitize-recover=all)
+  set_property(TARGET integer_oracle_ubsan_testing APPEND_STRING PROPERTY LINK_FLAGS
+    " -fsanitize=undefined -fno-sanitize-recover=all")
+endif()
+
 add_library(goat_test_support STATIC support/scenario.c support/execution.c support/registry.c)
 target_link_libraries(goat_test_support PUBLIC goat_common)
 add_executable(scenario_context_testing src/framework/scenario_context_testing.c)

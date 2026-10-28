@@ -231,3 +231,15 @@ endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
 goat_python(tool.python-frozen-samples-self-test "tool;frozen-samples" "test/support/freeze_python_samples.py" --self-test)
+
+# #334: exact Python parity and deliberate corruptions of the independent oracle.
+foreach(scenario parity reject-value reject-sign reject-clamp)
+  goat_scenario(framework.integer-oracle.${scenario} "integer-oracle" TIMEOUT 30 COMMAND
+    "$<TARGET_FILE:integer_oracle_testing>" "${scenario}"
+    "${PROJECT_SOURCE_DIR}/test/data/integer-oracle/python-results.tsv")
+endforeach()
+if(TARGET integer_oracle_ubsan_testing)
+  goat_scenario(framework.integer-oracle.ubsan "integer-oracle;sanitizer" TIMEOUT 30 COMMAND
+    "$<TARGET_FILE:integer_oracle_ubsan_testing>" parity
+    "${PROJECT_SOURCE_DIR}/test/data/integer-oracle/python-results.tsv")
+endif()
