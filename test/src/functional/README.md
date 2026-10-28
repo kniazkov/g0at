@@ -301,3 +301,62 @@ Two copied-corpus Release runs intentionally replaced the first expected result
 and the first accepted input with `{`; each failed with exit 1 and retained
 failure diagnostics. These prove mismatches and malformed input cannot pass
 with `NDEBUG`. Formatting was checked with clang-format 18.
+
+## ZIP wrapper (#344)
+
+`zip_scenarios` replaces `scripts/check_zip.py`; `zip_testing` remains the
+production subprocess host. Inputs are constructed with the independent
+`test/support/format_zip.c` builder and bounded byte mutations, never the
+production writer. Production writer results are extracted with the independent
+reader as well as the production reader. The historical frozen payload/damage
+recipes under `test/data/python-samples` are unchanged.
+
+| Original check | Stable CTest ID |
+|---|---|
+| Direct API invalid arguments, empty archive, capacity canaries | `integration.zip` |
+| Stored/Deflate/mixed archives; signed data descriptors; duplicate, binary, Unicode, empty and 60,000-byte names; comments/extras; exact-capacity reads | `integration.zip` |
+| Embedded NUL names, every truncation, malformed extra lengths and ZIP64 extra ID | `integration.zip` |
+| Nine local/central inconsistencies, CRC field and payload corruption | `integration.zip` |
+| Encryption flags, unsupported compression, symlink metadata, ZIP64 sentinels and multi-disk fields | `integration.zip` |
+| SFX prefix/trailer and unsafe/directory path spellings preserved by wrapper | `integration.zip` |
+| Invalid Deflate, four uncompressed sizes, three compressed sizes and inserted stream junk | `integration.zip` |
+| Both writer methods over seven payloads including frozen 65,537 bytes; determinism, binary comments, separate local/central extras, timestamps/flags/attrs, independent extraction | `integration.zip` |
+| Exact writer limit, limit-minus-one and six small limits; duplicate/empty archive; invalid names, method and extras | `integration.zip` |
+| Local-only forced ZIP64, exact frozen profile-1 `empty.gbin`, malformed lengths/offsets | `integration.zip` |
+| All 60 frozen three-XOR damage recipes, original Linux/Windows base selected explicitly, bounded status set | `integration.zip` |
+
+The ID is preserved from the previous standalone Python suite. All assertions
+remain active in Release, including the subprocess host's API assertions.
+Each invocation owns a unique build workspace, has one cumulative 180-second
+deadline (CTest 200), retains failure diagnostics, releases processes/resources,
+and supports `--keep-work`. Inputs remain read-only. The same scenario runs on
+Linux x86-64/AArch64, Windows MinGW i686/x86-64/UCRT and musl; the frozen damage
+base is the only platform-dependent input, with no new skip paths.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target zip_scenarios
+ctest --test-dir build/manual --output-on-failure -R '^integration.zip$'
+build/manual/zip_scenarios integration.zip build/manual/zip_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Restore the old runner for differential reproduction, then remove it:
+git show 2ceda9039f23d29d5c207247731c90cefd09086e:scripts/check_zip.py > scripts/check_zip.py
+python3 scripts/check_zip.py build/manual/zip_testing
+```
+
+Verification before removal: unchanged Python passed 333 subprocess requests in
+both Debug and Release; C passed 329 including the direct host API invocation.
+The difference is five redundant production `inspect` calls used only to obtain
+mutation offsets: C obtains those offsets from the independent reader instead.
+The actual metadata assertions and every truncation remain. Direct Release
+`--keep-work` retained successful diagnostics. Two copied-input Release runs
+intentionally flipped a byte in the expected `empty.gbin` and replaced the frozen
+damage recipe with `{}`; both failed with exit 1 and retained diagnostic files.
+The new source passes `gcc -std=c11 -Wall -Wextra -Werror` syntax checks and
+clang-format 18.
+
+A temporary request capture additionally compared every non-API C request with
+the original Python run: all 328 matched exactly for ZIP input bytes, allowed
+statuses and required stdout. Writer JSON matched after normalizing object key
+order and omitted versus explicit empty optional fields. This includes the
+hand-built local-only ZIP64 archive and the frozen damage requests; no generated
+expectation corpus or temporary capture helper is retained in the repository.
