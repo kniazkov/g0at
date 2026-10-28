@@ -191,13 +191,13 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
       - name: Check interactive sessions
-        run: python3 scripts/check_interactive.py build/${{ matrix.compiler }}/goat
+        run: ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -R "^native.interactive$"
       - name: Check character semantics
-        run: python3 scripts/check_characters.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/characters"
+        run: ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -R "^native.characters$"
       - name: Check portable bytecode v1
         run: python3 scripts/check_bytecode_v1.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/bytecode-v1"
       - name: Check portable Unicode strings
-        run: python3 scripts/check_unicode.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/unicode"
+        run: ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -R "^native.unicode$"
       - name: Check native artifact integrity
         run: python3 scripts/check_native_integrity.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native integrity"
         env:
@@ -274,8 +274,8 @@ jobs:
           if-no-files-found: error
       - name: Check release multifile access
         run: |
-          cmake --build build/release-${{ matrix.compiler }} --target format_binary_ubsan_testing format_oracle_ubsan_testing integer_oracle_ubsan_testing module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing
-          ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch|language-roundtrip"
+          cmake --build build/release-${{ matrix.compiler }} --target format_binary_ubsan_testing format_oracle_ubsan_testing integer_oracle_ubsan_testing module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing unicode_interactive_testing
+          ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch|language-roundtrip|unicode-interactive"
           python3 scripts/check_module_multifile_access.py build/release-${{ matrix.compiler }}/module_import_execution_testing build/release-${{ matrix.compiler }}/goat
           python3 scripts/check_module_interface.py build/release-${{ matrix.compiler }}/module_import_execution_testing
       - name: Smoke test release
@@ -415,12 +415,12 @@ jobs:
         shell: msys2 {0}
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_interactive.py build/goat.exe'
+        run: ctest --test-dir build --output-on-failure -R "^native.interactive$"
       - name: Check character semantics
         shell: msys2 {0}
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_characters.py build/goat.exe "build/characters"'
+        run: ctest --test-dir build --output-on-failure -R "^native.characters$"
       - name: Check portable bytecode v1
         shell: msys2 {0}
         env:
@@ -430,7 +430,7 @@ jobs:
         shell: msys2 {0}
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_unicode.py build/goat.exe "build/unicode"'
+        run: ctest --test-dir build --output-on-failure -R "^native.unicode$"
       - name: Check native artifact integrity
         shell: msys2 {0}
         env:
@@ -486,8 +486,8 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: |
-          cmake --build build/release --target module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing
-          ctest --test-dir build/release --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch|language-roundtrip"
+          cmake --build build/release --target module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing unicode_interactive_testing
+          ctest --test-dir build/release --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch|language-roundtrip|unicode-interactive"
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_multifile_access.py build/release/module_import_execution_testing.exe build/release/goat.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_interface.py build/release/module_import_execution_testing.exe
       - name: Compare release native modes

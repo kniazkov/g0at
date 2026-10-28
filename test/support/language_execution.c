@@ -76,11 +76,12 @@ bool language_exists(scenario_run_t *run, const char *path) {
     return ok && info.kind == FS_FILE;
 }
 
-static bool compiler_variable(const char *value) {
+static bool environment_name(const char *value, const char *name) {
+    size_t n = strlen(name);
 #ifdef _WIN32
-    return !_strnicmp(value, "CC=", 3);
+    return !_strnicmp(value, name, n) && value[n] == '=';
 #else
-    return !strncmp(value, "CC=", 3);
+    return !strncmp(value, name, n) && value[n] == '=';
 #endif
 }
 
@@ -94,9 +95,8 @@ static bool release_environment(void *pointer) {
     return true;
 }
 
-const char *const *language_environment(scenario_run_t *run, bool no_compiler) {
-    if (!no_compiler)
-        return NULL;
+const char *const *
+language_environment_override(scenario_run_t *run, const char *name, const char *replacement) {
     size_t count = 0, index = 0;
 #ifdef _WIN32
     wchar_t *block = GetEnvironmentStringsW();
@@ -122,7 +122,7 @@ const char *const *language_environment(scenario_run_t *run, bool no_compiler) {
             ok = false;
             break;
         }
-        if (compiler_variable(value))
+        if (environment_name(value, name))
             FREE(value);
         else
             values[index++] = value;
@@ -136,18 +136,22 @@ const char *const *language_environment(scenario_run_t *run, bool no_compiler) {
     char **values = CALLOC((count + 2) * sizeof(*values));
     scenario_defer(run, release_environment, values);
     for (char **p = environ; p && *p; ++p) {
-        if (compiler_variable(*p))
+        if (environment_name(*p, name))
             continue;
         char *copy = ALLOC(strlen(*p) + 1);
         strcpy(copy, *p);
         values[index++] = copy;
     }
 #endif
-    const char *missing = "CC=goat-missing-compiler-for-test";
-    values[index] = ALLOC(strlen(missing) + 1);
-    strcpy(values[index], missing);
+    values[index] = ALLOC(strlen(name) + strlen(replacement) + 2);
+    sprintf(values[index], "%s=%s", name, replacement);
     scenario_checkpoint(run);
     return (const char *const *)values;
+}
+
+const char *const *language_environment(scenario_run_t *run, bool no_compiler) {
+    return no_compiler ? language_environment_override(run, "CC", "goat-missing-compiler-for-test")
+                       : NULL;
 }
 
 scenario_command_result_t language_command(scenario_run_t *run,

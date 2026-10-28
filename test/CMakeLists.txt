@@ -245,3 +245,10 @@ target_link_libraries(process_exit_delayed_testing PRIVATE core goat_validation 
 if(BUILD_TESTING)
   include("${CMAKE_CURRENT_SOURCE_DIR}/CTestLists.cmake")
 endif()
+
+add_executable(unicode_interactive_testing src/functional/unicode_interactive_testing.c
+  src/functional/characters_cases.c src/functional/unicode_cases.c src/functional/interactive_cases.c)
+target_link_libraries(unicode_interactive_testing PRIVATE goat_language_execution_support)
+add_dependencies(unicode_interactive_testing goat)
+
+target_compile_definitions(unicode_interactive_testing PRIVATE CHARACTER_CC="${CMAKE_C_COMPILER}" CHARACTER_ROOT="${PROJECT_SOURCE_DIR}")
