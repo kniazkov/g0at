@@ -2,6 +2,11 @@
 #include "lib/files/file_system.h"
 #include "yyjson.h"
 
+/* This subprocess host uses assertions for API calls as well as validation.
+ * Keep those checks and side effects active in Release parity runs. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

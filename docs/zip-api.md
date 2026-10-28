@@ -66,8 +66,9 @@ INVALID, MEMORY, FORMAT, ZIP64, MULTIDISK, UNSUPPORTED, CAPACITY, SIZE, CRC,
 DEFLATE, HEADER_MISMATCH; человекочитаемое имя — `zip_status_string`.
 Нулевые указатели/неверные индексы диагностируются; close/free принимают NULL.
 
-Проверка: `python scripts/check_zip.py <zip_testing>`. Независимые образцы
-строятся Python zipfile; созданные C writer архивы читаются zipfile. Проверяются
+Проверка: `ctest --test-dir build --output-on-failure -R '^integration.zip$'`.
+Независимые образцы строятся тестовым C-эталоном `test/support/format_zip.c`;
+созданные production writer архивы читает независимый эталон. Проверяются
 stored/Deflate, data descriptors, дубли/NUL/длинные имена, бинарные комментарии,
 пустые части, границы, усечения, CRC, Deflate, размеры и ограничение памяти.
 Запись известных частей сравнивается побайтно с замороженным empty.gbin.
@@ -130,7 +131,8 @@ MULTIDISK, UNSUPPORTED, CAPACITY, SIZE, CRC, DEFLATE, HEADER_MISMATCH. Use
 `zip_status_string` for diagnostics. Invalid arguments/indices are diagnosed;
 close/free accept NULL.
 
-`python scripts/check_zip.py <zip_testing>` uses independent Python zipfile
-inputs and checks C output with zipfile, exercises bounds/corruption/metadata,
+`ctest --test-dir build --output-on-failure -R '^integration.zip$'` uses the
+independent C fixture builder and reader in `test/support/format_zip.c`,
+exercises bounds/corruption/metadata,
 and compares profile-1 output byte-for-byte with frozen empty.gbin. The same
 checks run in Linux x86-64/ARM64 and Windows CI.
