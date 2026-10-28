@@ -47,7 +47,7 @@
 - [x] 14. [#332 — Перенести генератор схем на Си](https://github.com/kniazkov/g0at/issues/332)
 - [x] 15. [#333 — Перенести Unicode-генератор на Си](https://github.com/kniazkov/g0at/issues/333)
 - [x] 16. [#334 — Создать независимый точный эталон арифметики](https://github.com/kniazkov/g0at/issues/334)
-- [ ] 17. [#335 — Перенести JSON-часть эталона формата на Си](https://github.com/kniazkov/g0at/issues/335)
+- [x] 17. [#335 — Перенести JSON-часть эталона формата на Си](https://github.com/kniazkov/g0at/issues/335)
 - [ ] 18. [#336 — Перенести двоичную часть эталона и конструкторы fixtures](https://github.com/kniazkov/g0at/issues/336)
 - [ ] 19. [#337 — Перенести общие helpers выполнения и отчётов](https://github.com/kniazkov/g0at/issues/337)
 - [ ] 20. [#338 — Перенести независимое наблюдение за процессами](https://github.com/kniazkov/g0at/issues/338)

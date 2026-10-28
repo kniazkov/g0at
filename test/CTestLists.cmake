@@ -243,3 +243,22 @@ if(TARGET integer_oracle_ubsan_testing)
     "$<TARGET_FILE:integer_oracle_ubsan_testing>" parity
     "${PROJECT_SOURCE_DIR}/test/data/integer-oracle/python-results.tsv")
 endif()
+
+# #335: independent schema-driven JSON oracle; Python reference remains for consumers.
+foreach(scenario strict_json canonical_bytes shapes gmod constants facts_normalization summaries summary_consistency dependency_versions hash_projection target guard_intersections normalization_preserves_distinctions hash_excludes_native_but_validates_it native_envelope edge_cases vectors metadata_edges target_edges guard_edges)
+  goat_scenario(format.oracle.${scenario} "format-oracle" TIMEOUT 40 COMMAND
+    "$<TARGET_FILE:format_oracle_testing>" "${scenario}" "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
+endforeach()
+foreach(mutant corrupt-output accept-invalid)
+  goat_scenario(format.oracle.reject-${mutant} "format-oracle" TIMEOUT 40 COMMAND
+    "$<TARGET_FILE:format_oracle_testing>" all "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json"
+    "${mutant}")
+  set_tests_properties(format.oracle.reject-${mutant} PROPERTIES WILL_FAIL TRUE)
+endforeach()
+if(TARGET format_oracle_ubsan_testing)
+  goat_scenario(format.oracle.ubsan "format-oracle;sanitizer" TIMEOUT 40 COMMAND
+    "$<TARGET_FILE:format_oracle_ubsan_testing>" all "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
+endif()
