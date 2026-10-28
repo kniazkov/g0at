@@ -258,3 +258,46 @@ corrupted: one changed an expected module name, the other replaced an accepted
 input with `{`. Both exited 1 and retained diagnostics, proving that bad expected
 results and structural errors are detected with `NDEBUG`. The source passes
 `gcc -std=c11 -Wall -Wextra -Werror` syntax checks.
+
+## Canonical JSON and main hashes (#343)
+
+`module_canonical_hash_scenarios` replaces both Python runners, retaining all 935
+original process requests. Each successful result is compared both to frozen
+Python expectations and to the independent C format oracle (never production
+normalization/hash code). See [corpus provenance](../../data/module-canonical-hash/README.md).
+
+| Original checks | Stable CTest ID |
+|---|---|
+| `check_module_canonical.py`: exact bytes, control/Unicode/NUL keys, int64 limits and >2^53, invalid JSON, idempotence | `native.module_canonical` |
+| Scalar facts, real bit patterns, ranges, reductions, duplicate/invalid summaries, argument arities, effects permutations | `native.module_canonical` |
+| Function permutations, external validation, nine-field projection, vectors, gmod defaults, producer/native ordering and frozen key permutations | `native.module_canonical` |
+| `check_module_hash.py`: four vectors, all 145 SHA block/padding lengths, success/mismatch verification | `native.module_hash` |
+| Formatting/defaults/information invariance, significant metadata/byte mutations, truncation/extension, dependency permutations/hashes | `native.module_hash` |
+| Native exclusion, fact normalization/significance, invalid metadata and duplicate keys | `native.module_hash` |
+
+All cases apply on Linux x86-64/AArch64 and Windows MinGW i686/x86-64/UCRT.
+The runner uses scenario-owned processes/resources, unique build directories,
+a cumulative deadline and retained failure diagnostics. `--keep-work` retains
+successful artifacts; checks remain active in Release. CI integration and
+Release selection include both IDs, and stack-pattern initialization runs both.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_canonical_hash_scenarios
+ctest --test-dir build/manual --output-on-failure -R '^native.module_(canonical|hash)$'
+build/manual/module_canonical_hash_scenarios native.module_hash build/manual/module_json_testing build/manual test/data docs/module-format-v1/schema-source.json --keep-work
+# Recover old runners for differential reproduction, then remove restored files:
+git show 09302829bd05aec9d47a51415e7cdb42d865eea5:scripts/check_module_canonical.py > scripts/check_module_canonical.py
+git show 09302829bd05aec9d47a51415e7cdb42d865eea5:scripts/check_module_hash.py > scripts/check_module_hash.py
+python3 scripts/check_module_canonical.py build/manual/module_json_testing
+python3 scripts/check_module_hash.py build/manual/module_json_testing
+```
+
+Verification before removal: both unchanged Python suites passed against Debug
+and Release hosts (422 canonical + 513 hash requests). The C scenarios passed
+the same corpus in both configurations, including the independent C comparisons.
+A direct Release hash run with `--keep-work` passed and retained its work.
+Two copied-corpus Release runs intentionally replaced the first expected result
+and the first accepted input with `{`; each failed with exit 1 and retained
+failure diagnostics. These prove mismatches and malformed input cannot pass
+with `NDEBUG`. Formatting was checked with clang-format 18.
