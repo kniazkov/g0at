@@ -20,7 +20,7 @@ MINGW32 — настоящий 32-битный процесс. Обязател�
 
 `check_module_delivery_requirements.py audit GOAT WRAPPER SELECTOR CC` проверяет
 фактические аргументы компилятора всей нативной сборки и требования полученного
-варианта. Уже существующие `check_module_native.py`, `check_native_requirements.py`
+варианта. Уже существующие `integration.module_native` (CTest), `check_native_requirements.py`
 и `check_native_toolchains.py` проверяют независимость архитектуры, CPU, runtime,
 версии ОС и точной версии Goat ABI, сравнение версий по компонентам,
 транзитивные требования библиотек и отказ при неизвестных требованиях.

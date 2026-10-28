@@ -59,7 +59,7 @@
 - [x] 26. [#344 — Перенести на Си: ZIP](https://github.com/kniazkov/g0at/issues/344) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 27. [#345 — Перенести на Си: Контейнер модулей](https://github.com/kniazkov/g0at/issues/345) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 28. [#346 — Перенести на Си: Байткод модулей](https://github.com/kniazkov/g0at/issues/346) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
-- [ ] 29. [#347 — Перенести на Си: ABI и выбор native-варианта](https://github.com/kniazkov/g0at/issues/347)
+- [x] 29. [#347 — Перенести на Си: ABI и выбор native-варианта](https://github.com/kniazkov/g0at/issues/347) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [ ] 30. [#348 — Перенести на Си: Исходники и список файлов](https://github.com/kniazkov/g0at/issues/348)
 - [ ] 31. [#349 — Перенести на Си: Импорты и source include](https://github.com/kniazkov/g0at/issues/349)
 - [ ] 32. [#350 — Перенести на Си: Поиск модулей](https://github.com/kniazkov/g0at/issues/350)

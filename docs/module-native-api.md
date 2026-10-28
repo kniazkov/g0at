@@ -80,7 +80,7 @@ musl-loader и однозначную NUL-ограниченную версию 
 
 ### Проверки и границы
 
-`python3 scripts/check_module_native.py build/<config>/module_native_testing`
+`ctest --test-dir build/<config> --output-on-failure -R '^integration.module_native$'`
 проверяет искусственные среды, минимумы, семейства CRT, все архитектуры, неизвестные
 требования, неоднозначность, ABI, хеши чужих вариантов и неизменность поведения от
 подмены окружения. Дополнительно компилируется контрольная библиотека с явной
@@ -165,7 +165,7 @@ inspect display and merge conflict handling belong to #211/#212/#215.
 
 ### Tests and boundaries
 
-Run `python3 scripts/check_module_native.py build/<config>/module_native_testing`.
+Run `ctest --test-dir build/<config> --output-on-failure -R '^integration.module_native$'`.
 Synthetic profiles cover all architectures, runtime families, numeric minimums,
 unknown requirements, ambiguity, ABI membership, foreign-variant hashes and
 environment spoofing. A real control library is compiled with explicit baseline
