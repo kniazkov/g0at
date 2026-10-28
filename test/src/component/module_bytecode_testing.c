@@ -2,6 +2,9 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Binary stdin harness for independent module bytecode fixtures.
  */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
 #include "lib/wire/wire.h"

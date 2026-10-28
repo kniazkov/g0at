@@ -87,7 +87,9 @@ goat_scenario(integration.zip "integration;zip-migration" TIMEOUT 200 COMMAND
 goat_scenario(integration.module_container "integration;container-migration" TIMEOUT 200 COMMAND
   "$<TARGET_FILE:module_container_scenarios>" integration.module_container "$<TARGET_FILE:module_container_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
-goat_python(integration.module_bytecode "integration" scripts/check_module_bytecode.py "$<TARGET_FILE:module_bytecode_testing>")
+goat_scenario(integration.module_bytecode "integration;module-bytecode-migration" TIMEOUT 200 COMMAND
+  "$<TARGET_FILE:module_bytecode_scenarios>" integration.module_bytecode "$<TARGET_FILE:module_bytecode_testing>"
+  "${CMAKE_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 goat_python(integration.module_native "integration" scripts/check_module_native.py "$<TARGET_FILE:module_native_testing>")
 goat_python(integration.module_abi "integration" scripts/check_module_abi.py "$<TARGET_FILE:module_abi_testing>")
 goat_python(integration.native_artifact "integration" scripts/check_native_artifact.py "$<TARGET_FILE:native_artifact_testing>" "${CMAKE_C_COMPILER}")

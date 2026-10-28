@@ -89,7 +89,7 @@ runtime не подменяются ручным редактированием 
 
 ### Существующие проверки остаются обязательными
 
-- `check_module_hash.py`, `check_module_canonical.py`, `check_module_bytecode.py`,
+- `check_module_hash.py`, `check_module_canonical.py`, CTest `integration.module_bytecode`,
   `check_module_writer.py` и format-vectors проверяют одни и те же закреплённые
   байты/основные SHA-256 на всех платформах, включая 32-битный процесс.
   Хеши различных DLL/SO совпадать не обязаны.
