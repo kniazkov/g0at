@@ -156,7 +156,9 @@ endforeach()
 if(GOAT_TEST_ALLOC_FAILURE)
   goat_python(fault.module_memory "fault" scripts/check_module_memory.py $<TARGET_FILE:module_memory_testing>)
 endif()
-goat_python(native.bytecode_v1 "native" scripts/check_bytecode_v1.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/bytecode_v1")
+goat_scenario(native.bytecode_v1 "native;standalone-bytecode" TIMEOUT 200 COMMAND
+  "$<TARGET_FILE:bytecode_v1_testing>" native.bytecode_v1 "$<TARGET_FILE:goat>"
+  "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 goat_python(native.native_integrity "native" scripts/check_native_integrity.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_integrity")
 foreach(scenario native.for native.index)
   goat_scenario(${scenario} "native;language-roundtrip" TIMEOUT 200 COMMAND

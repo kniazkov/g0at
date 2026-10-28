@@ -211,7 +211,7 @@ and graph validators before execution.
 
 `test/data/binary-v1/scalars.hex` and `test/data/unicode/scalars.gbin.hex` are independent
 Python-produced fixtures, consumed unchanged by the actual C loader on every
-Linux/Windows CI target. `scripts/check_bytecode_v1.py` checks numeric bits,
+Linux/Windows CI target. `native.bytecode_v1` (CTest) checks numeric bits,
 function metadata, malformed records and raw/wrapped equivalence. Unit/native
 pipeline tests compare image bytes before and after validation, execution,
 native preparation, fallback and worker-thread execution.

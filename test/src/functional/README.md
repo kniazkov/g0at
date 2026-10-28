@@ -151,3 +151,64 @@ shell parsing. The two host modes retain normal and `-fshort-wchar` coverage.
 A separate character mutant changes the first expected scalar output from `0`
 to `9`; compiled with `-O3 -DNDEBUG` and Release support libraries, it fails with
 exit 1 at the first 36-byte output comparison and retains diagnostics.
+
+## Standalone bytecode v1 (#341)
+
+`bytecode_v1_testing` replaces `scripts/check_bytecode_v1.py` without changing
+`GOATBC01`, the standalone `GOATPG01` envelope, or the unresolved format decision
+in #316. It links the independent test-only `goat_format_oracle`, never the
+production decoder to compute expected answers.
+
+| Original check | Stable CTest ID |
+|---|---|
+| Independent scalar/function producer equals frozen `binary-v1/scalars.hex`; exact int64 boundaries, negative zero, infinity, NaN, embedded NUL and Unicode output | `native.bytecode_v1` |
+| Frozen empty bytecode executes without output | `native.bytecode_v1` |
+| Six legacy/wrong magic values, all 14 header fields, six truncations and trailing byte | `native.bytecode_v1` |
+| Invalid opcode, reserved instruction fields, ARG-consumer jumps, invalid/aliased descriptors, invalid Unicode scalars/terminator and self-referencing parameter vector | `native.bytecode_v1` |
+| File/function/location fields, mixed synthetic/real positions, wrong function name/creation/body/ownership IDs and entry inside function; 63 corruptions total | `native.bytecode_v1` |
+| Every rejection requires nonzero status, English binary diagnostic, no user stdout, and unchanged input bytes | `native.bytecode_v1` |
+| Full-width sparse function ID `UINT32_MAX` retains valid execution/output | `native.bytecode_v1` |
+| Independent reference validates scalar image; empty C-writer bytecode matches independent empty image with synthetic positions | `native.bytecode_v1` |
+| Nested and unused functions compile under optimize `none` and `all`; envelope magic/flags and independent code validation; extracted code executes as `42` | `native.bytecode_v1` |
+
+`test/data/binary-v1/empty.bytecode.hex` is a byte-for-byte copy of the existing
+`docs/module-format-v1/vectors/empty.bytecode.hex`, not a regenerated expectation.
+Both frozen images are read-only during tests. All platforms execute the same
+checks: Linux x86-64/AArch64, Windows MinGW i686/x86-64/UCRT, Debug/Release and
+musl. No platform-specific skips are introduced. The scenario uses a unique
+work directory, a shared 180-second deadline (CTest 200 seconds), fail-fast
+checks active under `NDEBUG`, complete command/output diagnostics on failure,
+and process/resource cleanup. `--keep-work` preserves successful diagnostics.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target bytecode_v1_testing
+ctest --test-dir build/manual --output-on-failure -R '^native.bytecode_v1$'
+build/manual/bytecode_v1_testing native.bytecode_v1 build/manual/goat build/manual test/data --keep-work
+# Explicit replacement for Python --generate; only the supplied output is written:
+build/manual/bytecode_v1_testing --generate build/manual/scalars.hex
+cmp build/manual/scalars.hex test/data/binary-v1/scalars.hex
+```
+
+For differential reproduction, restore only the original runner from the parent:
+
+```sh
+git show 735ded1b8211de0b42a7ef9e317488e90fbeeb66:scripts/check_bytecode_v1.py > scripts/check_bytecode_v1.py
+python3 scripts/check_bytecode_v1.py build/manual/goat build/manual/python-bytecode
+# Remove the restored obsolete runner after comparison.
+```
+
+Before removal, the Python runner passed against both `build/339-debug/goat`
+and `build/339-release/goat`, including all 63 corruptions and both optimization
+modes. The C runner's differential and negative verification is recorded below.
+
+The C runner passed the same frozen inputs and Goat binaries in Debug and
+Release, including all 63 rejections and both optimization modes. Direct
+`--keep-work` retained the complete successful run, and `--generate` reproduced
+`scalars.hex` byte for byte. A temporary C mutant changed the first expected
+int64 output digit, was compiled with `-O3 -DNDEBUG` and Release support libraries,
+and failed with exit 1 at the output comparison. A second Release run against
+a copied data directory whose scalar fixture contained only `00` failed with
+exit 1 at the independent fixture comparison. Both retained diagnostics. These
+negative checks demonstrate that Release does not compile away the assertions.
+The migrated source also passes `gcc -std=c11 -Wall -Wextra -Werror` syntax checks.

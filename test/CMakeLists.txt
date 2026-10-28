@@ -252,3 +252,7 @@ target_link_libraries(unicode_interactive_testing PRIVATE goat_language_executio
 add_dependencies(unicode_interactive_testing goat)
 
 target_compile_definitions(unicode_interactive_testing PRIVATE CHARACTER_CC="${CMAKE_C_COMPILER}" CHARACTER_ROOT="${PROJECT_SOURCE_DIR}")
+
+add_executable(bytecode_v1_testing src/functional/bytecode_v1_testing.c)
+target_link_libraries(bytecode_v1_testing PRIVATE goat_language_execution_support goat_format_oracle)
+add_dependencies(bytecode_v1_testing goat)
