@@ -55,7 +55,7 @@
 - [x] 22. [#340 — Перенести на Си: Символы, Unicode и интерактивный ввод](https://github.com/kniazkov/g0at/issues/340) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 23. [#341 — Перенести на Си: Standalone bytecode v1](https://github.com/kniazkov/g0at/issues/341) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 24. [#342 — Перенести на Си: JSON метаданных](https://github.com/kniazkov/g0at/issues/342) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
-- [ ] 25. [#343 — Перенести на Си: Канонизация и хеши](https://github.com/kniazkov/g0at/issues/343)
+- [x] 25. [#343 — Перенести на Си: Канонизация и хеши](https://github.com/kniazkov/g0at/issues/343) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [ ] 26. [#344 — Перенести на Си: ZIP](https://github.com/kniazkov/g0at/issues/344)
 - [ ] 27. [#345 — Перенести на Си: Контейнер модулей](https://github.com/kniazkov/g0at/issues/345)
 - [ ] 28. [#346 — Перенести на Си: Байткод модулей](https://github.com/kniazkov/g0at/issues/346)
