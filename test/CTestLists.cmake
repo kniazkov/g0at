@@ -262,3 +262,21 @@ if(TARGET format_oracle_ubsan_testing)
     "$<TARGET_FILE:format_oracle_ubsan_testing>" all "${CMAKE_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
 endif()
+
+# #336: independent bytecode, ZIP, hash and declaration fixtures; read-only goldens.
+foreach(scenario bytecode modules fixtures vectors zip)
+  goat_scenario(format.binary.${scenario} "format-oracle;format-binary" TIMEOUT 40 COMMAND
+    "$<TARGET_FILE:format_binary_testing>" "${scenario}" "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
+endforeach()
+foreach(mutant corrupt-output accept-invalid)
+  goat_scenario(format.binary.reject-${mutant} "format-oracle;format-binary" TIMEOUT 40 COMMAND
+    "$<TARGET_FILE:format_binary_testing>" all "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json" "${mutant}")
+  set_tests_properties(format.binary.reject-${mutant} PROPERTIES WILL_FAIL TRUE)
+endforeach()
+if(TARGET format_binary_ubsan_testing)
+  goat_scenario(format.binary.ubsan "format-oracle;format-binary;sanitizer" TIMEOUT 40 COMMAND
+    "$<TARGET_FILE:format_binary_ubsan_testing>" all "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
+endif()

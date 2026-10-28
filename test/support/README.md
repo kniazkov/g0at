@@ -90,3 +90,17 @@ Remaining Python import consumers (including dynamic imports) are:
 `check_module_snapshot.py`, `check_module_validation.py`,
 `check_module_writer.py`, and `check_inspect_probe.py`. They retain their current
 API and data paths; their migration remains in the ordered checklist.
+
+## Independent binary and fixture oracle (#336)
+
+`format_binary.h` / `.c` add independent bytecode construction/validation,
+JSON/binary consistency and SHA-256. `format_zip.h` / `.c` construct ZIP records
+without production writers, preserving caller order and duplicate entries, and
+expose inspection, extraction and bounded byte patching for negative fixtures.
+`format_fixtures.h` / `.c` append real external declaration blocks without moving
+existing instruction indices. These are part of test-only `goat_format_oracle`;
+its extra dependency is the bundled zlib primitive library, not Goat wrappers.
+See `test/data/binary-oracle/README.md` for the old/new scenario map, provenance,
+corpus hashes, remaining Python fixture consumers and reproduction commands.
+The `format-binary` CTest label selects the new tests, also included in
+`format-oracle` for the full existing cross-platform CI matrix.
