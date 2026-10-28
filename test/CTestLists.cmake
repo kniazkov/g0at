@@ -134,7 +134,9 @@ goat_python(integration.module_access "integration" scripts/test_module_access.p
 goat_python(integration.module_information "integration" scripts/check_module_information.py "$<TARGET_FILE:module_json_testing>" "$<TARGET_FILE:module_writer_testing>")
 goat_python(integration.module_information_merge "integration" scripts/check_module_information_merge.py "$<TARGET_FILE:module_json_testing>")
 goat_python(integration.module_merge "integration" scripts/check_module_merge.py "$<TARGET_FILE:goat-merge>" "${CMAKE_C_COMPILER}")
-goat_python(integration.module_json "integration" scripts/check_module_json.py "$<TARGET_FILE:module_json_testing>")
+goat_scenario(native.module_json "integration;metadata-json" TIMEOUT 200 COMMAND
+  "$<TARGET_FILE:module_json_scenarios>" native.module_json "$<TARGET_FILE:module_json_testing>"
+  "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 goat_python(integration.module_canonical "integration" scripts/check_module_canonical.py "$<TARGET_FILE:module_json_testing>")
 goat_python(integration.module_hash "integration" scripts/check_module_hash.py "$<TARGET_FILE:module_json_testing>")
 goat_python(integration.cleanup_service "integration;process" scripts/check_cleanup_service.py $<TARGET_FILE:cleanup_service_testing>)
@@ -231,8 +233,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 59)
-  message(FATAL_ERROR "Expected all 59 transitional integration suites; found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 58)
+  message(FATAL_ERROR "Expected all 58 transitional integration suites; found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
