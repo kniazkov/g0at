@@ -58,7 +58,7 @@ the existing compiler fatal-allocation contract.
 
 ## Verification
 
-`scripts/check_module_sources.py build/module_sources_testing` covers DFS diamond
+`ctest --test-dir build --output-on-failure -R '^integration.module_sources$'` covers DFS diamond
 and cycles, 1,800-file depth, unused neighbors/import dependencies, missing and
 invalid files, literals and path separators, real `.gmod`/source symlink bases,
 external sources, hardlink identity, component boundaries, direct-source mode,

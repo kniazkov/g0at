@@ -2,6 +2,10 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief JSON output harness for source graph fixtures.
  */
+/* Fixture setup and validation must also run against the optimized Release core. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include "common/module_sources.h"
 #include "lib/files/binary_file.h"
 #include "lib/memory/allocate.h"
