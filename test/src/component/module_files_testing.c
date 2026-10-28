@@ -2,6 +2,10 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Exercises isolated process-owned file scopes over independent wire fixtures.
  */
+/* Fixture setup and validation must also run against the optimized Release core. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
 #include "lib/wire/wire.h"

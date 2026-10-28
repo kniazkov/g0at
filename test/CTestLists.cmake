@@ -114,7 +114,9 @@ goat_python(integration.module_dispatch "integration" scripts/check_module_dispa
 goat_python(integration.module_consistency "integration" scripts/check_module_consistency.py "$<TARGET_FILE:module_consistency_testing>")
 goat_python(integration.module_validation "integration" scripts/check_module_validation.py "$<TARGET_FILE:module_validation_testing>")
 goat_python(integration.module_writer "integration" scripts/check_module_writer.py "$<TARGET_FILE:module_writer_testing>")
-goat_python(integration.module_sources "integration" scripts/check_module_sources.py "$<TARGET_FILE:module_sources_testing>")
+goat_scenario(integration.module_sources "integration;module-sources-files-migration" TIMEOUT 240 COMMAND
+  "$<TARGET_FILE:module_sources_scenarios>" integration.module_sources "$<TARGET_FILE:module_sources_testing>"
+  "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 goat_python(integration.module_search "integration" scripts/check_module_search.py "$<TARGET_FILE:module_search_testing>")
 goat_python(integration.module_dependencies "integration" scripts/check_module_dependencies.py "$<TARGET_FILE:module_dependencies_testing>")
 goat_python(integration.module_graph "integration" scripts/check_module_graph.py "$<TARGET_FILE:module_graph_testing>")
@@ -139,7 +141,9 @@ goat_python(integration.module_function_provenance "integration" scripts/check_m
 goat_python(integration.module_assignment_access "integration" scripts/check_module_assignment_access.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 goat_python(integration.module_multifile_access "integration" scripts/check_module_multifile_access.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 goat_python(integration.module_imports "integration" scripts/check_module_imports.py "$<TARGET_FILE:module_imports_testing>")
-goat_python(integration.module_files "integration" scripts/check_module_files.py "$<TARGET_FILE:module_files_testing>")
+goat_scenario(integration.module_files "integration;module-sources-files-migration" TIMEOUT 240 COMMAND
+  "$<TARGET_FILE:module_files_scenarios>" integration.module_files "$<TARGET_FILE:module_files_testing>"
+  "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 goat_python(integration.module_access "integration" scripts/test_module_access.py "$<TARGET_FILE:module_access_testing>")
 goat_python(integration.module_information "integration" scripts/check_module_information.py "$<TARGET_FILE:module_json_testing>" "$<TARGET_FILE:module_writer_testing>")
 goat_python(integration.module_information_merge "integration" scripts/check_module_information_merge.py "$<TARGET_FILE:module_json_testing>")

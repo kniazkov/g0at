@@ -545,3 +545,66 @@ and retained diagnostics. Empty/malformed host output also fails rather than
 being interpreted as a zero status. Related metadata/hash/container/bytecode and
 format-oracle tests passed 38/38. Clang-format 18 and strict C11
 `-Wall -Wextra -Werror` syntax checks passed.
+
+## Source snapshots and file identity (#348)
+
+`module_sources_scenarios` and `module_files_scenarios` replace
+`scripts/check_module_sources.py` and `scripts/check_module_files.py`. They retain
+`module_sources_testing` and `module_files_testing` as the production API hosts.
+No language, module format, or production source code is changed.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| Source host API self-test; unused sources/dependencies; descriptor defaults and omitted empty informational fields | `integration.module_sources` |
+| DFS order/targets, conditional/function includes, cycles, canonical aliases and cwd independence with a poisoned module search path | `integration.module_sources` |
+| External source identities, equal basenames/bytes, project-prefix boundary, absolute/external main and distinct snapshots | `integration.module_sources` |
+| Literal extensionless/custom-extension main, environment/tilde literals, Unicode/emoji, POSIX spaces/backslashes and Windows separator/root/drive cases | `integration.module_sources` |
+| Missing/empty/NUL main, required descriptor fields, invalid native/dependency metadata, duplicate keys and malformed UTF-8 | `integration.module_sources` |
+| Comments/string/member decoys; invalid include expressions and malformed source; exact missing-source row/column | `integration.module_sources` |
+| Directory/FIFO/device rejection, descriptor/source symlink bases and deduplication, external symlink and hard-link include bases | `integration.module_sources` |
+| File/source/total limits, 1800-file cyclic DFS, snapshot does not execute source | `integration.module_sources` |
+| File host API self-test; independently encoded 1/2/3/20-file images, 0/2 padding and every main file (52 valid cases) | `integration.module_files` |
+| Invalid main type/range, cross-file/out-of-range/interior entry, malformed file metadata (17 cases) | `integration.module_files` |
+| Duplicate external names and internal/external overlap, ASCII and Unicode identities (6 cases) | `integration.module_files` |
+| Truncated/zeroed image and invalid metadata (3 cases) | `integration.module_files` |
+
+Both runners use scenario-owned unique directories under the supplied build
+root, a common deadline, captured command diagnostics, deferred resource cleanup,
+and `--keep-work`. Success removes the work directory unless requested otherwise;
+failure preserves it. Read-only inputs are never modified. The file runner reads
+`docs/module-format-v1/vectors/empty.module.json` and independently writes the
+wire image, rather than calling a production bytecode writer for expectations.
+POSIX FIFO/device/literal-path checks are platform-specific; Windows equivalents
+check separator normalization and ambiguous drive/root paths. Windows symlinks
+may skip only for the explicit missing-privilege error; other creation errors
+fail the scenario. Hard links are required on both platforms.
+
+Reproduce (Debug or Release):
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_sources_scenarios module_files_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-sources-files-migration
+build/manual/module_sources_scenarios integration.module_sources build/manual/module_sources_testing build/manual test/data --keep-work
+build/manual/module_files_scenarios integration.module_files build/manual/module_files_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Historical Python comparison, before removing the restored runners:
+git show 8558112d21b0f1e6e1db21261dfd798de92d86b0:scripts/check_module_sources.py > scripts/check_module_sources.py
+git show 8558112d21b0f1e6e1db21261dfd798de92d86b0:scripts/check_module_files.py > scripts/check_module_files.py
+python3 scripts/check_module_sources.py build/manual/module_sources_testing
+python3 scripts/check_module_files.py build/manual/module_files_testing
+```
+
+The CTest IDs remain in full Debug integration; explicit Linux and MinGW Debug
+build lists and Release migration labels include both new runners. Alpine/musl
+runs them in Debug and Release as well. CI links and final-commit verification
+are recorded in the PR/issue, without an extra checklist-only push.
+
+Local verification for this migration: Debug and Release each pass the original
+Python and C suites (67 source fixtures on Linux and 78 file fixtures). Capturing
+the old/new file-host requests gives identical bytecode bytes and semantically
+identical JSON metadata for all 78 cases. The two C scenarios also pass with the
+hosts and libraries instrumented by UBSan. Fake hosts returning an empty source
+graph or wrong file-entry output are rejected in Release, preserving diagnostics.
+Host assertions deliberately remain enabled in optimized builds: these legacy
+hosts perform fixture setup and VM execution inside assertions, so disabling
+them would remove checks (and break file-fixture execution).
