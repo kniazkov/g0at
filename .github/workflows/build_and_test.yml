@@ -129,6 +129,7 @@ jobs:
           ctest --test-dir build/${{ matrix.compiler }} -N
       - name: Run registered integration suites
         run: |
+          cmake --build build/${{ matrix.compiler }} --target integer_oracle_ubsan_testing
           ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -L integration
           ctest --test-dir build/${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle"
         env:

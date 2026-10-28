@@ -53,6 +53,8 @@ this step supplies its future independent C oracle, not a replacement runner.
 Run `ctest --test-dir build -L integer-oracle --output-on-failure` after building
 `integer_oracle_testing` (and `integer_oracle_ubsan_testing` on Unix GCC/Clang).
 The same label runs in Debug/Release on Linux x86-64/AArch64 and Windows
-MinGW i686/x86-64/UCRT. UBSan instruments the oracle and caller on Linux;
+MinGW i686/x86-64/UCRT. UBSan instruments the oracle and caller in the glibc Linux CI jobs;
+the target is opt-in and excluded from default/package builds because Alpine
+musl does not ship the UBSan runtime in its build toolchain.
 Windows uses the same portable uninstrumented tests, since MinGW's configured
 CI toolchains do not provide the Unix UBSan runtime.

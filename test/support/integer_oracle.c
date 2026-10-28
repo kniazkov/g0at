@@ -16,9 +16,8 @@ static integer_oracle_value_t from_int64(int64_t input) {
     /* Conversion to unsigned is defined modulo 2^64, including INT64_MIN.
      * Unsigned subtraction obtains its magnitude without signed negation. */
     uint64_t magnitude = input < 0 ? UINT64_C(0) - (uint64_t)input : (uint64_t)input;
-    integer_oracle_value_t value = {
-        input < 0, {(uint32_t)magnitude, (uint32_t)(magnitude >> 32), 0, 0}
-    };
+    integer_oracle_value_t value = {input < 0,
+                                    {(uint32_t)magnitude, (uint32_t)(magnitude >> 32), 0, 0}};
     return value;
 }
 
@@ -55,16 +54,14 @@ static integer_oracle_value_t add(integer_oracle_value_t a, integer_oracle_value
     return normalize(result);
 }
 
-static integer_oracle_value_t multiply(integer_oracle_value_t a,
-                                       integer_oracle_value_t b) {
+static integer_oracle_value_t multiply(integer_oracle_value_t a, integer_oracle_value_t b) {
     integer_oracle_value_t result = {a.negative != b.negative, {0, 0, 0, 0}};
     /* Inputs originate from int64, hence only their two low limbs are nonzero.
      * A product plus one result limb plus carry is at most UINT64_MAX. */
     for (int i = 0; i < 2; ++i) {
         uint64_t carry = 0;
         for (int j = 0; j < 2; ++j) {
-            uint64_t product = (uint64_t)a.limb[i] * b.limb[j]
-                + result.limb[i + j] + carry;
+            uint64_t product = (uint64_t)a.limb[i] * b.limb[j] + result.limb[i + j] + carry;
             result.limb[i + j] = (uint32_t)product;
             carry = product >> 32;
         }
@@ -73,8 +70,8 @@ static integer_oracle_value_t multiply(integer_oracle_value_t a,
     return normalize(result);
 }
 
-integer_oracle_value_t integer_oracle_evaluate(integer_oracle_operation_t operation,
-                                              int64_t a, int64_t b) {
+integer_oracle_value_t
+integer_oracle_evaluate(integer_oracle_operation_t operation, int64_t a, int64_t b) {
     integer_oracle_value_t left = from_int64(a);
     integer_oracle_value_t right = from_int64(b);
     switch (operation) {

@@ -8,8 +8,10 @@
 #include <stdio.h>
 #include <string.h>
 
-static int equal(integer_oracle_value_t actual, int64_t clamped,
-    integer_oracle_value_t expected, int64_t expected_clamped) {
+static int equal(integer_oracle_value_t actual,
+                 int64_t clamped,
+                 integer_oracle_value_t expected,
+                 int64_t expected_clamped) {
     if (actual.negative != expected.negative || clamped != expected_clamped)
         return 0;
     for (int i = 0; i < 4; ++i)
@@ -38,6 +40,7 @@ static int clamp_boundaries(void) {
         {{false, {UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX}}, INT64_MAX},
         {{true, {UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX}}, INT64_MIN},
     };
+
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
         if (integer_oracle_saturate(cases[i].value) != cases[i].expected) {
             fprintf(stderr, "clamp boundary %zu failed\n", i);
@@ -49,7 +52,9 @@ static int clamp_boundaries(void) {
 
 int main(int argc, char **argv) {
     if (argc != 3) {
-        fprintf(stderr, "usage: %s parity|reject-value|reject-sign|reject-clamp fixture\n", argv[0]);
+        fprintf(stderr,
+                "usage: %s parity|reject-value|reject-sign|reject-clamp fixture\n",
+                argv[0]);
         return 1;
     }
     int mutation = 0;
@@ -76,10 +81,18 @@ int main(int argc, char **argv) {
         unsigned operation, negative;
         int64_t a, b, expected_clamped;
         integer_oracle_value_t expected;
-        int fields = fscanf(input, "%u %" SCNd64 " %" SCNd64 " %u %" SCNu32
-            " %" SCNu32 " %" SCNu32 " %" SCNu32 " %" SCNd64,
-            &operation, &a, &b, &negative, &expected.limb[0], &expected.limb[1],
-            &expected.limb[2], &expected.limb[3], &expected_clamped);
+        int fields = fscanf(input,
+                            "%u %" SCNd64 " %" SCNd64 " %u %" SCNu32 " %" SCNu32 " %" SCNu32
+                            " %" SCNu32 " %" SCNd64,
+                            &operation,
+                            &a,
+                            &b,
+                            &negative,
+                            &expected.limb[0],
+                            &expected.limb[1],
+                            &expected.limb[2],
+                            &expected.limb[3],
+                            &expected_clamped);
         if (fields == EOF && !ferror(input))
             break;
         if (fields != 9 || operation != count % 7 || negative > 1 || count >= 8372) {
@@ -87,12 +100,14 @@ int main(int argc, char **argv) {
             goto done;
         }
         expected.negative = negative != 0;
-        integer_oracle_value_t actual = integer_oracle_evaluate(
-            (integer_oracle_operation_t)operation, a, b);
+        integer_oracle_value_t actual =
+            integer_oracle_evaluate((integer_oracle_operation_t)operation, a, b);
         int64_t clamped = integer_oracle_saturate(actual);
         if (!equal(actual, clamped, expected, expected_clamped)) {
-            fprintf(stderr, "Python parity mismatch at record %zu, operation %u\n",
-                count + 1, operation);
+            fprintf(stderr,
+                    "Python parity mismatch at record %zu, operation %u\n",
+                    count + 1,
+                    operation);
             goto done;
         }
         if (mutation == 1)

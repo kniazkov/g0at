@@ -30,8 +30,8 @@ typedef struct {
  * operation must be one of the enumerators above; an invalid value aborts.
  * Every result of the supported int64 operations fits in this representation.
  */
-integer_oracle_value_t integer_oracle_evaluate(integer_oracle_operation_t operation,
-                                              int64_t a, int64_t b);
+integer_oracle_value_t
+integer_oracle_evaluate(integer_oracle_operation_t operation, int64_t a, int64_t b);
 
 /** @brief Clamp an exact signed magnitude to the int64 range without overflow. */
 int64_t integer_oracle_saturate(integer_oracle_value_t value);
