@@ -101,9 +101,10 @@ static bool spawn_fixture(fixture_t *f, uint64_t owner) {
     si.cb = sizeof(si);
     if (!CreateProcessA(NULL, command, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi))
         return false;
-    CloseHandle(pi.hThread);
     f->process = pi.hProcess;
     f->pid = pi.dwProcessId;
+    if (!CloseHandle(pi.hThread))
+        return false;
     return WaitForSingleObject(f->ready, 5000) == WAIT_OBJECT_0;
 #else
     int ready[2], release[2];
@@ -160,12 +161,13 @@ static bool dispose_fixture(fixture_t *f, bool expect_success) {
         DWORD code;
         if (expect_success && (!GetExitCodeProcess(f->process, &code) || code))
             ok = false;
-        CloseHandle(f->process);
+        if (!CloseHandle(f->process))
+            ok = false;
     }
-    if (f->ready)
-        CloseHandle(f->ready);
-    if (f->release)
-        CloseHandle(f->release);
+    if (f->ready && !CloseHandle(f->ready))
+        ok = false;
+    if (f->release && !CloseHandle(f->release))
+        ok = false;
 #else
     if (f->pid) {
         int status = 0;
@@ -251,7 +253,17 @@ static bool process_test(const char *mode) {
     child.ready = child.release = observer.ready = observer.release = -1;
 #endif
     process_watch_t *watch = NULL, *other = NULL;
-    size_t initial = handles();
+    size_t initial = (size_t)-1;
+#ifdef _WIN32
+    /* The first CreateProcess may initialize process-wide Windows runtime handles.
+     * Warm up only the native fixture, before measuring any observer operation.
+     * Do not hide an observer leak by opening/closing a watch during warmup. */
+    CHECK(spawn_fixture(&child, 0));
+    CHECK(release_fixture(&child));
+    CHECK(WaitForSingleObject(child.process, 5000) == WAIT_OBJECT_0);
+    CHECK(dispose_fixture(&child, true));
+#endif
+    initial = handles();
     CHECK(initial != (size_t)-1);
     CHECK(spawn_fixture(&child, 0));
     watch = process_watch_open(child.pid, &error);
@@ -275,11 +287,16 @@ static bool process_test(const char *mode) {
         CHECK(process_watch_kill(watch, &error) == PROCESS_WATCH_ERROR);
         watch = process_watch_open(child.pid, &error);
         CHECK(watch);
+        size_t before_repeated_open = handles();
+        CHECK(before_repeated_open != (size_t)-1);
         for (int i = 0; i < 128; ++i) {
             other = process_watch_open(child.pid, &error);
             CHECK(other);
+            CHECK(handles() == before_repeated_open + 1);
             CHECK(process_watch_close(&other, &error) == PROCESS_WATCH_OK);
+            CHECK(handles() == before_repeated_open);
         }
+        CHECK(handles() == before_repeated_open);
     }
     if (!strcmp(mode, "owner-death")) {
         CHECK(spawn_fixture(&observer, child.pid));
@@ -318,8 +335,9 @@ done:
     process_watch_close(&watch, &error);
     dispose_fixture(&observer, false);
     dispose_fixture(&child, false);
-    if (handles() != initial) {
-        fprintf(stderr, "native handle leak\n");
+    size_t final = handles();
+    if (initial != (size_t)-1 && final != initial) {
+        fprintf(stderr, "native handle leak: before=%zu after=%zu\n", initial, final);
         success = false;
     }
     return success;
