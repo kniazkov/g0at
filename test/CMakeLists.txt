@@ -6,8 +6,8 @@ include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/src" "${PROJE
 # Independent JSON format reference: yyjson is only the syntax/DOM substrate.
 # No production module validator or canonicalizer is linked into this oracle.
 add_library(goat_format_oracle STATIC support/format_json.c support/format_analysis.c
-  support/format_metadata.c)
-target_link_libraries(goat_format_oracle PUBLIC yyjson m)
+  support/format_metadata.c support/format_binary.c support/format_zip.c support/format_fixtures.c)
+target_link_libraries(goat_format_oracle PUBLIC yyjson goat_zlib m)
 add_executable(format_oracle_testing src/support/format_oracle_testing.c)
 target_link_libraries(format_oracle_testing PRIVATE goat_format_oracle goat_test_support)
 if(UNIX AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
@@ -16,6 +16,19 @@ if(UNIX AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
   target_link_libraries(format_oracle_ubsan_testing PRIVATE yyjson goat_test_support m)
   target_compile_options(format_oracle_ubsan_testing PRIVATE -fsanitize=undefined -fno-sanitize-recover=all)
   set_property(TARGET format_oracle_ubsan_testing APPEND_STRING PROPERTY LINK_FLAGS
+    " -fsanitize=undefined -fno-sanitize-recover=all")
+endif()
+
+# Independent binary/ZIP reference uses zlib primitives, never Goat format wrappers.
+add_executable(format_binary_testing src/support/format_binary_testing.c)
+target_link_libraries(format_binary_testing PRIVATE goat_format_oracle goat_test_support)
+if(UNIX AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+  add_executable(format_binary_ubsan_testing EXCLUDE_FROM_ALL src/support/format_binary_testing.c
+    support/format_json.c support/format_analysis.c support/format_metadata.c
+    support/format_binary.c support/format_zip.c support/format_fixtures.c)
+  target_link_libraries(format_binary_ubsan_testing PRIVATE yyjson goat_zlib goat_test_support m)
+  target_compile_options(format_binary_ubsan_testing PRIVATE -fsanitize=undefined -fno-sanitize-recover=all)
+  set_property(TARGET format_binary_ubsan_testing APPEND_STRING PROPERTY LINK_FLAGS
     " -fsanitize=undefined -fno-sanitize-recover=all")
 endif()
 
