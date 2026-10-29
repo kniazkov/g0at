@@ -70,7 +70,7 @@
 - [x] 37. [#355 — Перенести на Си: Инициализация и её ошибки](https://github.com/kniazkov/g0at/issues/355) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 38. [#356 — Перенести на Си: Контракт инициализации и исключения](https://github.com/kniazkov/g0at/issues/356) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 39. [#357 — Перенести на Си: Неполные области и ошибочные прототипы](https://github.com/kniazkov/g0at/issues/357) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
-- [ ] 40. [#358 — Перенести на Си: Базовый доступ к модулю](https://github.com/kniazkov/g0at/issues/358)
+- [x] 40. [#358 — Перенести на Си: Базовый доступ к модулю](https://github.com/kniazkov/g0at/issues/358) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [ ] 41. [#359 — Перенести на Си: Общие сценарии доступа и multifile](https://github.com/kniazkov/g0at/issues/359)
 - [ ] 42. [#360 — Перенести на Си: Контекстные константы и provenance](https://github.com/kniazkov/g0at/issues/360)
 - [ ] 43. [#361 — Перенести на Си: Присваивания и доступ](https://github.com/kniazkov/g0at/issues/361)

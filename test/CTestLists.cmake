@@ -195,7 +195,11 @@ goat_scenario(integration.module_imports "integration;imports-include-migration"
 goat_scenario(integration.module_files "integration;module-sources-files-migration" TIMEOUT 240 COMMAND
   "$<TARGET_FILE:module_files_scenarios>" integration.module_files "$<TARGET_FILE:module_files_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
-goat_python(integration.module_access "integration" scripts/test_module_access.py "$<TARGET_FILE:module_access_testing>")
+foreach(access_case model_vm wire_files wire_declarations)
+  goat_scenario(integration.module_access.${access_case} "integration;module-access-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_access_scenarios>" integration.module_access.${access_case} "$<TARGET_FILE:module_access_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
 goat_python(integration.module_information "integration" scripts/check_module_information.py "$<TARGET_FILE:module_json_testing>" "$<TARGET_FILE:module_writer_testing>")
 goat_python(integration.module_information_merge "integration" scripts/check_module_information_merge.py "$<TARGET_FILE:module_json_testing>")
 goat_python(integration.module_merge "integration" scripts/check_module_merge.py "$<TARGET_FILE:goat-merge>" "${CMAKE_C_COMPILER}")
@@ -301,8 +305,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 123)
-  message(FATAL_ERROR "Expected all 123 integration scenarios (scope/prototype cases split in #357); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 125)
+  message(FATAL_ERROR "Expected all 125 integration scenarios (basic access cases split in #358); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
