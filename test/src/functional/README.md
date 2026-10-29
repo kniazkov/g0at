@@ -905,10 +905,9 @@ cleanup after success and optional `--keep-work`; input data and vectors remain
 read-only. Required checks and component-host assertions stay active in Release.
 Windows runs all scenarios, omitting only the POSIX stack limit as before.
 
-The remaining `scripts/check_module_identity.py` consumer uses a temporary
-`module_snapshot_fixtures.py` compatibility module, not another test runner.
-Only its `image`, `archive` and `put` helpers remain; final Python helper cleanup
-is tracked by #394 (identity migration is #354).
+The final Python fixture consumer was migrated in #354. Snapshot and identity now
+share the independent C constructor in `test/support/module_snapshot_fixture.c`;
+the temporary `module_snapshot_fixtures.py` compatibility module is removed.
 
 ```sh
 cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
@@ -933,3 +932,61 @@ mutations. Normalization is limited to workspace roots and JSON whitespace.
 Release rejects deliberately incorrect check counts and corrupt root inputs,
 retaining diagnostics. Ordinary success removes its workspace; `--keep-work`
 retains it. UBSan with Python discovery disabled passes all nine scenarios.
+
+
+## Module identity and serialization (#354)
+
+`module_identity_scenarios` and `module_serialization_scenarios` replace the two
+Python runners, preserving the existing component hosts without production changes.
+The historical serialization runner actually tests OS-thread initialization
+publication/exclusion and direct-entry readiness, not a generic format roundtrip;
+its three padding inputs each exercise four component-host variants.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| Shared external cell, same targets and four nodes for identical copies | `integration.module_identity.identical` |
+| Informational metadata excluded from identity | `integration.module_identity.information` |
+| Unused corrupt physical copy ignored | `integration.module_identity.corrupt-unused` |
+| Same name, two versions: counters 2/1 and distinct hashes | `integration.module_identity.versions` |
+| First archive has no native data; later native data not adopted | `integration.module_identity.vm-first` |
+| First native bytes survive a later VM-only copy | `integration.module_identity.native-first` |
+| Changed native bytes/additional variant do not replace first archive | `integration.module_identity.different-native` |
+| Later corrupt archive ignored | `integration.module_identity.corrupt-later` |
+| Missing first archive selects later native bytes | `integration.module_identity.fallback-missing` |
+| Fallback with additional ARM variant preserves both native payloads | `integration.module_identity.extra-fallback` |
+| First existing mismatching hash cannot fall back | `integration.module_identity.mismatching-first` |
+| Conflicting incoming hashes do not create duplicate instances | `integration.module_identity.hash-conflict` |
+| Publication, exclusion, direct-entry readiness; padding 0/2/7 | `integration.module_serialization.padding_0`, `.padding_2`, `.padding_7` |
+
+All scenarios use unique build workspaces, common deadlines and captured command
+logs, retain diagnostics after failure and support `--keep-work`. Successful runs
+clean their workspaces. Test data/vectors are read-only; assertions remain active
+in Release. No platform-specific skips are added. The label
+`module-identity-serialization-migration` is included in Linux x86-64/AArch64,
+Windows MinGW i686/x86-64/UCRT and Alpine/musl Debug/Release CI.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_identity_scenarios module_serialization_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-identity-serialization-migration
+build/manual/module_identity_scenarios integration.module_identity.different-native build/manual/module_identity_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+build/manual/module_serialization_scenarios integration.module_serialization.padding_7 build/manual/module_serialization_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Repeat in Release; use .exe on Windows.
+# Historical runners and their temporary fixture helper are available at:
+# 8558c3e241bee91c8de0ddd5bb7f78d16b304b57:scripts/check_module_identity.py
+# 8558c3e241bee91c8de0ddd5bb7f78d16b304b57:scripts/check_module_serialization.py
+# 8558c3e241bee91c8de0ddd5bb7f78d16b304b57:scripts/module_snapshot_fixtures.py
+```
+
+The checklist mark is included in the implementation commit; final-commit CI
+links are recorded in the PR and issue without a checklist-only push.
+
+Local verification: all 12 ordered identity calls match Python/C in Debug and
+Release, including parsed JSON results, every archive's metadata and bytecode/native
+payload hashes (only JSON whitespace and workspace roots normalized). Serialization
+fixtures match exact bytecode and parsed metadata for all three padding values.
+Deliberately wrong identity counters/native lists, wrong serialization output and
+corrupt metadata are rejected with retained diagnostics, including Release.
+All 24 new and snapshot cases pass Debug, Release and UBSan with Python discovery
+disabled; 52 combined migration/framework checks pass in Debug. Strict C11 warnings
+and the repository-wide clang-format 18 check pass.

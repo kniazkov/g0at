@@ -164,7 +164,7 @@ callback-функции spawn по-прежнему могут получать 
 
 ## Acceptance coverage / Приёмочные проверки
 
-`scripts/check_module_serialization.py` exercises controlled concurrent requests,
+`module_serialization_scenarios` exercises controlled concurrent requests,
 serialized independent initializers, saved failures and reentrant includes.
 `scripts/check_module_threads.py` exercises the language/VM/native thread paths,
 dynamic restrictions, direct-entry readiness and blocking-I/O handshakes.
@@ -174,7 +174,7 @@ explicit synchronization rather than random delays. Host-side deadlines are hang
 protection, not a language initialization timeout. The process diagnostic
 `initialization_waiters` is inspected only while holding the execution mutex.
 
-`scripts/check_module_serialization.py` проверяет управляемые конкурентные запросы,
+`module_serialization_scenarios` проверяет управляемые конкурентные запросы,
 сериализацию независимых инициализаторов, сохранённые ошибки и повторный include.
 `scripts/check_module_threads.py` проверяет потоки через язык/VM/native, динамические
 ограничения, готовность прямого входного файла и согласованное блокирующее I/O.
@@ -183,3 +183,7 @@ protection, not a language initialization timeout. The process diagnostic
 очистку. Порядок задаётся явной синхронизацией, а не случайными задержками; лимит
 стенда защищает от зависания, не вводя таймаут языка. Диагностический счётчик процесса
 `initialization_waiters` читается только под мьютексом исполнения.
+
+Run the migrated serialization cases with
+`ctest --test-dir build --output-on-failure -R "^integration.module_serialization\\."`
+(or select a stable ID directly; see [scenario map](../test/src/functional/README.md)).

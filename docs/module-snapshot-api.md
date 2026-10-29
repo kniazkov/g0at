@@ -187,7 +187,7 @@ on Linux x86-64/AArch64 and Windows UCRT64/MINGW64/MINGW32.
 
 ### Identity regression suite (#235)
 
-`python3 scripts/check_module_identity.py build/module_identity_testing` exercises
+`ctest --test-dir build --output-on-failure -R "^integration.module_identity\\."` exercises
 shared external-cell updates through diamond consumers, separate-version access
 boundaries with identical bytecode, independent launch state, exact triple lookup,
 identical/informationally different physical copies, first-copy native ownership,
@@ -196,7 +196,7 @@ the existing snapshot suite on every Linux and Windows CI configuration. Tests u
 the shared runtime/access APIs; language-level import remains a subsequent task; one-time initialization has
 its own [component tests](module-initialization-api.md).
 
-`check_module_identity.py` проверяет общую external-ячейку потребителей ромба,
+`module_identity_scenarios` проверяет общую external-ячейку потребителей ромба,
 раздельные права версий с одинаковым байткодом, независимость запусков, точную
 тройку идентичности, физические копии с одинаковыми или различными информационными
 метаданными, нативные части только первого архива и отказ при конфликте хешей до

@@ -6,6 +6,9 @@
 #include "model/process.h"
 #include "vm/module_snapshot.h"
 
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
