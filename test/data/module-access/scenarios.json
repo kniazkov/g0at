@@ -1,0 +1,2984 @@
+[
+  {
+    "id": "integration.module_multifile_access.ac-01-declarations-include",
+    "group": "basic",
+    "name": "ac-01-declarations-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "1\n2\n18\nPROPERTY_IS_CONSTANT\nPROPERTY_IS_CONSTANT\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "external f = func() { return 1; }; external const g = func() { return 2; }; external obj = { private var x = 3, y = 4; protected left = 5, right = 6; external read = func() { return x + y + left + right; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; println(a.f()); println(a.g()); println(a.obj.read()); try { a.f = func() {}; } catch(e) { println(e); } try { a.g = func() {}; } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-01-declarations-import",
+    "group": "basic",
+    "name": "ac-01-declarations-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "1\n2\n18\nPROPERTY_IS_CONSTANT\nPROPERTY_IS_CONSTANT\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; println(a.f()); println(a.g()); println(a.obj.read()); try { a.f = func() {}; } catch(e) { println(e); } try { a.g = func() {}; } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "external f = func() { return 1; }; external const g = func() { return 2; }; external obj = { private var x = 3, y = 4; protected left = 5, right = 6; external read = func() { return x + y + left + right; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-02-syntax-0",
+    "group": "basic",
+    "name": "ac-02-syntax-0",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": true,
+        "diagnostic": "Exactly one access modifier"
+      }
+    ],
+    "files": {
+      "sources/main.goat": "include \"negative.goat\";",
+      "sources/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/negative.goat": "var obj = {}; public private var x = 1;"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-02-syntax-1",
+    "group": "basic",
+    "name": "ac-02-syntax-1",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": true,
+        "diagnostic": "Expected name with value assignment"
+      }
+    ],
+    "files": {
+      "sources/main.goat": "include \"negative.goat\";",
+      "sources/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/negative.goat": "var obj = {}; private obj.x = 2;"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-02-syntax-2",
+    "group": "basic",
+    "name": "ac-02-syntax-2",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": true,
+        "diagnostic": "Expected name with value assignment"
+      }
+    ],
+    "files": {
+      "sources/main.goat": "include \"negative.goat\";",
+      "sources/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/negative.goat": "var obj = {}; protected obj[\"x\"] = 3;"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-02-assignment-keeps-modifier-include",
+    "group": "basic",
+    "name": "ac-02-assignment-keeps-modifier-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "2\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "external obj = { private var x = 1; external change = func() { x = 2; }; external read = func() { return x; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; a.obj.change(); println(a.obj.read()); try { println(a.obj.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-02-assignment-keeps-modifier-import",
+    "group": "basic",
+    "name": "ac-02-assignment-keeps-modifier-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "2\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; a.obj.change(); println(a.obj.read()); try { println(a.obj.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "external obj = { private var x = 1; external change = func() { x = 2; }; external read = func() { return x; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-03-body-dot-index-include",
+    "group": "basic",
+    "name": "ac-03-body-dot-index-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "42\n42\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "external obj = { private var x = 42; println(x); external read = func() { return this[\"x\"]; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; println(a.obj.read()); const readDot = func(value) { return value.x; }; const readIndex = func(value, key) { return value[key]; }; try { readDot(a.obj); } catch(e) { println(e); } try { readIndex(a.obj, \"x\"); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-03-body-dot-index-import",
+    "group": "basic",
+    "name": "ac-03-body-dot-index-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "42\n42\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; println(a.obj.read()); const readDot = func(value) { return value.x; }; const readIndex = func(value, key) { return value[key]; }; try { readDot(a.obj); } catch(e) { println(e); } try { readIndex(a.obj, \"x\"); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "external obj = { private var x = 42; println(x); external read = func() { return this[\"x\"]; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-03-static-0",
+    "group": "basic",
+    "name": "ac-03-static-0",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": true,
+        "diagnostic": "Access denied: read of x (declaration at"
+      }
+    ],
+    "files": {
+      "sources/main.goat": "include \"negative.goat\";",
+      "sources/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/negative.goat": "const obj = { private var x = 42; }; try { println(obj.x); } catch(e) {}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-03-static-1",
+    "group": "basic",
+    "name": "ac-03-static-1",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": true,
+        "diagnostic": "Access denied: read of x (declaration at"
+      }
+    ],
+    "files": {
+      "sources/main.goat": "include \"negative.goat\";",
+      "sources/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/negative.goat": "const obj = { private var x = 42; }; try { println(obj[\"x\"]); } catch(e) {}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-04-clone-include",
+    "group": "basic",
+    "name": "ac-04-clone-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "ACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "const outsider = func() { return this.x; }; external obj = { private var x = 10; external read = outsider; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; const copy = a.obj.clone(); try { copy.read(); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-04-clone-import",
+    "group": "basic",
+    "name": "ac-04-clone-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "ACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; const copy = a.obj.clone(); try { copy.read(); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "const outsider = func() { return this.x; }; external obj = { private var x = 10; external read = outsider; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-04-flat-include",
+    "group": "basic",
+    "name": "ac-04-flat-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "ACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "const outsider = func() { return this.x; }; external obj = { private var x = 10; external read = outsider; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; const copy = a.obj.flat(); try { copy.read(); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-04-flat-import",
+    "group": "basic",
+    "name": "ac-04-flat-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "ACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; const copy = a.obj.flat(); try { copy.read(); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "const outsider = func() { return this.x; }; external obj = { private var x = 10; external read = outsider; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-05-ordinary-method-move-include",
+    "group": "basic",
+    "name": "ac-05-ordinary-method-move-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "external obj = { private var x = 10; external read = func(target) { return target.x; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; var b = { private var x = 20; }; b.read = a.obj.read; println(a.obj.read(a.obj)); try { b.read(b); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-05-ordinary-method-move-import",
+    "group": "basic",
+    "name": "ac-05-ordinary-method-move-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; var b = { private var x = 20; }; b.read = a.obj.read; println(a.obj.read(a.obj)); try { b.read(b); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "external obj = { private var x = 10; external read = func(target) { return target.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-06-private-include",
+    "group": "basic",
+    "name": "ac-06-private-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "external make = func(value) { return { private var x = value; external sumWith = func(other) { return x + other.x; }; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; const left = a.make(10); const right = a.make(20); println(left.sumWith(left)); try { left.sumWith(right); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-06-private-import",
+    "group": "basic",
+    "name": "ac-06-private-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; const left = a.make(10); const right = a.make(20); println(left.sumWith(left)); try { left.sumWith(right); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "external make = func(value) { return { private var x = value; external sumWith = func(other) { return x + other.x; }; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-06-protected-include",
+    "group": "basic",
+    "name": "ac-06-protected-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "external make = func(value) { return { protected var x = value; external sumWith = func(other) { return x + other.x; }; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; const left = a.make(10); const right = a.make(20); println(left.sumWith(left)); try { left.sumWith(right); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-06-protected-import",
+    "group": "basic",
+    "name": "ac-06-protected-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; const left = a.make(10); const right = a.make(20); println(left.sumWith(left)); try { left.sumWith(right); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "external make = func(value) { return { protected var x = value; external sumWith = func(other) { return x + other.x; }; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-07-escaped-closure-include",
+    "group": "basic",
+    "name": "ac-07-escaped-closure-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "42\nACCESS_DENIED\n42\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "external obj = { private var x = 42; external reader = func() { return func() { return x; }; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; const read = a.obj.reader(); println(read()); try { println(a.obj.x); } catch(e) { println(e); } println(read());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-07-escaped-closure-import",
+    "group": "basic",
+    "name": "ac-07-escaped-closure-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "42\nACCESS_DENIED\n42\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; const read = a.obj.reader(); println(read()); try { println(a.obj.x); } catch(e) { println(e); } println(read());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "external obj = { private var x = 42; external reader = func() { return func() { return x; }; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-08-nested-capture-include",
+    "group": "basic",
+    "name": "ac-08-nested-capture-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "42\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "external outer = { private var secret = 42; external inner = { external read = func() { return secret; }; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; println(a.outer.inner.read()); try { println(a.outer.secret); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-08-nested-capture-import",
+    "group": "basic",
+    "name": "ac-08-nested-capture-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "42\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; println(a.outer.inner.read()); try { println(a.outer.secret); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "external outer = { private var secret = 42; external inner = { external read = func() { return secret; }; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-09-descendant-rights-include",
+    "group": "basic",
+    "name": "ac-09-descendant-rights-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n10\n7\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "external Base = { protected var x = 10; private var secret = 7; external readSecret = func() { return secret; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; var child = a.Base -> { public fromBody = x; public readBase = func() { return a.Base.x; }; public forbidden = func() { return a.Base.secret; }; }; println(child.fromBody); println(child.readBase()); println(child.readSecret()); try { child.forbidden(); } catch(e) { println(e); } try { println(a.Base.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-09-descendant-rights-import",
+    "group": "basic",
+    "name": "ac-09-descendant-rights-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n10\n7\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; var child = a.Base -> { public fromBody = x; public readBase = func() { return a.Base.x; }; public forbidden = func() { return a.Base.secret; }; }; println(child.fromBody); println(child.readBase()); println(child.readSecret()); try { child.forbidden(); } catch(e) { println(e); } try { println(a.Base.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "external Base = { protected var x = 10; private var secret = 7; external readSecret = func() { return secret; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-10-hidden-shadow-clone-include",
+    "group": "basic",
+    "name": "ac-10-hidden-shadow-clone-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "2\n2\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "const Base = { external var x = 1; }; external obj = Base -> { private var x = 2; external read = func() { return x; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; println(a.obj.read()); const copy = a.obj.clone(); println(copy.read()); const read = func(value) { return value.x; }; try { read(a.obj); } catch(e) { println(e); } try { read(copy); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-10-hidden-shadow-clone-import",
+    "group": "basic",
+    "name": "ac-10-hidden-shadow-clone-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "2\n2\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; println(a.obj.read()); const copy = a.obj.clone(); println(copy.read()); const read = func(value) { return value.x; }; try { read(a.obj); } catch(e) { println(e); } try { read(copy); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "const Base = { external var x = 1; }; external obj = Base -> { private var x = 2; external read = func() { return x; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-10-hidden-shadow-flat-include",
+    "group": "basic",
+    "name": "ac-10-hidden-shadow-flat-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "2\n2\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/implementation.goat": "const Base = { external var x = 1; }; external obj = Base -> { private var x = 2; external read = func() { return x; }; };",
+      "sources/app-1/library.goat": "external api = include \"implementation.goat\";",
+      "sources/app-1/main.goat": "const a = (include \"library.goat\").api; println(a.obj.read()); const copy = a.obj.flat(); println(copy.read()); const read = func(value) { return value.x; }; try { read(a.obj); } catch(e) { println(e); } try { read(copy); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-10-hidden-shadow-flat-import",
+    "group": "basic",
+    "name": "ac-10-hidden-shadow-flat-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "2\n2\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const a = (import \"library@1\").api; println(a.obj.read()); const copy = a.obj.flat(); println(copy.read()); const read = func(value) { return value.x; }; try { read(a.obj); } catch(e) { println(e); } try { read(copy); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/implementation.goat": "const Base = { external var x = 1; }; external obj = Base -> { private var x = 2; external read = func() { return x; }; };",
+      "sources/library-1/main.goat": "external api = include \"implementation.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-11-include",
+    "group": "copy",
+    "name": "AC-11-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "42\nACCESS_DENIED\nACCESS_DENIED\ngetX\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external obj = { private var x = 42; external getX = func() { return this.x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); println(copy.getX()); try { println(copy.x); } catch(e) { println(e); } try { println(copy[\"x\"]); } catch(e) { println(e); } for (key in copy) println(key);",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-11-import",
+    "group": "copy",
+    "name": "AC-11-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "42\nACCESS_DENIED\nACCESS_DENIED\ngetX\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); println(copy.getX()); try { println(copy.x); } catch(e) { println(e); } try { println(copy[\"x\"]); } catch(e) { println(e); } for (key in copy) println(key);",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external obj = { private var x = 42; external getX = func() { return this.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-12-include",
+    "group": "copy",
+    "name": "AC-12-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n20\n30\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "const A = { private var x = 10; external getA = func() { return this.x; }; }; const B = A -> { private var x = 20; external getB = func() { return this.x; }; }; external obj = B -> { external sum = func() { return this.getA() + this.getB(); }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); println(copy.getA()); println(copy.getB()); println(copy.sum()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-12-import",
+    "group": "copy",
+    "name": "AC-12-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n20\n30\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); println(copy.getA()); println(copy.getB()); println(copy.sum()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "const A = { private var x = 10; external getA = func() { return this.x; }; }; const B = A -> { private var x = 20; external getB = func() { return this.x; }; }; external obj = B -> { external sum = func() { return this.getA() + this.getB(); }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-13-include",
+    "group": "copy",
+    "name": "AC-13-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n20\n10\n20\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "const A = { protected var x = 10; external captured = func() { return x; }; external current = func() { return this.x; }; }; external obj = A -> { protected var x = 20; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; println(api.obj.captured()); println(api.obj.current()); const copy = api.obj.flat(); println(copy.captured()); println(copy.current()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-13-import",
+    "group": "copy",
+    "name": "AC-13-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n20\n10\n20\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; println(api.obj.captured()); println(api.obj.current()); const copy = api.obj.flat(); println(copy.captured()); println(copy.current()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "const A = { protected var x = 10; external captured = func() { return x; }; external current = func() { return this.x; }; }; external obj = A -> { protected var x = 20; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-14-clone-include",
+    "group": "copy",
+    "name": "AC-14-clone-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n20\n20\n20\n30\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external obj = { private var x = 10; external getX = func() { return x; }; external setX = func(value) { x = value; }; external viaThis = func() { return this.x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.clone(); copy.setX(20); println(api.obj.getX()); println(copy.getX()); println(copy.viaThis()); api.obj.setX(30); println(copy.getX()); println(api.obj.viaThis());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-14-clone-import",
+    "group": "copy",
+    "name": "AC-14-clone-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n20\n20\n20\n30\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.clone(); copy.setX(20); println(api.obj.getX()); println(copy.getX()); println(copy.viaThis()); api.obj.setX(30); println(copy.getX()); println(api.obj.viaThis());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external obj = { private var x = 10; external getX = func() { return x; }; external setX = func(value) { x = value; }; external viaThis = func() { return this.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-15-clone-include",
+    "group": "copy",
+    "name": "AC-15-clone-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "11\n11\n2\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "var counter = 0; external count = func() { return counter; }; external obj = { private var x = 10; external next = func() { counter += 1; x += 1; return x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.clone(); println(copy.next()); println(api.obj.next()); println(api.count()); try { println(api.counter); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-15-clone-import",
+    "group": "copy",
+    "name": "AC-15-clone-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "11\n11\n2\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.clone(); println(copy.next()); println(api.obj.next()); println(api.count()); try { println(api.counter); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "var counter = 0; external count = func() { return counter; }; external obj = { private var x = 10; external next = func() { counter += 1; x += 1; return x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-16-clone-include",
+    "group": "copy",
+    "name": "AC-16-clone-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\n10\n30\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external obj = { private var x = 10; external setX = func(value) { x = value; }; external inner = { external getX = func() { return x; }; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.clone(); copy.setX(20); println(copy.inner == api.obj.inner); println(copy.inner.getX()); api.obj.setX(30); println(copy.inner.getX());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-16-clone-import",
+    "group": "copy",
+    "name": "AC-16-clone-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\n10\n30\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.clone(); copy.setX(20); println(copy.inner == api.obj.inner); println(copy.inner.getX()); api.obj.setX(30); println(copy.inner.getX());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external obj = { private var x = 10; external setX = func(value) { x = value; }; external inner = { external getX = func() { return x; }; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-17-clone-private-include",
+    "group": "copy",
+    "name": "AC-17-clone-private-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\n10\n10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external A = { private var x = 10; external setLocal = func(value) { x = value; }; external local = func() { return x; }; external original = func() { return A.x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.A.clone(); copy.setLocal(20); println(copy.local()); println(copy.original()); println(api.A.local()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-17-clone-private-import",
+    "group": "copy",
+    "name": "AC-17-clone-private-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\n10\n10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.A.clone(); copy.setLocal(20); println(copy.local()); println(copy.original()); println(api.A.local()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external A = { private var x = 10; external setLocal = func(value) { x = value; }; external local = func() { return x; }; external original = func() { return A.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-17-clone-protected-include",
+    "group": "copy",
+    "name": "AC-17-clone-protected-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\n10\n10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external A = { protected var x = 10; external setLocal = func(value) { x = value; }; external local = func() { return x; }; external original = func() { return A.x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.A.clone(); copy.setLocal(20); println(copy.local()); println(copy.original()); println(api.A.local()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-17-clone-protected-import",
+    "group": "copy",
+    "name": "AC-17-clone-protected-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\n10\n10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.A.clone(); copy.setLocal(20); println(copy.local()); println(copy.original()); println(api.A.local()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external A = { protected var x = 10; external setLocal = func(value) { x = value; }; external local = func() { return x; }; external original = func() { return A.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-18-clone-include",
+    "group": "copy",
+    "name": "AC-18-clone-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n10\nACCESS_DENIED\n10\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external obj = { private var x = 10; external readOther = func(other) { return other.x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.clone(); println(copy.readOther(copy)); println(copy.readOther(api.obj)); try { println(api.obj.readOther(copy)); } catch(e) { println(e); } println(api.obj.readOther(api.obj));",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-18-clone-import",
+    "group": "copy",
+    "name": "AC-18-clone-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n10\nACCESS_DENIED\n10\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.clone(); println(copy.readOther(copy)); println(copy.readOther(api.obj)); try { println(api.obj.readOther(copy)); } catch(e) { println(e); } println(api.obj.readOther(api.obj));",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external obj = { private var x = 10; external readOther = func(other) { return other.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-19-clone-include",
+    "group": "copy",
+    "name": "AC-19-clone-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "1\n2\ntrue\ntrue\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external Base = { private var x = 0; external next = func() { x += 1; return x; }; }; external obj = Base -> {};",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.clone(); println(api.obj.next()); println(copy.next()); println(copy.next == api.obj.next); println(copy.instanceOf(api.Base));",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-19-clone-import",
+    "group": "copy",
+    "name": "AC-19-clone-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "1\n2\ntrue\ntrue\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.clone(); println(api.obj.next()); println(copy.next()); println(copy.next == api.obj.next); println(copy.instanceOf(api.Base));",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external Base = { private var x = 0; external next = func() { x += 1; return x; }; }; external obj = Base -> {};",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-20-clone-include",
+    "group": "copy",
+    "name": "AC-20-clone-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\nfalse\n10\nfalse\n10\ntrue\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external obj = { private var x = 10; external f = func() { return x; }; external g = f; external h = func() { return x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.clone(); println(copy.f == copy.g); println(copy.f == api.obj.f); println(copy.g()); println(copy.f == copy.h); println(copy.h()); println(api.obj.f == api.obj.g);",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-20-clone-import",
+    "group": "copy",
+    "name": "AC-20-clone-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\nfalse\n10\nfalse\n10\ntrue\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.clone(); println(copy.f == copy.g); println(copy.f == api.obj.f); println(copy.g()); println(copy.f == copy.h); println(copy.h()); println(api.obj.f == api.obj.g);",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external obj = { private var x = 10; external f = func() { return x; }; external g = f; external h = func() { return x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-14-flat-include",
+    "group": "copy",
+    "name": "AC-14-flat-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n20\n20\n20\n30\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external obj = { private var x = 10; external getX = func() { return x; }; external setX = func(value) { x = value; }; external viaThis = func() { return this.x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); copy.setX(20); println(api.obj.getX()); println(copy.getX()); println(copy.viaThis()); api.obj.setX(30); println(copy.getX()); println(api.obj.viaThis());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-14-flat-import",
+    "group": "copy",
+    "name": "AC-14-flat-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n20\n20\n20\n30\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); copy.setX(20); println(api.obj.getX()); println(copy.getX()); println(copy.viaThis()); api.obj.setX(30); println(copy.getX()); println(api.obj.viaThis());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external obj = { private var x = 10; external getX = func() { return x; }; external setX = func(value) { x = value; }; external viaThis = func() { return this.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-15-flat-include",
+    "group": "copy",
+    "name": "AC-15-flat-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "11\n11\n2\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "var counter = 0; external count = func() { return counter; }; external obj = { private var x = 10; external next = func() { counter += 1; x += 1; return x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); println(copy.next()); println(api.obj.next()); println(api.count()); try { println(api.counter); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-15-flat-import",
+    "group": "copy",
+    "name": "AC-15-flat-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "11\n11\n2\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); println(copy.next()); println(api.obj.next()); println(api.count()); try { println(api.counter); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "var counter = 0; external count = func() { return counter; }; external obj = { private var x = 10; external next = func() { counter += 1; x += 1; return x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-16-flat-include",
+    "group": "copy",
+    "name": "AC-16-flat-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\n10\n30\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external obj = { private var x = 10; external setX = func(value) { x = value; }; external inner = { external getX = func() { return x; }; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); copy.setX(20); println(copy.inner == api.obj.inner); println(copy.inner.getX()); api.obj.setX(30); println(copy.inner.getX());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-16-flat-import",
+    "group": "copy",
+    "name": "AC-16-flat-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\n10\n30\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); copy.setX(20); println(copy.inner == api.obj.inner); println(copy.inner.getX()); api.obj.setX(30); println(copy.inner.getX());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external obj = { private var x = 10; external setX = func(value) { x = value; }; external inner = { external getX = func() { return x; }; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-17-flat-private-include",
+    "group": "copy",
+    "name": "AC-17-flat-private-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\n10\n10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external A = { private var x = 10; external setLocal = func(value) { x = value; }; external local = func() { return x; }; external original = func() { return A.x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.A.flat(); copy.setLocal(20); println(copy.local()); println(copy.original()); println(api.A.local()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-17-flat-private-import",
+    "group": "copy",
+    "name": "AC-17-flat-private-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\n10\n10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.A.flat(); copy.setLocal(20); println(copy.local()); println(copy.original()); println(api.A.local()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external A = { private var x = 10; external setLocal = func(value) { x = value; }; external local = func() { return x; }; external original = func() { return A.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-17-flat-protected-include",
+    "group": "copy",
+    "name": "AC-17-flat-protected-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\n10\n10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external A = { protected var x = 10; external setLocal = func(value) { x = value; }; external local = func() { return x; }; external original = func() { return A.x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.A.flat(); copy.setLocal(20); println(copy.local()); println(copy.original()); println(api.A.local()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-17-flat-protected-import",
+    "group": "copy",
+    "name": "AC-17-flat-protected-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "20\n10\n10\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.A.flat(); copy.setLocal(20); println(copy.local()); println(copy.original()); println(api.A.local()); try { println(copy.x); } catch(e) { println(e); }",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external A = { protected var x = 10; external setLocal = func(value) { x = value; }; external local = func() { return x; }; external original = func() { return A.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-18-flat-include",
+    "group": "copy",
+    "name": "AC-18-flat-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n10\nACCESS_DENIED\n10\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external obj = { private var x = 10; external readOther = func(other) { return other.x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); println(copy.readOther(copy)); println(copy.readOther(api.obj)); try { println(api.obj.readOther(copy)); } catch(e) { println(e); } println(api.obj.readOther(api.obj));",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-18-flat-import",
+    "group": "copy",
+    "name": "AC-18-flat-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n10\nACCESS_DENIED\n10\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); println(copy.readOther(copy)); println(copy.readOther(api.obj)); try { println(api.obj.readOther(copy)); } catch(e) { println(e); } println(api.obj.readOther(api.obj));",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external obj = { private var x = 10; external readOther = func(other) { return other.x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-19-flat-include",
+    "group": "copy",
+    "name": "AC-19-flat-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "1\n1\nfalse\nfalse\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external Base = { private var x = 0; external next = func() { x += 1; return x; }; }; external obj = Base -> {};",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); println(api.obj.next()); println(copy.next()); println(copy.next == api.obj.next); println(copy.instanceOf(api.Base));",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-19-flat-import",
+    "group": "copy",
+    "name": "AC-19-flat-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "1\n1\nfalse\nfalse\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); println(api.obj.next()); println(copy.next()); println(copy.next == api.obj.next); println(copy.instanceOf(api.Base));",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external Base = { private var x = 0; external next = func() { x += 1; return x; }; }; external obj = Base -> {};",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-20-flat-include",
+    "group": "copy",
+    "name": "AC-20-flat-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\nfalse\n10\nfalse\n10\ntrue\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external obj = { private var x = 10; external f = func() { return x; }; external g = f; external h = func() { return x; }; };",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); println(copy.f == copy.g); println(copy.f == api.obj.f); println(copy.g()); println(copy.f == copy.h); println(copy.h()); println(api.obj.f == api.obj.g);",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-20-flat-import",
+    "group": "copy",
+    "name": "AC-20-flat-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\nfalse\n10\nfalse\n10\ntrue\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); println(copy.f == copy.g); println(copy.f == api.obj.f); println(copy.g()); println(copy.f == copy.h); println(copy.h()); println(api.obj.f == api.obj.g);",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external obj = { private var x = 10; external f = func() { return x; }; external g = f; external h = func() { return x; }; };",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-21-include",
+    "group": "copy",
+    "name": "AC-21-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "1\n1\n0\n2\n2\n0\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external A = { private var x = 0; external inc = func() { x += 1; return x; }; external read = func() { return x; }; }; const Left = A -> { external viaLeft = func() { return this.inc(); }; }; const Right = A -> { external viaRight = func() { return this.read(); }; }; external obj = [Left, Right] -> {};",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); println(copy.viaLeft()); println(copy.viaRight()); println(api.A.read()); println(copy.viaLeft()); println(copy.viaRight()); println(api.A.read());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-21-import",
+    "group": "copy",
+    "name": "AC-21-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "1\n1\n0\n2\n2\n0\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); println(copy.viaLeft()); println(copy.viaRight()); println(api.A.read()); println(copy.viaLeft()); println(copy.viaRight()); println(api.A.read());",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external A = { private var x = 0; external inc = func() { x += 1; return x; }; external read = func() { return x; }; }; const Left = A -> { external viaLeft = func() { return this.inc(); }; }; const Right = A -> { external viaRight = func() { return this.read(); }; }; external obj = [Left, Right] -> {};",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-22-include",
+    "group": "copy",
+    "name": "AC-22-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\ntrue\nfalse\nfalse\n1\n2\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/definitions.goat": "external Left = { external var x = 1; }; external Right = { external var x = 2; }; external obj = [Left, Right] -> {};",
+      "sources/app-1/facade.goat": "external api = include \"definitions.goat\";",
+      "sources/app-1/main.goat": "const api = (include \"facade.goat\").api; const copy = api.obj.flat(); println(copy.x == api.obj.x); println(copy.instanceOf(Object)); println(copy.instanceOf(api.Left)); println(copy.instanceOf(api.Right)); copy.x = 9; println(api.Left.x); println(api.Right.x);",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac-22-import",
+    "group": "copy",
+    "name": "AC-22-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\ntrue\nfalse\nfalse\n1\n2\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const api = (import \"facade@1\").api; const copy = api.obj.flat(); println(copy.x == api.obj.x); println(copy.instanceOf(Object)); println(copy.instanceOf(api.Left)); println(copy.instanceOf(api.Right)); copy.x = 9; println(api.Left.x); println(api.Right.x);",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external api = (import \"library@1\").api;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/definitions.goat": "external Left = { external var x = 1; }; external Right = { external var x = 2; }; external obj = [Left, Right] -> {};",
+      "sources/library-1/main.goat": "external api = include \"definitions.goat\";",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac23-observation-clone",
+    "group": "boundary",
+    "name": "ac23-observation-clone",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n{\"inspect\":func,\"moduleOnly\":20,\"shown\":30}\n[\"inspect\",\"moduleOnly\",\"shown\"]\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n[\"fileOnly\",\"inspect\",\"moduleOnly\",\"secret\",\"shield\",\"shown\"]\n[{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}]\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n[\"fileOnly\",\"inspect\",\"moduleOnly\",\"secret\",\"shield\",\"shown\"]\n[{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}]\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"shown\":30}\n[\"fileOnly\",\"inspect\",\"moduleOnly\",\"shown\"]\n[{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"shown\":30}]\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"shown\":30}\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n[\"fileOnly\",\"inspect\",\"moduleOnly\",\"secret\",\"shield\",\"shown\"]\n[{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}]\nstop\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "\n            const lib = import \"library@1\";\n            const facade = import \"facade@1\";\n            println(lib.box == facade.box);\n            const outside = func(value) {\n                println(value);\n                var keys = [];\n                for (key in value) keys.push(key);\n                println(keys);\n            };\n            outside(facade.box);\n            lib.sibling(facade.box);\n            facade.box.inspect(facade.box, outside);\n            const copy = facade.box.clone();\n            copy.inspect(copy, outside);\n            facade.box.inspect(copy, outside);\n            try { copy.inspect(copy, func(value) { throw \"stop\"; }); }\n            catch(e) { println(e); }\n            outside(copy);\n        ",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "const lib = import \"library@1\"; external box = lib.box; external sibling = lib.sibling;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/impl.goat": "\n                public box = {\n                    var fileOnly = 10;\n                    public moduleOnly = 20;\n                    external shown = 30;\n                    private secret = 40;\n                    protected shield = 50;\n                    external inspect = func(value, callback) {\n                        println(str(value));\n                        var keys = [];\n                        for (key in value) keys.push(key);\n                        println(keys);\n                        println([value]);\n                        callback(value);\n                        println(str(value));\n                    };\n                };\n            ",
+      "sources/library-1/main.goat": "\n            const impl = include \"impl.goat\";\n            const observer = include \"observer.goat\";\n            external box = impl.box;\n            external sibling = observer.observe;\n        ",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/observer.goat": "\n                public observe = func(value) {\n                    println(str(value));\n                    var keys = [];\n                    for (key in value) keys.push(key);\n                    println(keys);\n                };\n            "
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac23-observation-flat",
+    "group": "boundary",
+    "name": "ac23-observation-flat",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n{\"inspect\":func,\"moduleOnly\":20,\"shown\":30}\n[\"inspect\",\"moduleOnly\",\"shown\"]\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n[\"fileOnly\",\"inspect\",\"moduleOnly\",\"secret\",\"shield\",\"shown\"]\n[{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}]\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n[\"fileOnly\",\"inspect\",\"moduleOnly\",\"secret\",\"shield\",\"shown\"]\n[{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}]\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"shown\":30}\n[\"fileOnly\",\"inspect\",\"moduleOnly\",\"shown\"]\n[{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"shown\":30}]\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"shown\":30}\n{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}\n[\"fileOnly\",\"inspect\",\"moduleOnly\",\"secret\",\"shield\",\"shown\"]\n[{\"fileOnly\":10,\"inspect\":func,\"moduleOnly\":20,\"secret\":40,\"shield\":50,\"shown\":30}]\nstop\n{\"inspect\":func,\"shown\":30}\n[\"inspect\",\"shown\"]\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "\n            const lib = import \"library@1\";\n            const facade = import \"facade@1\";\n            println(lib.box == facade.box);\n            const outside = func(value) {\n                println(value);\n                var keys = [];\n                for (key in value) keys.push(key);\n                println(keys);\n            };\n            outside(facade.box);\n            lib.sibling(facade.box);\n            facade.box.inspect(facade.box, outside);\n            const copy = facade.box.flat();\n            copy.inspect(copy, outside);\n            facade.box.inspect(copy, outside);\n            try { copy.inspect(copy, func(value) { throw \"stop\"; }); }\n            catch(e) { println(e); }\n            outside(copy);\n        ",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "const lib = import \"library@1\"; external box = lib.box; external sibling = lib.sibling;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/impl.goat": "\n                public box = {\n                    var fileOnly = 10;\n                    public moduleOnly = 20;\n                    external shown = 30;\n                    private secret = 40;\n                    protected shield = 50;\n                    external inspect = func(value, callback) {\n                        println(str(value));\n                        var keys = [];\n                        for (key in value) keys.push(key);\n                        println(keys);\n                        println([value]);\n                        callback(value);\n                        println(str(value));\n                    };\n                };\n            ",
+      "sources/library-1/main.goat": "\n            const impl = include \"impl.goat\";\n            const observer = include \"observer.goat\";\n            external box = impl.box;\n            external sibling = observer.observe;\n        ",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/observer.goat": "\n                public observe = func(value) {\n                    println(str(value));\n                    var keys = [];\n                    for (key in value) keys.push(key);\n                    println(keys);\n                };\n            "
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac23-snapshot-and-recursion",
+    "group": "boundary",
+    "name": "ac23-snapshot-and-recursion",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "[\"a\",\"add\",\"b\"]\n{\"a\":1,\"add\":func,\"b\":20,\"extra\":3}\n{{ }:[{ }]}\n{\"self\":[{...}]}\n{ }\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const lib = import \"library@1\";\n        const copy = lib.box.flat();\n        var keys = [];\n        for (key in copy) {\n            keys.push(key);\n            if (key == \"a\") { copy.extra = 3; copy.b = 20; }\n        }\n        println(keys); println(copy);\n        var dictionary = { };\n        dictionary[lib.hidden] = [lib.hidden]; println(dictionary);\n        var cyclic = { private secret = 99; };\n        cyclic.self = [cyclic]; println(cyclic);\n        println(lib.hidden);\n    ",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/impl.goat": "public box = {\n            private secret = 42;\n            external var a = 1; external var b = 2;\n            external add = func() { this.c = 3; b = 20; };\n        };\n        public hidden = { private secret = 99; };",
+      "sources/library-1/main.goat": "external box = (include \"impl.goat\").box; external hidden = (include \"impl.goat\").hidden;",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac24-array",
+    "group": "boundary",
+    "name": "ac24-array",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "[1,2]\n[1,2,3]\ntrue\nfalse\nACCESS_DENIED\nACCESS_DENIED\n[1,2]\n8\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const lib = import \"library@1\";\n        const shared = lib.box.get(); shared.push(2);\n        const separate = lib.box.copy(); separate.push(3);\n        println(lib.box.get()); println(separate);\n        println(shared == lib.box.get()); println(separate == shared);\n        try { println(lib.box.items); } catch(e) { println(e); }\n        try { lib.box.items = [9]; } catch(e) { println(e); }\n        println(lib.box.get());\n        const nested = lib.box.getNested(); nested[0].value = 8;\n        println(lib.box.getNested()[0].value);\n    ",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/impl.goat": "public box = {\n            private var items = [1];\n            private var nested = [{ external var value = 7; }];\n            external getNested = func() { return nested.clone(); };\n            external get = func() { return items; };\n            external copy = func() { return items.clone(); };\n        };",
+      "sources/library-1/main.goat": "external box = (include \"impl.goat\").box;",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac25-26-factory-clone",
+    "group": "boundary",
+    "name": "ac25-26-factory-clone",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\n2\nFOREIGN_OBJECT\n3\n4\n15\n28\n15\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const lib = import \"library@1\";\n            const facade = import \"facade@1\";\n            println(lib.make == facade.make);\n            const obj = facade.make(); obj.x = 2; println(obj.x);\n            try { obj.extra = 3; } catch(e) { println(e); }\n            const copy = obj.clone(); copy.extra = 3;\n            const child = obj -> { public own = 4; };\n            println(copy.extra); println(child.own); println(copy.read());\n            copy.change(20); println(copy.read()); println(obj.read());\n            const read = func(value, key) { return value[key]; };\n            for (value in [obj, copy, child]) {\n                try { read(value, \"fileOnly\"); } catch(e) { println(e); }\n                try { read(value, \"moduleOnly\"); } catch(e) { println(e); }\n            }\n        ",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external make = (import \"library@1\").make;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/factory.goat": "public make = func() { return {\n                var fileOnly = 7;\n                public moduleOnly = 8;\n                external var x = 1;\n                external read = func() { return fileOnly + moduleOnly; };\n                external change = func(value) { fileOnly = value; };\n            }; };",
+      "sources/library-1/main.goat": "external make = (include \"factory.goat\").make;",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac25-26-factory-flat",
+    "group": "boundary",
+    "name": "ac25-26-factory-flat",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "true\n2\nFOREIGN_OBJECT\n3\n4\n15\n28\n15\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const lib = import \"library@1\";\n            const facade = import \"facade@1\";\n            println(lib.make == facade.make);\n            const obj = facade.make(); obj.x = 2; println(obj.x);\n            try { obj.extra = 3; } catch(e) { println(e); }\n            const copy = obj.flat(); copy.extra = 3;\n            const child = obj -> { public own = 4; };\n            println(copy.extra); println(child.own); println(copy.read());\n            copy.change(20); println(copy.read()); println(obj.read());\n            const read = func(value, key) { return value[key]; };\n            for (value in [obj, copy, child]) {\n                try { read(value, \"fileOnly\"); } catch(e) { println(e); }\n                try { read(value, \"moduleOnly\"); } catch(e) { println(e); }\n            }\n        ",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external make = (import \"library@1\").make;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/factory.goat": "public make = func() { return {\n                var fileOnly = 7;\n                public moduleOnly = 8;\n                external var x = 1;\n                external read = func() { return fileOnly + moduleOnly; };\n                external change = func(value) { fileOnly = value; };\n            }; };",
+      "sources/library-1/main.goat": "external make = (include \"factory.goat\").make;",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac27-protected",
+    "group": "boundary",
+    "name": "ac27-protected",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/facade-1/module.gmod",
+        "output": "modules/facade/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "10\n10\n20\n11\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\nACCESS_DENIED\n11\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const lib = import \"facade@1\";\n        const child = lib.Base -> {\n            public fromBody = x;\n            public read = func() { return lib.Base.x; };\n            public change = func(value) { lib.Base.x = value; };\n            public forbidden = func() { return lib.Base.secret; };\n        };\n        println(child.fromBody); println(child.read()); println(child.readSecret());\n        child.change(11); println(child.read());\n        try { child.forbidden(); } catch(e) { println(e); }\n        const read = func(value, key) { return value[key]; };\n        try { read(lib.Base, \"x\"); } catch(e) { println(e); }\n        try { read(lib.Base, \"secret\"); } catch(e) { println(e); }\n        try { lib.Base.x = 99; } catch(e) { println(e); }\n        println(child.read());\n    ",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/facade-1/main.goat": "external Base = (import \"library@1\").Base;",
+      "sources/facade-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"facade\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/base.goat": "public Base = {\n            protected var x = 10;\n            private var secret = 20;\n            external readSecret = func() { return secret; };\n        };",
+      "sources/library-1/main.goat": "external Base = (include \"base.goat\").Base;",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac28-const-false",
+    "group": "boundary",
+    "name": "ac28-const-False",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "3\n2\nPROPERTY_IS_CONSTANT\nFOREIGN_OBJECT\nACCESS_DENIED\n3\n2\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const lib = import \"library@1\";\n            const obj = lib.obj; obj.writable = 3;\n            println(obj.writable); println(obj.fixed);\n            const set = func(obj, key) { obj.fixed = 4; };\n            try { set(obj, \"fixed\"); } catch(e) { println(e); }\n            try { obj.newField = 5; } catch(e) { println(e); }\n            try { obj.internal = 6; } catch(e) { println(e); }\n            println(obj.writable); println(obj.fixed);\n        ",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/impl.goat": "public obj = {\n                external var writable = 1; external fixed = 2;\n                public var internal = 3;\n            };",
+      "sources/library-1/main.goat": "external obj = (include \"impl.goat\").obj;",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.ac28-const-true",
+    "group": "boundary",
+    "name": "ac28-const-True",
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "3\n2\nPROPERTY_IS_CONSTANT\nFOREIGN_OBJECT\nACCESS_DENIED\n3\n2\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/app-1/main.goat": "const lib = import \"library@1\";\n            const obj = lib.obj; obj.writable = 3;\n            println(obj.writable); println(obj.fixed);\n            const set = func(obj, key) { obj[key] = 4; };\n            try { set(obj, \"fixed\"); } catch(e) { println(e); }\n            try { obj.newField = 5; } catch(e) { println(e); }\n            try { obj.internal = 6; } catch(e) { println(e); }\n            println(obj.writable); println(obj.fixed);\n        ",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/library-1/impl.goat": "public obj = {\n                external var writable = 1; external fixed = 2;\n                public var internal = 3;\n            };",
+      "sources/library-1/main.goat": "external obj = (include \"impl.goat\").obj;",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  }
+]

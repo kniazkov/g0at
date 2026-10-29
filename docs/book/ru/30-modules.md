@@ -262,7 +262,7 @@ native, возврата к VM и выполнения в рабочем пот�
 `test/src/functional/module_access_scenarios.c` проверяет правила на внутренних многофайловых
 фикстурах и настоящем исполнении VM, включая независимые экземпляры модулей, GC и
 неизменность wire-байтов. Реальные файлы `include`/`import` AC-01–AC-28 проверяет
-`scripts/check_module_multifile_access.py` (#218).
+`test/src/functional/module_multifile_access_scenarios.c` (#218).
 
 
 ## Сериализация инициализации и равноправные потоки исполнения (#217)
