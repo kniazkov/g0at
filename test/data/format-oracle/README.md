@@ -237,7 +237,7 @@ subsequent migrations still depend on them. Direct consumers at this step:
 - `scripts/check_module_merge.py`
 - `scripts/check_module_musl.py`
 - `scripts/check_module_search.py`
-- `scripts/check_module_snapshot.py`
+- `scripts/module_snapshot_fixtures.py`
 - `scripts/check_module_validation.py`
 - `scripts/check_module_writer.py`
 

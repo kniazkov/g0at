@@ -38,7 +38,7 @@ foreach(scenario alive-wait kill deadline close owner-death condition)
   goat_scenario(process.watch.${scenario} "process-watch" TIMEOUT 20 COMMAND
     "$<TARGET_FILE:process_watch_testing>" "${scenario}")
 endforeach()
-foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash timeout cumulative invalid-timeout host-hang host-crash command start-error cleanup-failure)
+foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash timeout cumulative invalid-timeout host-hang host-crash command start-error cleanup-failure barrier barrier-wrong barrier-eof barrier-timeout barrier-after-timeout barrier-action-failure barrier-action-deadline barrier-nested barrier-null barrier-empty)
   goat_scenario(framework.execution.${scenario} "scenario-execution" TIMEOUT 30 COMMAND "$<TARGET_FILE:scenario_execution_testing>"
     "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
   # Internal deadlines are at most 5 seconds; leave time for process-tree cleanup and artifacts.
@@ -126,7 +126,11 @@ goat_scenario(integration.module_dependencies "integration;module-dependencies-m
 goat_scenario(integration.module_graph "integration;module-graph-migration" TIMEOUT 660 COMMAND
   "$<TARGET_FILE:module_graph_scenarios>" integration.module_graph "$<TARGET_FILE:module_graph_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
-goat_python(integration.module_snapshot "integration" scripts/check_module_snapshot.py "$<TARGET_FILE:module_snapshot_testing>")
+foreach(snapshot_case files replace delete corrupt diamond versions invalid throw deep)
+  goat_scenario(integration.module_snapshot.${snapshot_case} "integration;module-snapshot-migration" TIMEOUT 360 COMMAND
+    "$<TARGET_FILE:module_snapshot_scenarios>" integration.module_snapshot.${snapshot_case} "$<TARGET_FILE:module_snapshot_testing>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
 goat_python(integration.module_identity "integration" scripts/check_module_identity.py "$<TARGET_FILE:module_identity_testing>")
 goat_python(integration.module_initialization "integration" scripts/check_module_initialization.py "$<TARGET_FILE:module_initialization_testing>")
 goat_python(integration.module_serialization "integration" scripts/check_module_serialization.py "$<TARGET_FILE:module_serialization_testing>")
@@ -264,8 +268,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 78)
-  message(FATAL_ERROR "Expected all 78 integration scenarios (source includes split in #349); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 86)
+  message(FATAL_ERROR "Expected all 86 integration scenarios (snapshot cases split in #353); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

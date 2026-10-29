@@ -170,7 +170,7 @@ API, а не import и не разрешение доступа к чужой з
 
 ## Automated checks / Автоматические проверки
 
-`python3 scripts/check_module_snapshot.py build/module_snapshot_testing` checks
+`ctest --test-dir build --output-on-failure -L module-snapshot-migration` checks
 21 independent archive fixtures: READY-synchronized replacement, deletion and
 corruption before VM execution; retained native data; fresh launches; file scopes;
 diamonds and versions; direct-only imports; missing/corrupt/hash/identity failures;

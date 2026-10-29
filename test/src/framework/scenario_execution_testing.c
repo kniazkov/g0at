@@ -9,6 +9,7 @@
 #include "lib/memory/allocate.h"
 #include "lib/platform/windows_target.h"
 #include "test/support/execution.h"
+#include "test/support/process_watch.h"
 
 #include <signal.h>
 #include <stdio.h>
@@ -49,13 +50,59 @@ static char *copy_text(const char *s) {
 typedef struct {
     const char *mode;
     char *work;
-    unsigned steps, cleaned;
+    unsigned steps, cleaned, actions;
+    process_watch_t *watch;
 } state_t;
 
 static bool cleanup(void *user) {
     state_t *s = user;
     s->cleaned++;
     return strcmp(s->mode, "cleanup-failure") != 0;
+}
+
+static void barrier_action(scenario_run_t *run, void *user) {
+    state_t *s = user;
+    s->actions++;
+    fs_error_t pid_error = {0};
+    char *pid_path = join_fs_path(s->work, "worker.pid", &pid_error);
+    FILE *pid_file = pid_path ? FOPEN(pid_path, "rb") : NULL;
+    unsigned long long pid = 0;
+    bool pid_ok = pid_file && fscanf(pid_file, "%llu", &pid) == 1;
+    if (pid_file && fclose(pid_file))
+        pid_ok = false;
+    FREE(pid_path);
+    clear_fs_error(&pid_error);
+    scenario_require(run, pid_ok, "read synchronized worker identity");
+    unsigned long error_code = 0;
+    s->watch = process_watch_open((uint64_t)pid, &error_code);
+    scenario_require(run, s->watch != NULL, "pin synchronized worker identity");
+    bool alive = false;
+    scenario_require(run,
+                     process_watch_alive(s->watch, &alive, &error_code) == PROCESS_WATCH_OK
+                         && alive,
+                     "worker alive at barrier");
+    if (!strcmp(s->mode, "barrier-nested")) {
+        const char *args[] = {"scenario_execution_testing", "--worker", "binary", "", "", NULL};
+        child_options_t nested = {0};
+        nested.arguments = args;
+        scenario_command(run, &nested, 0);
+    }
+    scenario_require(run,
+                     strcmp(s->mode, "barrier-action-failure") != 0,
+                     "intentional barrier action failure");
+    if (!strcmp(s->mode, "barrier-action-deadline")) {
+        pause_ms(350);
+        scenario_checkpoint(run);
+    }
+    fs_error_t error = {0};
+    char *path = join_fs_path(s->work, "released", &error);
+    FILE *file = path ? FOPEN(path, "wb") : NULL;
+    bool ok = file && fputs("mutated", file) >= 0;
+    if (file && fclose(file))
+        ok = false;
+    FREE(path);
+    clear_fs_error(&error);
+    scenario_require(run, ok, "publish barrier action");
 }
 
 static void body(scenario_run_t *run, void *user) {
@@ -90,6 +137,37 @@ static void body(scenario_run_t *run, void *user) {
                                binary,
                                sizeof(binary),
                                false);
+    if (!strncmp(s->mode, "barrier", 7)) {
+        const char *args[] = {"scenario_execution_testing", "--worker", s->mode, "", "", NULL};
+        child_options_t command = {0};
+        command.arguments = args;
+        scenario_command_result_t result =
+            scenario_command_barrier(run,
+                                     &command,
+                                     !strcmp(s->mode, "barrier-null")    ? NULL
+                                     : !strcmp(s->mode, "barrier-empty") ? ""
+                                                                         : "READY\n",
+                                     barrier_action,
+                                     s);
+        scenario_require(run, result.exit_code == 0, "barrier worker status");
+        unsigned char expected[6 + sizeof(binary)];
+        memcpy(expected, "READY\n", 6);
+        memcpy(expected + 6, binary, sizeof(binary));
+        scenario_require_bytes(run,
+                               "barrier stdout",
+                               expected,
+                               sizeof(expected),
+                               result.out,
+                               result.out_size,
+                               false);
+        scenario_require_bytes(run,
+                               "barrier stderr",
+                               binary,
+                               sizeof(binary),
+                               result.err,
+                               result.err_size,
+                               false);
+    }
     const char *worker_mode = NULL;
     if (!strcmp(s->mode, "start-error"))
         worker_mode = "binary";
@@ -134,6 +212,45 @@ static int worker(const char *mode) {
     _setmode(_fileno(stderr), _O_BINARY);
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
 #endif
+    if (!strncmp(mode, "barrier", 7)) {
+        CHECK(!exists("released"));
+        FILE *pid_file = FOPEN("worker.pid", "wb");
+        CHECK(pid_file);
+#ifdef _WIN32
+        CHECK(fprintf(pid_file, "%llu", (unsigned long long)GetCurrentProcessId()) > 0);
+#else
+        CHECK(fprintf(pid_file, "%llu", (unsigned long long)getpid()) > 0);
+#endif
+        CHECK(!fclose(pid_file));
+        if (!strcmp(mode, "barrier-timeout")) {
+            pause_ms(10000);
+            return 0;
+        }
+        if (!strcmp(mode, "barrier-eof")) {
+            CHECK(fwrite("REA", 1, 3, stdout) == 3);
+            return 0;
+        }
+        if (!strcmp(mode, "barrier-wrong")) {
+            CHECK(fwrite("WRONG\n", 1, 6, stdout) == 6);
+            CHECK(!fflush(stdout));
+            pause_ms(10000);
+            return 0;
+        }
+        /* Deliberately split the synchronization prefix across output writes. */
+        CHECK(fwrite("REA", 1, 3, stdout) == 3);
+        CHECK(!fflush(stdout));
+        pause_ms(20);
+        CHECK(!exists("released"));
+        CHECK(fwrite("DY\n", 1, 3, stdout) == 3);
+        CHECK(!fflush(stdout));
+        CHECK(getchar() == 'G');
+        CHECK(getchar() == EOF);
+        CHECK(exists("released"));
+        if (!strcmp(mode, "barrier-after-timeout")) {
+            pause_ms(10000);
+            return 0;
+        }
+    }
     if (!strcmp(mode, "exit"))
         return 23;
     if (!strcmp(mode, "crash")) {
@@ -244,10 +361,14 @@ static int run_test(int argc, char **argv) {
         CHECK(!fclose(diagnostics));
         return result;
     }
-    state_t state = {mode, NULL, 0, 0};
-    bool expected = !strcmp(mode, "success") || !strcmp(mode, "crlf") || !strcmp(mode, "command");
+    state_t state = {mode, NULL, 0, 0, 0, NULL};
+    bool expected = !strcmp(mode, "success") || !strcmp(mode, "crlf") || !strcmp(mode, "command")
+                    || !strcmp(mode, "barrier");
     options.keep_work = expected;
     uint64_t timeout = !strcmp(mode, "cumulative") ? 600 : !strcmp(mode, "timeout") ? 250 : 5000;
+    if (!strcmp(mode, "barrier-timeout") || !strcmp(mode, "barrier-after-timeout")
+        || !strcmp(mode, "barrier-action-deadline"))
+        timeout = 250;
     if (!strcmp(mode, "invalid-timeout"))
         timeout = 0;
     uint64_t started = child_monotonic_ms();
@@ -291,6 +412,38 @@ static int run_test(int argc, char **argv) {
 #else
             CHECK(log_contains(state.work, "signal=9"));
 #endif
+        }
+        if (!strncmp(mode, "barrier", 7)) {
+            bool reaches_action = strcmp(mode, "barrier-wrong") && strcmp(mode, "barrier-eof")
+                                  && strcmp(mode, "barrier-timeout") && strcmp(mode, "barrier-null")
+                                  && strcmp(mode, "barrier-empty");
+            CHECK(state.actions == (reaches_action ? 1u : 0u));
+            if (reaches_action) {
+                unsigned long error_code = 0;
+                bool alive = true;
+                CHECK(state.watch);
+                CHECK(process_watch_alive(state.watch, &alive, &error_code) == PROCESS_WATCH_OK);
+                CHECK(!alive);
+                CHECK(process_watch_close(&state.watch, &error_code) == PROCESS_WATCH_OK);
+            }
+            if (!strcmp(mode, "barrier")) {
+                unsigned char output[6 + sizeof(binary)];
+                memcpy(output, "READY\n", 6);
+                memcpy(output + 6, binary, sizeof(binary));
+                CHECK(artifact(state.work, "command-1.stdout", output, sizeof(output)));
+                CHECK(artifact(state.work, "command-1.stderr", binary, sizeof(binary)));
+            } else if (!strcmp(mode, "barrier-eof"))
+                CHECK(artifact(state.work, "command-1.stdout", "REA", 3));
+            else if (!strcmp(mode, "barrier-wrong"))
+                CHECK(artifact(state.work, "command-1.stdout", "WRONG\n", 6));
+            else if (reaches_action)
+                CHECK(artifact(state.work, "command-1.stdout", "READY\n", 6));
+            else if (strcmp(mode, "barrier-null") && strcmp(mode, "barrier-empty"))
+                CHECK(artifact(state.work, "command-1.stdout", "", 0));
+            else {
+                CHECK(log_contains(state.work, "invalid barrier command"));
+                CHECK(!log_contains(state.work, "command 1"));
+            }
         }
         CHECK(remove_work(state.work));
     }
