@@ -254,7 +254,7 @@ part of #194/#195, which consume this shared gate.
 ## Unfinished scopes (#225) / Незавершённые области
 
 Rules 36–40 are checked by `module_incomplete_scopes_testing` and
-`scripts/check_module_incomplete_scopes.py`. A reserved declaration is a real cell,
+`test/src/functional/module_incomplete_scopes_scenarios.c`. A reserved declaration is a real cell,
 not a missing property: an early read or write raises a catchable uninitialized
 error and does not populate, replace, or fail that cell's file by itself. After
 normal declaration execution the same cell becomes available under its original
@@ -290,7 +290,7 @@ integrated separately by #194/#195.
 ## Prototype failures (#226) / Ошибки прототипов
 
 Rules 41–45 are exercised by `module_failed_prototypes_testing` and
-`scripts/check_module_failed_prototypes.py` using independently encoded multi-file
+`test/src/functional/module_failed_prototypes_scenarios.c` using independently encoded multi-file
 images and the actual initialization gate. Descendant own fields remain usable
 when a prototype fails, but inherited field access propagates the original error.
 Shallow clone of the ordinary descendant preserves prototype references without
