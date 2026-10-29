@@ -990,3 +990,55 @@ corrupt metadata are rejected with retained diagnostics, including Release.
 All 24 new and snapshot cases pass Debug, Release and UBSan with Python discovery
 disabled; 52 combined migration/framework checks pass in Debug. Strict C11 warnings
 and the repository-wide clang-format 18 check pass.
+
+## Module initialization and saved failures (#355)
+
+`module_initialization_scenarios` replaces `check_module_initialization.py` and
+`check_module_initialization_errors.py`, retaining their component hosts and all
+60 wire fixtures. Each row is independently selectable through CTest or the runner.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| Lazy one-shot execution, cyclic include gate, declaration cells/constants, untouched third file, repeated initialization and saved failure | `integration.module_initialization.normal` |
+| Same lifecycle checks with caught uninitialized-declaration exception and diagnostic text | `integration.module_initialization.caught` |
+| Early declaration access aborts initialization, preserves caller/stack, and caches failure without rerunning | `integration.module_initialization.early` |
+| Return interrupts initialization and caches failure without rerunning | `integration.module_initialization.return` |
+| Saved mutable object failure survives GC; guarded scope reads/writes, observation, clone/flat and function calls preserve payload; ordinary objects remain usable; contradictory success/failure rejected | `integration.module_initialization_errors.object` |
+| Same saved-failure/access checks with null payload | `integration.module_initialization_errors.null` |
+| Same saved-failure/access checks with integer payload 9001 | `integration.module_initialization_errors.integer` |
+
+Each initialization mode covers padding 0/2/7, main file 0/1 and internal Unicode
+names versus identical external names (12 cases). Each error mode covers padding
+0/3 and main file 0/1 (four cases). The independent constructor reproduces the
+original bytecode without production writers; metadata is read from the same
+read-only vector. No platform-specific skips were introduced. Component-host
+assertions explicitly remain enabled in Release.
+
+The shared framework supplies unique workspaces under build, a scenario-wide
+120-second deadline (CTest 240 seconds), process cleanup and captured diagnostics.
+Failure retains its workspace; success removes it unless `--keep-work` is passed.
+Retained `pad-P-main-M-external-E.bin` files contain the exact host stdin for parity.
+The `module-initialization-migration` label runs in Linux x86-64/AArch64,
+MinGW i686/x86-64/UCRT and Alpine/musl Debug/Release CI.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_initialization_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-initialization-migration
+build/manual/module_initialization_scenarios integration.module_initialization.caught build/manual/module_initialization_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+build/manual/module_initialization_scenarios integration.module_initialization_errors.object build/manual/module_initialization_errors_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Repeat in Release; use .exe on Windows.
+# Historical Python runners: e7b8dfbb5fd8b9964b2de9f800d2401bb03f5689:scripts/check_module_initialization.py
+# and the same commit's scripts/check_module_initialization_errors.py.
+```
+
+The implementation commit includes the checklist mark; final-commit CI links are
+recorded in the PR and issue without a checklist-only push.
+
+Local verification compared all 60 inputs in both Debug and Release: exact
+bytecode, parsed JSON metadata, exit status, stdout and stderr match the historical
+Python runners. Wrong host output and malformed metadata fail with diagnostics;
+corrupt bytecode is rejected by both Release hosts. All seven scenarios also pass
+UBSan with Python discovery disabled. The 73-case related migration/framework
+selection passes (one intentional framework SKIP), as do strict C11 warnings and
+clang-format 18 checks.

@@ -137,13 +137,21 @@ foreach(identity_case identical information corrupt-unused versions vm-first nat
     "$<TARGET_FILE:module_identity_scenarios>" integration.module_identity.${identity_case} "$<TARGET_FILE:module_identity_testing>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 endforeach()
-goat_python(integration.module_initialization "integration" scripts/check_module_initialization.py "$<TARGET_FILE:module_initialization_testing>")
+foreach(initialization_case normal caught early return)
+  goat_scenario(integration.module_initialization.${initialization_case} "integration;module-initialization-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_initialization_scenarios>" integration.module_initialization.${initialization_case} "$<TARGET_FILE:module_initialization_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
 foreach(padding 0 2 7)
   goat_scenario(integration.module_serialization.padding_${padding} "integration;module-identity-serialization-migration" TIMEOUT 240 COMMAND
     "$<TARGET_FILE:module_serialization_scenarios>" integration.module_serialization.padding_${padding} "$<TARGET_FILE:module_serialization_testing>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 endforeach()
-goat_python(integration.module_initialization_errors "integration" scripts/check_module_initialization_errors.py "$<TARGET_FILE:module_initialization_errors_testing>")
+foreach(initialization_case object null integer)
+  goat_scenario(integration.module_initialization_errors.${initialization_case} "integration;module-initialization-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_initialization_scenarios>" integration.module_initialization_errors.${initialization_case} "$<TARGET_FILE:module_initialization_errors_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
 goat_python(integration.module_exception_propagation "integration" scripts/check_module_exception_propagation.py "$<TARGET_FILE:module_exception_propagation_testing>")
 goat_python(integration.module_initialization_contract "integration" scripts/check_module_initialization_contract.py "$<TARGET_FILE:module_initialization_contract_testing>")
 goat_python(integration.module_incomplete_scopes "integration" scripts/check_module_incomplete_scopes.py "$<TARGET_FILE:module_incomplete_scopes_testing>")
@@ -277,8 +285,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 99)
-  message(FATAL_ERROR "Expected all 99 integration scenarios (identity/serialization cases split in #354); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 104)
+  message(FATAL_ERROR "Expected all 104 integration scenarios (initialization cases split in #355); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
