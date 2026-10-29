@@ -250,7 +250,7 @@ caller's module/file while retaining every copied cell's original file, module a
 modifier. Transferred methods retain their defining-file rights and relocate their
 captures; copying does not make hidden fields visible.
 
-`scripts/test_module_access.py` checks these rules through internal multi-file
+`test/src/functional/module_access_scenarios.c` checks these rules through internal multi-file
 fixtures and real VM execution, including independent module instances, GC and
 unchanged wire bytes. Real-file `include`/`import` coverage AC-01–AC-28 is implemented in
 `scripts/check_module_multifile_access.py` (#218).

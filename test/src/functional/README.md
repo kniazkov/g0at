@@ -1161,3 +1161,41 @@ Release and UBSan with Python discovery disabled. Deliberately malformed JSON,
 corrupt bytecode and wrong runner output are rejected in Release with retained
 scenario diagnostics. The checklist mark is included in the implementation commit;
 PR and final CI links are recorded in the issue without a checklist-only push.
+
+## Basic module access (#358)
+
+`module_access_scenarios.c` replaces `scripts/test_module_access.py`; the existing
+`module_access_testing` host retains every model, VM and wire assertion, now also
+explicitly enabled in Release. No #359 helpers or language semantics changed.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| `model_cases`: five modifiers across same-file, same-module and foreign callers; denied writes preserve cells; constants, enumeration/stringification, new declarations, shadowing, clone/flat method rights, GC | `integration.module_access.model_vm` |
+| `vm_cases`: 23 real VM cases including direct/detached/closure calls, denied callback/read/write, external/public access, clone/flat, added fields and enumeration | `integration.module_access.model_vm` |
+| Legacy declarations, 1/2/3/20 files × padding 0/2 (8 images) | `integration.module_access.wire_files` |
+| File/public/external modifiers × mutable/constant × padding 0/2 (12 images) | `integration.module_access.wire_declarations` |
+
+Both wire IDs retain independent module instances, every caller/file access matrix,
+constant write failures, declaration identity, GC and immutable input checks. The
+independent builder uses literal wire values, never production serialization.
+All 20 saved C fixtures match the historical Python bytecode exactly and JSON
+structurally. Old and new runners pass the same Debug and Release hosts; all three
+C scenarios pass UBSan too, with Python discovery disabled. Wrong host output,
+malformed JSON and corrupted wire magic are rejected in Release. Failure diagnostics
+are retained; successful workspaces are removed unless `--keep-work` is given.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_access_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-access-migration
+build/manual/module_access_scenarios integration.module_access.wire_files build/manual/module_access_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Repeat in Release; append .exe on Windows.
+```
+
+The three scenarios use unique build directories, read-only source inputs and a
+shared 120-second deadline (CTest 240 seconds). The `module-access-migration` label
+is included in Linux x86-64/AArch64, Windows MinGW i686/x86-64/UCRT and musl
+Debug/Release CI, including explicit build targets. There are no platform skips.
+The original Python runner remains available at commit
+`0578f90e3847bfd258746e5d91bb6de6692481e1`. The checklist is marked in this
+implementation commit; PR and green CI links are recorded in the issue/PR.
