@@ -296,7 +296,7 @@ with tempfile.TemporaryDirectory(prefix='goat-delivery-') as temporary:
     inspect(distribution / 'absent.gbin', fail=True)
     # Exact opaque version and recorded hash, never highest-version guessing.
     # Shared-identity diamond conflicts and all conflicting provenance paths are
-    # covered by check_module_graph.py's real repository fixtures, not recreated here.
+    # covered by integration.module_graph's real repository fixtures, not recreated here.
     dependency = distribution / 'modules/leaf/2.gbin'
     leaf_bytes = dependency.read_bytes()
     dependency.unlink()

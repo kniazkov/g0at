@@ -64,7 +64,7 @@
 - [x] 31. [#349 — Перенести на Си: Импорты и source include](https://github.com/kniazkov/g0at/issues/349) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 32. [#350 — Перенести на Си: Поиск модулей](https://github.com/kniazkov/g0at/issues/350) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 33. [#351 — Перенести на Си: Зависимости модулей](https://github.com/kniazkov/g0at/issues/351) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
-- [ ] 34. [#352 — Перенести на Си: Граф модулей](https://github.com/kniazkov/g0at/issues/352)
+- [x] 34. [#352 — Перенести на Си: Граф модулей](https://github.com/kniazkov/g0at/issues/352) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [ ] 35. [#353 — Перенести на Си: Snapshot модулей](https://github.com/kniazkov/g0at/issues/353)
 - [ ] 36. [#354 — Перенести на Си: Identity и сериализация](https://github.com/kniazkov/g0at/issues/354)
 - [ ] 37. [#355 — Перенести на Си: Инициализация и её ошибки](https://github.com/kniazkov/g0at/issues/355)

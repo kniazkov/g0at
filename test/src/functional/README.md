@@ -814,3 +814,65 @@ exit codes and stderr, plus every generated archive's metadata and bytecode
 (normalizing only workspace prefixes). Release rejects deliberately emptied
 successful dependency records and malformed metadata input, retaining diagnostics.
 The component host explicitly keeps its contract assertions enabled in Release.
+
+## Whole module graphs (#352)
+
+`module_graph_scenarios` replaces `scripts/check_module_graph.py`, preserving
+the stable `integration.module_graph` CTest ID and the existing
+`module_graph_testing` API host. Only test orchestration changes; language,
+archive format and graph semantics are unchanged. The old runner exports no
+helpers consumed by other scripts.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| API self-tests; empty root, transitive chain, late shared paths and cached search results; root-only search roots | `integration.module_graph` |
+| Missing, corrupt and incorrectly named candidates; independent versions; conflicting requests and equal wrong hashes; missing children behind bad hashes | `integration.module_graph` |
+| Self-cycle and transitive cycle; broken root; true transitive function owner, sibling isolation, wrong function/version, independent and blocked references | `integration.module_graph` |
+| Opaque native preflight without loading; source imports/includes/defaults; ambiguous imports, unnamed empty source, final root overrides installed identity | `integration.module_graph` |
+| Complete sorted causal chains; every conflict request and late incoming path; discovery-order independence and repeatable diagnostic text | `integration.module_graph` |
+| Shared positioned schema failures, owned field/entry bytes; reference export order independent of JSON order; embedded-NUL keys and lengths | `integration.module_graph` |
+| Error-kind ordering after full-chain ordering; finite cyclic diagnostics; canonical back-edge paths distinguish actual cycles; absent observer retains snapshots | `integration.module_graph` |
+| Non-UTF-8 ZIP names, newline/backslash fields, ordinary Unicode and escaped display controls; POSIX control characters in physical filenames | `integration.module_graph` |
+| Native versus main-hash failure ordering; 2500-edge valid and failing chains with 256 KiB POSIX child stack; exponential paths remain lazy | `integration.module_graph` |
+
+Fixtures use the independent test format oracle for bytecode, metadata hashes
+and ZIP construction, never production validators to calculate expected values.
+Input vectors and `test/data` are read-only. The scenario framework supplies a
+unique workspace under build, one 600-second deadline, captured command/output
+diagnostics, deferred cleanup and retained failures. `--keep-work` retains
+successful work; otherwise it is removed. CTest allows 60 seconds for cleanup.
+Contract assertions in the component host stay active in Release.
+
+Windows runs the same graphs and diagnostics, except POSIX-only physical
+filenames with control characters and reduced-stack execution (the historical
+Python runner has the same exclusions). Linux x86-64/AArch64 and MinGW
+i686/x86-64/UCRT Debug/Release CI select the `module-graph-migration` label,
+as do Alpine/musl Debug and Release.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_graph_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-graph-migration
+build/manual/module_graph_scenarios integration.module_graph build/manual/module_graph_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Repeat in Release; use .exe on Windows.
+# Historical Python parity check (remove the restored script afterwards):
+git show a03a219e8a283cc836188062521b193236e28293:scripts/check_module_graph.py > scripts/check_module_graph.py
+python3 scripts/check_module_graph.py build/manual/module_graph_testing
+```
+
+The checklist is marked in the implementation commit; final-commit CI links
+are recorded in the PR and issue without a checklist-only push.
+
+Local verification: historical Python and C each pass 48 POSIX fixture calls in
+Debug and Release (47 on Windows, excluding the POSIX filename case). Temporary
+differential capture compares all ordered host calls, JSON results, exit codes,
+stderr, archive metadata and payload hashes. Normalization is limited to workspace
+prefixes and JSON serialization whitespace; malformed ZIP name bytes and flags
+are preserved. Both builds reject a deliberately wrong check count and a corrupted
+root input, retaining command/output logs and fixtures. Successful ordinary runs
+remove their workspace; `--keep-work` retains it. Strict C11 warnings and the
+repository-wide clang-format 18 check pass; 50 neighbouring migration/framework
+CTest scenarios pass as well.
+
+UBSan also passes with Python discovery disabled
+(`CMAKE_DISABLE_FIND_PACKAGE_Python3=TRUE`).
