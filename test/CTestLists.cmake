@@ -162,8 +162,16 @@ foreach(rule RANGE 26 35)
     "$<TARGET_FILE:module_exception_scenarios>" integration.module_exception_propagation.rule_${rule} "$<TARGET_FILE:module_exception_propagation_testing>"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 endforeach()
-goat_python(integration.module_incomplete_scopes "integration" scripts/check_module_incomplete_scopes.py "$<TARGET_FILE:module_incomplete_scopes_testing>")
-goat_python(integration.module_failed_prototypes "integration" scripts/check_module_failed_prototypes.py "$<TARGET_FILE:module_failed_prototypes_testing>")
+foreach(rule RANGE 36 40)
+  goat_scenario(integration.module_incomplete_scopes.rule_${rule} "integration;module-scopes-prototypes-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_incomplete_scopes_scenarios>" integration.module_incomplete_scopes.rule_${rule} "$<TARGET_FILE:module_incomplete_scopes_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
+foreach(shape RANGE 0 3)
+  goat_scenario(integration.module_failed_prototypes.shape_${shape} "integration;module-scopes-prototypes-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_failed_prototypes_scenarios>" integration.module_failed_prototypes.shape_${shape} "$<TARGET_FILE:module_failed_prototypes_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
 foreach(include_case nested repeat lexical private lazy expression arguments closure-include
     failed-callback same-content cycle-ready cycle-early-caught failed-repeated finally
     throwing-function unicode empty outside invalid hardlinks symlinks diagnostic-mapping deep)
@@ -293,8 +301,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 116)
-  message(FATAL_ERROR "Expected all 116 integration scenarios (contract/exception cases split in #356); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 123)
+  message(FATAL_ERROR "Expected all 123 integration scenarios (scope/prototype cases split in #357); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

@@ -1107,3 +1107,57 @@ bytecode; wrong runner output also fails with retained diagnostics. All 14 new
 scenarios plus 31 execution-framework cases pass Debug, Release and UBSan with
 Python discovery disabled. The 76-case related Debug regression selection and
 clang-format 18 checks pass.
+
+## Incomplete scopes and failed prototypes (#357)
+
+`module_incomplete_scopes_scenarios` and `module_failed_prototypes_scenarios`
+replace `check_module_incomplete_scopes.py` and `check_module_failed_prototypes.py`.
+The real VM hosts are retained, including their scope, file-state, side-effect,
+exception identity/trace, access, copy and immutable-bytecode checks. Host
+assertions and fixture calls remain enabled in Release.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| Rule 36: pending declaration reads fail without replacing the reserved cell | `integration.module_incomplete_scopes.rule_36` |
+| Rule 37: early writes fail; completed declarations retain access/constness | `integration.module_incomplete_scopes.rule_37` |
+| Rule 38: observation omits pending/private fields; direct access still fails | `integration.module_incomplete_scopes.rule_38` |
+| Rule 39: clone/flat rejects unfinished file scopes, ordinary objects remain copyable | `integration.module_incomplete_scopes.rule_39` |
+| Rule 40: inherited early access fails; later access sees completed declarations | `integration.module_incomplete_scopes.rule_40` |
+| Rules 41–45: direct prototype | `integration.module_failed_prototypes.shape_0` |
+| Rules 41–45: deeper ancestor | `integration.module_failed_prototypes.shape_1` |
+| Rules 41–45: shared ancestor (diamond) | `integration.module_failed_prototypes.shape_2` |
+| Rules 41–45: healthy first branch cannot hide an incomplete/failed later branch | `integration.module_failed_prototypes.shape_3` |
+
+Each scope ID covers caught/uncaught errors, main file 0/1, padding 0/4, and both
+mutable/constant variants (also clone/flat for rule 39): 80 fixtures. Each prototype
+ID covers main file 0/1/2, padding 0/5, successful/failed initialization and
+object/null exceptions: 96 fixtures. All four shapes preserve checks for own versus
+inherited fields, shallow clone identity, full ancestor validation by flat,
+no partial result or source mutation, repeated failures, and builtin fallback guards.
+The independent constructors preserve Unicode filenames, source locations and
+instruction operands without invoking production writers.
+
+The existing scenario framework supplies unique build workspaces, saved framed
+inputs, command/stdout/stderr diagnostics, process cleanup, a shared 120-second
+deadline (CTest 240 seconds), and `--keep-work`. Source data is read-only.
+No platform skips were introduced. The `module-scopes-prototypes-migration` label
+is wired to Linux x86-64/AArch64, Windows MinGW i686/x86-64/UCRT and musl
+Debug/Release builds, including explicit target lists.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_incomplete_scopes_scenarios module_failed_prototypes_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-scopes-prototypes-migration
+build/manual/module_incomplete_scopes_scenarios integration.module_incomplete_scopes.rule_36 build/manual/module_incomplete_scopes_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+build/manual/module_failed_prototypes_scenarios integration.module_failed_prototypes.shape_3 build/manual/module_failed_prototypes_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Repeat in Release; append .exe on Windows.
+```
+
+Historical Python runners are available in commit
+`caaafb8b2fd1addf9889e28d7f945fc1282427b8`. All 176 saved wire fixtures were compared
+against Python: byte-identical bytecode and equivalent JSON metadata; old and new
+runners pass the same Debug/Release hosts. All nine new scenarios pass Debug,
+Release and UBSan with Python discovery disabled. Deliberately malformed JSON,
+corrupt bytecode and wrong runner output are rejected in Release with retained
+scenario diagnostics. The checklist mark is included in the implementation commit;
+PR and final CI links are recorded in the issue without a checklist-only push.
