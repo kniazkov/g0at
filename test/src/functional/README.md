@@ -1216,3 +1216,12 @@ replace the two Python runners with 36 context and 13 provenance CTest IDs.
 See the complete [context mapping and parity](../../data/module-context/README.md)
 and [provenance mapping and parity](../../data/module-provenance/README.md).
 Label: `module-context-provenance-migration`.
+
+## Assignment access (#361)
+
+`module_assignment_scenarios.c` replaces `check_module_assignment_access.py`
+with 68 CTest IDs and one read-only fixture table: 42 host projects (90 compile/VM
+checks) and 26 CLI checks across both optimizers. Exact rules 13–25 mapping,
+parity and negative verification, platforms and commands are documented in
+[`test/data/module-assignment/README.md`](../../data/module-assignment/README.md).
+Label: `module-assignment-migration`.

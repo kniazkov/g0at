@@ -185,7 +185,16 @@ goat_python(integration.module_source_diagnostics "integration" scripts/check_mo
 goat_python(integration.process_exit "integration" scripts/check_process_exit.py "$<TARGET_FILE:process_exit_testing>" "$<TARGET_FILE:process_exit_failure_testing>" "$<TARGET_FILE:process_exit_delayed_testing>")
 goat_python(integration.module_exit "integration" scripts/check_module_exit.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 goat_python(integration.module_threads "integration" scripts/check_module_threads.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
-goat_python(integration.module_assignment_access "integration" scripts/check_module_assignment_access.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
+# One ID per legacy project or CLI case/optimizer, from the same read-only table.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-assignment/scenarios.json")
+file(STRINGS "${PROJECT_SOURCE_DIR}/test/data/module-assignment/scenarios.json" assignment_ids REGEX "^[ ]+\"id\":")
+foreach(assignment_line IN LISTS assignment_ids)
+  string(REGEX REPLACE "^[ ]+\"id\": \"([^\"]+)\",?$" "\\1" assignment_id "${assignment_line}")
+  goat_scenario(${assignment_id} "integration;module-assignment-migration" TIMEOUT 150 COMMAND
+    "$<TARGET_FILE:module_assignment_scenarios>" "${assignment_id}"
+    "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 # The immutable fixture table is the single source of stable scenario IDs.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-access/scenarios.json")
 file(STRINGS "${PROJECT_SOURCE_DIR}/test/data/module-access/scenarios.json" access_ids REGEX "^[ ]+\"id\":")
@@ -335,8 +344,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 253)
-  message(FATAL_ERROR "Expected all 253 integration scenarios (context/provenance split in #360); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 320)
+  message(FATAL_ERROR "Expected all 320 integration scenarios (assignment cases split in #361); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
