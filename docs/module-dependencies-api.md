@@ -43,7 +43,7 @@ error. Other statuses distinguish invalid input from JSON allocation failure.
 Core allocation still follows fatal-OOM policy; recoverable loader OOM is #236.
 Failure clears the result and releases all previously resolved direct dependencies.
 
-`scripts/check_module_dependencies.py build/module_dependencies_testing` runs in
+`ctest --test-dir build --output-on-failure -R '^integration.module_dependencies$'` runs in
 Linux/Windows CI alongside existing schema/import/hash tests. Fixtures inspect
 per-consumer records and manually follow edges to verify coexistence of versions,
 transitive expected-hash failure, no flattening, and independently owned snapshots.

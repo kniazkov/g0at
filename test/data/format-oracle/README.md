@@ -229,7 +229,6 @@ subsequent migrations still depend on them. Direct consumers at this step:
 - `scripts/check_module_consistency.py`
 - `scripts/check_module_container.py`
 - `scripts/check_module_delivery.py`
-- `scripts/check_module_dependencies.py`
 - `scripts/check_module_graph.py`
 - `scripts/check_module_hash.py`
 - `scripts/check_module_import_execution.py`

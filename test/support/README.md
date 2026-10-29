@@ -83,7 +83,7 @@ Remaining Python import consumers (including dynamic imports) are:
 `docs/module-format-v1/test_reference.py`,
 `check_module_canonical.py`, `check_module_consistency.py`,
 `check_module_container.py`, `check_module_delivery.py`,
-`check_module_dependencies.py`, `check_module_graph.py`, `check_module_hash.py`,
+`check_module_graph.py`, `check_module_hash.py`,
 `check_module_import_execution.py`, `check_module_inspect.py`,
 `check_module_loading.py`, `check_module_memory.py`, `check_module_merge.py`,
 `check_module_musl.py`, `check_module_search.py`,
