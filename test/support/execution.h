@@ -83,3 +83,16 @@ scenario_command_result_t scenario_command_barrier(scenario_run_t *run,
                                                    const char *prefix,
                                                    scenario_body_t action,
                                                    void *user);
+
+/** @brief Send initial stdin bytes without EOF, await an exact stdout prefix, then release.
+ * options.stdin_data/stdin_size describe the initial binary payload. After the prefix,
+ * keep pumping and require the child to remain running for hold_ms (zero is allowed).
+ * Send release_byte followed by EOF, then capture completion. The shared scenario
+ * deadline covers every phase; premature exit, wrong prefix and timeout fail and stop
+ * the owned tree while retaining standard command diagnostics. No user callbacks.
+ */
+scenario_command_result_t scenario_command_handshake(scenario_run_t *run,
+                                                     const child_options_t *options,
+                                                     const char *prefix,
+                                                     unsigned char release_byte,
+                                                     uint64_t hold_ms);

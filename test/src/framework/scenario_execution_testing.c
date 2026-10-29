@@ -168,6 +168,38 @@ static void body(scenario_run_t *run, void *user) {
                                result.err_size,
                                false);
     }
+    if (!strncmp(s->mode, "handshake", 9)) {
+        const char *args[] = {"scenario_execution_testing", "--worker", s->mode, "", "", NULL};
+        child_options_t command = {.arguments = args,
+                                   .stdin_data = binary,
+                                   .stdin_size = sizeof(binary)};
+        uint64_t started = child_monotonic_ms();
+        scenario_command_result_t result =
+            scenario_command_handshake(run,
+                                       &command,
+                                       "READY\n",
+                                       'R',
+                                       !strcmp(s->mode, "handshake-hold-timeout") ? 1000 : 100);
+        scenario_require(run, child_monotonic_ms() - started >= 100, "handshake hold elapsed");
+        scenario_require(run, result.exit_code == 0, "handshake worker status");
+        unsigned char expected[6 + sizeof(binary)];
+        memcpy(expected, "READY\n", 6);
+        memcpy(expected + 6, binary, sizeof(binary));
+        scenario_require_bytes(run,
+                               "handshake stdout",
+                               expected,
+                               sizeof(expected),
+                               result.out,
+                               result.out_size,
+                               false);
+        scenario_require_bytes(run,
+                               "handshake stderr",
+                               binary,
+                               sizeof(binary),
+                               result.err,
+                               result.err_size,
+                               false);
+    }
     const char *worker_mode = NULL;
     if (!strcmp(s->mode, "start-error"))
         worker_mode = "binary";
@@ -212,6 +244,28 @@ static int worker(const char *mode) {
     _setmode(_fileno(stderr), _O_BINARY);
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
 #endif
+    if (!strncmp(mode, "handshake", 9)) {
+#ifdef _WIN32
+        _setmode(_fileno(stdin), _O_BINARY);
+#endif
+        unsigned char input[sizeof(binary)];
+        CHECK(fread(input, 1, sizeof(input), stdin) == sizeof(input));
+        CHECK(!memcmp(input, binary, sizeof(binary)));
+        if (!strcmp(mode, "handshake-timeout")) {
+            pause_ms(10000);
+            return 0;
+        }
+        CHECK(fwrite(!strcmp(mode, "handshake-wrong") ? "WRONG\n" : "READY\n", 1, 6, stdout) == 6);
+        CHECK(!fflush(stdout));
+        if (!strcmp(mode, "handshake-early"))
+            return 0;
+        CHECK(getchar() == 'R');
+        CHECK(getchar() == EOF);
+        if (!strcmp(mode, "handshake-after-timeout")) {
+            pause_ms(10000);
+            return 0;
+        }
+    }
     if (!strncmp(mode, "barrier", 7)) {
         CHECK(!exists("released"));
         FILE *pid_file = FOPEN("worker.pid", "wb");
@@ -363,11 +417,12 @@ static int run_test(int argc, char **argv) {
     }
     state_t state = {mode, NULL, 0, 0, 0, NULL};
     bool expected = !strcmp(mode, "success") || !strcmp(mode, "crlf") || !strcmp(mode, "command")
-                    || !strcmp(mode, "barrier");
+                    || !strcmp(mode, "barrier") || !strcmp(mode, "handshake");
     options.keep_work = expected;
     uint64_t timeout = !strcmp(mode, "cumulative") ? 600 : !strcmp(mode, "timeout") ? 250 : 5000;
     if (!strcmp(mode, "barrier-timeout") || !strcmp(mode, "barrier-after-timeout")
-        || !strcmp(mode, "barrier-action-deadline"))
+        || !strcmp(mode, "barrier-action-deadline") || !strcmp(mode, "handshake-timeout")
+        || !strcmp(mode, "handshake-hold-timeout") || !strcmp(mode, "handshake-after-timeout"))
         timeout = 250;
     if (!strcmp(mode, "invalid-timeout"))
         timeout = 0;
@@ -444,6 +499,23 @@ static int run_test(int argc, char **argv) {
                 CHECK(log_contains(state.work, "invalid barrier command"));
                 CHECK(!log_contains(state.work, "command 1"));
             }
+        }
+        if (!strncmp(mode, "handshake", 9)) {
+            if (!strcmp(mode, "handshake")) {
+                unsigned char output[6 + sizeof(binary)];
+                memcpy(output, "READY\n", 6);
+                memcpy(output + 6, binary, sizeof(binary));
+                CHECK(artifact(state.work, "command-1.stdout", output, sizeof(output)));
+                CHECK(artifact(state.work, "command-1.stderr", binary, sizeof(binary)));
+                CHECK(log_contains(state.work, "handshake hold_ms="));
+            } else if (!strcmp(mode, "handshake-timeout"))
+                CHECK(artifact(state.work, "command-1.stdout", "", 0));
+            else if (!strcmp(mode, "handshake-wrong"))
+                CHECK(artifact(state.work, "command-1.stdout", "WRONG\n", 6));
+            else
+                CHECK(artifact(state.work, "command-1.stdout", "READY\n", 6));
+            if (strcmp(mode, "handshake"))
+                CHECK(log_contains(state.work, "FAIL: "));
         }
         CHECK(remove_work(state.work));
     }
