@@ -6,6 +6,7 @@
 
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
+#include "lib/process/process_channel.h"
 
 #include <inttypes.h>
 #include <setjmp.h>
@@ -29,6 +30,9 @@ struct scenario_run_t {
     const char *barrier;
     size_t barrier_offset;
     bool barrier_released;
+    const unsigned char *barrier_input;
+    size_t barrier_input_size, barrier_input_offset;
+    unsigned char release_byte;
 };
 
 static void fail(scenario_run_t *run, const char *message) {
@@ -163,12 +167,21 @@ static child_input_status_t
 barrier_input(void *opaque, unsigned char *data, size_t capacity, size_t *size) {
     scenario_run_t *run = opaque;
     *size = 0;
+    if (run->barrier_input_offset < run->barrier_input_size) {
+        size_t remaining = run->barrier_input_size - run->barrier_input_offset;
+        *size = remaining < capacity ? remaining : capacity;
+        if (!*size)
+            return CHILD_INPUT_ERROR;
+        memcpy(data, run->barrier_input + run->barrier_input_offset, *size);
+        run->barrier_input_offset += *size;
+        return CHILD_INPUT_DATA;
+    }
     if (!run->barrier_released)
         return CHILD_INPUT_WAIT;
     if (run->barrier_released && run->barrier) {
         if (!capacity)
             return CHILD_INPUT_ERROR;
-        data[0] = 'G';
+        data[0] = run->release_byte;
         *size = 1;
         run->barrier = NULL;
         return CHILD_INPUT_DATA;
@@ -200,7 +213,10 @@ static scenario_command_result_t command(scenario_run_t *run,
                                          int64_t expected_exit,
                                          const char *barrier,
                                          scenario_body_t action,
-                                         void *user) {
+                                         void *user,
+                                         bool handshake,
+                                         unsigned char release_byte,
+                                         uint64_t hold_ms) {
     scenario_checkpoint(run);
     if (run->child)
         fail(run, "nested scenario commands are not supported");
@@ -221,9 +237,17 @@ static scenario_command_result_t command(scenario_run_t *run,
     run->barrier = barrier;
     run->barrier_offset = 0;
     run->barrier_released = false;
+    run->barrier_input = NULL;
+    run->barrier_input_size = run->barrier_input_offset = 0;
+    run->release_byte = release_byte;
     if (barrier) {
-        if (!*barrier || !action || child.stdin_data)
+        if (!*barrier || (!handshake && (!action || child.stdin_data))
+            || (child.stdin_size && !child.stdin_data))
             fail(run, "invalid barrier command");
+        run->barrier_input = child.stdin_data;
+        run->barrier_input_size = child.stdin_size;
+        child.stdin_data = NULL;
+        child.stdin_size = 0;
         child.stdin_callback = barrier_input;
     }
     unsigned index = ++run->command;
@@ -255,7 +279,21 @@ static scenario_command_result_t command(scenario_run_t *run,
             scenario_checkpoint(run);
         }
         /* The mutation is outside the child's callbacks; fail-fast unwinding is safe. */
-        action(run, user);
+        if (action)
+            action(run, user);
+        if (handshake) {
+            uint64_t started = child_monotonic_ms();
+            do {
+                scenario_checkpoint(run);
+                const child_result_t *progress = poll_child_process(run->child);
+                if (!progress || progress->status != CHILD_RUNNING)
+                    fail(run, "child ended before handshake release");
+                if (child_monotonic_ms() - started >= hold_ms)
+                    break;
+                process_pause(1);
+            } while (true);
+            fprintf(run->log, "handshake hold_ms=%" PRIu64 "\n", child_monotonic_ms() - started);
+        }
         scenario_checkpoint(run);
         run->barrier_released = true;
     }
@@ -309,12 +347,12 @@ static scenario_command_result_t command(scenario_run_t *run,
 }
 
 void scenario_command(scenario_run_t *run, const child_options_t *options, int64_t expected_exit) {
-    (void)command(run, options, true, expected_exit, NULL, NULL, NULL);
+    (void)command(run, options, true, expected_exit, NULL, NULL, NULL, false, 'G', 0);
 }
 
 scenario_command_result_t scenario_command_capture(scenario_run_t *run,
                                                    const child_options_t *options) {
-    return command(run, options, false, 0, NULL, NULL, NULL);
+    return command(run, options, false, 0, NULL, NULL, NULL, false, 'G', 0);
 }
 
 scenario_command_result_t scenario_command_barrier(scenario_run_t *run,
@@ -324,7 +362,17 @@ scenario_command_result_t scenario_command_barrier(scenario_run_t *run,
                                                    void *user) {
     if (!prefix || !*prefix || !action)
         fail(run, "invalid barrier command");
-    return command(run, options, false, 0, prefix, action, user);
+    return command(run, options, false, 0, prefix, action, user, false, 'G', 0);
+}
+
+scenario_command_result_t scenario_command_handshake(scenario_run_t *run,
+                                                     const child_options_t *options,
+                                                     const char *prefix,
+                                                     unsigned char release_byte,
+                                                     uint64_t hold_ms) {
+    if (!prefix || !*prefix)
+        fail(run, "invalid handshake command");
+    return command(run, options, false, 0, prefix, NULL, NULL, true, release_byte, hold_ms);
 }
 
 bool scenario_execute(const scenario_options_t *options,

@@ -1042,3 +1042,68 @@ corrupt bytecode is rejected by both Release hosts. All seven scenarios also pas
 UBSan with Python discovery disabled. The 73-case related migration/framework
 selection passes (one intentional framework SKIP), as do strict C11 warnings and
 clang-format 18 checks.
+
+## Initialization contract and exception propagation (#356)
+
+`module_initialization_contract_scenarios` and `module_exception_scenarios`
+replace `check_module_initialization_contract.py` and
+`check_module_exception_propagation.py`. Both retain the existing real VM hosts;
+independent wire constructors preserve every original fixture.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| Blocking initializer; original mutable object exception and trace survive GC and eight repeat calls from another file/module; no reinitialization | `integration.module_initialization_contract.object` |
+| Same saved-failure contract with null / integer payload | `integration.module_initialization_contract.null`, `.integer` |
+| Successful initializer runs once and preserves its scope | `integration.module_initialization_contract.success` |
+| Rule 26: locally caught exception | `integration.module_exception_propagation.rule_26` |
+| Rule 27: caught child initialization failure | `integration.module_exception_propagation.rule_27` |
+| Rule 28: caught transitive initialization failure | `integration.module_exception_propagation.rule_28` |
+| Rule 29: throwing function does not run during initialization | `integration.module_exception_propagation.rule_29` |
+| Rule 30: parent failure after successful child | `integration.module_exception_propagation.rule_30` |
+| Rule 31: direct uncaught failure | `integration.module_exception_propagation.rule_31` |
+| Rule 32: transitive failure preserves original trace | `integration.module_exception_propagation.rule_32` |
+| Rule 33: catch replacement exception becomes parent failure | `integration.module_exception_propagation.rule_33` |
+| Rule 34: finally replaces exception | `integration.module_exception_propagation.rule_34` |
+| Rule 35: finally preserves exception | `integration.module_exception_propagation.rule_35` |
+
+Each contract ID covers padding 0/5 and internal names / identical external Unicode
+names (16 fixtures total). Each exception rule covers those four combinations and
+object/null/integer payloads (120 fixtures). The hosts retain all scope, state,
+stack, trace-origin, exception identity, garbage-collection and repeated-call
+checks. Assertions remain explicitly enabled in Release.
+
+The common `scenario_command_handshake` sends binary input without closing stdin,
+waits for the exact READY event, checks the child is still alive, then sends R and
+EOF. The first object fixture holds the already-ready initializer for at least
+5300 ms; other fixtures release immediately. Startup is never guessed from a
+sleep. Framework tests cover binary input, incorrect READY, early exit and shared
+deadlines before READY, during the hold and after release. Windows CRLF is handled
+explicitly; no platform skips were added.
+
+Unique workspaces, saved framed inputs, command/stdout/stderr diagnostics,
+fail-fast process-tree cleanup, a shared 120-second deadline (CTest 240 seconds),
+and `--keep-work` use the existing test support. Input vectors are read-only.
+The `module-contract-exceptions-migration` label runs on Linux x86-64/AArch64,
+Windows MinGW i686/x86-64/UCRT and musl Debug/Release.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_initialization_contract_scenarios module_exception_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-contract-exceptions-migration
+build/manual/module_initialization_contract_scenarios integration.module_initialization_contract.object build/manual/module_initialization_contract_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+build/manual/module_exception_scenarios integration.module_exception_propagation.rule_33 build/manual/module_exception_propagation_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Repeat in Release; add .exe on Windows.
+```
+
+Historical Python runners are available in commit
+`ef45a46c3d8a8877084a114524f8d21dfb554e1a`. The checklist mark is included in the
+implementation commit; final CI links are recorded in the PR and issue without
+an extra checklist-only push.
+
+Local verification compared all 136 saved wire inputs against Python: identical
+bytecode and equivalent metadata, with both implementations passing the same
+Debug/Release hosts. Every Release input rejects malformed JSON and corrupt
+bytecode; wrong runner output also fails with retained diagnostics. All 14 new
+scenarios plus 31 execution-framework cases pass Debug, Release and UBSan with
+Python discovery disabled. The 76-case related Debug regression selection and
+clang-format 18 checks pass.

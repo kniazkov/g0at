@@ -38,7 +38,7 @@ foreach(scenario alive-wait kill deadline close owner-death condition)
   goat_scenario(process.watch.${scenario} "process-watch" TIMEOUT 20 COMMAND
     "$<TARGET_FILE:process_watch_testing>" "${scenario}")
 endforeach()
-foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash timeout cumulative invalid-timeout host-hang host-crash command start-error cleanup-failure barrier barrier-wrong barrier-eof barrier-timeout barrier-after-timeout barrier-action-failure barrier-action-deadline barrier-nested barrier-null barrier-empty)
+foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash timeout cumulative invalid-timeout host-hang host-crash command start-error cleanup-failure barrier barrier-wrong barrier-eof barrier-timeout barrier-after-timeout barrier-action-failure barrier-action-deadline barrier-nested barrier-null barrier-empty handshake handshake-wrong handshake-early handshake-timeout handshake-hold-timeout handshake-after-timeout)
   goat_scenario(framework.execution.${scenario} "scenario-execution" TIMEOUT 30 COMMAND "$<TARGET_FILE:scenario_execution_testing>"
     "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
   # Internal deadlines are at most 5 seconds; leave time for process-tree cleanup and artifacts.
@@ -152,8 +152,16 @@ foreach(initialization_case object null integer)
     "$<TARGET_FILE:module_initialization_scenarios>" integration.module_initialization_errors.${initialization_case} "$<TARGET_FILE:module_initialization_errors_testing>"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 endforeach()
-goat_python(integration.module_exception_propagation "integration" scripts/check_module_exception_propagation.py "$<TARGET_FILE:module_exception_propagation_testing>")
-goat_python(integration.module_initialization_contract "integration" scripts/check_module_initialization_contract.py "$<TARGET_FILE:module_initialization_contract_testing>")
+foreach(contract_case object null integer success)
+  goat_scenario(integration.module_initialization_contract.${contract_case} "integration;module-contract-exceptions-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_initialization_contract_scenarios>" integration.module_initialization_contract.${contract_case} "$<TARGET_FILE:module_initialization_contract_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
+foreach(rule RANGE 26 35)
+  goat_scenario(integration.module_exception_propagation.rule_${rule} "integration;module-contract-exceptions-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_exception_scenarios>" integration.module_exception_propagation.rule_${rule} "$<TARGET_FILE:module_exception_propagation_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
 goat_python(integration.module_incomplete_scopes "integration" scripts/check_module_incomplete_scopes.py "$<TARGET_FILE:module_incomplete_scopes_testing>")
 goat_python(integration.module_failed_prototypes "integration" scripts/check_module_failed_prototypes.py "$<TARGET_FILE:module_failed_prototypes_testing>")
 foreach(include_case nested repeat lexical private lazy expression arguments closure-include
@@ -285,8 +293,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 104)
-  message(FATAL_ERROR "Expected all 104 integration scenarios (initialization cases split in #355); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 116)
+  message(FATAL_ERROR "Expected all 116 integration scenarios (contract/exception cases split in #356); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
