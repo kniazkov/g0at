@@ -71,3 +71,15 @@ scenario_command_result_t scenario_command_capture(scenario_run_t *run,
 bool scenario_supervise(const scenario_options_t *options,
                         uint64_t timeout_ms,
                         const child_options_t *host);
+
+/** @brief Capture a child, wait for its exact stdout prefix, perform action, then send G/EOF.
+ * Uses the shared deadline and standard output artifacts. Action runs outside process callbacks
+ * and may use fail-fast file/assertion helpers, but must not launch nested scenario commands. A
+ * wrong prefix or premature exit fails the scenario; owned child trees are stopped even when action
+ * fails. No other stdin may be supplied.
+ */
+scenario_command_result_t scenario_command_barrier(scenario_run_t *run,
+                                                   const child_options_t *options,
+                                                   const char *prefix,
+                                                   scenario_body_t action,
+                                                   void *user);

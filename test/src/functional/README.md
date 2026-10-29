@@ -876,3 +876,60 @@ CTest scenarios pass as well.
 
 UBSan also passes with Python discovery disabled
 (`CMAKE_DISABLE_FIND_PACKAGE_Python3=TRUE`).
+
+## Immutable module snapshots (#353)
+
+`module_snapshot_scenarios` replaces the orchestration in
+`scripts/check_module_snapshot.py`, using the existing `module_snapshot_testing`
+API host. No language, VM or module-format behavior changes.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| API contract self-tests; 1, 3 and 11 file values and Unicode labels | `integration.module_snapshot.files` |
+| Replace root and transitive archives after READY; pinned values/native bytes stay old; fresh load sees replacement | `integration.module_snapshot.replace` |
+| Delete archives after READY; pinned execution survives; fresh load rejects missing dependency | `integration.module_snapshot.delete` |
+| Corrupt archives after READY; pinned execution survives; fresh load rejects corruption | `integration.module_snapshot.corrupt` |
+| Diamond deduplicates shared dependency and ignores unreachable corruption | `integration.module_snapshot.diamond` |
+| Two versions retain distinct values after removing modules | `integration.module_snapshot.versions` |
+| Missing/corrupt/hash/identity failures, with and without diagnostics; no partial nodes | `integration.module_snapshot.invalid` |
+| Throwing initializer after archive deletion retains values and failure count | `integration.module_snapshot.throw` |
+| 512-dependency chain, 513 checks and last value; 256 KiB POSIX child stack | `integration.module_snapshot.deep` |
+
+The independent test format oracle constructs bytecode, metadata hashes and ZIP
+fixtures. The shared `scenario_command_barrier` helper waits for the exact READY
+prefix before mutating files and only then sends G/EOF. It uses the scenario's
+single deadline, captures both streams and stops owned processes even if mutation
+fails. Framework self-tests cover successful synchronization and failure paths.
+Each scenario has a unique workspace under build, retained diagnostics on failure,
+cleanup after success and optional `--keep-work`; input data and vectors remain
+read-only. Required checks and component-host assertions stay active in Release.
+Windows runs all scenarios, omitting only the POSIX stack limit as before.
+
+The remaining `scripts/check_module_identity.py` consumer uses a temporary
+`module_snapshot_fixtures.py` compatibility module, not another test runner.
+Only its `image`, `archive` and `put` helpers remain; final Python helper cleanup
+is tracked by #394 (identity migration is #354).
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_snapshot_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-snapshot-migration
+build/manual/module_snapshot_scenarios integration.module_snapshot.replace build/manual/module_snapshot_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Repeat in Release; use .exe on Windows.
+# Historical Python parity check (remove restored runner afterwards):
+git show 08adc43c7a3e8b8ad52c72fe5a22769ed298de5b:scripts/check_module_snapshot.py > scripts/check_module_snapshot.py
+python3 scripts/check_module_snapshot.py build/manual/module_snapshot_testing
+```
+
+The `module-snapshot-migration` label is selected by Linux x86-64/AArch64,
+MinGW i686/x86-64/UCRT and Alpine/musl Debug/Release CI. The checklist mark is
+part of the implementation commit; final-commit CI links are recorded in the
+PR and issue without an extra checklist-only push.
+
+Local verification: Debug and Release differential capture matches all 21 ordered
+Python/C host calls, parsed outputs, exit codes and stderr, plus all archive
+metadata and bytecode/native payload hashes before and after synchronized
+mutations. Normalization is limited to workspace roots and JSON whitespace.
+Release rejects deliberately incorrect check counts and corrupt root inputs,
+retaining diagnostics. Ordinary success removes its workspace; `--keep-work`
+retains it. UBSan with Python discovery disabled passes all nine scenarios.

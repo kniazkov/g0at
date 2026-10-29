@@ -10,7 +10,7 @@ import sys
 import tempfile
 import zipfile
 
-from check_module_snapshot import archive, put
+from module_snapshot_fixtures import archive, put
 
 EXE = str(Path(sys.argv[1]).resolve())
 COUNT = 0

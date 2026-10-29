@@ -65,7 +65,7 @@
 - [x] 32. [#350 — Перенести на Си: Поиск модулей](https://github.com/kniazkov/g0at/issues/350) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 33. [#351 — Перенести на Си: Зависимости модулей](https://github.com/kniazkov/g0at/issues/351) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 34. [#352 — Перенести на Си: Граф модулей](https://github.com/kniazkov/g0at/issues/352) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
-- [ ] 35. [#353 — Перенести на Си: Snapshot модулей](https://github.com/kniazkov/g0at/issues/353)
+- [x] 35. [#353 — Перенести на Си: Snapshot модулей](https://github.com/kniazkov/g0at/issues/353) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [ ] 36. [#354 — Перенести на Си: Identity и сериализация](https://github.com/kniazkov/g0at/issues/354)
 - [ ] 37. [#355 — Перенести на Си: Инициализация и её ошибки](https://github.com/kniazkov/g0at/issues/355)
 - [ ] 38. [#356 — Перенести на Си: Контракт инициализации и исключения](https://github.com/kniazkov/g0at/issues/356)
@@ -170,6 +170,7 @@
 | `scripts/check_module_search.py` | [#350](https://github.com/kniazkov/g0at/issues/350) |
 | `scripts/check_module_serialization.py` | [#354](https://github.com/kniazkov/g0at/issues/354) |
 | `scripts/check_module_snapshot.py` | [#353](https://github.com/kniazkov/g0at/issues/353) |
+| `scripts/module_snapshot_fixtures.py` (совместимый слой после #353) | [#354](https://github.com/kniazkov/g0at/issues/354), [#394](https://github.com/kniazkov/g0at/issues/394) |
 | `scripts/check_module_source_diagnostics.py` | [#363](https://github.com/kniazkov/g0at/issues/363) |
 | `scripts/check_module_sources.py` | [#348](https://github.com/kniazkov/g0at/issues/348) |
 | `scripts/check_module_threads.py` | [#378](https://github.com/kniazkov/g0at/issues/378) |
@@ -217,3 +218,5 @@
 Python-free gate [#395](https://github.com/kniazkov/g0at/issues/395), не меняя порядка задач.
 Происхождение, форматы, соответствие сценариев и команды проверки описаны в
 [`test/data/python-samples/README.md`](../test/data/python-samples/README.md).
+
+Совместимый слой snapshot: `scripts/module_snapshot_fixtures.py` временно предоставляет `image`, `archive` и `put` для `scripts/check_module_identity.py` (#354); удалить после последнего потребителя, окончательная очистка — #394.

@@ -26,6 +26,9 @@ struct scenario_run_t {
     child_process_t *child;
     unsigned command, comparison;
     bool failed;
+    const char *barrier;
+    size_t barrier_offset;
+    bool barrier_released;
 };
 
 static void fail(scenario_run_t *run, const char *message) {
@@ -146,7 +149,31 @@ void scenario_require_bytes(scenario_run_t *run,
 
 static bool output_sink(void *opaque, const unsigned char *bytes, size_t size) {
     scenario_run_t *run = opaque;
-    return fwrite(bytes, 1, size, run->out) == size;
+    if (fwrite(bytes, 1, size, run->out) != size)
+        return false;
+    for (size_t i = 0; run->barrier && run->barrier[run->barrier_offset] && i < size; i++) {
+        if (bytes[i] != (unsigned char)run->barrier[run->barrier_offset])
+            return false;
+        run->barrier_offset++;
+    }
+    return true;
+}
+
+static child_input_status_t
+barrier_input(void *opaque, unsigned char *data, size_t capacity, size_t *size) {
+    scenario_run_t *run = opaque;
+    *size = 0;
+    if (!run->barrier_released)
+        return CHILD_INPUT_WAIT;
+    if (run->barrier_released && run->barrier) {
+        if (!capacity)
+            return CHILD_INPUT_ERROR;
+        data[0] = 'G';
+        *size = 1;
+        run->barrier = NULL;
+        return CHILD_INPUT_DATA;
+    }
+    return CHILD_INPUT_EOF;
 }
 
 static bool error_sink(void *opaque, const unsigned char *bytes, size_t size) {
@@ -170,8 +197,13 @@ static bool free_capture(void *data) {
 static scenario_command_result_t command(scenario_run_t *run,
                                          const child_options_t *options,
                                          bool check_exit,
-                                         int64_t expected_exit) {
+                                         int64_t expected_exit,
+                                         const char *barrier,
+                                         scenario_body_t action,
+                                         void *user) {
     scenario_checkpoint(run);
+    if (run->child)
+        fail(run, "nested scenario commands are not supported");
     if (!options || !options->arguments || !options->arguments[0] || options->survive_parent
         || options->service_channel || options->result_channel || options->parent_watch
         || options->stdin_callback || options->stdout_callback || options->stderr_callback)
@@ -186,6 +218,14 @@ static scenario_command_result_t command(scenario_run_t *run,
         child.working_directory = scenario_work_directory(run->context);
     if (!child.stdin_data)
         child.empty_stdin = true;
+    run->barrier = barrier;
+    run->barrier_offset = 0;
+    run->barrier_released = false;
+    if (barrier) {
+        if (!*barrier || !action || child.stdin_data)
+            fail(run, "invalid barrier command");
+        child.stdin_callback = barrier_input;
+    }
     unsigned index = ++run->command;
     if (check_exit)
         fprintf(run->log, "command %u expected_exit=%" PRId64 "\n", index, expected_exit);
@@ -207,6 +247,18 @@ static scenario_command_result_t command(scenario_run_t *run,
     run->child = start_child_process(&child);
     if (!run->child)
         fail(run, "cannot start scenario command");
+    if (barrier) {
+        while (run->barrier[run->barrier_offset]) {
+            const child_result_t *progress = poll_child_process(run->child);
+            if (!progress || progress->status != CHILD_RUNNING)
+                fail(run, "child ended before synchronization barrier");
+            scenario_checkpoint(run);
+        }
+        /* The mutation is outside the child's callbacks; fail-fast unwinding is safe. */
+        action(run, user);
+        scenario_checkpoint(run);
+        run->barrier_released = true;
+    }
     const child_result_t *result = wait_child_process(run->child);
     bool ok = result && result->status == CHILD_EXITED
               && (!check_exit || result->exit_code == expected_exit) && !result->cleanup_error;
@@ -257,12 +309,22 @@ static scenario_command_result_t command(scenario_run_t *run,
 }
 
 void scenario_command(scenario_run_t *run, const child_options_t *options, int64_t expected_exit) {
-    (void)command(run, options, true, expected_exit);
+    (void)command(run, options, true, expected_exit, NULL, NULL, NULL);
 }
 
 scenario_command_result_t scenario_command_capture(scenario_run_t *run,
                                                    const child_options_t *options) {
-    return command(run, options, false, 0);
+    return command(run, options, false, 0, NULL, NULL, NULL);
+}
+
+scenario_command_result_t scenario_command_barrier(scenario_run_t *run,
+                                                   const child_options_t *options,
+                                                   const char *prefix,
+                                                   scenario_body_t action,
+                                                   void *user) {
+    if (!prefix || !*prefix || !action)
+        fail(run, "invalid barrier command");
+    return command(run, options, false, 0, prefix, action, user);
 }
 
 bool scenario_execute(const scenario_options_t *options,
