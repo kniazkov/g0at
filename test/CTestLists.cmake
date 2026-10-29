@@ -117,7 +117,9 @@ goat_python(integration.module_writer "integration" scripts/check_module_writer.
 goat_scenario(integration.module_sources "integration;module-sources-files-migration" TIMEOUT 240 COMMAND
   "$<TARGET_FILE:module_sources_scenarios>" integration.module_sources "$<TARGET_FILE:module_sources_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
-goat_python(integration.module_search "integration" scripts/check_module_search.py "$<TARGET_FILE:module_search_testing>")
+goat_scenario(integration.module_search "integration;module-search-migration" TIMEOUT 240 COMMAND
+  "$<TARGET_FILE:module_search_scenarios>" integration.module_search "$<TARGET_FILE:module_search_testing>"
+  "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 goat_python(integration.module_dependencies "integration" scripts/check_module_dependencies.py "$<TARGET_FILE:module_dependencies_testing>")
 goat_python(integration.module_graph "integration" scripts/check_module_graph.py "$<TARGET_FILE:module_graph_testing>")
 goat_python(integration.module_snapshot "integration" scripts/check_module_snapshot.py "$<TARGET_FILE:module_snapshot_testing>")

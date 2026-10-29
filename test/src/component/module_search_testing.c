@@ -8,6 +8,7 @@
 #include "lib/memory/allocate.h"
 #include "vm/module_search.h"
 
+#undef NDEBUG
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,11 +17,14 @@
 #    include <direct.h>
 void begin_module_search_permissions(void);
 void end_module_search_permissions(void);
-unsigned long probe_module_search_access(const char *path, int directory);
 #    define chdir _chdir
 #else
 #    include <unistd.h>
 #endif
+
+unsigned long probe_module_search_access(const char *path, int directory);
+void module_search_drop_privileges(void);
+void module_search_retarget(const char *alias, const char *target);
 
 static void quoted(const char *text) {
     if (!text) {
@@ -63,15 +67,21 @@ int main(int argc, char **argv) {
     assert(fs_arguments(&argc, &argv, &arguments_error));
     clear_fs_error(&arguments_error);
     begin_module_search_permissions();
-    if (argc == 4 && !strcmp(argv[1], "--probe")) {
+#endif
+    if ((argc == 4 || argc == 5) && !strcmp(argv[1], "--probe")) {
+        if (argc == 5 && !strcmp(argv[4], "unprivileged"))
+            module_search_drop_privileges();
         printf("%lu\n", probe_module_search_access(argv[2], !strcmp(argv[3], "directory")));
+#ifdef _WIN32
         end_module_search_permissions();
         free_fs_arguments(argc, argv);
+#endif
         assert(!get_allocated_memory_size());
         return 0;
     }
-#endif
-    assert(argc == 10);
+    assert(argc == 10 || argc == 12);
+    if (argc == 12 && !strcmp(argv[11], "unprivileged"))
+        module_search_drop_privileges();
     module_search_t *search = NULL;
     module_search_error_t error = {0};
     module_search_status_t status;
@@ -103,8 +113,10 @@ int main(int argc, char **argv) {
     printf(",\"native_code\":%lu}\n", error.filesystem.native_code);
     fflush(stdout);
     if (status == MODULE_SEARCH_OK) {
-        /* Python may retarget the root link after preparation, before lookup. */
+        /* The controller may retarget the root link after preparation, before lookup. */
         assert(getchar() == '\n');
+        if (argc == 12 && *argv[10])
+            module_search_retarget(argv[1], argv[10]);
         if (*argv[9]) {
 #ifdef _WIN32
             assert(!_putenv_s("GOAT_MODULE_PATH", argv[9]));
