@@ -1,0 +1,18 @@
+{
+  "same-library": "external main = func() { return __main__; }; external dir = func() { return __dir__; }; if (__main__) { println(\"direct\"); } else { println(\"imported\"); } println(__dir__);",
+  "same-app": "const lib = import \"library@1\"; println(__main__); println(lib.main()); println(lib.dir() == __dir__); println(__dir__);",
+  "origin-app": "const other = include \"nested/other.goat\"; const read = func() { return __main__; }; const make = func() { return func() { return __main__; }; }; println(__main__); println(other.main); println(other.dir == __dir__); println(other.call(read)); println(other.call(make())); println(other.read()); println(other.make()()); const holder = { public local = read; public foreign = other.read; }; println(holder.local()); println(holder.foreign()); println(holder.clone().local()); println(holder.clone().foreign()); println(holder.flat().local()); println(holder.flat().foreign()); println(read.clone()()); println(other.read.clone()());",
+  "reexport-library": "external read = func() { return __main__; }; external make = func() { return func() { return __main__; }; }; external call = func(f) { return f(); }; external dir = func() { return __dir__; };",
+  "reexport-facade": "const lib = import \"library@1\"; external read = lib.read; external make = lib.make; external call = lib.call; external dir = lib.dir;",
+  "reexport-app": "const f = import \"facade@1\"; println(f.read()); println(f.make()()); println(f.call(func() { return __main__; })); println(f.dir() == __dir__); const holder = { public read = f.read; }; println(holder.clone().read()); println(holder.flat().read());",
+  "launch-app": "println(__main__); println(__dir__);",
+  "canonical-library": "external value = 42; external dir = __dir__;",
+  "canonical-app": "const lib = import \"library@1\"; println(lib.value); println(__dir__); println(lib.dir == __dir__);",
+  "replacement-app": "println(\"wrong replacement\");",
+  "origin-expected": "true\nfalse\ntrue\ntrue\ntrue\nfalse\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\n",
+  "reexport-expected": "false\nfalse\ntrue\ntrue\nfalse\nfalse\n",
+  "origin-other": "public main = __main__; public dir = __dir__; public call = func(f) { return f(); }; public read = func() { return __main__; }; public make = func() { return func() { return __main__; }; };",
+  "cli-source": "const read = func() { if (__main__) return 1; else return 2; }; const dir = func() { return __dir__; }; println(__main__); println(read()); println(dir()); println(read.clone()());",
+  "native-source": "const inc = func(x) { return x + 1; }; println(inc(7)); println(__main__); println(__dir__);",
+  "replacement-source": "println(\"wrong replacement source\");"
+}

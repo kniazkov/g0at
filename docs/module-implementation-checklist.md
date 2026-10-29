@@ -299,7 +299,7 @@
 | --- | --- |
 | 132–144, 147: удержание снимка, потоки, инициализация | [Снимок](module-snapshot-api.md), [сериализация](module-serialization-api.md); `module_snapshot_scenarios`, `module_serialization_scenarios`, `check_module_threads.py`, `module_thread_lifetime_testing` |
 | 145, 148–155, 159–162: required, exit, уборщик | [Загрузка](module-loading-api.md), [exit](module-exit-api.md), [сборка](module-build-api.md), [уборщик](cleanup-service-api.md); `check_module_loading.py`, `check_process_exit.py`, `check_native_exit.py`, `check_native_cleanup.py`, `check_cleanup_service.py` |
-| 146, 156–158: настоящие пути | [Исходники](module-sources-api.md), [CLI](module-cli-api.md); `integration.module_sources` (CTest), `check_module_cli.py`, `check_module_context_constants.py` |
+| 146, 156–158: настоящие пути | [Исходники](module-sources-api.md), [CLI](module-cli-api.md); `integration.module_sources` (CTest), `check_module_cli.py`, `module_context_scenarios` |
 | Платформы, CPU, runtime, ABI, переносимые хеши | [Сквозная поставка и границы](module-delivery-tests.md); `integration.module_native` (CTest), `check_native_requirements.py`, `check_native_toolchains.py`, `check_module_delivery.py`, `check_module_delivery_requirements.py`, format-vectors |
 | Информационные поля и cCompiler | [Информация](module-information-api.md), [объединение](module-merge-api.md); `check_module_information.py`, `check_module_build.py`, `check_module_inspect.py`, `check_module_merge.py` |
 | Deflate, атомарная публикация, права и входы merge | [Writer](module-writer-api.md), [merge](module-merge-api.md); `check_module_writer.py`, `check_module_container.py`, `check_module_merge.py` и fault-проверки общего файлового API |

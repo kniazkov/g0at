@@ -26,7 +26,7 @@ shared property-access operations; there is no separate re-export access path.
 The executable regression suite is:
 
 ```sh
-python3 scripts/check_module_function_provenance.py build/module_import_execution_testing
+ctest --test-dir build --output-on-failure -R '^integration.module_function_provenance\.'
 ```
 
 It compiles real multifile modules and consumer modules, packages them, loads a
@@ -65,7 +65,7 @@ public CLI integration of #191.
 доступа; отдельного пути проверки переэкспорта нет. Запуск сквозных проверок:
 
 ```sh
-python3 scripts/check_module_function_provenance.py build/module_import_execution_testing
+ctest --test-dir build --output-on-failure -R '^integration.module_function_provenance\.'
 ```
 
 Набор компилирует настоящие многофайловые библиотеки и модули-потребители,

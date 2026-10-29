@@ -1,0 +1,368 @@
+[
+  {
+    "id": "integration.module_function_provenance.01-declaring-file",
+    "name": "01-declaring-file",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; println(a.obj); a.show(a.obj); try { println(a.obj.hidden); } catch(e) { println(\"denied\"); println(e); }",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; public var shared = 20; }; public show = func(value) { println(value); };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "{\"shared\":20}\n{\"hidden\":10,\"shared\":20}\ndenied\nACCESS_DENIED\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.02-callback",
+    "name": "02-callback",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; a.inspect(func(value) { println(value); }); try { a.inspect(func(value) { return value.hidden; }); } catch(e) { println(\"callback denied\"); println(e); } println(a.read()); try { println(a.obj.hidden); } catch(e) { println(\"caller still denied\"); println(e); }",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; public var shared = 20; }; public inspect = func(callback) { callback(obj); }; public read = func() { return obj.hidden; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "{\"shared\":20}\ncallback denied\nACCESS_DENIED\n10\ncaller still denied\nACCESS_DENIED\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.03-closure",
+    "name": "03-closure",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; const read = a.makeReader(10); const other = a.makeReader(20); println(read()); println(other()); println(read()); const holder = { public f = read; }; println(holder.f());",
+        "version": "1",
+        "files": {
+          "a.goat": "public makeReader = func(start) { const obj = { var hidden = start; }; return func() { obj.hidden += 1; return obj.hidden; }; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "11\n21\n12\n13\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.04-method-storage",
+    "name": "04-method-storage",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; const b = include \"b.goat\"; println(a.obj.read == b.readHidden); try { a.obj.read(a.obj); } catch(e) { println(\"method denied\"); println(e); } try { a.call(); } catch(e) { println(\"owner call denied\"); println(e); } println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "const b = include \"b.goat\"; public obj = { var hidden = 10; public read = b.readHidden; }; public call = func() { return obj.read(obj); }; public read = func() { return obj.hidden; };",
+          "b.goat": "public readHidden = func(obj) { return obj.hidden; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "true\nmethod denied\nACCESS_DENIED\nowner call denied\nACCESS_DENIED\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.05-function-reexport",
+    "name": "05-function-reexport",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "const i = include \"internal.goat\"; external read = i.read; external makeReader = i.makeReader; external obj = i.obj;",
+        "version": "1",
+        "files": {
+          "internal.goat": "public obj = { var hidden = 10; }; public read = func() { return obj.hidden; }; public makeReader = func(n) { return func() { return obj.hidden + n; }; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "facade",
+        "code": "const lib = import \"library@1\"; external read = lib.read; external makeReader = lib.makeReader; external obj = lib.obj;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "outer",
+        "code": "const f = import \"facade@1\"; external read = f.read; external makeReader = f.makeReader; external obj = f.obj;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; const f = import \"facade@1\"; const o = import \"outer@1\"; println(lib.read == f.read); println(f.read == o.read); println(lib.obj == o.obj); println(o.read()); println(o.makeReader(7)()); try { println(o.obj.hidden); } catch(e) { println(\"hidden denied\"); println(e); }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "true\ntrue\ntrue\n10\n17\nhidden denied\nACCESS_DENIED\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.06-nested-export",
+    "name": "06-nested-export",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external obj = { public var internal = 10; external var shared = 20; external nested = { public secret = 30; external value = 40; }; }; external read = func() { return obj.internal + obj.nested.secret; }; external getNested = func() { return [obj.nested]; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; println(lib.obj); println(lib.obj.shared); println(lib.obj.nested.value); println(lib.read()); try { println(lib.obj.internal); } catch(e) { println(\"internal denied\"); println(e); } try { println(lib.obj.nested.secret); } catch(e) { println(\"nested denied\"); println(e); } try { lib.obj.internal = 50; } catch(e) { println(\"write denied\"); println(e); } println(lib.read()); const nested = lib.getNested(); println(nested); println(nested[0] == lib.obj.nested); try { println(nested[0][\"secret\"]); } catch(e) { println(\"array nested denied\"); println(e); }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "{\"nested\":{\"value\":40},\"shared\":20}\n20\n40\n40\ninternal denied\nACCESS_DENIED\nnested denied\nACCESS_DENIED\nwrite denied\nACCESS_DENIED\n40\n[{\"value\":40}]\ntrue\narray nested denied\nACCESS_DENIED\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.07-return-object",
+    "name": "07-return-object",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "const obj = { var hidden = 10; external var shared = 20; }; external getObject = func() { return obj; }; external read = func() { return obj.hidden; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; const obj = lib.getObject(); println(obj == lib.getObject()); println(obj.shared); println(lib.read()); try { println(obj.hidden); } catch(e) { println(\"read denied\"); println(e); } try { obj.hidden = 99; } catch(e) { println(\"write denied\"); println(e); } println(lib.read()); obj.shared = 25; println(lib.getObject().shared);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "true\n20\n10\nread denied\nACCESS_DENIED\nwrite denied\nACCESS_DENIED\n10\n25\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.08-constant-reference",
+    "name": "08-constant-reference",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external items = [1, 2]; external get = func() { return items; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; const items = lib.items; items.push(3); println(lib.items); println(items == lib.get()); try { lib.items = [4, 5]; } catch(e) { println(\"constant denied\"); println(e); } println(lib.items); println(items == lib.items);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "[1,2,3]\ntrue\nconstant denied\nPROPERTY_IS_CONSTANT\n[1,2,3]\ntrue\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.09-field-provenance",
+    "name": "09-field-provenance",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "const a = include \"a.goat\"; include \"b.goat\"; external obj = a.obj; external read = a.read; external siblingRead = (include \"c.goat\").read;",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { public var value = 1; external var shared = 3; }; public read = func() { return obj.value; };",
+          "b.goat": "const a = include \"a.goat\"; a.obj.value = 2; a.obj.shared = 4;",
+          "c.goat": "const a = include \"a.goat\"; public read = func() { return a.obj.value; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; println(lib.read()); println(lib.siblingRead()); println(lib.obj.shared); lib.obj.shared = 5; println(lib.obj.shared); try { println(lib.obj.value); } catch(e) { println(\"public read denied\"); println(e); } try { lib.obj.value = 9; } catch(e) { println(\"public write denied\"); println(e); } println(lib.read());",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "2\n2\n4\n5\npublic read denied\nACCESS_DENIED\npublic write denied\nACCESS_DENIED\n2\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.10-replacement-function",
+    "name": "10-replacement-function",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "const a = include \"a.goat\"; external obj = a.obj; external call = a.call; external original = a.obj.read; external replace = (include \"b.goat\").replace;",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; public var read = func() { return hidden; }; }; public call = func() { return obj.read(); };",
+          "b.goat": "const a = include \"a.goat\"; public replace = func() { a.obj.read = func() { return a.obj.hidden; }; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; println(lib.call()); lib.replace(); try { lib.call(); } catch(e) { println(\"replacement denied\"); println(e); } println(lib.original()); try { println(lib.obj.read); } catch(e) { println(\"field still public\"); println(e); }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "10\nreplacement denied\nACCESS_DENIED\n10\nfield still public\nACCESS_DENIED\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.11-independent-cells",
+    "name": "11-independent-cells",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "const i = include \"internal.goat\"; external var counter = i.counter; external var items = i.items; external var obj = i.obj; external internal = i; external change = func() { i.counter = 8; i.items = [8]; i.obj = { external var value = 8; }; };",
+        "version": "1",
+        "files": {
+          "internal.goat": "external var counter = 0; external var items = [1]; external var obj = { external var value = 1; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; lib.counter = 5; println(lib.internal.counter); println(lib.items == lib.internal.items); println(lib.obj == lib.internal.obj); lib.items.push(2); lib.obj.value = 2; println(lib.internal.items); println(lib.internal.obj.value); lib.items = [3]; lib.obj = { external var value = 3; }; println(lib.internal.items); println(lib.internal.obj.value); lib.change(); println(lib.counter); println(lib.items); println(lib.obj.value); println(lib.internal.counter); println(lib.internal.items); println(lib.internal.obj.value);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "0\ntrue\ntrue\n[1,2]\n2\n[1,2]\n2\n5\n[3]\n3\n8\n[8]\n8\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.12-file-scope",
+    "name": "12-file-scope",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external tools = include \"internal.goat\"; external again = include \"internal.goat\"; external callHelper = func() { return tools.helper(); };",
+        "version": "1",
+        "files": {
+          "internal.goat": "const hidden = 7; public helper = func() { return 10; }; external api = func() { return hidden + 13; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; println(lib.tools == lib.again); println(lib.tools.api()); println(lib.callHelper()); try { lib.tools.helper(); } catch(e) { println(\"helper denied\"); println(e); } try { println(lib.tools.hidden); } catch(e) { println(\"hidden denied\"); println(e); }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "true\n20\n10\nhelper denied\nACCESS_DENIED\nhidden denied\nACCESS_DENIED\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_function_provenance.12-no-direct-internal-import",
+    "name": "12-no-direct-internal-import",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external tools = include \"internal.goat\";",
+        "version": "1",
+        "files": {
+          "internal.goat": "external api = func() { return 20; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "import \"library@1/internal.goat\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  }
+]
