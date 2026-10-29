@@ -1208,3 +1208,11 @@ read-only fixture table. The [complete scenario map, parity results and commands
 cover AC-01–AC-28, include/import and clone/flat variants, static rejection and
 public source/binary CLI checks with both optimizers. Label:
 `module-multifile-access-migration`.
+
+## Context constants and provenance (#360)
+
+`module_context_scenarios.c` and `module_function_provenance_scenarios.c`
+replace the two Python runners with 36 context and 13 provenance CTest IDs.
+See the complete [context mapping and parity](../../data/module-context/README.md)
+and [provenance mapping and parity](../../data/module-provenance/README.md).
+Label: `module-context-provenance-migration`.

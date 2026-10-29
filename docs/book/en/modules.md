@@ -248,7 +248,7 @@ available. The current native generator leaves bodies requiring these runtime
 constants to the VM rather than embedding their values; this is the supported
 fallback, not a native specialization of a launch-dependent value.
 
-`scripts/check_module_context_constants.py` checks compiled direct/imported use,
+`test/src/functional/module_context_scenarios.c` checks compiled direct/imported use,
 includes, callbacks, closures, reexports, clone/flat, relocation, canonical aliases,
 frozen startup state, Unicode paths, and reserved names in nested scopes. With the Goat executable
 it also checks standalone source launch with optimization disabled/enabled and

@@ -185,8 +185,6 @@ goat_python(integration.module_source_diagnostics "integration" scripts/check_mo
 goat_python(integration.process_exit "integration" scripts/check_process_exit.py "$<TARGET_FILE:process_exit_testing>" "$<TARGET_FILE:process_exit_failure_testing>" "$<TARGET_FILE:process_exit_delayed_testing>")
 goat_python(integration.module_exit "integration" scripts/check_module_exit.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 goat_python(integration.module_threads "integration" scripts/check_module_threads.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
-goat_python(integration.module_context_constants "integration" scripts/check_module_context_constants.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
-goat_python(integration.module_function_provenance "integration" scripts/check_module_function_provenance.py "$<TARGET_FILE:module_import_execution_testing>")
 goat_python(integration.module_assignment_access "integration" scripts/check_module_assignment_access.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 # The immutable fixture table is the single source of stable scenario IDs.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-access/scenarios.json")
@@ -306,6 +304,29 @@ if(NOT GOAT_TEST_PYTHON3_COMMAND)
   set_tests_properties(tool.graph PROPERTIES DISABLED TRUE)
   message(STATUS "CTest tool.graph unavailable: existing shell runner requires python3 on PATH")
 endif()
+
+set(context_cases same-image file-origin reexport relocation unicode canonical-direct canonical-alias frozen-direct frozen-alias source-direct source-alias native-alias)
+foreach(constant main dir)
+  foreach(form RANGE 0 11)
+    list(APPEND context_cases reserved-${constant}-${form})
+  endforeach()
+endforeach()
+foreach(context_case IN LISTS context_cases)
+  goat_scenario(integration.module_context_constants.${context_case} "integration;module-context-provenance-migration" TIMEOUT 150 COMMAND
+    "$<TARGET_FILE:module_context_scenarios>" integration.module_context_constants.${context_case}
+    "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/src/support/context_retarget_compiler.c")
+endforeach()
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-provenance/scenarios.json")
+file(STRINGS "${PROJECT_SOURCE_DIR}/test/data/module-provenance/scenarios.json" provenance_ids REGEX "^[ ]+\"id\":")
+foreach(provenance_line IN LISTS provenance_ids)
+  string(REGEX REPLACE "^[ ]+\"id\": \"([^\"]+)\",?$" "\\1" provenance_id "${provenance_line}")
+  goat_scenario(${provenance_id} "integration;module-context-provenance-migration" TIMEOUT 150 COMMAND
+    "$<TARGET_FILE:module_function_provenance_scenarios>" "${provenance_id}"
+    "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+
 # This count protects the transitional CI replacement against dropped registrations.
 get_property(goat_registered_suites DIRECTORY PROPERTY TESTS)
 set(goat_integration_count 0)
@@ -314,8 +335,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 206)
-  message(FATAL_ERROR "Expected all 206 integration scenarios (multifile access cases split in #359); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 253)
+  message(FATAL_ERROR "Expected all 253 integration scenarios (context/provenance split in #360); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
