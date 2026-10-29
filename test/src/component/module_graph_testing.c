@@ -6,6 +6,9 @@
 #include "vm/module_graph.h"
 #include "vm/module_graph_diagnostics.h"
 
+#ifdef NDEBUG
+#    undef NDEBUG /* Contract checks and fixture calls stay active in Release. */
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
