@@ -9,6 +9,9 @@
 #include "model/thread.h"
 #include "vm/vm.h"
 
+#ifdef NDEBUG
+#    undef NDEBUG /* Contract checks and fixture calls stay active in Release. */
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

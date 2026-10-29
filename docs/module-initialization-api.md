@@ -63,7 +63,7 @@ cells. `module_initialization_chain` captures the active root-to-leaf chain whil
 an executor is running; names are escaped and file indices/external markers are
 included. The chain is restored on normal and failed unwinding.
 
-`module_initialization_testing` and `scripts/check_module_initialization.py`
+`module_initialization_testing` and `module_initialization_scenarios` (`integration.module_initialization.*`)
 exercise the state gate and actual VM declarations with independently encoded
 images. Language operator dispatch and complete CLI routing remain #194/#195 and
 #191; this task supplies their shared state machine, not another parser.
@@ -132,7 +132,7 @@ VM дополняет текст ошибки активной цепочкой 
 ## Saved-failure regression tests / Проверки сохранённой неудачи
 
 `module_initialization_errors_testing` and
-`scripts/check_module_initialization_errors.py` verify exact payload identity,
+`module_initialization_scenarios` (`integration.module_initialization_errors.*`) verify exact payload identity,
 mutable exception values, GC retention, repeated failed entry without side effects,
 failed scope reads/writes/copies, escaped function calls and their copies, and
 unaffected ordinary values and successfully initialized files. These internal-API
