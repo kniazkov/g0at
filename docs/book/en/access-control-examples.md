@@ -595,12 +595,12 @@ Checks include static rejection, dynamic equivalents, English/Russian diagnostic
 
 For AC-01–AC-24, `public` in a snippet means access from another file **of the same module**, not from an importer. A minimal file split uses `public obj = { ... };` in `objects.goat`, then `const objects = include "objects.goat";` and `objects.obj` in the consumer. Across `import`, both the outer binding and every accessed nested field must permit `external` access (unless a separate private/protected right applies). AC-25–AC-28 show that boundary explicitly. Each module uses a `.gmod` descriptor with `formatVersion: 1`, its name/version, and `main: "main.goat"`; A's descriptor names `a`, version `1`.
 
-The executable acceptance entry point is [`scripts/check_module_multifile_access.py`](../../../scripts/check_module_multifile_access.py), using the existing module execution harness:
+The executable acceptance entry point is [`test/src/functional/module_multifile_access_scenarios.c`](../../../test/src/functional/module_multifile_access_scenarios.c), using the existing module execution harness:
 
 | Examples | Fixtures | Focus |
 | --- | --- | --- |
-| AC-01–AC-10 | `module_access_basic_cases.py` | Declarations, analyzer rejection, dynamic denial, closures, private/protected domains, lookup barriers |
-| AC-11–AC-22 | `module_access_copy_cases.py` | Real-file/module clone/flat, independent and shared cells, shallow copies, method identity, prototype graphs |
-| AC-23–AC-28 | `module_access_boundary_cases.py` | Observer context, arrays, factories, copied method origin, protected cross-module access, constness and extension |
+| AC-01–AC-10 | `test/data/module-access/scenarios.json` (`basic`) | Declarations, analyzer rejection, dynamic denial, closures, private/protected domains, lookup barriers |
+| AC-11–AC-22 | `test/data/module-access/scenarios.json` (`copy`) | Real-file/module clone/flat, independent and shared cells, shallow copies, method identity, prototype graphs |
+| AC-23–AC-28 | `test/data/module-access/scenarios.json` (`boundary`) | Observer context, arrays, factories, copied method origin, protected cross-module access, constness and extension |
 
 These complement the existing function-provenance/re-export and assignment-access suites. A denial must remain a denial after a file/module boundary or copying; positive cases must preserve their values, identity, and side effects. Returning or re-exporting a function retains its declaration context, not the caller's rights.

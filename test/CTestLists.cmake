@@ -188,7 +188,16 @@ goat_python(integration.module_threads "integration" scripts/check_module_thread
 goat_python(integration.module_context_constants "integration" scripts/check_module_context_constants.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 goat_python(integration.module_function_provenance "integration" scripts/check_module_function_provenance.py "$<TARGET_FILE:module_import_execution_testing>")
 goat_python(integration.module_assignment_access "integration" scripts/check_module_assignment_access.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
-goat_python(integration.module_multifile_access "integration" scripts/check_module_multifile_access.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
+# The immutable fixture table is the single source of stable scenario IDs.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-access/scenarios.json")
+file(STRINGS "${PROJECT_SOURCE_DIR}/test/data/module-access/scenarios.json" access_ids REGEX "^[ ]+\"id\":")
+foreach(access_line IN LISTS access_ids)
+  string(REGEX REPLACE "^[ ]+\"id\": \"([^\"]+)\",?$" "\\1" access_id "${access_line}")
+  goat_scenario(${access_id} "integration;module-multifile-access-migration" TIMEOUT 150 COMMAND
+    "$<TARGET_FILE:module_multifile_access_scenarios>" "${access_id}"
+    "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 goat_scenario(integration.module_imports "integration;imports-include-migration" TIMEOUT 240 COMMAND
   "$<TARGET_FILE:module_imports_scenarios>" integration.module_imports "$<TARGET_FILE:module_imports_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
@@ -305,8 +314,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 125)
-  message(FATAL_ERROR "Expected all 125 integration scenarios (basic access cases split in #358); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 206)
+  message(FATAL_ERROR "Expected all 206 integration scenarios (multifile access cases split in #359); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

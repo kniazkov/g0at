@@ -1199,3 +1199,12 @@ Debug/Release CI, including explicit build targets. There are no platform skips.
 The original Python runner remains available at commit
 `0578f90e3847bfd258746e5d91bb6de6692481e1`. The checklist is marked in this
 implementation commit; PR and green CI links are recorded in the issue/PR.
+
+## Multifile access (#359)
+
+`module_multifile_access_scenarios.c` replaces `check_module_multifile_access.py`
+and the three `module_access_*_cases.py` helpers with 82 stable IDs and one
+read-only fixture table. The [complete scenario map, parity results and commands](../../data/module-access/README.md)
+cover AC-01–AC-28, include/import and clone/flat variants, static rejection and
+public source/binary CLI checks with both optimizers. Label:
+`module-multifile-access-migration`.

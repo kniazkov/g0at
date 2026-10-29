@@ -131,7 +131,6 @@ Remaining `module_execution_support` consumers:
 `scripts/check_module_threads.py`, `check_module_assignment_access.py`,
 `check_module_exit.py`, `check_module_context_constants.py`,
 `check_module_source_diagnostics.py`, `check_module_function_provenance.py`,
-`check_module_multifile_access.py`, `module_access_basic_cases.py`,
 `check_module_delivery.py`, `check_module_interface.py`,
 `check_module_import_execution.py`, `check_module_cli.py`, and
 `check_module_dispatch.py`.

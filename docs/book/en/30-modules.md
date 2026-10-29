@@ -253,7 +253,7 @@ captures; copying does not make hidden fields visible.
 `test/src/functional/module_access_scenarios.c` checks these rules through internal multi-file
 fixtures and real VM execution, including independent module instances, GC and
 unchanged wire bytes. Real-file `include`/`import` coverage AC-01–AC-28 is implemented in
-`scripts/check_module_multifile_access.py` (#218).
+`test/src/functional/module_multifile_access_scenarios.c` (#218).
 
 
 ## Serialized initialization and equal execution threads (#217)
