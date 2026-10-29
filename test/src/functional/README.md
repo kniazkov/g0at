@@ -697,3 +697,63 @@ discovery disabled. Deliberately wrong output and a corrupted compiled archive
 are rejected in Release with command diagnostics retained. Release
 `--keep-work` retains successful fixtures. Clang-format 18 and strict C11
 `-Wall -Wextra -Werror` syntax checks pass.
+
+## Ordered module search (#350)
+
+`module_search_scenarios` replaces `scripts/check_module_search.py`, including
+its nested Python permission probe. The existing `module_search_testing` API
+host retains its Python-compatible invocation for historical comparison and
+adds test-only C fixture controls for retargeting and unprivileged probing.
+No production search, language or format semantics are changed; the removed
+runner has no remaining Python consumers.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| API cleanup, descriptor/source/compiled roots, local/CLI/environment precedence, exact successful hash and ordered attempts | `integration.module_search` |
+| Four successive fallthroughs, total absence, no recursive/version/library-directory discovery | `integration.module_search` |
+| Invalid ZIP, wrong name/version/hash stop at first candidate; distinct diagnostics, invalid hash/name/version arguments | `integration.module_search` |
+| Directory/FIFO candidates, empty segments, alias deduplication, relative Unicode CLI/environment paths, cwd and environment snapshots | `integration.module_search` |
+| Absent/empty/separator-only process environment and explicit/absent modes; literal separators/home/variable syntax | `integration.module_search` |
+| POSIX missing/file parent semantics; Windows incomplete drive/root rejection; unused missing directories and absent root | `integration.module_search` |
+| Symlink root canonicalization for descriptor/compiled/source roots, retarget after preparation, directory aliases and dangling candidate/parent | `integration.module_search` |
+| Native access-denied file/directory probes; valid first hit ignores inaccessible fallback, denied first candidate blocks valid fallback, diagnostic operation/path/native code | `integration.module_search` |
+| Missing below an inaccessible directory remains I/O failure; POSIX search-only directory permits exact lookup/fallthrough | `integration.module_search` |
+
+The independent format oracle builds matching metadata, bytecode and stored ZIP
+fixtures; expected hashes do not call the production validator. Required checks
+and component-host fixture operations remain active in Release. The shared
+scenario framework supplies a unique build workspace, a single deadline,
+command/stdout/stderr diagnostics, failure retention and `--keep-work`.
+Permission restoration is registered before applying restrictions and attempted
+on failures as well as success. Inputs under `test/data` and the format vectors
+are read-only.
+
+Platform coverage preserves POSIX FIFO, symlink and mode-bit semantics and
+Windows native paths, restricted token and disposable ACL tests. Windows
+symlink availability is reported explicitly. Access-denial fixtures may be
+unavailable locally only when actual native probing proves the filesystem
+ignores mode bits; CI must enforce them. The `module-search-migration` label
+is included in Linux/MinGW Debug and Release and Alpine/musl Debug and Release.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_search_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-search-migration
+build/manual/module_search_scenarios integration.module_search build/manual/module_search_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Repeat in Release; use .exe on Windows.
+# Historical Python parity check (remove the restored script afterwards):
+git show 18fa47a266bcc79add896e04563d87991102142d:scripts/check_module_search.py > scripts/check_module_search.py
+python3 scripts/check_module_search.py build/manual/module_search_testing
+```
+
+The checklist is marked in the implementation commit; final-commit CI links
+are recorded in the PR/issue without a second checklist-only push.
+
+Local verification: the historical Python runner and C replacement each pass
+51 Linux search fixtures in Debug and Release. Temporary differential capture
+matched all 51 prepared/result JSON responses, exit status and stderr, plus
+archive metadata and bytecode hashes after normalizing only workspace prefixes.
+UBSan passes with Python discovery disabled. Deliberately wrong successful hash
+output is rejected in both Debug and Release, retaining command diagnostics.
+`--keep-work` retains successful fixtures; ordinary success removes its workspace.
+Clang-format 18 and strict C11 `-Wall -Wextra -Werror` syntax checks pass.
