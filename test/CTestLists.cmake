@@ -131,9 +131,18 @@ foreach(snapshot_case files replace delete corrupt diamond versions invalid thro
     "$<TARGET_FILE:module_snapshot_scenarios>" integration.module_snapshot.${snapshot_case} "$<TARGET_FILE:module_snapshot_testing>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 endforeach()
-goat_python(integration.module_identity "integration" scripts/check_module_identity.py "$<TARGET_FILE:module_identity_testing>")
+foreach(identity_case identical information corrupt-unused versions vm-first native-first different-native
+    corrupt-later fallback-missing extra-fallback mismatching-first hash-conflict)
+  goat_scenario(integration.module_identity.${identity_case} "integration;module-identity-serialization-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_identity_scenarios>" integration.module_identity.${identity_case} "$<TARGET_FILE:module_identity_testing>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
 goat_python(integration.module_initialization "integration" scripts/check_module_initialization.py "$<TARGET_FILE:module_initialization_testing>")
-goat_python(integration.module_serialization "integration" scripts/check_module_serialization.py "$<TARGET_FILE:module_serialization_testing>")
+foreach(padding 0 2 7)
+  goat_scenario(integration.module_serialization.padding_${padding} "integration;module-identity-serialization-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_serialization_scenarios>" integration.module_serialization.padding_${padding} "$<TARGET_FILE:module_serialization_testing>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
 goat_python(integration.module_initialization_errors "integration" scripts/check_module_initialization_errors.py "$<TARGET_FILE:module_initialization_errors_testing>")
 goat_python(integration.module_exception_propagation "integration" scripts/check_module_exception_propagation.py "$<TARGET_FILE:module_exception_propagation_testing>")
 goat_python(integration.module_initialization_contract "integration" scripts/check_module_initialization_contract.py "$<TARGET_FILE:module_initialization_contract_testing>")
@@ -268,8 +277,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 86)
-  message(FATAL_ERROR "Expected all 86 integration scenarios (snapshot cases split in #353); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 99)
+  message(FATAL_ERROR "Expected all 99 integration scenarios (identity/serialization cases split in #354); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

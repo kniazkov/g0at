@@ -66,7 +66,7 @@
 - [x] 33. [#351 — Перенести на Си: Зависимости модулей](https://github.com/kniazkov/g0at/issues/351) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 34. [#352 — Перенести на Си: Граф модулей](https://github.com/kniazkov/g0at/issues/352) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [x] 35. [#353 — Перенести на Си: Snapshot модулей](https://github.com/kniazkov/g0at/issues/353) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
-- [ ] 36. [#354 — Перенести на Си: Identity и сериализация](https://github.com/kniazkov/g0at/issues/354)
+- [x] 36. [#354 — Перенести на Си: Identity и сериализация](https://github.com/kniazkov/g0at/issues/354) — [карта сценариев и проверка](../test/src/functional/README.md); PR и CI — в задаче.
 - [ ] 37. [#355 — Перенести на Си: Инициализация и её ошибки](https://github.com/kniazkov/g0at/issues/355)
 - [ ] 38. [#356 — Перенести на Си: Контракт инициализации и исключения](https://github.com/kniazkov/g0at/issues/356)
 - [ ] 39. [#357 — Перенести на Си: Неполные области и ошибочные прототипы](https://github.com/kniazkov/g0at/issues/357)
@@ -219,4 +219,4 @@ Python-free gate [#395](https://github.com/kniazkov/g0at/issues/395), не ме�
 Происхождение, форматы, соответствие сценариев и команды проверки описаны в
 [`test/data/python-samples/README.md`](../test/data/python-samples/README.md).
 
-Совместимый слой snapshot: `scripts/module_snapshot_fixtures.py` временно предоставляет `image`, `archive` и `put` для `scripts/check_module_identity.py` (#354); удалить после последнего потребителя, окончательная очистка — #394.
+Совместимый слой snapshot `scripts/module_snapshot_fixtures.py` удалён в #354 после переноса последнего потребителя identity. Независимый C-конструктор разделяют snapshot и identity: `test/support/module_snapshot_fixture.c`.
