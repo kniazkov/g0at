@@ -6,6 +6,7 @@
 #include "lib/memory/allocate.h"
 #include "vm/module_dependencies.h"
 
+#undef NDEBUG
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

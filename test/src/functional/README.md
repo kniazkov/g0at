@@ -757,3 +757,60 @@ UBSan passes with Python discovery disabled. Deliberately wrong successful hash
 output is rejected in both Debug and Release, retaining command diagnostics.
 `--keep-work` retains successful fixtures; ordinary success removes its workspace.
 Clang-format 18 and strict C11 `-Wall -Wextra -Werror` syntax checks pass.
+
+## Per-consumer module dependencies (#351)
+
+`module_dependencies_scenarios` replaces `scripts/check_module_dependencies.py`.
+The stable `integration.module_dependencies` CTest ID is preserved, as are the
+existing `module_dependencies_testing` API host and its direct invocation.
+Only the test orchestration changes; language, archive and dependency semantics
+remain unchanged. The removed Python runner exports no helpers to other scripts.
+
+| Old scenario/check | Stable CTest ID |
+| --- | --- |
+| Component API self-tests, direct imports, unused defaults, two versions of the same name, independently owned snapshots | `integration.module_dependencies` |
+| Application default does not redirect library version; empty leaf records; snapshot transitive records | `integration.module_dependencies` |
+| Explicit version affects only that occurrence; duplicate imports coalesce; unused default is not searched | `integration.module_dependencies` |
+| Include imports are direct; unreachable/default and explicit imports coexist; absent default fails despite an available explicit version | `integration.module_dependencies` |
+| No transitive flattening; missing transitive module permits direct application binding but fails the library's own binding | `integration.module_dependencies` |
+| A → B → C represented by independent edge sets; corrupt transitive archive fails when its consumer is bound | `integration.module_dependencies` |
+| Valid replacement with the same name/version changes the independent hash; application accepts it while a committed library hash fails | `integration.module_dependencies` |
+| Exact failed-edge index and attempted path; two consumers retain independent hashes for the same version | `integration.module_dependencies` |
+| Canonical direct-record order independent of metadata order; failure after the first valid edge exposes no partial result | `integration.module_dependencies` |
+| Empty consumer does no archive lookup, retains unused-default count; source-only explicit versions own verified hashes | `integration.module_dependencies` |
+
+The C runner constructs the same bytecode, metadata and ZIP inputs using the
+independent test format oracle, not production validators for expected hashes.
+Unicode project paths, `gmod`, `module` and `source` modes, successful records,
+error/search statuses, absent partial records and snapshot dependencies remain
+covered. There are no platform-specific exclusions in this scenario.
+
+The shared scenario framework gives each run a unique build-directory workspace,
+a single 180-second deadline, captured command/stdout/stderr diagnostics,
+deferred cleanup and failure retention. `--keep-work` retains successful work;
+otherwise it is removed. Source data and format vectors are read-only. Required
+checks remain active in Release. CTest allows additional time for cleanup.
+
+The `module-dependencies-migration` label is included in Linux x86-64/AArch64,
+MinGW i686/x86-64/UCRT Debug/Release and Alpine/musl Debug/Release CI selections.
+
+```sh
+cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/manual --parallel 2 --target module_dependencies_scenarios
+ctest --test-dir build/manual --output-on-failure -L module-dependencies-migration
+build/manual/module_dependencies_scenarios integration.module_dependencies build/manual/module_dependencies_testing build/manual test/data docs/module-format-v1/vectors --keep-work
+# Repeat in Release; use .exe on Windows.
+# Historical Python parity check (remove the restored script afterwards):
+git show 1019296d0d7b1228e897044b52150ebeac4b5a0b:scripts/check_module_dependencies.py > scripts/check_module_dependencies.py
+python3 scripts/check_module_dependencies.py build/manual/module_dependencies_testing
+```
+
+The checklist is marked in the implementation commit; exact final-commit CI
+results and links are recorded in the PR/issue, avoiding a checklist-only push.
+
+Local verification: Debug, Release and UBSan runs each pass all 22 bindings.
+Temporary differential capture matched all 22 ordered commands, JSON responses,
+exit codes and stderr, plus every generated archive's metadata and bytecode
+(normalizing only workspace prefixes). Release rejects deliberately emptied
+successful dependency records and malformed metadata input, retaining diagnostics.
+The component host explicitly keeps its contract assertions enabled in Release.
