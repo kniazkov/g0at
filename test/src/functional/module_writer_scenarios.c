@@ -481,10 +481,22 @@ static void publication(scenario_run_t *r, void *arg) {
         scenario_command_result_t result = invoke(r, c, base_input, destination, NULL, fault);
         REQUIRE(result.exit_code == (!strcmp(fault, "validation") ? 6 : 8));
         if (!strcmp(fault, "write")) {
-            const char needle[] = "injected partial write: 1 byte\n";
+            const char needle[] = "injected partial write: 1 byte";
+            const char *error = result.err;
             bool found = false;
-            for (size_t i = 0; i + sizeof(needle) - 1 <= result.err_size; i++)
-                found |= !memcmp((const char *)result.err + i, needle, sizeof(needle) - 1);
+            /* stderr remains a text stream on Windows: accept an exact LF or
+             * CRLF-terminated marker line, without weakening the write proof. */
+            for (size_t start = 0; start < result.err_size;) {
+                size_t end = start;
+                while (end < result.err_size && error[end] != '\n')
+                    end++;
+                size_t length = end - start;
+                if (length && error[start + length - 1] == '\r')
+                    length--;
+                found |= end < result.err_size && length == sizeof(needle) - 1
+                         && !memcmp(error + start, needle, sizeof(needle) - 1);
+                start = end < result.err_size ? end + 1 : end;
+            }
             REQUIRE(found);
         }
         unchanged_directory(r, directory, before);
