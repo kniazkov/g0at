@@ -179,8 +179,24 @@ foreach(include_case nested repeat lexical private lazy expression arguments clo
     "$<TARGET_FILE:source_include_scenarios>" integration.source_include.${include_case}
     "$<TARGET_FILE:source_include_testing>" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-goat_python(integration.module_import_execution "integration" scripts/check_module_import_execution.py "$<TARGET_FILE:module_import_execution_testing>")
-goat_python(integration.module_interface "integration" scripts/check_module_interface.py "$<TARGET_FILE:module_import_execution_testing>")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-import-execution/scenarios.json")
+file(STRINGS "${PROJECT_SOURCE_DIR}/test/data/module-import-execution/scenarios.json" execution_ids REGEX "^[ ]+\"id\":")
+foreach(execution_line IN LISTS execution_ids)
+  string(REGEX REPLACE "^[ ]+\"id\": \"([^\"]+)\",?$" "\\1" execution_id "${execution_line}")
+  goat_scenario(${execution_id} "integration;module-execution-interface-migration" TIMEOUT 150 COMMAND
+    "$<TARGET_FILE:module_import_execution_scenarios>" "${execution_id}"
+    "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
+endforeach()
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-interface/scenarios.json")
+file(STRINGS "${PROJECT_SOURCE_DIR}/test/data/module-interface/scenarios.json" interface_ids REGEX "^[ ]+\"id\":")
+foreach(interface_line IN LISTS interface_ids)
+  string(REGEX REPLACE "^[ ]+\"id\": \"([^\"]+)\",?$" "\\1" interface_id "${interface_line}")
+  goat_scenario(${interface_id} "integration;module-execution-interface-migration" TIMEOUT 150 COMMAND
+    "$<TARGET_FILE:module_interface_scenarios>" "${interface_id}"
+    "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
+    "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 goat_python(integration.module_source_diagnostics "integration" scripts/check_module_source_diagnostics.py "$<TARGET_FILE:module_import_execution_testing>")
 goat_python(integration.process_exit "integration" scripts/check_process_exit.py "$<TARGET_FILE:process_exit_testing>" "$<TARGET_FILE:process_exit_failure_testing>" "$<TARGET_FILE:process_exit_delayed_testing>")
 goat_python(integration.module_exit "integration" scripts/check_module_exit.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
@@ -344,8 +360,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 320)
-  message(FATAL_ERROR "Expected all 320 integration scenarios (assignment cases split in #361); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 364)
+  message(FATAL_ERROR "Expected all 364 integration scenarios (execution/interface cases split in #362); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

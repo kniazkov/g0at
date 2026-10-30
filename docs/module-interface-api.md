@@ -61,7 +61,7 @@ not incompatible promises of actual effects. No-normal-return summaries do not
 contradict conditional claims about a normal result. This is a structural contract
 check, not reproof of a producer's implementation.
 
-Verification uses `scripts/check_module_interface.py` with the existing
+Verification uses `integration.module_interface.*` (CTest) with the existing
 `module_import_execution_testing` harness, plus analyzer, JSON/canonical and
 format-reference suites. Compilation is observed separately from execution;
 archive-only dependencies with visible initializers verify that analysis does not
@@ -75,7 +75,7 @@ existing analyzer invalidates potentially affected state rather than inventing
 independence. Const protects a binding, not the contents of its array. A complete
 empty effect bound is not permission to remove a call or assume it cannot throw.
 
-`check_module_interface.py` extends the existing cross-platform CI suite:
+`integration.module_interface.*` (CTest) extends the existing cross-platform CI suite:
 
 | Decision | Archive-only regression and metadata assertion |
 | --- | --- |

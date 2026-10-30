@@ -230,7 +230,6 @@ subsequent migrations still depend on them. Direct consumers at this step:
 - `scripts/check_module_container.py`
 - `scripts/check_module_delivery.py`
 - `scripts/check_module_hash.py`
-- `scripts/check_module_import_execution.py`
 - `scripts/check_module_inspect.py`
 - `scripts/check_module_loading.py`
 - `scripts/check_module_memory.py`

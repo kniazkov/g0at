@@ -84,7 +84,7 @@ Remaining Python import consumers (including dynamic imports) are:
 `check_module_canonical.py`, `check_module_consistency.py`,
 `check_module_container.py`, `check_module_delivery.py`,
 `check_module_hash.py`,
-`check_module_import_execution.py`, `check_module_inspect.py`,
+`check_module_inspect.py`,
 `check_module_loading.py`, `check_module_memory.py`, `check_module_merge.py`,
 `check_module_musl.py`, `check_module_search.py`,
 `check_module_validation.py`,
@@ -130,8 +130,8 @@ migrated and #394 removes the transitional layer.
 Remaining `module_execution_support` consumers:
 `scripts/check_module_threads.py`,
 `check_module_exit.py`, `check_module_source_diagnostics.py`,
-`check_module_delivery.py`, `check_module_interface.py`,
-`check_module_import_execution.py`, `check_module_cli.py`, and
+`check_module_delivery.py`,
+`check_module_cli.py`, and
 `check_module_dispatch.py`.
 
 Remaining `inspect_report_test_support` consumers:
@@ -312,3 +312,13 @@ The unmodified runner passed Debug/Release and ASan/UBSan locally; LeakSanitizer
 cannot run under this executor's ptrace, so local sanitizer runs disabled LSAN.
 Each process scenario independently verifies native handle counts return to their
 initial value. Windows execution is verified by the existing GitHub CI matrix.
+
+## Import execution and interface migration (#362)
+
+The `module-execution-interface-migration` label runs 33 import and 13 interface
+C scenarios with the real existing host (including its linker-wrap counters).
+Mappings, parity baselines and negative controls are in
+`test/data/module-import-execution/README.md` and `test/data/module-interface/README.md`.
+The independent archive/hash oracle verifies nonzero main indexes; the shared
+barrier checks frozen execution after deleting the entire project. The Python
+execution helper and format reference remain for the explicitly listed consumers.

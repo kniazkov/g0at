@@ -1,0 +1,1102 @@
+[
+  {
+    "id": "integration.module_import_execution.identity-versions",
+    "name": "identity-versions",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "counter",
+        "code": "println(\"init 1\"); external var count = 0; external next = func() { count += 1; return count; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "counter",
+        "code": "println(\"init 2\"); external var count = 0; external next = func() { count += 1; return count; };",
+        "version": "2",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = import \"counter@1\"; const b = import \"counter@1\"; const c = import \"counter@2\"; println(a == b); println(a == c); a.count = 4; println(b.next()); println(a.count); println(c.count);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "init 1\ninit 2\ntrue\nfalse\n5\n5\n0\n",
+        "fail": false
+      },
+      {
+        "mode": "dependencies",
+        "path": "app.gbin",
+        "expected": [
+          [
+            "counter",
+            "1"
+          ],
+          [
+            "counter",
+            "2"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.nonzero-main",
+    "name": "nonzero-main",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "println(\"WRONG file zero\"); include \"entry.goat\";",
+        "version": "1",
+        "files": {
+          "entry.goat": "println(\"actual entry\"); external value = 42;"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "nonzero-main",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println((import \"library@1\").value);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "actual entry\n42\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.transitive",
+    "name": "transitive",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "shared",
+        "code": "println(\"shared once\"); external var count = 0;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "left",
+        "code": "const s = import \"shared@1\"; s.count += 1; external scope = s;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "right",
+        "code": "const s = import \"shared@1\"; s.count += 1; external scope = s;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = import \"left@1\"; const b = import \"right@1\"; println(a.scope == b.scope); println(a.scope.count);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "shared once\ntrue\n2\n",
+        "fail": false
+      },
+      {
+        "mode": "dependencies",
+        "path": "app.gbin",
+        "expected": [
+          [
+            "left"
+          ],
+          [
+            "right"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.defaults",
+    "name": "defaults",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "value",
+        "code": "external value = 11;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "value",
+        "code": "external value = 22;",
+        "version": "2",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = (import \"value\").value;",
+        "version": "1",
+        "files": {},
+        "dependencies": {
+          "value": "1"
+        },
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println((import \"value\").value); println((import \"value@1\").value); println((import \"library@1\").value);",
+        "version": "1",
+        "files": {},
+        "dependencies": {
+          "value": "2"
+        },
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "22\n11\n11\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.cross-module-context",
+    "name": "cross-module-context",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "const secret = 7; public moduleOnly = 8; external answer = func() { return secret; }; external callback = func(f) { return f() + secret; }; external closure = func(x) { return func(y) { return x + y + (include \"helper.goat\").value; }; };",
+        "version": "1",
+        "files": {
+          "helper.goat": "println(\"helper once\"); public value = 30;"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const secret = 90; const a = import \"library@1\"; println(a.answer()); println(a.callback(func() { return secret; })); try { println(a.secret); } catch(e) { println(\"private denied\"); } try { println(a.moduleOnly); } catch(e) { println(\"public denied\"); } try { a.extra = 1; } catch(e) { println(\"extension denied\"); } const c = a.closure(5); println(c(7)); println(c(8)); try { a.callback(func() { throw \"callback error\"; }); } catch(e) { println(e); } println(a.answer());",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "7\n97\nprivate denied\npublic denied\nextension denied\nhelper once\n42\n43\ncallback error\n7\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.lexical-and-lazy",
+    "name": "lexical-and-lazy",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "println(\"loaded\"); external callerSecret = secret; external callerLocal = local; external value = 9;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "never",
+        "code": "println(\"MUST NOT RUN\");",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const secret = 81; const deferred = func() { var local = 91; return import \"library@1\"; }; if(false) { import \"never@1\"; } println(\"before\"); const a = deferred(); println(a.callerSecret); println(a.callerLocal); println(a.value); println(deferred() == a);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "before\nloaded\nnull\nnull\n9\ntrue\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.nested-initialization",
+    "name": "nested-initialization",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "inner",
+        "code": "println(\"inner\"); external value = \"inner string\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "outer",
+        "code": "println(\"outer before\"); const x = import \"inner@1\"; println(x.value); println(\"outer after\"); external value = \"outer string\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"root before\"); println((import \"outer@1\").value); println(\"root after\");",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "root before\nouter before\ninner\ninner string\nouter after\nouter string\nroot after\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.expression-and-include",
+    "name": "expression-and-include",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 4; external twice = func(x) { return 2*x; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const combine = func(a,b,c) { return 100*a+10*b+c; }; println(10 + (import \"library@1\").value); println((import \"library@1\").twice(3)); println(combine(1, (import \"library@1\").value, 3)); println((include \"helper.goat\").value);",
+        "version": "1",
+        "files": {
+          "helper.goat": "public value = (import \"library@1\").value;"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "14\n6\n143\n4\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.failed-repeat",
+    "name": "failed-repeat",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "bad",
+        "code": "println(\"one effect\"); try { throw { external message = \"failure\"; }; } finally { println(\"inner cleanup\"); }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var first = null; try { import \"bad@1\"; } catch(e) { first = e; println(e.message); } try { import \"bad@1\"; } catch(e) { println(first == e); } finally { println(\"outer cleanup\"); } println(\"done\");",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "one effect\ninner cleanup\nfailure\ntrue\nouter cleanup\ndone\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.uncaught-root-failure",
+    "name": "uncaught-root-failure",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "bad",
+        "code": "println(\"once before failure\"); throw \"uncaught saved failure\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "import \"bad@1\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "once before failure\n",
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.function-exception",
+    "name": "function-exception",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "println(\"once\"); external fail = func() { throw \"function error\"; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = import \"library@1\"; try { a.fail(); } catch(e) { println(e); } println((import \"library@1\") == a);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "once\nfunction error\ntrue\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.callback-import-finally",
+    "name": "callback-import-finally",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "third",
+        "code": "println(\"third init\"); external value = \"third value\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external call = func(f) { try { println(\"library before\"); return f(); } finally { println(\"library finally\"); } };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = import \"library@1\"; println(a.call(func() { return (import \"third@1\").value; })); println(\"root after\");",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "library before\nthird init\nlibrary finally\nthird value\nroot after\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.nested-failure",
+    "name": "nested-failure",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "inner",
+        "code": "println(\"inner effect\"); throw { external message = \"nested failure\"; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "outer",
+        "code": "println(\"outer effect\"); import \"inner@1\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var first = null; try { import \"outer@1\"; } catch(e) { first = e; println(e.message); } try { import \"outer@1\"; } catch(e) { println(first == e); } try { import \"inner@1\"; } catch(e) { println(first == e); }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "outer effect\ninner effect\nnested failure\ntrue\ntrue\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-0",
+    "name": "invalid-0",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import path;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-1",
+    "name": "invalid-1",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import (\"library@1\");",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-2",
+    "name": "invalid-2",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import \"library@1\" + \"\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-3",
+    "name": "invalid-3",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import \"\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-4",
+    "name": "invalid-4",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import 3;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-5",
+    "name": "invalid-5",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-6",
+    "name": "invalid-6",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import \"library\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-7",
+    "name": "invalid-7",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import \"library@1/file.goat\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-8",
+    "name": "invalid-8",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import \"library/file.goat@1\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-9",
+    "name": "invalid-9",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import \"../library@1\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-10",
+    "name": "invalid-10",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); import \"library@1\\0\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-11",
+    "name": "invalid-11",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); if(false) { import path; }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-12",
+    "name": "invalid-12",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); const f = func() { import \"missing@1\"; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.invalid-13",
+    "name": "invalid-13",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); if(false) { import \"missing@1\"; }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.direct-source",
+    "name": "direct-source",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 17;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "write",
+        "path": "main.goat",
+        "text": "println((import \"library@1\").value);"
+      },
+      {
+        "mode": "invoke",
+        "command": "compile",
+        "path": "main.goat",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "17\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.build-identity-cycle",
+    "name": "build-identity-cycle",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "self",
+        "code": "external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "write",
+        "path": "sources/self-1/main.goat",
+        "text": "external value = (import \"self@1\").value;"
+      },
+      {
+        "mode": "invoke",
+        "command": "compile",
+        "path": "sources/self-1/module.gmod",
+        "output": "not-published.gbin",
+        "expected": "",
+        "fail": true
+      },
+      {
+        "mode": "absent",
+        "paths": [
+          "not-published.gbin",
+          "not-published.gbin.pending.gbin"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.preflight-missing",
+    "name": "preflight-missing",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "println(\"library effect\"); external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); if(false) { import \"library@1\"; }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "",
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.preflight-corrupt",
+    "name": "preflight-corrupt",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "println(\"library effect\"); external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); if(false) { import \"library@1\"; }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "write",
+        "path": "modules/library/1.gbin",
+        "text": "not an archive"
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "",
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.preflight-changed",
+    "name": "preflight-changed",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "println(\"library effect\"); external value = 1;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "println(\"MUST NOT RUN\"); if(false) { import \"library@1\"; }",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external value = 2;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "",
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_import_execution.frozen",
+    "name": "frozen",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "inner",
+        "code": "println(\"inner once\"); external value = \"снимок 😀\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "outer",
+        "code": "external read = func() { return (import \"inner@1\").value; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = import \"outer@1\"; println(a.read()); println(a.read());",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "frozen",
+        "path": "app.gbin",
+        "expected": "inner once\nснимок 😀\nснимок 😀\n"
+      }
+    ]
+  }
+]
