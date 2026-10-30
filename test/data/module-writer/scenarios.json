@@ -1,0 +1,902 @@
+[
+  {
+    "line": 98,
+    "input": "blobs/fac1c290261286dc585a2859d52e08dea4499f801280683d533fefac56586cea.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.golden",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 102,
+    "input": "blobs/fac1c290261286dc585a2859d52e08dea4499f801280683d533fefac56586cea.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.golden-forward",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 102,
+    "input": "blobs/87621078e8a326fbb45b278120de334976c0743c26de17cbe89528512299dfa2.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.golden-reverse",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 108,
+    "input": "blobs/4d5474976af951bd166034e5ce417c969a1be35d532ec9f988dacb4f76ee954e.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.normalize-dependencies",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 108,
+    "input": "blobs/b7d35be5bd0dc56e7f1c11903e9145fefa79d120f9d17e6812205572342fc5b4.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.normalize-native",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 108,
+    "input": "blobs/6c2e63ab2577257b76a01902c426b6c550869b803ff1f85bec48138da1594805.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.normalize-authors",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 108,
+    "input": "blobs/3e4e5ac9b320ff8938ffe20ca8826127c7243121a25c9f79b0bcbbfbf161ccee.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.normalize-functions",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 108,
+    "input": "blobs/d5f816afdc128ed3118f7b9f66baabae00069cd3ff5597418d96bdbbe1929b2b.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.normalize-externals",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 108,
+    "input": "blobs/e3f47183ee48368e5a31ae278b1d4682a1c3af0e7213b17ff7a2c3af3e17c00f.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.normalize-description",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 108,
+    "input": "blobs/4dd7493fadf2b97519eabd6918206847a8572226f466cb44f776d284591d60d7.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.normalize-license",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 108,
+    "input": "blobs/1842523d5552ffe8c5494a2cf9731184e899826ff9d77d77ec9fc7ebfdecff85.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.normalize-homepage",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 113,
+    "input": "blobs/dd37cd7e12e09e8b0477089aa04cd2855dfa8569473d91b18bb3b0e979c11c6a.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/3d8c2aad438bfb42e550975c604539da8362b7422c59ad259881d4b59ee930e1.bin",
+    "id": "integration.module_writer.information",
+    "sha256": "3d8c2aad438bfb42e550975c604539da8362b7422c59ad259881d4b59ee930e1",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/b31a81441bc65d2ad7a3098cffeb61c0e517ff1754086f9dc9a932a27c81fc25.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 114,
+    "input": "blobs/97dda571cd91eac178cdc8141dd5f4e911ad2e7b05c23b930673f851a12c501a.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/3d8c2aad438bfb42e550975c604539da8362b7422c59ad259881d4b59ee930e1.bin",
+    "id": "integration.module_writer.information-reverse",
+    "sha256": "3d8c2aad438bfb42e550975c604539da8362b7422c59ad259881d4b59ee930e1",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/b31a81441bc65d2ad7a3098cffeb61c0e517ff1754086f9dc9a932a27c81fc25.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 157,
+    "input": "blobs/5602130c5a67d11936d0b54c8ebb5a2be1b061886755c392fe5d3e94c1193889.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102.bin",
+    "id": "integration.module_writer.native-profile",
+    "sha256": "98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/6b5b65b7bc8042e4ad40638973f8e7f5615a7ec7914a976cb4e370507e455f9f.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/46014bdce37592fbfa940410c4d70c935ff41a18a0c798149b6dbb84f8bf6592.bin"
+      },
+      {
+        "name": "native/variant-1.dll",
+        "data": "blobs/e78d046b2a4e220449f826fdcec10cee7f7511f58f5af991f70cf1db9378573a.bin"
+      },
+      {
+        "name": "native/variant-2.dll",
+        "data": "blobs/2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881.bin"
+      },
+      {
+        "name": "native/variant-3.dll",
+        "data": "blobs/13b77af908a78a94f2e21cf8fc137ea16c8020873eeee7b6b96b6b0975555a02.bin"
+      },
+      {
+        "name": "native/variant-4.dll",
+        "data": "blobs/ad9b1dd3b60c3b3a6249cdd817eacf0ffb0b8ac53788b1f69f65a007e807eca6.bin"
+      },
+      {
+        "name": "native/variant-5.dll",
+        "data": "blobs/5c019ef897350ea7f6d79cfb27f44d11a868ccb64d25b041137df37759d9b720.bin"
+      },
+      {
+        "name": "native/variant-6.dll",
+        "data": "blobs/298617b55ce66fef2ee77fa1a7030a8c03e12be015e3f9744147755b999beebe.bin"
+      },
+      {
+        "name": "native/variant-7.so",
+        "data": "blobs/4d0aad77371996a2bf37eca4ad21620c5a71a479cf9b0d44a1f764727e6b8558.bin"
+      },
+      {
+        "name": "native/variant-8.so",
+        "data": "blobs/769a4e6d0003189c7e96c5d9b7e810a0d11c3a12832527ec94b0f86d277f51ca.bin"
+      },
+      {
+        "name": "native/variant-9.so",
+        "data": "blobs/40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880.bin"
+      },
+      {
+        "name": "native/variant-10.so",
+        "data": "blobs/67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6.bin"
+      },
+      {
+        "name": "native/variant-11.so",
+        "data": "blobs/10fcd4a416b25386ad66e8df2dbb1d2417346e4d15d4a6da34607548e2a61b32.bin"
+      },
+      {
+        "name": "native/variant-12.so",
+        "data": "blobs/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.bin"
+      }
+    ]
+  },
+  {
+    "line": 162,
+    "input": "blobs/eb7a8ea3682e395dc879744739aef6778430659697be5eadc52d7a06cf250b82.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102.bin",
+    "id": "integration.module_writer.native-reverse",
+    "sha256": "98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/6b5b65b7bc8042e4ad40638973f8e7f5615a7ec7914a976cb4e370507e455f9f.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/46014bdce37592fbfa940410c4d70c935ff41a18a0c798149b6dbb84f8bf6592.bin"
+      },
+      {
+        "name": "native/variant-1.dll",
+        "data": "blobs/e78d046b2a4e220449f826fdcec10cee7f7511f58f5af991f70cf1db9378573a.bin"
+      },
+      {
+        "name": "native/variant-2.dll",
+        "data": "blobs/2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881.bin"
+      },
+      {
+        "name": "native/variant-3.dll",
+        "data": "blobs/13b77af908a78a94f2e21cf8fc137ea16c8020873eeee7b6b96b6b0975555a02.bin"
+      },
+      {
+        "name": "native/variant-4.dll",
+        "data": "blobs/ad9b1dd3b60c3b3a6249cdd817eacf0ffb0b8ac53788b1f69f65a007e807eca6.bin"
+      },
+      {
+        "name": "native/variant-5.dll",
+        "data": "blobs/5c019ef897350ea7f6d79cfb27f44d11a868ccb64d25b041137df37759d9b720.bin"
+      },
+      {
+        "name": "native/variant-6.dll",
+        "data": "blobs/298617b55ce66fef2ee77fa1a7030a8c03e12be015e3f9744147755b999beebe.bin"
+      },
+      {
+        "name": "native/variant-7.so",
+        "data": "blobs/4d0aad77371996a2bf37eca4ad21620c5a71a479cf9b0d44a1f764727e6b8558.bin"
+      },
+      {
+        "name": "native/variant-8.so",
+        "data": "blobs/769a4e6d0003189c7e96c5d9b7e810a0d11c3a12832527ec94b0f86d277f51ca.bin"
+      },
+      {
+        "name": "native/variant-9.so",
+        "data": "blobs/40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880.bin"
+      },
+      {
+        "name": "native/variant-10.so",
+        "data": "blobs/67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6.bin"
+      },
+      {
+        "name": "native/variant-11.so",
+        "data": "blobs/10fcd4a416b25386ad66e8df2dbb1d2417346e4d15d4a6da34607548e2a61b32.bin"
+      },
+      {
+        "name": "native/variant-12.so",
+        "data": "blobs/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.bin"
+      }
+    ]
+  },
+  {
+    "line": 167,
+    "input": "blobs/1b6e40cb851762067e35992ce8862289dea65bf0cba2c95e13e30f7ffe9c06c2.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102.bin",
+    "id": "integration.module_writer.native-shuffled",
+    "sha256": "98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/6b5b65b7bc8042e4ad40638973f8e7f5615a7ec7914a976cb4e370507e455f9f.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/46014bdce37592fbfa940410c4d70c935ff41a18a0c798149b6dbb84f8bf6592.bin"
+      },
+      {
+        "name": "native/variant-1.dll",
+        "data": "blobs/e78d046b2a4e220449f826fdcec10cee7f7511f58f5af991f70cf1db9378573a.bin"
+      },
+      {
+        "name": "native/variant-2.dll",
+        "data": "blobs/2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881.bin"
+      },
+      {
+        "name": "native/variant-3.dll",
+        "data": "blobs/13b77af908a78a94f2e21cf8fc137ea16c8020873eeee7b6b96b6b0975555a02.bin"
+      },
+      {
+        "name": "native/variant-4.dll",
+        "data": "blobs/ad9b1dd3b60c3b3a6249cdd817eacf0ffb0b8ac53788b1f69f65a007e807eca6.bin"
+      },
+      {
+        "name": "native/variant-5.dll",
+        "data": "blobs/5c019ef897350ea7f6d79cfb27f44d11a868ccb64d25b041137df37759d9b720.bin"
+      },
+      {
+        "name": "native/variant-6.dll",
+        "data": "blobs/298617b55ce66fef2ee77fa1a7030a8c03e12be015e3f9744147755b999beebe.bin"
+      },
+      {
+        "name": "native/variant-7.so",
+        "data": "blobs/4d0aad77371996a2bf37eca4ad21620c5a71a479cf9b0d44a1f764727e6b8558.bin"
+      },
+      {
+        "name": "native/variant-8.so",
+        "data": "blobs/769a4e6d0003189c7e96c5d9b7e810a0d11c3a12832527ec94b0f86d277f51ca.bin"
+      },
+      {
+        "name": "native/variant-9.so",
+        "data": "blobs/40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880.bin"
+      },
+      {
+        "name": "native/variant-10.so",
+        "data": "blobs/67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6.bin"
+      },
+      {
+        "name": "native/variant-11.so",
+        "data": "blobs/10fcd4a416b25386ad66e8df2dbb1d2417346e4d15d4a6da34607548e2a61b32.bin"
+      },
+      {
+        "name": "native/variant-12.so",
+        "data": "blobs/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.bin"
+      }
+    ]
+  },
+  {
+    "line": 171,
+    "input": "blobs/340f496671f1801bd310ccc1eb6fa785a43ad198bceaf9daca12a434df8adbac.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102.bin",
+    "id": "integration.module_writer.native-renamed",
+    "sha256": "98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/6b5b65b7bc8042e4ad40638973f8e7f5615a7ec7914a976cb4e370507e455f9f.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/46014bdce37592fbfa940410c4d70c935ff41a18a0c798149b6dbb84f8bf6592.bin"
+      },
+      {
+        "name": "native/variant-1.dll",
+        "data": "blobs/e78d046b2a4e220449f826fdcec10cee7f7511f58f5af991f70cf1db9378573a.bin"
+      },
+      {
+        "name": "native/variant-2.dll",
+        "data": "blobs/2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881.bin"
+      },
+      {
+        "name": "native/variant-3.dll",
+        "data": "blobs/13b77af908a78a94f2e21cf8fc137ea16c8020873eeee7b6b96b6b0975555a02.bin"
+      },
+      {
+        "name": "native/variant-4.dll",
+        "data": "blobs/ad9b1dd3b60c3b3a6249cdd817eacf0ffb0b8ac53788b1f69f65a007e807eca6.bin"
+      },
+      {
+        "name": "native/variant-5.dll",
+        "data": "blobs/5c019ef897350ea7f6d79cfb27f44d11a868ccb64d25b041137df37759d9b720.bin"
+      },
+      {
+        "name": "native/variant-6.dll",
+        "data": "blobs/298617b55ce66fef2ee77fa1a7030a8c03e12be015e3f9744147755b999beebe.bin"
+      },
+      {
+        "name": "native/variant-7.so",
+        "data": "blobs/4d0aad77371996a2bf37eca4ad21620c5a71a479cf9b0d44a1f764727e6b8558.bin"
+      },
+      {
+        "name": "native/variant-8.so",
+        "data": "blobs/769a4e6d0003189c7e96c5d9b7e810a0d11c3a12832527ec94b0f86d277f51ca.bin"
+      },
+      {
+        "name": "native/variant-9.so",
+        "data": "blobs/40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880.bin"
+      },
+      {
+        "name": "native/variant-10.so",
+        "data": "blobs/67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6.bin"
+      },
+      {
+        "name": "native/variant-11.so",
+        "data": "blobs/10fcd4a416b25386ad66e8df2dbb1d2417346e4d15d4a6da34607548e2a61b32.bin"
+      },
+      {
+        "name": "native/variant-12.so",
+        "data": "blobs/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.bin"
+      }
+    ]
+  },
+  {
+    "line": 183,
+    "input": "blobs/99f702dbd5a3a733c0d8fb50b2dbce24825c64e7d47fb746019ee63ab5a93291.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/7d9c4e50169a5d5dbe356af01292bc90be823442147403f284160422b2ce3abe.bin",
+    "id": "integration.module_writer.native-tied",
+    "sha256": "7d9c4e50169a5d5dbe356af01292bc90be823442147403f284160422b2ce3abe",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/5fbe290aaab122037942d7a5a5d2ba8a9613b15056baae87de9b298af2580cca.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/46014bdce37592fbfa940410c4d70c935ff41a18a0c798149b6dbb84f8bf6592.bin"
+      },
+      {
+        "name": "native/variant-1.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-2.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-3.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-4.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-5.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-6.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-7.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-8.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-9.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-10.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-11.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-12.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      }
+    ]
+  },
+  {
+    "line": 185,
+    "input": "blobs/0abeb01fe105431ed02b56c754b098ebde7185eb2b22684c7b15e3583283fa7f.bin",
+    "statuses": [
+      0
+    ],
+    "limits": null,
+    "output": "blobs/7d9c4e50169a5d5dbe356af01292bc90be823442147403f284160422b2ce3abe.bin",
+    "id": "integration.module_writer.native-tied-reverse",
+    "sha256": "7d9c4e50169a5d5dbe356af01292bc90be823442147403f284160422b2ce3abe",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/5fbe290aaab122037942d7a5a5d2ba8a9613b15056baae87de9b298af2580cca.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/46014bdce37592fbfa940410c4d70c935ff41a18a0c798149b6dbb84f8bf6592.bin"
+      },
+      {
+        "name": "native/variant-1.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-2.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-3.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-4.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-5.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-6.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-7.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-8.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-9.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-10.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-11.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      },
+      {
+        "name": "native/variant-12.so",
+        "data": "blobs/cdd29f8155d26371a3188c2e3ca8ba54cbff32eaec3e309b9078475643471efa.bin"
+      }
+    ]
+  },
+  {
+    "line": 211,
+    "input": "blobs/bbc2b601d2c593a75380dfc376e37903f013b505116555cd24398a052d4edc19.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-main-hash"
+  },
+  {
+    "line": 211,
+    "input": "blobs/fcec960de8152d185aaffa3eb2f27dfa529eeede8cc31bb3f764a0855b087a57.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-unknown-field"
+  },
+  {
+    "line": 211,
+    "input": "blobs/bfdaa8e0ac83f05bf2431c9e83d15f1457aade9556084d64dbf9eb7c37f5226e.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-null-dependencies"
+  },
+  {
+    "line": 211,
+    "input": "blobs/2be764f6c8f34c8ec545470a1271b2e54ec39f5ed6640b18ca3a5653c399507f.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-opcode"
+  },
+  {
+    "line": 211,
+    "input": "blobs/a2efce8cce20eb96e48853bb5cdbe6fc5379709aa9517ab37248a5ca96414dd3.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-native-hash"
+  },
+  {
+    "line": 211,
+    "input": "blobs/82157717cab1665c2d998e50c328f6eac06fb886ddfd95565b28df2c890de9d2.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-missing-payload"
+  },
+  {
+    "line": 211,
+    "input": "blobs/eb116e2dc62a149960911dfc607ed74297a24f9ddf027ef6832e2e6d7989fa9c.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-wrong-extension"
+  },
+  {
+    "line": 211,
+    "input": "blobs/bb377672f13c9d84a36472110dbf251e943e155b67a7a9929146afef8f74782b.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-reserved-name"
+  },
+  {
+    "line": 211,
+    "input": "blobs/e0450c420bdee63e43db61e479f7f52d41c857d261f8b5e9dd4db35768b60568.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-extra-payload"
+  },
+  {
+    "line": 211,
+    "input": "blobs/54c866470c29095e7d00cb614fb1cad32e1d7b7b87f576e6bac50eeb92dfd470.bin",
+    "statuses": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "limits": null,
+    "output": null,
+    "id": "integration.module_writer.invalid-unknown-function"
+  },
+  {
+    "line": 213,
+    "input": "blobs/fac1c290261286dc585a2859d52e08dea4499f801280683d533fefac56586cea.bin",
+    "statuses": [
+      4,
+      5,
+      6
+    ],
+    "limits": [
+      0,
+      1000000
+    ],
+    "output": null,
+    "id": "integration.module_writer.limit-zero"
+  },
+  {
+    "line": 213,
+    "input": "blobs/fac1c290261286dc585a2859d52e08dea4499f801280683d533fefac56586cea.bin",
+    "statuses": [
+      4,
+      5,
+      6
+    ],
+    "limits": [
+      1,
+      1000000
+    ],
+    "output": null,
+    "id": "integration.module_writer.limit-one"
+  },
+  {
+    "line": 213,
+    "input": "blobs/fac1c290261286dc585a2859d52e08dea4499f801280683d533fefac56586cea.bin",
+    "statuses": [
+      4,
+      5,
+      6
+    ],
+    "limits": [
+      422,
+      1000000
+    ],
+    "output": null,
+    "id": "integration.module_writer.limit-before-golden"
+  },
+  {
+    "line": 214,
+    "input": "blobs/fac1c290261286dc585a2859d52e08dea4499f801280683d533fefac56586cea.bin",
+    "statuses": [
+      0
+    ],
+    "limits": [
+      423,
+      1000000
+    ],
+    "output": "blobs/5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea.bin",
+    "id": "integration.module_writer.limit-exact-golden",
+    "sha256": "5fa48cc5120e1868233066a14de5900055dac20a277777411d7bf5f4a08ce8ea",
+    "parts": [
+      {
+        "name": "module.json",
+        "data": "blobs/1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da.bin"
+      },
+      {
+        "name": "bytecode.bin",
+        "data": "blobs/f8772aab2c4d291ceed077aeb71d5234c7104451239f9d13d733f1266dc0dd7f.bin"
+      }
+    ]
+  },
+  {
+    "line": 215,
+    "input": "blobs/fac1c290261286dc585a2859d52e08dea4499f801280683d533fefac56586cea.bin",
+    "statuses": [
+      4,
+      6
+    ],
+    "limits": [
+      1000000,
+      1
+    ],
+    "output": null,
+    "id": "integration.module_writer.limit-expanded"
+  }
+]

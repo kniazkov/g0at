@@ -1264,3 +1264,11 @@ See [mapping, exact-input parity, platform branches and reproduction](../../data
 The component validation host retains its assertion setup in Release; production
 code is unchanged. Real constructor compilation/loading is required on every
 platform, with no skips.
+
+## Deterministic module writer (#367)
+
+`module_writer_scenarios` exposes 59 independent IDs under
+`integration.module_writer.*`, label `module-writer-migration`.
+See [exact-input parity, mapping and reproduction](../../data/module-writer/README.md).
+Both real hosts are target dependencies, including Release partial-write fault
+proof. Strict publication is the CI default; ACL opt-in is direct/local-only.

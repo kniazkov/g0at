@@ -2,6 +2,10 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Execute the production writer with deterministic publication failures.
  */
+/* Partial-write injection must run against Release libraries too (#367). */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include "vm/module_writer.h"
 
 #include <assert.h>
@@ -28,7 +32,9 @@ static bool failed(fs_error_t *error, const char *operation) {
 static bool
 fault_write(FILE *file, const void *data, size_t size, const char *path, fs_error_t *error) {
     if (fault("write")) {
-        assert(!size || FWRITE(data, 1, 1, file) == 1);
+        assert(size && FWRITE(data, 1, 1, file) == 1);
+        assert(FTELL(file) == 1);
+        fputs("injected partial write: 1 byte\n", stderr);
         return failed(error, "injected partial write");
     }
     return write_fs_file(file, data, size, path, error);

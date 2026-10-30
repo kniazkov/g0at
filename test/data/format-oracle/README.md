@@ -235,7 +235,6 @@ subsequent migrations still depend on them. Direct consumers at this step:
 - `scripts/check_module_merge.py`
 - `scripts/check_module_musl.py`
 - `scripts/check_module_search.py`
-- `scripts/check_module_writer.py`
 
 Frozen-sample tools also load the reference by `importlib`; they remain tracked
 by #330/#395. Consumer removal is deferred until each owning checklist task.
