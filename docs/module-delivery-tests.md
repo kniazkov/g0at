@@ -106,7 +106,7 @@ runtime не подменяются ручным редактированием 
 - `check_module_merge.py` проверяет автономный merge, все-Deflate writer и
   сохранение идентичности; `check_module_inspect.py` — версию отчёта, коды
   диагностики и полный граф, включая различие skipped и errors.
-- `check_module_library.py` проверяет согласованность встроенного descriptor,
+- `integration.module_library.*` (CTest) проверяет согласованность встроенного descriptor,
   принадлежность и тип экспортируемых символов после реальной загрузки.
 
 ## English

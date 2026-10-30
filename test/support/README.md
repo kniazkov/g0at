@@ -357,3 +357,9 @@ and real atomic publication/fault checks. There are 59 stable IDs; see
 [mapping and reproduction](../data/module-writer/README.md). No live helper is
 exported by the retired runner. Frozen sample source paths and the optional
 Git-baseline AST audit remain historical provenance, not working-tree consumers.
+
+Native producer/library migration (#368) reuses module execution, language
+execution, independent ZIP/SHA-256 and canonical JSON helpers. The two retired
+Python runners exported no live imported helpers. See the
+[build](../data/module-build/README.md) and [library](../data/module-library/README.md)
+maps for 36 IDs, actual compiler/load evidence and bounded ELF alias mutation.

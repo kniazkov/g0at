@@ -1,0 +1,1 @@
+external square=func(x){return x*x;}; external add=func(x){return x+1;}; square(7); add(3);

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "numeric",
+    "source": "external square = func(x) { return x*x; }; println(square(7));",
+    "native": {
+      "mode": "required"
+    },
+    "files": {},
+    "descriptor": "{\"formatVersion\": 1, \"name\": \"numeric\", \"version\": \"1\", \"main\": \"main.goat\", \"native\": {\"mode\": \"required\"}}"
+  },
+  {
+    "name": "empty",
+    "source": "println(\"must not run\");",
+    "native": {
+      "mode": "required"
+    },
+    "files": {},
+    "descriptor": "{\"formatVersion\": 1, \"name\": \"empty\", \"version\": \"1\", \"main\": \"main.goat\", \"native\": {\"mode\": \"required\"}}"
+  },
+  {
+    "name": "included",
+    "source": "include \"helper.goat\";",
+    "native": {
+      "mode": "required"
+    },
+    "files": {
+      "helper.goat": "const twice = func(x) { return x*2; }; println(twice(21));"
+    },
+    "descriptor": "{\"formatVersion\": 1, \"name\": \"included\", \"version\": \"1\", \"main\": \"main.goat\", \"native\": {\"mode\": \"required\"}}"
+  },
+  {
+    "name": "missing",
+    "source": "const f=func(x){return x+1;}; f(3);",
+    "native": null,
+    "files": {},
+    "descriptor": "{\"formatVersion\": 1, \"name\": \"missing\", \"version\": \"1\", \"main\": \"main.goat\"}"
+  },
+  {
+    "name": "dependency",
+    "source": "external f=func(x){return x+1;}; f(3);",
+    "native": {
+      "mode": "required"
+    },
+    "files": {},
+    "descriptor": "{\"formatVersion\": 1, \"name\": \"dependency\", \"version\": \"1\", \"main\": \"main.goat\", \"native\": {\"mode\": \"required\"}}"
+  },
+  {
+    "name": "only-dependency",
+    "source": "println((import \"dependency@1\").f(2));",
+    "native": {
+      "mode": "required"
+    },
+    "files": {},
+    "descriptor": "{\"formatVersion\": 1, \"name\": \"only-dependency\", \"version\": \"1\", \"main\": \"main.goat\", \"native\": {\"mode\": \"required\"}}"
+  }
+]
