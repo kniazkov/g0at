@@ -34,7 +34,7 @@
 для каждого владельца при проверке полного графа; локальная проверка архива не
 требует доступности его внешних зависимостей.
 
-Проверки: `python3 scripts/check_module_consistency.py build/<config>/module_consistency_testing`.
+Проверки: `ctest --test-dir build/<config> -R '^integration.module_consistency\.' --output-on-failure`.
 Набор собирает независимые архивы и повреждения, проверяет все три режима,
 иностранные варианты, границы ID, расхождения описания и транзитивные ссылки.
 Вместо DLL/SO используется намеренно неисполняемый payload: ни один тест не
@@ -77,7 +77,7 @@ this helper neither initializes files nor replaces closure instances. Invoke it
 for each owner when checking a complete graph. Local archive validation does not
 require external dependencies to be present.
 
-Run `python3 scripts/check_module_consistency.py build/<config>/module_consistency_testing`.
+Run `ctest --test-dir build/<config> -R '^integration.module_consistency\.' --output-on-failure`.
 Independent archive/corruption fixtures cover all three modes, foreign variants,
 ID boundaries, descriptor mismatches and transitive references. The existing
 standalone compiler also preserves nested/anonymous IDs across native off/auto. Library payloads

@@ -1245,3 +1245,13 @@ See [the mapping and validation](../../data/module-information/README.md) and
 [complete ID table](../../data/module-information/cases.md). The component writer
 host now retains assertion setup/checks in Release; production code is unchanged.
 Label: `module-information-migration`.
+
+## Dispatch and consistency (#365)
+
+`module_dispatch_consistency_scenarios.c` replaces `check_module_dispatch.py`
+and `check_module_consistency.py` with 144 CTest IDs. Real production dispatch,
+ABI actions/guards/fallback, immutable archived metadata/code, copied descriptors
+and owner-rooted reference graphs remain checked; producer identity still really
+compiles all four optimizer/native combinations. See the
+[complete map, parity, negative controls and local cleanup limitation](../../data/module-dispatch-consistency/README.md).
+Label: `module-dispatch-consistency-migration`; there are no platform skips.

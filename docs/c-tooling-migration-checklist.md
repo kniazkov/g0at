@@ -77,7 +77,7 @@
 - [x] 44. [#362 — Перенести на Си: Выполнение импортов и интерфейсы](https://github.com/kniazkov/g0at/issues/362)
 - [x] 45. [#363 — Перенести на Си: Диагностика исходников](https://github.com/kniazkov/g0at/issues/363) — [карта сценариев и проверка](../test/data/module-source-diagnostics/README.md); PR и CI — в задаче.
 - [x] 46. [#364 — Перенести на Си: Информационные поля](https://github.com/kniazkov/g0at/issues/364) — [карта сценариев и проверка](../test/data/module-information/README.md); сохранены assertions в writer test-host для Release; PR и CI — в задаче.
-- [ ] 47. [#365 — Перенести на Си: Dispatch и согласованность](https://github.com/kniazkov/g0at/issues/365)
+- [x] 47. [#365 — Перенести на Си: Dispatch и согласованность](https://github.com/kniazkov/g0at/issues/365) — [карта и проверки](../test/data/module-dispatch-consistency/README.md); assertions в трёх test-host TU сохранены для Release; полный producer — обязательный CI, локально cleanup=2; PR и CI — в задаче.
 - [ ] 48. [#366 — Перенести на Си: Валидация модулей](https://github.com/kniazkov/g0at/issues/366)
 - [ ] 49. [#367 — Перенести на Си: Запись модулей](https://github.com/kniazkov/g0at/issues/367)
 - [ ] 50. [#368 — Перенести на Си: Сборка и библиотека модулей](https://github.com/kniazkov/g0at/issues/368)

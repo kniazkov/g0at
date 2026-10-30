@@ -2,6 +2,11 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Independent archive/descriptor/graph fixture harness, without OS loading.
  */
+/* Keep component checks and assertion setup active against Release libraries (#365). */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
+
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
 #include "lib/wire/wire.h"
