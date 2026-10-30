@@ -27,7 +27,8 @@ matching execution order and preventing optimizations from reversing effects.
 Run the mapped executable scenarios with:
 
 ```sh
-python3 scripts/check_module_assignment_access.py build/module_import_execution_testing build/goat
+cmake --build build --target module_assignment_scenarios
+ctest --test-dir build --output-on-failure -L module-assignment-migration
 ```
 
 The suite covers each rule independently, both dot and computed access where
@@ -64,7 +65,8 @@ native-call guards #232, or public module CLI #191.
 Запуск сквозных сценариев с привязкой к правилам:
 
 ```sh
-python3 scripts/check_module_assignment_access.py build/module_import_execution_testing build/goat
+cmake --build build --target module_assignment_scenarios
+ctest --test-dir build --output-on-failure -L module-assignment-migration
 ```
 
 Набор проверяет каждое правило отдельно, точечный и вычисляемый доступ, где применимо,
@@ -73,3 +75,5 @@ python3 scripts/check_module_assignment_access.py build/module_import_execution_
 отдельные сценарии также проверяют оптимизированное исполнение. Linux и Windows CI
 запускают один набор. Это не реализует отдельные задачи аналитического экспорта #205,
 проверки нативных вызовов #232 или публичной модульной CLI #191.
+
+Detailed migration map and reproduction / Карта переноса и команды: [test/data/module-assignment/README.md](../test/data/module-assignment/README.md).

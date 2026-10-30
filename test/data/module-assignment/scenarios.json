@@ -1,0 +1,1136 @@
+[
+  {
+    "id": "integration.module_assignment_access.13-shared-0",
+    "kind": "host",
+    "name": "13-shared-0",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; const change = func(target, key) { println(target.shared); target.shared = 21; println(target.shared); }; change(a.obj, \"shared\"); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; public var shared = 20; }; public read = func() { return obj.shared; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "20\n21\n21\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.13-shared-2",
+    "kind": "host",
+    "name": "13-shared-2",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; const change = func(target, key) { println(target[key]); target[key] = 21; println(target[key]); }; change(a.obj, \"shared\"); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; public var shared = 20; }; public read = func() { return obj.shared; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "20\n21\n21\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.13-hidden-4",
+    "kind": "host",
+    "name": "13-hidden-4",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var effects = 0; const rhs = func() { effects += 1; return 99; }; const read = func(target, key) { return target.hidden; }; const write = func(target, key) { target.hidden = rhs(); }; try { read(a.obj, \"hidden\"); } catch(e) { println(e); } try { write(a.obj, \"hidden\"); } catch(e) { println(e); } println(effects); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; }; public read = func() { return obj.hidden; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\nACCESS_DENIED\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.13-hidden-6",
+    "kind": "host",
+    "name": "13-hidden-6",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var effects = 0; const rhs = func() { effects += 1; return 99; }; const read = func(target, key) { return target[key]; }; const write = func(target, key) { target[key] = rhs(); }; try { read(a.obj, \"hidden\"); } catch(e) { println(e); } try { write(a.obj, \"hidden\"); } catch(e) { println(e); } println(effects); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; }; public read = func() { return obj.hidden; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\nACCESS_DENIED\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.14-early-8",
+    "kind": "host",
+    "name": "14-early-8",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return a.obj; }; const key = func() { keys += 1; events += \"k\"; return \"hidden\"; }; const rhs = func() { rights += 1; events += \"r\"; return 2; }; try { target().hidden += rhs(); } catch(e) { println(e); } println(events); println(objects); println(keys); println(rights); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; }; public read = func() { return obj.hidden; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\no\n1\n0\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.14-early-10",
+    "kind": "host",
+    "name": "14-early-10",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return a.obj; }; const key = func() { keys += 1; events += \"k\"; return \"hidden\"; }; const rhs = func() { rights += 1; events += \"r\"; return 2; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(events); println(objects); println(keys); println(rights); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; }; public read = func() { return obj.hidden; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\nok\n1\n1\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.15-early-12",
+    "kind": "host",
+    "name": "15-early-12",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return a.obj; }; const key = func() { keys += 1; events += \"k\"; return \"hidden\"; }; const rhs = func() { rights += 1; events += \"r\"; return 2; }; try { target().hidden = rhs(); } catch(e) { println(e); } println(events); println(objects); println(keys); println(rights); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; }; public read = func() { return obj.hidden; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\no\n1\n0\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.15-early-14",
+    "kind": "host",
+    "name": "15-early-14",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return a.obj; }; const key = func() { keys += 1; events += \"k\"; return \"hidden\"; }; const rhs = func() { rights += 1; events += \"r\"; return 2; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(events); println(objects); println(keys); println(rights); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { var hidden = 10; }; public read = func() { return obj.hidden; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\nok\n1\n1\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.15-early-16",
+    "kind": "host",
+    "name": "15-early-16",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return a.obj; }; const key = func() { keys += 1; events += \"k\"; return \"limit\"; }; const rhs = func() { rights += 1; events += \"r\"; return 2; }; try { target().limit = rhs(); } catch(e) { println(e); } println(events); println(objects); println(keys); println(rights); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { public limit = 10; }; public read = func() { return obj.limit; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "PROPERTY_IS_CONSTANT\no\n1\n0\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.15-early-18",
+    "kind": "host",
+    "name": "15-early-18",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return a.obj; }; const key = func() { keys += 1; events += \"k\"; return \"limit\"; }; const rhs = func() { rights += 1; events += \"r\"; return 2; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(events); println(objects); println(keys); println(rights); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { public limit = 10; }; public read = func() { return obj.limit; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "PROPERTY_IS_CONSTANT\nok\n1\n1\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.16-early-20",
+    "kind": "host",
+    "name": "16-early-20",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return a.obj; }; const key = func() { keys += 1; events += \"k\"; return \"limit\"; }; const rhs = func() { rights += 1; events += \"r\"; return 2; }; try { target().limit += rhs(); } catch(e) { println(e); } println(events); println(objects); println(keys); println(rights); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { public limit = 10; }; public read = func() { return obj.limit; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "PROPERTY_IS_CONSTANT\no\n1\n0\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.16-early-22",
+    "kind": "host",
+    "name": "16-early-22",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return a.obj; }; const key = func() { keys += 1; events += \"k\"; return \"limit\"; }; const rhs = func() { rights += 1; events += \"r\"; return 2; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(events); println(objects); println(keys); println(rights); println(a.read());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = { public limit = 10; }; public read = func() { return obj.limit; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "PROPERTY_IS_CONSTANT\nok\n1\n1\n0\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.15-foreign-extension-24",
+    "kind": "host",
+    "name": "15-foreign-extension-24",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external obj = {}; external read = func() { return obj; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; var events = \"\"; const target = func() { events += \"o\"; return lib.obj; }; const key = func() { events += \"k\"; return \"newField\"; }; const rhs = func() { events += \"r\"; return 1; }; try { target().newField = rhs(); } catch(e) { println(e); } println(events); println(lib.read());",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "FOREIGN_OBJECT\no\n{ }\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.15-foreign-extension-27",
+    "kind": "host",
+    "name": "15-foreign-extension-27",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external obj = {}; external read = func() { return obj; };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; var events = \"\"; const target = func() { events += \"o\"; return lib.obj; }; const key = func() { events += \"k\"; return \"newField\"; }; const rhs = func() { events += \"r\"; return 1; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(events); println(lib.read());",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "FOREIGN_OBJECT\nok\n{ }\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.foreign-fields-30",
+    "kind": "host",
+    "name": "foreign-fields-30",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external obj = { public var hidden = 10; external limit = 20; external var shared = 30; }; external read = func() { println(obj.hidden); println(obj.limit); println(obj.shared); };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; var events = \"\"; var name = \"hidden\"; const target = func() { events += \"o\"; return lib.obj; }; const key = func() { events += \"k\"; return name; }; const rhs = func() { events += \"r\"; return 2; }; try { target().hidden = rhs(); } catch(e) { println(e); } println(events); events = \"\"; name = \"limit\"; try { target().limit = rhs(); } catch(e) { println(e); } println(events); events = \"\"; name = \"shared\"; target().shared = rhs(); println(events); lib.read();",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\no\nPROPERTY_IS_CONSTANT\no\nor\n10\n20\n2\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.foreign-fields-33",
+    "kind": "host",
+    "name": "foreign-fields-33",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external obj = { public var hidden = 10; external limit = 20; external var shared = 30; }; external read = func() { println(obj.hidden); println(obj.limit); println(obj.shared); };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; var events = \"\"; var name = \"hidden\"; const target = func() { events += \"o\"; return lib.obj; }; const key = func() { events += \"k\"; return name; }; const rhs = func() { events += \"r\"; return 2; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(events); events = \"\"; name = \"limit\"; try { target()[key()] = rhs(); } catch(e) { println(e); } println(events); events = \"\"; name = \"shared\"; target()[key()] = rhs(); println(events); lib.read();",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\nok\nPROPERTY_IS_CONSTANT\nok\nokr\n10\n20\n2\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.foreign-fields-36",
+    "kind": "host",
+    "name": "foreign-fields-36",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external obj = { public var hidden = 10; external limit = 20; external var shared = 30; }; external read = func() { println(obj.hidden); println(obj.limit); println(obj.shared); };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; var events = \"\"; var name = \"hidden\"; const target = func() { events += \"o\"; return lib.obj; }; const key = func() { events += \"k\"; return name; }; const rhs = func() { events += \"r\"; return 2; }; try { target().hidden += rhs(); } catch(e) { println(e); } println(events); events = \"\"; name = \"limit\"; try { target().limit += rhs(); } catch(e) { println(e); } println(events); events = \"\"; name = \"shared\"; target().shared += rhs(); println(events); lib.read();",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\no\nPROPERTY_IS_CONSTANT\no\nor\n10\n20\n32\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.foreign-fields-39",
+    "kind": "host",
+    "name": "foreign-fields-39",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "external obj = { public var hidden = 10; external limit = 20; external var shared = 30; }; external read = func() { println(obj.hidden); println(obj.limit); println(obj.shared); };",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; var events = \"\"; var name = \"hidden\"; const target = func() { events += \"o\"; return lib.obj; }; const key = func() { events += \"k\"; return name; }; const rhs = func() { events += \"r\"; return 2; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(events); events = \"\"; name = \"limit\"; try { target()[key()] += rhs(); } catch(e) { println(e); } println(events); events = \"\"; name = \"shared\"; target()[key()] += rhs(); println(events); lib.read();",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\nok\nPROPERTY_IS_CONSTANT\nok\nokr\n10\n20\n32\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.17-value-42",
+    "kind": "host",
+    "name": "17-value-42",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; }; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return obj; }; const key = func() { keys += 1; events += \"k\"; return \"x\"; }; const rhs = func() { rights += 1; events += \"r\"; obj.x = 100; return 2; }; try { target().x += rhs(); } catch(e) { println(e); } println(obj.x); println(events); println(objects); println(keys); println(rights);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "12\nor\n1\n0\n1\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.18-value-44",
+    "kind": "host",
+    "name": "18-value-44",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; }; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return obj; }; const key = func() { keys += 1; events += \"k\"; return \"x\"; }; const rhs = func() { rights += 1; events += \"r\"; obj.x = 100; throw \"rhs failed\"; }; try { target().x += rhs(); } catch(e) { println(e); } println(obj.x); println(events); println(objects); println(keys); println(rights);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "rhs failed\n100\nor\n1\n0\n1\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.17-value-46",
+    "kind": "host",
+    "name": "17-value-46",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; }; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return obj; }; const key = func() { keys += 1; events += \"k\"; return \"x\"; }; const rhs = func() { rights += 1; events += \"r\"; obj.x = 100; return 2; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(obj.x); println(events); println(objects); println(keys); println(rights);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "12\nokr\n1\n1\n1\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.18-value-48",
+    "kind": "host",
+    "name": "18-value-48",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; }; var events = \"\"; var objects = 0; var keys = 0; var rights = 0; const target = func() { objects += 1; events += \"o\"; return obj; }; const key = func() { keys += 1; events += \"k\"; return \"x\"; }; const rhs = func() { rights += 1; events += \"r\"; obj.x = 100; throw \"rhs failed\"; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(obj.x); println(events); println(objects); println(keys); println(rights);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "rhs failed\n100\nokr\n1\n1\n1\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.19-20-captured-50",
+    "kind": "host",
+    "name": "19-20-captured-50",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var key = \"x\"; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const index = func() { events += \"k\"; return key; }; const rhs = func() { events += \"r\"; key = \"y\"; obj = { public var x = 100; public var y = 200; }; return 2; }; target().x = rhs(); println(original.x); println(original.y); println(obj.x); println(obj.y); println(key); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "2\n20\n100\n200\ny\nor\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.19-20-captured-52",
+    "kind": "host",
+    "name": "19-20-captured-52",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var key = \"x\"; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const index = func() { events += \"k\"; return key; }; const rhs = func() { events += \"r\"; key = \"y\"; obj = { public var x = 100; public var y = 200; }; return 2; }; target()[index()] = rhs(); println(original.x); println(original.y); println(obj.x); println(obj.y); println(key); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "2\n20\n100\n200\ny\nokr\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.19-20-captured-54",
+    "kind": "host",
+    "name": "19-20-captured-54",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var key = \"x\"; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const index = func() { events += \"k\"; return key; }; const rhs = func() { events += \"r\"; key = \"y\"; obj = { public var x = 100; public var y = 200; }; return 2; }; target().x += rhs(); println(original.x); println(original.y); println(obj.x); println(obj.y); println(key); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "12\n20\n100\n200\ny\nor\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.19-20-captured-56",
+    "kind": "host",
+    "name": "19-20-captured-56",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var key = \"x\"; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const index = func() { events += \"k\"; return key; }; const rhs = func() { events += \"r\"; key = \"y\"; obj = { public var x = 100; public var y = 200; }; return 2; }; target()[index()] += rhs(); println(original.x); println(original.y); println(obj.x); println(obj.y); println(key); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "12\n20\n100\n200\ny\nokr\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.left-throws-58",
+    "kind": "host",
+    "name": "left-throws-58",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; }; var events = \"\"; const target = func() { events += \"o\"; throw \"object failed\"; }; const key = func() { events += \"k\"; throw \"key failed\"; }; const rhs = func() { events += \"r\"; return 2; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(events); println(obj.x);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "object failed\no\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.left-throws-60",
+    "kind": "host",
+    "name": "left-throws-60",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; }; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; throw \"key failed\"; }; const rhs = func() { events += \"r\"; return 2; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(events); println(obj.x);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "key failed\nok\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.left-throws-62",
+    "kind": "host",
+    "name": "left-throws-62",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; }; var events = \"\"; const target = func() { events += \"o\"; throw \"object failed\"; }; const key = func() { events += \"k\"; throw \"key failed\"; }; const rhs = func() { events += \"r\"; return 2; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(events); println(obj.x);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "object failed\no\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.left-throws-64",
+    "kind": "host",
+    "name": "left-throws-64",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; }; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; throw \"key failed\"; }; const rhs = func() { events += \"r\"; return 2; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(events); println(obj.x);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "key failed\nok\n10\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.key-mutates-target-66",
+    "kind": "host",
+    "name": "key-mutates-target-66",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var events = \"\"; var name = \"y\"; const target = func() { events += \"o\"; name = \"x\"; return obj; }; const key = func() { events += \"k\"; original.x = 30; obj = { public var x = 100; }; return name; }; const rhs = func() { events += \"r\"; original.x = 50; return 2; }; target()[key()] = rhs(); println(original.x); println(original.y); println(obj.x); println(name); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "2\n20\n100\nx\nokr\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.key-mutates-target-68",
+    "kind": "host",
+    "name": "key-mutates-target-68",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var events = \"\"; var name = \"y\"; const target = func() { events += \"o\"; name = \"x\"; return obj; }; const key = func() { events += \"k\"; original.x = 30; obj = { public var x = 100; }; return name; }; const rhs = func() { events += \"r\"; original.x = 50; return 2; }; target()[key()] += rhs(); println(original.x); println(original.y); println(obj.x); println(name); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "32\n20\n100\nx\nokr\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.21-final-private-70",
+    "kind": "host",
+    "name": "21-final-private-70",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; const target = func() { events += \"o\"; return a.obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; return a.prepare(); }; try { target().x = rhs(); } catch(e) { println(e); } println(events); println(a.read()); println(a.calls());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = {}; var effects = 0; public prepare = func() { effects += 1; obj.x = 100; return 2; }; public read = func() { return obj.x; }; public calls = func() { return effects; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\nor\n100\n1\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.21-final-private-72",
+    "kind": "host",
+    "name": "21-final-private-72",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; var events = \"\"; const target = func() { events += \"o\"; return a.obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; return a.prepare(); }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(events); println(a.read()); println(a.calls());",
+        "version": "1",
+        "files": {
+          "a.goat": "public obj = {}; var effects = 0; public prepare = func() { effects += 1; obj.x = 100; return 2; }; public read = func() { return obj.x; }; public calls = func() { return effects; };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "ACCESS_DENIED\nokr\n100\n1\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.22-no-placeholder-74",
+    "kind": "host",
+    "name": "22-no-placeholder-74",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = {}; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; println(obj); throw \"stop\"; }; try { target().x = rhs(); } catch(e) { println(e); } println(obj); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "{ }\nstop\n{ }\nor\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.22-no-placeholder-76",
+    "kind": "host",
+    "name": "22-no-placeholder-76",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var obj = {}; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; println(obj); throw \"stop\"; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(obj); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "{ }\nstop\n{ }\nokr\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.23-update-created-78",
+    "kind": "host",
+    "name": "23-update-created-78",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "public obj = {}; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; obj.x = 100; return 2; }; target().x = rhs(); println(obj.x); println(events); const observer = include \"observer.goat\"; observer.check(obj);",
+        "version": "1",
+        "files": {
+          "observer.goat": "public check = func(value) { try { println(value.x); } catch(e) { println(e); } };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "2\nor\nACCESS_DENIED\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.23-update-created-80",
+    "kind": "host",
+    "name": "23-update-created-80",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "public obj = {}; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; obj.x = 100; return 2; }; target()[key()] = rhs(); println(obj.x); println(events); const observer = include \"observer.goat\"; observer.check(obj);",
+        "version": "1",
+        "files": {
+          "observer.goat": "public check = func(value) { try { println(value.x); } catch(e) { println(e); } };"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "2\nokr\nACCESS_DENIED\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.24-array-82",
+    "kind": "host",
+    "name": "24-array-82",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var items = [10, 20, 30]; var events = \"\"; var saved = items; var index = 1; const target = func() { events += \"o\"; return items; }; const key = func() { events += \"k\"; return index; }; const rhs = func() { events += \"r\"; items.remove(0); index = 0; items = [99]; return 2; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(saved); println(items); println(index); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "[20,2]\n[99]\n0\nokr\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.25-array-84",
+    "kind": "host",
+    "name": "25-array-84",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var items = [10, 20, 30]; var events = \"\"; var saved = items; var index = 1; const target = func() { events += \"o\"; return items; }; const key = func() { events += \"k\"; return index; }; const rhs = func() { events += \"r\"; items.clear(); index = 0; items = [99]; return 2; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(saved); println(items); println(index); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "INVALID_ARGUMENT\n[ ]\n[99]\n0\nokr\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.24-array-86",
+    "kind": "host",
+    "name": "24-array-86",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var items = [10, 20, 30]; var events = \"\"; var saved = items; var index = 1; const target = func() { events += \"o\"; return items; }; const key = func() { events += \"k\"; return index; }; const rhs = func() { events += \"r\"; items.remove(0); index = 0; items = [99]; return 2; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(saved); println(items); println(index); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "[20,22]\n[99]\n0\nokr\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.25-array-88",
+    "kind": "host",
+    "name": "25-array-88",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "var items = [10, 20, 30]; var events = \"\"; var saved = items; var index = 1; const target = func() { events += \"o\"; return items; }; const key = func() { events += \"k\"; return index; }; const rhs = func() { events += \"r\"; items.clear(); index = 0; items = [99]; return 2; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(saved); println(items); println(index); println(events);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "binary",
+        "expected": "INVALID_ARGUMENT\n[ ]\n[99]\n0\nokr\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_assignment_access.cli-constant-assign-none",
+    "kind": "cli",
+    "name": "constant-=",
+    "optimization": "none",
+    "code": "const x = 10; var effects = 0; const rhs = func() { effects += 1; return 2; }; try { x = rhs(); } catch(e) { println(e); } println(effects); println(x);",
+    "expected": "PROPERTY_IS_CONSTANT\n0\n10\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-capture-assign-none",
+    "kind": "cli",
+    "name": "capture-=",
+    "optimization": "none",
+    "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var key = \"x\"; var effects = \"\"; const rhs = func() { effects += \"r\"; key = \"y\"; obj = { public var x = 100; public var y = 200; }; return 2; }; println(obj[key] = rhs()); println(original.x); println(original.y); println(obj.x); println(obj.y); println(effects);",
+    "expected": "2\n2\n20\n100\n200\nr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-key-mutation-assign-none",
+    "kind": "cli",
+    "name": "key-mutation-=",
+    "optimization": "none",
+    "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var name = \"y\"; var events = \"\"; const target = func() { events += \"o\"; name = \"x\"; return obj; }; const key = func() { events += \"k\"; original.x = 30; obj = { public var x = 100; }; return name; }; const rhs = func() { events += \"r\"; original.x = 50; return 2; }; println(target()[key()] = rhs()); println(original.x); println(obj.x); println(events);",
+    "expected": "2\n2\n100\nokr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-rhs-throws-assign-none",
+    "kind": "cli",
+    "name": "rhs-throws-=",
+    "optimization": "none",
+    "code": "var obj = { public var x = 10; }; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; obj.x = 100; throw \"stop\"; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(obj.x); println(events);",
+    "expected": "stop\n100\nokr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-array-assign-false-none",
+    "kind": "cli",
+    "name": "array-=-False",
+    "optimization": "none",
+    "code": "var items = [10, 20, 30]; const original = items; var key = 1; const rhs = func() { items.remove(0);items = [99]; key = 0; return 2; }; try { items[key] = rhs(); } catch(e) { println(e); } println(original); println(items);",
+    "expected": "[20,2]\n[99]\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-array-assign-true-none",
+    "kind": "cli",
+    "name": "array-=-True",
+    "optimization": "none",
+    "code": "var items = [10, 20, 30]; const original = items; var key = 1; const rhs = func() { items.clear();items = [99]; key = 0; return 2; }; try { items[key] = rhs(); } catch(e) { println(e); } println(original); println(items);",
+    "expected": "INVALID_ARGUMENT\n[ ]\n[99]\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-constant-add-none",
+    "kind": "cli",
+    "name": "constant-+=",
+    "optimization": "none",
+    "code": "const x = 10; var effects = 0; const rhs = func() { effects += 1; return 2; }; try { x += rhs(); } catch(e) { println(e); } println(effects); println(x);",
+    "expected": "PROPERTY_IS_CONSTANT\n0\n10\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-capture-add-none",
+    "kind": "cli",
+    "name": "capture-+=",
+    "optimization": "none",
+    "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var key = \"x\"; var effects = \"\"; const rhs = func() { effects += \"r\"; key = \"y\"; obj = { public var x = 100; public var y = 200; }; return 2; }; println(obj[key] += rhs()); println(original.x); println(original.y); println(obj.x); println(obj.y); println(effects);",
+    "expected": "12\n12\n20\n100\n200\nr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-key-mutation-add-none",
+    "kind": "cli",
+    "name": "key-mutation-+=",
+    "optimization": "none",
+    "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var name = \"y\"; var events = \"\"; const target = func() { events += \"o\"; name = \"x\"; return obj; }; const key = func() { events += \"k\"; original.x = 30; obj = { public var x = 100; }; return name; }; const rhs = func() { events += \"r\"; original.x = 50; return 2; }; println(target()[key()] += rhs()); println(original.x); println(obj.x); println(events);",
+    "expected": "32\n32\n100\nokr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-rhs-throws-add-none",
+    "kind": "cli",
+    "name": "rhs-throws-+=",
+    "optimization": "none",
+    "code": "var obj = { public var x = 10; }; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; obj.x = 100; throw \"stop\"; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(obj.x); println(events);",
+    "expected": "stop\n100\nokr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-array-add-false-none",
+    "kind": "cli",
+    "name": "array-+=-False",
+    "optimization": "none",
+    "code": "var items = [10, 20, 30]; const original = items; var key = 1; const rhs = func() { items.remove(0);items = [99]; key = 0; return 2; }; try { items[key] += rhs(); } catch(e) { println(e); } println(original); println(items);",
+    "expected": "[20,22]\n[99]\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-array-add-true-none",
+    "kind": "cli",
+    "name": "array-+=-True",
+    "optimization": "none",
+    "code": "var items = [10, 20, 30]; const original = items; var key = 1; const rhs = func() { items.clear();items = [99]; key = 0; return 2; }; try { items[key] += rhs(); } catch(e) { println(e); } println(original); println(items);",
+    "expected": "INVALID_ARGUMENT\n[ ]\n[99]\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-chain-none",
+    "kind": "cli",
+    "name": "chain",
+    "optimization": "none",
+    "code": "var obj = { public var x = 10; public var y = 20; }; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; return 2; }; var value = 0; println(value = target()[key()] = obj.y += rhs()); println(value); println(obj.x); println(obj.y); println(events);",
+    "expected": "22\n22\n22\n22\nokr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-constant-assign-all",
+    "kind": "cli",
+    "name": "constant-=",
+    "optimization": "all",
+    "code": "const x = 10; var effects = 0; const rhs = func() { effects += 1; return 2; }; try { x = rhs(); } catch(e) { println(e); } println(effects); println(x);",
+    "expected": "PROPERTY_IS_CONSTANT\n0\n10\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-capture-assign-all",
+    "kind": "cli",
+    "name": "capture-=",
+    "optimization": "all",
+    "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var key = \"x\"; var effects = \"\"; const rhs = func() { effects += \"r\"; key = \"y\"; obj = { public var x = 100; public var y = 200; }; return 2; }; println(obj[key] = rhs()); println(original.x); println(original.y); println(obj.x); println(obj.y); println(effects);",
+    "expected": "2\n2\n20\n100\n200\nr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-key-mutation-assign-all",
+    "kind": "cli",
+    "name": "key-mutation-=",
+    "optimization": "all",
+    "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var name = \"y\"; var events = \"\"; const target = func() { events += \"o\"; name = \"x\"; return obj; }; const key = func() { events += \"k\"; original.x = 30; obj = { public var x = 100; }; return name; }; const rhs = func() { events += \"r\"; original.x = 50; return 2; }; println(target()[key()] = rhs()); println(original.x); println(obj.x); println(events);",
+    "expected": "2\n2\n100\nokr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-rhs-throws-assign-all",
+    "kind": "cli",
+    "name": "rhs-throws-=",
+    "optimization": "all",
+    "code": "var obj = { public var x = 10; }; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; obj.x = 100; throw \"stop\"; }; try { target()[key()] = rhs(); } catch(e) { println(e); } println(obj.x); println(events);",
+    "expected": "stop\n100\nokr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-array-assign-false-all",
+    "kind": "cli",
+    "name": "array-=-False",
+    "optimization": "all",
+    "code": "var items = [10, 20, 30]; const original = items; var key = 1; const rhs = func() { items.remove(0);items = [99]; key = 0; return 2; }; try { items[key] = rhs(); } catch(e) { println(e); } println(original); println(items);",
+    "expected": "[20,2]\n[99]\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-array-assign-true-all",
+    "kind": "cli",
+    "name": "array-=-True",
+    "optimization": "all",
+    "code": "var items = [10, 20, 30]; const original = items; var key = 1; const rhs = func() { items.clear();items = [99]; key = 0; return 2; }; try { items[key] = rhs(); } catch(e) { println(e); } println(original); println(items);",
+    "expected": "INVALID_ARGUMENT\n[ ]\n[99]\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-constant-add-all",
+    "kind": "cli",
+    "name": "constant-+=",
+    "optimization": "all",
+    "code": "const x = 10; var effects = 0; const rhs = func() { effects += 1; return 2; }; try { x += rhs(); } catch(e) { println(e); } println(effects); println(x);",
+    "expected": "PROPERTY_IS_CONSTANT\n0\n10\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-capture-add-all",
+    "kind": "cli",
+    "name": "capture-+=",
+    "optimization": "all",
+    "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var key = \"x\"; var effects = \"\"; const rhs = func() { effects += \"r\"; key = \"y\"; obj = { public var x = 100; public var y = 200; }; return 2; }; println(obj[key] += rhs()); println(original.x); println(original.y); println(obj.x); println(obj.y); println(effects);",
+    "expected": "12\n12\n20\n100\n200\nr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-key-mutation-add-all",
+    "kind": "cli",
+    "name": "key-mutation-+=",
+    "optimization": "all",
+    "code": "var obj = { public var x = 10; public var y = 20; }; const original = obj; var name = \"y\"; var events = \"\"; const target = func() { events += \"o\"; name = \"x\"; return obj; }; const key = func() { events += \"k\"; original.x = 30; obj = { public var x = 100; }; return name; }; const rhs = func() { events += \"r\"; original.x = 50; return 2; }; println(target()[key()] += rhs()); println(original.x); println(obj.x); println(events);",
+    "expected": "32\n32\n100\nokr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-rhs-throws-add-all",
+    "kind": "cli",
+    "name": "rhs-throws-+=",
+    "optimization": "all",
+    "code": "var obj = { public var x = 10; }; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; obj.x = 100; throw \"stop\"; }; try { target()[key()] += rhs(); } catch(e) { println(e); } println(obj.x); println(events);",
+    "expected": "stop\n100\nokr\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-array-add-false-all",
+    "kind": "cli",
+    "name": "array-+=-False",
+    "optimization": "all",
+    "code": "var items = [10, 20, 30]; const original = items; var key = 1; const rhs = func() { items.remove(0);items = [99]; key = 0; return 2; }; try { items[key] += rhs(); } catch(e) { println(e); } println(original); println(items);",
+    "expected": "[20,22]\n[99]\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-array-add-true-all",
+    "kind": "cli",
+    "name": "array-+=-True",
+    "optimization": "all",
+    "code": "var items = [10, 20, 30]; const original = items; var key = 1; const rhs = func() { items.clear();items = [99]; key = 0; return 2; }; try { items[key] += rhs(); } catch(e) { println(e); } println(original); println(items);",
+    "expected": "INVALID_ARGUMENT\n[ ]\n[99]\n"
+  },
+  {
+    "id": "integration.module_assignment_access.cli-chain-all",
+    "kind": "cli",
+    "name": "chain",
+    "optimization": "all",
+    "code": "var obj = { public var x = 10; public var y = 20; }; var events = \"\"; const target = func() { events += \"o\"; return obj; }; const key = func() { events += \"k\"; return \"x\"; }; const rhs = func() { events += \"r\"; return 2; }; var value = 0; println(value = target()[key()] = obj.y += rhs()); println(value); println(obj.x); println(obj.y); println(events);",
+    "expected": "22\n22\n22\n22\nokr\n"
+  }
+]
