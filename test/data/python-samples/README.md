@@ -17,12 +17,13 @@ floating-point numbers. Binary files are raw bytes. No expectation is frozen.
 | `scripts/check_module_abi.py` | `abi-guard-pairs.json` | 600 pairs / 209 | `integration.module_abi` |
 | `scripts/check_module_canonical.py` | `canonical-key-orders.json` | 20 orders of 13 keys / 180 | `integration.module_canonical` |
 | `scripts/check_module_container.py` | `container-damage.json`, `container-damage-base.bin` | 100 cases, 3 ordered XOR mutations each / 182 | `integration.module_container` |
-| `scripts/check_module_writer.py` | `writer-payload.bin`, `writer-native-order.json` | 65,537 bytes then 12-index shuffle / 183 | `integration.module_writer` |
+| `module_writer_scenarios` (frozen original writer inputs, #367) | `writer-payload.bin`, `writer-native-order.json` | 65,537 bytes then 12-index shuffle / 183 | `integration.module_writer.native-*` |
 | `scripts/check_zip.py` | `zip-payload.bin`, `zip-damage.json`, `zip-damage-base*.bin` | 65,537 bytes then 60 cases of 3 XOR mutations / 247 | `integration.zip` |
 | `test/src/native/checks/saturation.py` | `saturation-pairs.json` | 1,000 operand pairs / 20261006 | `native.native` (manifest check `saturation`) |
 
 The original saturation path was `test/native/checks/saturation.py` before #320.
-The other five source paths are unchanged. The shared RNG stream ordering is
+Historical source paths in the manifest identify the pre-freeze baseline;
+several consumers, including the writer, have since migrated to C. The shared RNG stream ordering is
 preserved: the writer shuffle and ZIP mutations follow all 65,537 payload draws.
 The mutation recipe is an ordered array of cases; each case has three
 `[byte_offset, xor_mask]` pairs, applied in order (repeated offsets are permitted).
@@ -67,3 +68,9 @@ changes are needed: no executable was added.
 The four `test/support/*python_samples*.py` helpers are temporary migration
 export/audit tools, not production dependencies. Their removal is tracked under
 #395; subsequent C consumers read these same inputs and use independent oracles.
+
+The writer migration keeps these sample files and provenance manifests unchanged.
+Its exact input archives embed the original payload/permutation; see
+[writer scenario map](../module-writer/README.md). The optional original-recipe
+audit uses `git show --baseline` history, so retirement of the live Python runner
+does not require keeping an import shim.

@@ -44,7 +44,7 @@ NULL options use address-space/ZIP32 limits; explicit limits cap archive and
 expanded result sizes. Failed memory writes clear both output pointer and size.
 Free successful memory output with `free_module_writer_bytes`.
 
-Tests: `scripts/check_module_writer.py build/module_writer_testing` compares the
+Tests: `ctest --test-dir build -L module-writer-migration --output-on-failure` compares the
 checked-in golden archive, validates canonical metadata and native associations,
 checks all ZIP header fields, limits and malformed inputs, repeated writes,
 publication paths/permissions and injected write/close/validation/permission/
@@ -87,3 +87,5 @@ Windows MINGW32/MINGW64/UCRT64. No host-Python zlib version is required by the t
 пределы размеров, ошибки входов и атомарной публикации, включая внедрённые сбои.
 Они запускаются на всей существующей матрице CI; версия zlib системного Python
 для этих тестов несущественна.
+
+Scenario mapping and direct invocation: [C writer fixtures](../test/data/module-writer/README.md).

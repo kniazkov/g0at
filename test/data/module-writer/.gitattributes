@@ -1,0 +1,2 @@
+# Frozen binary archives and parts must retain exact bytes on every platform.
+blobs/*.bin binary

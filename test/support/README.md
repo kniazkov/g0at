@@ -87,7 +87,7 @@ Remaining Python import consumers (including dynamic imports) are:
 `check_module_inspect.py`,
 `check_module_loading.py`, `check_module_memory.py`, `check_module_merge.py`,
 `check_module_musl.py`, `check_module_search.py`,
-`check_module_writer.py`, and `check_inspect_probe.py`. They retain their current
+and `check_inspect_probe.py`. They retain their current
 API and data paths; their migration remains in the ordered checklist.
 
 ## Independent binary and fixture oracle (#336)
@@ -350,3 +350,10 @@ malformed corpus sent unchanged to the real host. There are 62 stable IDs; see
 [mapping and reproduction](../data/module-validation/README.md). The retired runner
 exported no imported helpers; `module_interface_fixtures.py` remains for inspect
 and merge until #394.
+
+Writer migration (#367): `module_writer_scenarios` combines shared process/file
+helpers, independent ZIP/profile/hash checks, reference-derived normalized parts,
+and real atomic publication/fault checks. There are 59 stable IDs; see
+[mapping and reproduction](../data/module-writer/README.md). No live helper is
+exported by the retired runner. Frozen sample source paths and the optional
+Git-baseline AST audit remain historical provenance, not working-tree consumers.

@@ -302,7 +302,7 @@
 | 146, 156–158: настоящие пути | [Исходники](module-sources-api.md), [CLI](module-cli-api.md); `integration.module_sources` (CTest), `check_module_cli.py`, `module_context_scenarios` |
 | Платформы, CPU, runtime, ABI, переносимые хеши | [Сквозная поставка и границы](module-delivery-tests.md); `integration.module_native` (CTest), `check_native_requirements.py`, `check_native_toolchains.py`, `check_module_delivery.py`, `check_module_delivery_requirements.py`, format-vectors |
 | Информационные поля и cCompiler | [Информация](module-information-api.md), [объединение](module-merge-api.md); `check_module_information.py`, `check_module_build.py`, `check_module_inspect.py`, `check_module_merge.py` |
-| Deflate, атомарная публикация, права и входы merge | [Writer](module-writer-api.md), [merge](module-merge-api.md); `check_module_writer.py`, `check_module_container.py`, `check_module_merge.py` и fault-проверки общего файлового API |
+| Deflate, атомарная публикация, права и входы merge | [Writer](module-writer-api.md), [merge](module-merge-api.md); `integration.module_writer.*` (CTest), `check_module_container.py`, `check_module_merge.py` и fault-проверки общего файлового API |
 | Проба inspect, дерево процессов и очистка | [Inspect](module-inspect-api.md), [уборщик](cleanup-service-api.md); `check_inspect_probe.py`, `check_child_process.py`, `check_cleanup_service.py` |
 | AC-01–AC-28 | [Реальные многофайловые проверки](book/ru/access-control-examples.md#проверки-на-реальных-файлах-и-модулях-218); `module_multifile_access_scenarios` |
 
