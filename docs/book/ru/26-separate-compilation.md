@@ -87,4 +87,4 @@ CC=goat-no-such-compiler ./goat --run --native required build/book-native/run/mo
 
 `--run` не пересобирает отсутствующий артефакт. Загрузка модулей и повтор чистого отдельного вызова после ограничения ресурсов — разные контракты, как объясняет [глава 25](25-native-dispatch-and-vm-fallback.md).
 
-Тесты включают `check_binary_program.sh`, `check_module_cli.py`, `integration.module_graph`, `check_module_loading.py` и набор поставки. Проверяются Linux GCC/Clang x86-64/ARM64 и Windows MINGW32/MINGW64/UCRT64. Исполнение на точных старых glibc 2.14/2.17 и Windows 10 не установлено одним зелёным новым runner; [свидетельства поставки](../../module-delivery-tests.md) фиксируют проверенные среды и оставшийся план нижних границ.
+Тесты включают `check_binary_program.sh`, `check_module_cli.py`, `integration.module_graph`, `integration.module_loading.*` и набор поставки. Проверяются Linux GCC/Clang x86-64/ARM64 и Windows MINGW32/MINGW64/UCRT64. Исполнение на точных старых glibc 2.14/2.17 и Windows 10 не установлено одним зелёным новым runner; [свидетельства поставки](../../module-delivery-tests.md) фиксируют проверенные среды и оставшийся план нижних границ.

@@ -2,6 +2,10 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Real snapshot, cleaner, native loader and VM acceptance fixture.
  */
+/* Keep snapshot/search, stream and worker assertions active in Release (#369). */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include "lib/files/file_system.h"
 #include "lib/files/io.h"
 #include "lib/memory/allocate.h"
@@ -112,6 +116,8 @@ static int execute(int argc, char **argv) {
         return status;
     }
     assert(argc == 4);
+    /* A test-only PID marker, pinned only after a READY/HOLD handshake. */
+    marker("owner.pid", NULL);
     fault = argv[3];
     module_search_t *search = NULL;
     module_search_error_t search_error = {0};

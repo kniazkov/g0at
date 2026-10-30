@@ -113,7 +113,12 @@ foreach(module_library_case original valid missing-descriptor writable-descripto
     "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_library_testing>" "${CMAKE_C_COMPILER}"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-goat_python(integration.module_loading "integration" scripts/check_module_loading.py "$<TARGET_FILE:module_loading_testing>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}")
+foreach(module_loading_case off valid-auto valid-required no-match-auto no-match-required plain-auto plain-required foreign-auto foreign-required ambiguous-auto ambiguous-required ambiguous-off damaged-off damaged-auto damaged-required os-auto os-required descriptor-missing-auto descriptor-missing-required descriptor-mismatch-auto descriptor-mismatch-required descriptor-overflow-auto descriptor-overflow-required descriptor-short-auto descriptor-short-required descriptor-writable-auto descriptor-writable-required symbol-missing-auto symbol-missing-required bad-status-auto bad-status-required bad-result-auto bad-result-required write-before-auto write-before-required write-partial-auto write-partial-required cleaner-exit-auto cleaner-exit-required cleaner-silent-auto cleaner-silent-required real-producer-auto real-producer-required unicode allocated-string-auto allocated-string-required static-string-auto static-string-required dormant concurrent-auto concurrent-required dependency-valid-auto dependency-valid-required import-only dependency-only dependency-bytecode dependency-foreign dep-failure-os-auto dep-failure-os-required dep-failure-symbol-missing-auto dep-failure-symbol-missing-required dep-failure-descriptor-mismatch-auto dep-failure-descriptor-mismatch-required foreign-corrupt-dependency-off foreign-corrupt-dependency-auto foreign-corrupt-dependency-required isolated-write-before isolated-write-partial global-exit global-silent integrity-auto integrity-required all-symbols pending-exit-write-auto pending-exit-write-required pending-exit-write-fail-auto pending-exit-write-fail-required concurrent-write-fail concurrent-cleaner-fail caught-auto caught-required frozen continued-auto continued-auto-exit continued-required continued-required-exit late-worker nonreturning-loop-auto nonreturning-loop-required nonreturning-block-auto nonreturning-block-required killed-owner held-auto held-required)
+  goat_scenario(integration.module_loading.${module_loading_case} "integration;module-loading-migration" TIMEOUT 330 COMMAND
+    "$<TARGET_FILE:module_loading_scenarios>" "integration.module_loading.${module_loading_case}"
+    "$<TARGET_FILE:module_loading_testing>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
+endforeach()
 goat_python(integration.module_inspect "integration" scripts/check_module_inspect.py "$<TARGET_FILE:goat-inspect>" "${CMAKE_C_COMPILER}")
 goat_python(integration.inspect_probe "integration" scripts/check_inspect_probe.py "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}" "$<TARGET_FILE:inspect_probe_testing>")
 goat_python(integration.module_cli "integration" scripts/check_module_cli.py "$<TARGET_FILE:goat>" "$<TARGET_FILE:native_toolchain_testing>" "${CMAKE_C_COMPILER}")
@@ -441,8 +446,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 872)
-  message(FATAL_ERROR "Expected all 872 integration scenarios (build/library cases split in #368); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 965)
+  message(FATAL_ERROR "Expected all 965 integration scenarios (loading cases split in #369); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

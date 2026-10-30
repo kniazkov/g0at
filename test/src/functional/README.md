@@ -1281,3 +1281,7 @@ runners with 36 IDs, label `module-build-library-migration`. See
 [library mapping/ELF applicability](../../data/module-library/README.md).
 Real compiler and loader operations remain mandatory; only 15 ELF-specific library
 cases skip Windows. Release keeps library-host assertion setup active.
+
+## Lazy module loading (#369)
+
+`module_loading_scenarios` registers 94 independent cases; see the [complete map and verification](../../data/module-loading/README.md). It preserves real custom native fixtures, errors, concurrency, owner death and independent cleaner observation.

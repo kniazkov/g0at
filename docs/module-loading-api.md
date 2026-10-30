@@ -93,7 +93,7 @@ pthread-стеки так не расширяются. Создаваемые Go
 
 ### Проверки и границы
 
-`check_module_loading.py` использует production API, реальные библиотеки и
+`integration.module_loading.*` использует production API, реальные библиотеки и
 изолированные процессы для проверки режимов, отложенной загрузки, ошибок ABI,
 снимка, конкурирующих вызовов и жизненного цикла уборщика. Существующие наборы
 проверяют контейнеры/графы, ABI, per-call dispatch, сборку и сервис очистки.
@@ -197,7 +197,7 @@ Cleanup after that failure is not guaranteed.
 
 ### Verification and boundaries
 
-`check_module_loading.py` uses production APIs, real libraries and isolated
+`integration.module_loading.*` uses production APIs, real libraries and isolated
 processes to exercise modes, deferred loading, ABI failures, snapshots,
 concurrent calls and cleaner lifetime. Existing suites cover containers/graphs,
 ABI, per-call dispatch, native building and the cleanup service. Test presence
