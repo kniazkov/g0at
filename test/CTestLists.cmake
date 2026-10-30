@@ -197,7 +197,11 @@ foreach(interface_line IN LISTS interface_ids)
     "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
     "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-goat_python(integration.module_source_diagnostics "integration" scripts/check_module_source_diagnostics.py "$<TARGET_FILE:module_import_execution_testing>")
+foreach(source_case external-local external-first external-second relocation imported anonymous saved-failure unicode escaped-label frozen)
+  goat_scenario(integration.module_source_diagnostics.${source_case} "integration;module-source-diagnostics-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_source_diagnostics_scenarios>" integration.module_source_diagnostics.${source_case} "$<TARGET_FILE:module_import_execution_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 goat_python(integration.process_exit "integration" scripts/check_process_exit.py "$<TARGET_FILE:process_exit_testing>" "$<TARGET_FILE:process_exit_failure_testing>" "$<TARGET_FILE:process_exit_delayed_testing>")
 goat_python(integration.module_exit "integration" scripts/check_module_exit.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 goat_python(integration.module_threads "integration" scripts/check_module_threads.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
@@ -360,8 +364,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 364)
-  message(FATAL_ERROR "Expected all 364 integration scenarios (execution/interface cases split in #362); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 373)
+  message(FATAL_ERROR "Expected all 373 integration scenarios (source diagnostic cases split in #363); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

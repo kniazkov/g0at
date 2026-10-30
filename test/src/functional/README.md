@@ -1225,3 +1225,13 @@ checks) and 26 CLI checks across both optimizers. Exact rules 13–25 mapping,
 parity and negative verification, platforms and commands are documented in
 [`test/data/module-assignment/README.md`](../../data/module-assignment/README.md).
 Label: `module-assignment-migration`.
+
+## Compiled source diagnostics (#363)
+
+`module_source_diagnostics_scenarios.c` replaces
+`check_module_source_diagnostics.py` with ten stable IDs and 25 real host checks.
+The relocation pair remains one identity comparison. See
+[the mapping, parity and negative controls](../../data/module-source-diagnostics/README.md)
+for external file IDs, immutable relocated metadata/bytecode, saved and frozen
+traces, UTF-8/control escaping, and the explicit Unix-only filename skip on
+Windows. Label: `module-source-diagnostics-migration`.
