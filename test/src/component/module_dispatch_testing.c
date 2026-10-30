@@ -2,6 +2,11 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Production VM dispatch with controlled module-v1 adapters, without OS loading.
  */
+/* Keep component checks and assertion setup active against Release libraries (#365). */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
+
 #define GOAT_NATIVE_OK GOAT_MODULE_NATIVE_OK
 #include "common/module_compilation.h"
 #undef GOAT_NATIVE_OK

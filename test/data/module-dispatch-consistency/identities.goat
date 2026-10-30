@@ -1,0 +1,1 @@
+const outer = func(x) { const same = func(y) { return y + 1; }; return same(x); }; const same = func(x) { return x * 2; }; const maker = func(value) { return func() { return value; }; }; const unavailable = func(object) { return object.unknown; }; println(outer(20) + same(10)); println(maker(3)()); println(unavailable);

@@ -61,6 +61,6 @@ Loading or invoking native code is **not a security sandbox**. Initializers and 
 
 ## 23.7. Tests and contract sources
 
-[Module ABI tests](../../../test/src/functional/module_abi_scenarios.c), [native value tests](../../../scripts/check_module_native_values.py), and [dispatch tests](../../../scripts/check_module_dispatch.py) check real libraries, representations and one-shot failure behavior. Standalone ABI compatibility remains covered by `check_native_abi.sh` and `check_native_loader.sh`.
+[Module ABI tests](../../../test/src/functional/module_abi_scenarios.c), [native value tests](../../../scripts/check_module_native_values.py), and [dispatch tests](../../../test/src/functional/module_dispatch_consistency_scenarios.c) check real libraries, representations and one-shot failure behavior. Standalone ABI compatibility remains covered by `check_native_abi.sh` and `check_native_loader.sh`.
 
 The public headers, [v1 format](../../module-format-v1/README.md), and linked API references are the exact contracts. Chapter 22’s numeric program illustrates one supported subset; it does not limit the ABI to numeric values.

@@ -1,0 +1,2848 @@
+[
+  {
+    "name": "per-call",
+    "source": "const add = func(a, b) { return a + b; }; println(add(\"a\", \"b\")); println(add(2, 3)); println(add(\"x\", \"y\")); println(add(4, 5));",
+    "expected": "ab\n5\nxy\n9\n",
+    "calls": 2,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.per-call.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "arguments-once",
+    "source": "const add = func(a, b) { return a + b; }; var count = 0; const arg = func(v) { count += 1; return v; }; println(add(arg(\"a\"), arg(\"b\"))); println(count); println(add(arg(2), arg(3))); println(count);",
+    "expected": "ab\n2\n5\n4\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.arguments-once.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "extra-arguments",
+    "source": "const add = func(a, b) { return a + b; }; var count = 0; const side = func() { count += 1; return {}; }; println(add(2, 3, side())); println(count);",
+    "expected": "5\n1\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.extra-arguments.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "missing-null",
+    "source": "const f = func(a, b) { return b; }; println(f(7));",
+    "expected": "null\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.missing-null.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "null"
+            ],
+            "result": "null"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "second"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "no-specialization",
+    "source": "const add = func(a, b) { return a + b; }; println(add(2, 3));",
+    "expected": "5\n",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.no-specialization.auto",
+    "configuration": {
+      "specializations": [],
+      "actions": [],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "not-equal",
+    "source": "const f = func(x) { return 100 + x; }; println(f(0)); println(f(2)); println(f(0)); println(f(-2));",
+    "expected": "100\n2\n100\n-2\n",
+    "calls": 2,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.not-equal.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "notEqual",
+                "constant": {
+                  "type": "integer",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "disjoint",
+    "source": "const f = func(x) { return 100 + x; }; println(f(-1)); println(f(0)); println(f(1));",
+    "expected": "-100\n100\n200\n",
+    "calls": 2,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.disjoint.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "less",
+                "constant": {
+                  "type": "integer",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        },
+        {
+          "specializationId": 2,
+          "functionId": 1,
+          "symbol": "goat_fn_2_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "greater",
+                "constant": {
+                  "type": "integer",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "negative",
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "same-types-different-return",
+    "source": "const f = func(x) { return x; }; println(f(1)); println(f(\"safe\"));",
+    "expected": "1\nsafe\n",
+    "calls": 2,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.same-types-different-return.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ]
+          }
+        },
+        {
+          "specializationId": 2,
+          "functionId": 1,
+          "symbol": "goat_fn_2_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first",
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "boolean",
+    "source": "const f = func(x) { return x; }; println(f(true)); println(f(false));",
+    "expected": "true\nfalse\n",
+    "calls": 2,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.boolean.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "boolean"
+            ],
+            "result": "boolean"
+          },
+          "when": {
+            "argumentTypes": [
+              "boolean"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "character",
+    "source": "const f = func(x) { return x; }; println(f('😀'));",
+    "expected": "😀\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.character.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "character"
+            ],
+            "result": "character"
+          },
+          "when": {
+            "argumentTypes": [
+              "character"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "real",
+    "source": "const f = func(x) { return x; }; println(f(1.5));",
+    "expected": "1.5\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.real.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "real"
+            ],
+            "result": "real"
+          },
+          "when": {
+            "argumentTypes": [
+              "real"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "exact-no-coercion",
+    "source": "const f = func(x) { return x; }; println(f(1)); println(f(1.5)); println(f(true));",
+    "expected": "1\n1.5\ntrue\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.exact-no-coercion.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "real"
+            ],
+            "result": "real"
+          },
+          "when": {
+            "argumentTypes": [
+              "real"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "string-borrowed",
+    "source": "const f = func(x) { return x; }; const a = f(\"путь😀\"); const b = f(\"next\"); println(a); println(b);",
+    "expected": "путь😀\nnext\n",
+    "calls": 2,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.string-borrowed.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "string-host-allocation",
+    "source": "const f = func() { return \"VM\"; }; const a = f(); const b = f(); println(a); println(b);",
+    "expected": "A\u0000😀\nA\u0000😀\n",
+    "calls": 2,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.string-host-allocation.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "string"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "string-equality",
+    "source": "const f = func(x) { return 10; }; println(f(\"other\")); println(f(\"abc\"));",
+    "expected": "10\n200\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.string-equality.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "equal",
+                "constant": {
+                  "type": "string",
+                  "value": "abc"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "string-zero-guard",
+    "source": "const f = func(x) { return 10; }; println(f(\"a\")); println(f(\"a\\0b\")); println(f(\"a\\0c\"));",
+    "expected": "10\n200\n10\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.string-zero-guard.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "equal",
+                "constant": {
+                  "type": "string",
+                  "value": "a\u0000b"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "empty-string",
+    "source": "const f = func(x) { return x; }; println(f(\"\"));",
+    "expected": "\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.empty-string.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "non-scalar-string-fallback",
+    "source": "const f = func(x) { return 7; }; println(f(str(chr(55296))));",
+    "expected": "7\n",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": 0,
+    "id": "integration.module_dispatch.non-scalar-string-fallback.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "ordinary-object-no-conversion",
+    "source": "var count = 0; const f = func(x) { return 7; }; const value = { public toString = func() { count += 1; return \"oops\"; }; }; println(f(value)); println(count);",
+    "expected": "7\n0\n",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.ordinary-object-no-conversion.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "closure-instances",
+    "source": "const make = func(x) { return func() { return x; }; }; const a = make(7); const b = make(9); println(a()); println(b());",
+    "expected": "7\n9\n",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.closure-instances.auto",
+    "configuration": {
+      "specializations": [],
+      "actions": [],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "transferred-method",
+    "source": "const lib = include \"holder.goat\"; const original = lib.original; const copy = original.clone(); const flat = original.flat(); println(copy.next()); println(flat.next()); const detached = copy.next; println(detached()); println(original.value);",
+    "expected": "1\n1\n2\n0\n",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {
+      "holder.goat": "public original = { public var value = 0; public next = func() { value += 1; return value; }; };"
+    },
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.transferred-method.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-tag",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-tag.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-tag"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-reserved",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-reserved.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-reserved"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-bool",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-bool.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "boolean"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-bool"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-char",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-char.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "character"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-char"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-string",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-string.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-string"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "status-mismatch",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.status-mismatch.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "status-mismatch"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "status-resource",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.status-resource.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "status-resource"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "status-unknown",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.status-unknown.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "status-unknown"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "module-method",
+    "source": "const lib = include \"lib.goat\"; println(lib.add(2, 3));",
+    "expected": "5\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {
+      "lib.goat": "public add = func(a, b) { return a + b; };"
+    },
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.module-method.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "initializer-terminal",
+    "source": "try { include \"bad.goat\"; } catch(e) { println(\"CAUGHT\"); } println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {
+      "bad.goat": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f();"
+    },
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.initializer-terminal.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-tag"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "worker-terminal",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; const t = spawn(f); try { join(t); } catch(e) { println(\"CAUGHT\"); } println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.worker-terminal.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-tag"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "failed-file-before-native",
+    "source": "var saved = null; public const sink = func(f) { saved = f; }; try { include \"bad.goat\"; } catch(e) { println(e); } try { saved(); } catch(e) { println(e); }",
+    "expected": "init-failed\ninit-failed\n",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {
+      "bad.goat": "const root = include \"main.goat\"; root.sink(func() { return 7; }); throw \"init-failed\";"
+    },
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.failed-file-before-native.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 2,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "per-call",
+    "source": "const add = func(a, b) { return a + b; }; println(add(\"a\", \"b\")); println(add(2, 3)); println(add(\"x\", \"y\")); println(add(4, 5));",
+    "expected": "ab\n5\nxy\n9\n",
+    "calls": 2,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.per-call.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "arguments-once",
+    "source": "const add = func(a, b) { return a + b; }; var count = 0; const arg = func(v) { count += 1; return v; }; println(add(arg(\"a\"), arg(\"b\"))); println(count); println(add(arg(2), arg(3))); println(count);",
+    "expected": "ab\n2\n5\n4\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.arguments-once.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "extra-arguments",
+    "source": "const add = func(a, b) { return a + b; }; var count = 0; const side = func() { count += 1; return {}; }; println(add(2, 3, side())); println(count);",
+    "expected": "5\n1\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.extra-arguments.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "missing-null",
+    "source": "const f = func(a, b) { return b; }; println(f(7));",
+    "expected": "null\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.missing-null.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "null"
+            ],
+            "result": "null"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "second"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "no-specialization",
+    "source": "const add = func(a, b) { return a + b; }; println(add(2, 3));",
+    "expected": "5\n",
+    "calls": 0,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.no-specialization.required",
+    "configuration": {
+      "specializations": [],
+      "actions": [],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "not-equal",
+    "source": "const f = func(x) { return 100 + x; }; println(f(0)); println(f(2)); println(f(0)); println(f(-2));",
+    "expected": "100\n2\n100\n-2\n",
+    "calls": 2,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.not-equal.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "notEqual",
+                "constant": {
+                  "type": "integer",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "disjoint",
+    "source": "const f = func(x) { return 100 + x; }; println(f(-1)); println(f(0)); println(f(1));",
+    "expected": "-100\n100\n200\n",
+    "calls": 2,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.disjoint.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "less",
+                "constant": {
+                  "type": "integer",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        },
+        {
+          "specializationId": 2,
+          "functionId": 1,
+          "symbol": "goat_fn_2_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "greater",
+                "constant": {
+                  "type": "integer",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "negative",
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "same-types-different-return",
+    "source": "const f = func(x) { return x; }; println(f(1)); println(f(\"safe\"));",
+    "expected": "1\nsafe\n",
+    "calls": 2,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.same-types-different-return.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ]
+          }
+        },
+        {
+          "specializationId": 2,
+          "functionId": 1,
+          "symbol": "goat_fn_2_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first",
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "boolean",
+    "source": "const f = func(x) { return x; }; println(f(true)); println(f(false));",
+    "expected": "true\nfalse\n",
+    "calls": 2,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.boolean.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "boolean"
+            ],
+            "result": "boolean"
+          },
+          "when": {
+            "argumentTypes": [
+              "boolean"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "character",
+    "source": "const f = func(x) { return x; }; println(f('😀'));",
+    "expected": "😀\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.character.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "character"
+            ],
+            "result": "character"
+          },
+          "when": {
+            "argumentTypes": [
+              "character"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "real",
+    "source": "const f = func(x) { return x; }; println(f(1.5));",
+    "expected": "1.5\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.real.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "real"
+            ],
+            "result": "real"
+          },
+          "when": {
+            "argumentTypes": [
+              "real"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "exact-no-coercion",
+    "source": "const f = func(x) { return x; }; println(f(1)); println(f(1.5)); println(f(true));",
+    "expected": "1\n1.5\ntrue\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.exact-no-coercion.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "real"
+            ],
+            "result": "real"
+          },
+          "when": {
+            "argumentTypes": [
+              "real"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "string-borrowed",
+    "source": "const f = func(x) { return x; }; const a = f(\"путь😀\"); const b = f(\"next\"); println(a); println(b);",
+    "expected": "путь😀\nnext\n",
+    "calls": 2,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.string-borrowed.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "string-host-allocation",
+    "source": "const f = func() { return \"VM\"; }; const a = f(); const b = f(); println(a); println(b);",
+    "expected": "A\u0000😀\nA\u0000😀\n",
+    "calls": 2,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.string-host-allocation.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "string"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "string-equality",
+    "source": "const f = func(x) { return 10; }; println(f(\"other\")); println(f(\"abc\"));",
+    "expected": "10\n200\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.string-equality.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "equal",
+                "constant": {
+                  "type": "string",
+                  "value": "abc"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "string-zero-guard",
+    "source": "const f = func(x) { return 10; }; println(f(\"a\")); println(f(\"a\\0b\")); println(f(\"a\\0c\"));",
+    "expected": "10\n200\n10\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.string-zero-guard.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "equal",
+                "constant": {
+                  "type": "string",
+                  "value": "a\u0000b"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "empty-string",
+    "source": "const f = func(x) { return x; }; println(f(\"\"));",
+    "expected": "\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.empty-string.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "non-scalar-string-fallback",
+    "source": "const f = func(x) { return 7; }; println(f(str(chr(55296))));",
+    "expected": "7\n",
+    "calls": 0,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": 0,
+    "id": "integration.module_dispatch.non-scalar-string-fallback.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "ordinary-object-no-conversion",
+    "source": "var count = 0; const f = func(x) { return 7; }; const value = { public toString = func() { count += 1; return \"oops\"; }; }; println(f(value)); println(count);",
+    "expected": "7\n0\n",
+    "calls": 0,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.ordinary-object-no-conversion.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "string"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "string"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "closure-instances",
+    "source": "const make = func(x) { return func() { return x; }; }; const a = make(7); const b = make(9); println(a()); println(b());",
+    "expected": "7\n9\n",
+    "calls": 0,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.closure-instances.required",
+    "configuration": {
+      "specializations": [],
+      "actions": [],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "transferred-method",
+    "source": "const lib = include \"holder.goat\"; const original = lib.original; const copy = original.clone(); const flat = original.flat(); println(copy.next()); println(flat.next()); const detached = copy.next; println(detached()); println(original.value);",
+    "expected": "1\n1\n2\n0\n",
+    "calls": 0,
+    "mode": "required",
+    "fail": false,
+    "files": {
+      "holder.goat": "public original = { public var value = 0; public next = func() { value += 1; return value; }; };"
+    },
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.transferred-method.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-tag",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-tag.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-tag"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-reserved",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-reserved.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-reserved"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-bool",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-bool.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "boolean"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-bool"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-char",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-char.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "character"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-char"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "bad-string",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.bad-string.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "string"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-string"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "status-mismatch",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.status-mismatch.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "status-mismatch"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "status-resource",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.status-resource.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "status-resource"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "status-unknown",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.status-unknown.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "status-unknown"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "module-method",
+    "source": "const lib = include \"lib.goat\"; println(lib.add(2, 3));",
+    "expected": "5\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {
+      "lib.goat": "public add = func(a, b) { return a + b; };"
+    },
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.module-method.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "initializer-terminal",
+    "source": "try { include \"bad.goat\"; } catch(e) { println(\"CAUGHT\"); } println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {
+      "bad.goat": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f();"
+    },
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.initializer-terminal.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-tag"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "worker-terminal",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; const t = spawn(f); try { join(t); } catch(e) { println(\"CAUGHT\"); } println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.worker-terminal.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "bad-tag"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "failed-file-before-native",
+    "source": "var saved = null; public const sink = func(f) { saved = f; }; try { include \"bad.goat\"; } catch(e) { println(e); } try { saved(); } catch(e) { println(e); }",
+    "expected": "init-failed\ninit-failed\n",
+    "calls": 0,
+    "mode": "required",
+    "fail": false,
+    "files": {
+      "bad.goat": "const root = include \"main.goat\"; root.sink(func() { return 7; }); throw \"init-failed\";"
+    },
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.failed-file-before-native.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 2,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "positive"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "overlap",
+    "source": "const f = func(x) { return x; }; println(\"NEVER\");",
+    "expected": "",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.overlap.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "notEqual",
+                "constant": {
+                  "type": "integer",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        },
+        {
+          "specializationId": 2,
+          "functionId": 1,
+          "symbol": "goat_fn_2_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ],
+            "conditions": [
+              {
+                "argument": 0,
+                "operation": "greater",
+                "constant": {
+                  "type": "integer",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first",
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": true
+    }
+  },
+  {
+    "name": "unknown-function",
+    "source": "const f = func(x) { return x; }; println(\"NEVER\");",
+    "expected": "",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.unknown-function.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 99,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "first"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": true
+    }
+  },
+  {
+    "name": "wrong-arity",
+    "source": "const f = func(x) { return x; }; println(\"NEVER\");",
+    "expected": "",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.wrong-arity.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": true
+    }
+  },
+  {
+    "name": "off",
+    "source": "const add = func(a, b) { return a + b; }; println(add(2, 3));",
+    "expected": "5\n",
+    "calls": 0,
+    "mode": "off",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.off.off",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "load-failure-auto",
+    "source": "const add = func(a, b) { return a + b; }; println(add(2, 3)); println(add(4, 5));",
+    "expected": "5\n9\n",
+    "calls": 0,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": 1,
+    "id": "integration.module_dispatch.load-failure-auto.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": true,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "load-failure-required",
+    "source": "const add = func(a, b) { return a + b; }; println(add(2, 3)); println(\"AFTER\");",
+    "expected": "",
+    "calls": 0,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module source@0.0.0, function 1: selected native library or ABI",
+    "resolutions": 1,
+    "id": "integration.module_dispatch.load-failure-required.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": true,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "unused-does-not-resolve",
+    "source": "const add = func(a, b) { return a + b; }; println(\"unused\");",
+    "expected": "unused\n",
+    "calls": 0,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": 0,
+    "id": "integration.module_dispatch.unused-does-not-resolve.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "sum"
+      ],
+      "resolverFailure": true,
+      "bindingFailure": false
+    }
+  }
+]

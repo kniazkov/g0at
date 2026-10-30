@@ -43,10 +43,10 @@
 
 ### Проверки и границы
 
-`python3 scripts/check_module_dispatch.py build/module_dispatch_testing` использует
+`ctest --test-dir build -R '^integration.module_dispatch\.' --output-on-failure` использует
 реальные компиляцию, области модулей и VM; контролируемые адаптеры подключаются через
 production resolver API. Сценарии 91–100 проверяются вместе с существующими
-`integration.module_abi` (CTest), `check_module_consistency.py`, `integration.module_interface.*` (CTest).
+`integration.module_abi` (CTest), `integration.module_consistency.*` (CTest), `integration.module_interface.*` (CTest).
 Новый набор включён во все Linux/ARM и Windows jobs. Подробные результаты запуска
 фиксируются при проверке PR, а не предполагаются из наличия тестов.
 
@@ -97,10 +97,10 @@ captures do not become arbitrary executable predicates.
 
 ### Verification and boundaries
 
-`python3 scripts/check_module_dispatch.py build/module_dispatch_testing` exercises
+`ctest --test-dir build -R '^integration.module_dispatch\.' --output-on-failure` exercises
 real compilation, module scopes and VM calls with controlled adapters through the
 production resolver API. Decisions 91–100 are tested alongside the existing
-`integration.module_abi` (CTest), `check_module_consistency.py` and `integration.module_interface.*` (CTest).
+`integration.module_abi` (CTest), `integration.module_consistency.*` (CTest) and `integration.module_interface.*` (CTest).
 The new suite runs in all Linux/ARM and Windows jobs. Actual pass results are
 verified per PR, not inferred merely from having test code.
 

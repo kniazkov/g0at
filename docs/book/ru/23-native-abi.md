@@ -61,6 +61,6 @@ ABI — контракт между уже собранной VM и отдель
 
 ## 23.7. Тесты и источники контракта
 
-[Тесты модульного ABI](../../../test/src/functional/module_abi_scenarios.c), [нативных значений](../../../scripts/check_module_native_values.py) и [диспетчеризации](../../../scripts/check_module_dispatch.py) проверяют реальные библиотеки, представления и однократность вызова при ошибке. Совместимость отдельного ABI по-прежнему проверяют `check_native_abi.sh` и `check_native_loader.sh`.
+[Тесты модульного ABI](../../../test/src/functional/module_abi_scenarios.c), [нативных значений](../../../scripts/check_module_native_values.py) и [диспетчеризации](../../../test/src/functional/module_dispatch_consistency_scenarios.c) проверяют реальные библиотеки, представления и однократность вызова при ошибке. Совместимость отдельного ABI по-прежнему проверяют `check_native_abi.sh` и `check_native_loader.sh`.
 
 Публичные заголовки, [формат v1](../../module-format-v1/README.ru.md) и связанные API-справочники задают точные контракты. Числовая программа главы 22 иллюстрирует одно поддерживаемое подмножество, а не ограничивает ABI числовыми значениями.

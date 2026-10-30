@@ -226,7 +226,6 @@ subsequent migrations still depend on them. Direct consumers at this step:
 - `docs/module-format-v1/test_reference.py`
 - `scripts/check_inspect_probe.py`
 - `scripts/check_module_canonical.py`
-- `scripts/check_module_consistency.py`
 - `scripts/check_module_container.py`
 - `scripts/check_module_delivery.py`
 - `scripts/check_module_hash.py`

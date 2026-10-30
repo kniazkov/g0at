@@ -81,7 +81,7 @@ The old-to-new scenario map and corpus provenance are in
 
 Remaining Python import consumers (including dynamic imports) are:
 `docs/module-format-v1/test_reference.py`,
-`check_module_canonical.py`, `check_module_consistency.py`,
+`check_module_canonical.py`,
 `check_module_container.py`, `check_module_delivery.py`,
 `check_module_hash.py`,
 `check_module_inspect.py`,
@@ -130,9 +130,8 @@ migrated and #394 removes the transitional layer.
 Remaining `module_execution_support` consumers:
 `scripts/check_module_threads.py`,
 `check_module_exit.py`,
-`check_module_delivery.py`,
-`check_module_cli.py`, and
-`check_module_dispatch.py`.
+`check_module_delivery.py`, and
+`check_module_cli.py`.
 
 Remaining `inspect_report_test_support` consumers:
 `scripts/check_module_inspect.py`, `check_module_book.py`,
@@ -336,3 +335,12 @@ the shared execution, independent JSON/ZIP and significant-hash helpers for
 206 independently selected IDs. The two retired Python runners exported no
 helpers. See [mapping and reproduction](../data/module-information/README.md);
 no production validator computes expected projection or merge results.
+
+Dispatch/consistency migration (#365): `module_dispatch_consistency_scenarios`
+replaces both Python runners with 144 stable IDs and explicit independent
+bytecode inspection. See [mapping and validation](../data/module-dispatch-consistency/README.md).
+`module_interface_fixtures.py` remains for `check_module_validation.py`,
+`check_module_inspect.py` and `check_module_merge.py`; those consumers and the
+remaining execution helper consumers above are not migrated here. Cleanup is
+tracked by #394. The frozen consistency corpus already contains the original
+external declaration instructions and is not rebuilt by a production helper.
