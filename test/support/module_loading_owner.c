@@ -695,17 +695,45 @@ typedef struct {
 } condition_t;
 
 static process_watch_result_t absent_ready(void *arg, unsigned long *error) {
-    (void)error;
     condition_t *c = arg;
     pump(c->owner);
-    return missing(c->owner, c->path) ? PROCESS_WATCH_OK : PROCESS_WATCH_TIMEOUT;
+    fs_info_t info;
+    fs_error_t probe = {0};
+    bool exists = inspect_fs_path(c->path, true, &info, &probe);
+    process_watch_result_t result = PROCESS_WATCH_ERROR;
+    if (exists)
+        result = PROCESS_WATCH_TIMEOUT;
+    else if (probe.status == FS_NOT_FOUND)
+        result = PROCESS_WATCH_OK;
+#ifdef _WIN32
+    /* A delete-pending directory can reject CreateFile(FILE_READ_ATTRIBUTES)
+     * while the cleaner/another observer still holds its last handle. This is
+     * not proof of absence: keep polling within the original deadline until
+     * NOT_FOUND. Persistent access denial must still fail the bounded wait. */
+    else if (probe.native_code == ERROR_ACCESS_DENIED
+             || probe.native_code == ERROR_SHARING_VIOLATION)
+        result = PROCESS_WATCH_TIMEOUT;
+#endif
+    if (error)
+        *error = probe.native_code;
+    clear_fs_error(&probe);
+    return result;
 }
 
 void loading_owner_wait_absent(loading_owner_t *o, const char *path) {
     condition_t c = {o, path, NULL, NULL};
     unsigned long error = 0;
-    REQUIRE(o,
-            process_watch_until(absent_ready, &c, deadline(o, 40000), &error) == PROCESS_WATCH_OK);
+    process_watch_result_t result =
+        process_watch_until(absent_ready, &c, deadline(o, 40000), &error);
+    if (result != PROCESS_WATCH_OK) {
+        fprintf(stderr,
+                "loading owner absence wait failed: %s (result %d, native %lu)\n",
+                path,
+                (int)result,
+                error);
+        fflush(stderr);
+    }
+    REQUIRE(o, result == PROCESS_WATCH_OK);
 }
 
 static process_watch_result_t mark_ready(void *arg, unsigned long *error) {
