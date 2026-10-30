@@ -74,7 +74,7 @@
 - [x] 41. [#359 — Перенести на Си: Общие сценарии доступа и multifile](https://github.com/kniazkov/g0at/issues/359) — [карта сценариев и проверка](../test/data/module-access/README.md); PR и CI — в задаче.
 - [x] 42. [#360 — Перенести на Си: Контекстные константы и provenance](https://github.com/kniazkov/g0at/issues/360) — [контекст](../test/data/module-context/README.md), [provenance](../test/data/module-provenance/README.md); PR и CI — в задаче.
 - [x] 43. [#361 — Перенести на Си: Присваивания и доступ](https://github.com/kniazkov/g0at/issues/361) — [карта сценариев и проверка](../test/data/module-assignment/README.md); PR и CI — в задаче.
-- [ ] 44. [#362 — Перенести на Си: Выполнение импортов и интерфейсы](https://github.com/kniazkov/g0at/issues/362)
+- [x] 44. [#362 — Перенести на Си: Выполнение импортов и интерфейсы](https://github.com/kniazkov/g0at/issues/362)
 - [ ] 45. [#363 — Перенести на Си: Диагностика исходников](https://github.com/kniazkov/g0at/issues/363)
 - [ ] 46. [#364 — Перенести на Си: Информационные поля](https://github.com/kniazkov/g0at/issues/364)
 - [ ] 47. [#365 — Перенести на Си: Dispatch и согласованность](https://github.com/kniazkov/g0at/issues/365)

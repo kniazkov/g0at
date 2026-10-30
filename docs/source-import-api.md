@@ -50,7 +50,7 @@ no archive or source is reopened while executing an already loaded graph.
 - `binary ARCHIVE`: load the full graph and execute its entry file;
 - `frozen ARCHIVE`: load first, print `READY`, wait for stdin, then execute.
 
-Run `python3 scripts/check_module_import_execution.py build/module_import_execution_testing`.
+Run `ctest --test-dir build -R '^integration.module_import_execution\.' --output-on-failure`.
 The tests cover exact/default versions, repeated and transitive identity, lazy
 initialization, cross-module access/functions/callbacks/closures, nested includes,
 operand preservation, saved failures, invalid literals/internal paths, complete
@@ -111,7 +111,7 @@ VM выбирает образ текущего лексического кон�
 - `binary ARCHIVE`: загрузить граф и исполнить его входной файл;
 - `frozen ARCHIVE`: загрузить граф, вывести `READY`, дождаться stdin и исполнить.
 
-Запуск: `python3 scripts/check_module_import_execution.py build/module_import_execution_testing`.
+Запуск: `ctest --test-dir build -R '^integration.module_import_execution\.' --output-on-failure`.
 Проверяются точные версии и умолчания, повторная и транзитивная идентичность,
 ленивая инициализация, межмодульные права, функции, callbacks и замыкания,
 вложенные include, сохранение операндов и ошибок, неверные литералы и внутренние

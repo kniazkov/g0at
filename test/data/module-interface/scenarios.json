@@ -1,0 +1,669 @@
+[
+  {
+    "id": "integration.module_interface.scalars",
+    "name": "scalars",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "scalars",
+        "code": "\n        println(\"initializer\");\n        external exact = 9007199254740993;\n        external minimum = -9223372036854775807 - 1;\n        external maximum = 9223372036854775807;\n        external text = \" a\\0b \"; external blank = \"\";\n        external no = false; external yes = true; external nothing = null;\n        external real = 1.5; external letter = 'Я';\n        const plus = 0.0; const minus = -0.0;\n        external plusZero = plus; external minusZero = minus;\n        external var mutable = 42;\n        public hidden = 9; const secret = 7;\n        external dynamic = readln();\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/scalars/1.gbin"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.function-identities",
+    "name": "function-identities",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "identity",
+        "code": "\n        external factory = func(x) { return func() { return x; }; };\n        external again = factory;\n        external sibling = func(value) { return value; };\n        external var replaceable = sibling;\n        include \"other.goat\";\n        include \"last.goat\";\n    ",
+        "version": "1",
+        "files": {
+          "other.goat": "const sibling = func() { return 9; }; sibling();",
+          "last.goat": "const factory = func(x) { return func() { return x + 1; }; }; factory(8)();"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/identity/1.gbin"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const m = import \"identity@1\"; const a = m.factory(11); const b = m.factory(22); println(a()); println(b()); m.replaceable = func(x) { return \"replacement\"; }; println(m.replaceable(3));",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "11\n22\nreplacement\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.metadata-consumer",
+    "name": "metadata-consumer",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "\n        println(\"library initialized\");\n        external answer = 9007199254740993;\n        external identity = func(value) { return value; };\n        identity(1); identity(1.5);\n        external var changing = 1;\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "remove",
+        "path": "sources/library-1"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "\n        const m = import \"library@1\";\n        external exact = m.answer;\n        external result = m.identity(5);\n        external unknown = m.changing;\n        println(exact); println(result);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "app.gbin"
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "library initialized\n9007199254740993\n5\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.reexports",
+    "name": "reexports",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "owner",
+        "code": "println(\"owner 1\"); external answer = func() { return 11; }; answer();",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "owner",
+        "code": "println(\"owner 2\"); external answer = func() { return 22; }; answer();",
+        "version": "2",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "middle",
+        "code": "println(\"middle\"); external answer = (import \"owner@1\").answer;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "top",
+        "code": "println(\"top\"); external answer = (import \"middle@1\").answer;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/middle/1.gbin"
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/top/1.gbin"
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/top/1.gbin"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const m = import \"top@1\"; const n = import \"owner@2\"; println(m.answer()); println(n.answer());",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "top\nmiddle\nowner 1\nowner 2\n11\n22\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.proof-boundaries",
+    "name": "proof-boundaries",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "proofs",
+        "code": "\n        external factory = func(x) { return func() { return x; }; };\n        const a = factory(1); a(); const b = factory(\"str\"); b();\n        external callback = func(cb) { return cb(); };\n        callback(func() { return 3; });\n        external uncertain = func() { try { return 4; } catch(e) { return 5; } };\n        uncertain();\n        { external nested = 9; }\n        include \"included.goat\";\n        throw \"stop\";\n        external later = readln();\n    ",
+        "version": "1",
+        "files": {
+          "included.goat": "external notMain = 8;"
+        },
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/proofs/1.gbin"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.mutable-function-contract",
+    "name": "mutable-function-contract",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "\n        println(\"mutable init\");\n        external var calculate = func(x) { return x + 1; };\n        calculate(3);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "remove",
+        "path": "sources/library-1"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "\n        const lib = import \"library@1\";\n        external first = lib.calculate(3);\n        lib.calculate = func(x) { return x * 2; };\n        external second = lib.calculate(3);\n        println(first); println(second);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "mutable init\n4\n6\n",
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "app.gbin"
+      },
+      {
+        "mode": "metadata",
+        "path": "app.gbin"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.constant-function-effects",
+    "name": "constant-function-effects",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "\n        println(\"counter init\");\n        var counter = 0;\n        external next = func() { counter += 1; return counter; };\n        next();\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "remove",
+        "path": "sources/library-1"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "\n        const lib = import \"library@1\";\n        external first = lib.next(); external second = lib.next();\n        println(first); println(second);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "counter init\n2\n3\n",
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "app.gbin"
+      },
+      {
+        "mode": "metadata",
+        "path": "app.gbin"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.callback-contract",
+    "name": "callback-contract",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "\n        println(\"callback init\");\n        external apply = func(callback, value) { return callback(value); };\n        apply(func(x) { return x; }, 1);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "remove",
+        "path": "sources/library-1"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "\n        const lib = import \"library@1\";\n        var state = 0;\n        lib.apply(func(x) { state = x; println(x); return x; }, 5);\n        external observed = state;\n        println(observed);\n        lib.apply(func(x) { state += x; return x; }, 2);\n        println(state);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "callback init\n5\n5\n7\n",
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "app.gbin"
+      },
+      {
+        "mode": "compile",
+        "name": "throwing",
+        "code": "\n        const lib = import \"library@1\";\n        lib.apply(func(x) { println(\"throwing callback\"); throw x; }, \"failure\");\n        println(\"unreachable\");\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "modules/throwing/1.gbin",
+        "output": null,
+        "expected": "callback init\nthrowing callback\n",
+        "fail": true
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.result-alias-contract",
+    "name": "result-alias-contract",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "\n        println(\"alias init\");\n        external identity = func(value) { return value; };\n        identity([1, 2]);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "sources/library-1"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "\n        const lib = import \"library@1\";\n        const items = [1, 2];\n        const result = lib.identity(items);\n        result.push(\"shared\");\n        external observed = items[2];\n        println(items); println(observed);\n        items[0] = \"reverse\";\n        println(result);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "alias init\n[1,2,\"shared\"]\nshared\n[\"reverse\",2,\"shared\"]\n",
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "app.gbin"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.nested-sharing-contract",
+    "name": "nested-sharing-contract",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "\n        println(\"copy init\");\n        external copy = func(value) { return value.clone(); };\n        copy([[1]]);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "sources/library-1"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "\n        const lib = import \"library@1\";\n        const items = [[1]];\n        const result = lib.copy(items);\n        result.push([2]);\n        result[0].push(\"shared\");\n        external observed = items[0][1];\n        println(items); println(result); println(observed);\n        items[0][0] = \"reverse\";\n        println(result);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "copy init\n[[1,\"shared\"]]\n[[1,\"shared\"],[2]]\nshared\n[[\"reverse\",\"shared\"],[2]]\n",
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "app.gbin"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.static-call-diagnostics",
+    "name": "static-call-diagnostics",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "values",
+        "code": "external scalar = 42; external var dynamic = 42;",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "\n        const m = import \"values@1\";\n        const alias = m.scalar;\n        try { m.scalar(); } catch(e) { println(\"direct caught\"); }\n        try { alias(); } catch(e) { println(\"alias caught\"); }\n        m.dynamic = func() { return \"dynamic\"; }; println(m.dynamic());\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "",
+        "fail": true
+      },
+      {
+        "mode": "remove",
+        "path": "app.gbin"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const m = import \"values@1\"; m.dynamic = func(){return \"dynamic\";}; println(m.dynamic());",
+        "version": "2",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "dynamic\n",
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "direct",
+        "code": "const m = import \"values@1\"; const alias = m.scalar; m.scalar();",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "modules/direct/1.gbin"
+      },
+      {
+        "mode": "invoke",
+        "command": "compile",
+        "path": "sources/direct-1/module.gmod",
+        "output": "modules/direct/1.gbin",
+        "expected": "",
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "alias",
+        "code": "const m = import \"values@1\"; const alias = m.scalar; alias();",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "modules/alias/1.gbin"
+      },
+      {
+        "mode": "invoke",
+        "command": "compile",
+        "path": "sources/alias-1/module.gmod",
+        "output": "modules/alias/1.gbin",
+        "expected": "",
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "dynamic",
+        "code": "const m = import \"values@1\"; m.dynamic();",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "modules/dynamic/1.gbin"
+      },
+      {
+        "mode": "invoke",
+        "command": "compile",
+        "path": "sources/dynamic-1/module.gmod",
+        "output": "modules/dynamic/1.gbin",
+        "expected": "",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.instrumented-metadata-contract",
+    "name": "instrumented-metadata-contract",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "\n        println(\"dependency initialized\");\n        external twice = func(x) { return x * 2; };\n        twice(21);\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "remove",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "invoke",
+        "command": "compile-contract",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "analysis=1 interpretation=1 execution=0\n",
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "sources/library-1"
+      },
+      {
+        "mode": "invoke",
+        "command": "metadata-contract",
+        "path": "modules/library/1.gbin",
+        "output": null,
+        "expected": "analysis=0 interpretation=0 execution=0\n",
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "\n        const library = import \"library@1\";\n        println(library.twice(21));\n    ",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "app.gbin"
+      },
+      {
+        "mode": "invoke",
+        "command": "compile-contract",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "analysis=1 interpretation=1 execution=0\n",
+        "fail": false
+      },
+      {
+        "mode": "remove",
+        "path": "sources"
+      },
+      {
+        "mode": "invoke",
+        "command": "metadata-contract",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "analysis=0 interpretation=0 execution=0\n",
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary-contract",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "dependency initialized\n42\nanalysis=0 interpretation=0 execution=2\n",
+        "fail": false
+      }
+    ]
+  },
+  {
+    "id": "integration.module_interface.initialization-preserved",
+    "name": "initialization-preserved",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "failure",
+        "code": "external answer = 42; println(\"before throw\"); throw \"broken\";",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const m = import \"failure@1\"; println(m.answer);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "before throw\n",
+        "fail": true
+      }
+    ]
+  }
+]
