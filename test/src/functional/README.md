@@ -1255,3 +1255,12 @@ and owner-rooted reference graphs remain checked; producer identity still really
 compiles all four optimizer/native combinations. See the
 [complete map, parity, negative controls and local cleanup limitation](../../data/module-dispatch-consistency/README.md).
 Label: `module-dispatch-consistency-migration`; there are no platform skips.
+
+## Shared module validation (#366)
+
+`module_validation_scenarios` replaces the Python validation runner with 62 stable
+IDs under `integration.module_validation.*`, label `module-validation-migration`.
+See [mapping, exact-input parity, platform branches and reproduction](../../data/module-validation/README.md).
+The component validation host retains its assertion setup in Release; production
+code is unchanged. Real constructor compilation/loading is required on every
+platform, with no skips.

@@ -76,8 +76,7 @@ No update flag is offered by this test runner.
 `reference.py` and `test_reference.py` remain for their existing consumers (full
 list in `test/support/README.md`), pending the ordered suite migrations and #394.
 `scripts/module_interface_fixtures.py` remains used by
-`check_module_consistency.py`,
-`check_module_validation.py`, `check_module_merge.py`,
+`check_module_merge.py`,
 and `check_module_inspect.py`.
 Their API, paths and semantics are unchanged. The shared C replacements live in
 `test/support/format_binary.{h,c}`, `format_zip.{h,c}` and

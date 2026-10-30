@@ -44,7 +44,7 @@ functionRef проверяются локально как записи; дос�
 производителя. Несовместимость неизвестных ABI/CPU остаётся несовместимостью,
 не повреждением. Повреждение никогда не превращается в native fallback.
 
-Проверки: `python3 scripts/check_module_validation.py build/module_validation_testing`.
+Проверки: `ctest --test-dir build -L module-validation-migration --output-on-failure`.
 Общие fixtures покрывают память/файл, владение снимком, CRC/ZIP/схему/хеши,
 пересчитанные хеши повреждённого байткода, ссылки и множественную диагностику.
 Потребители пока проверяются через общий API; запуск будущих пользовательских
@@ -89,7 +89,9 @@ availability and transitive graph checks are separate. Hashes establish integrit
 not producer-proof truth. Unknown ABI/CPU requirements remain incompatibilities,
 not corruption, and corruption never becomes native fallback.
 
-Run `python3 scripts/check_module_validation.py build/module_validation_testing`.
+Run `ctest --test-dir build -L module-validation-migration --output-on-failure`.
 Shared fixtures cover memory/file inputs, snapshot ownership, ZIP/CRC/schema/hashes,
 rehashed malformed bytecode, references and accumulated/skipped diagnostics.
 Future consumer CLIs retain their own integration tasks; no CTest was introduced.
+
+Scenario mapping and direct invocation: [C validation fixtures](../test/data/module-validation/README.md).
