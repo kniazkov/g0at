@@ -670,6 +670,15 @@ static bool missing(loading_owner_t *o, const char *path) {
     fs_info_t info;
     fs_error_t error = {0};
     bool exists = inspect_fs_path(path, true, &info, &error), absent = error.status == FS_NOT_FOUND;
+    if (!exists && !absent) {
+        fprintf(stderr,
+                "loading owner path inspection failed: %s (status %d, native %lu): %s\n",
+                path,
+                (int)error.status,
+                error.native_code,
+                error.operation ? error.operation : "unknown operation");
+        fflush(stderr);
+    }
     clear_fs_error(&error);
     REQUIRE(o, exists || absent);
     return !exists && absent;
