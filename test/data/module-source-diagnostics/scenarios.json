@@ -1,0 +1,313 @@
+[
+  {
+    "id": "integration.module_source_diagnostics.external-local",
+    "name": "external-local",
+    "compiles": [
+      {
+        "name": "app",
+        "code": "const local = include \"math.goat\";\nconst first = include \"../../outside-a/math.goat\";\nconst second = include \"../../outside-b/math.goat\";\nlocal.fail();\n",
+        "version": "1",
+        "files": {
+          "math.goat": "public fail = func() {\n    throw \"internal failure\";\n};",
+          "../../outside-a/math.goat": "// PRIVATE_SOURCE_COMMENT_NOT_FOR_SHIPPING\npublic fail = func() {\n    throw \"first failure\";\n};",
+          "../../outside-b/math.goat": "// PRIVATE_SOURCE_COMMENT_NOT_FOR_SHIPPING\npublic fail = func() {\n    throw \"second failure\";\n};"
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "app@1:",
+          "math.goat",
+          ":2:5",
+          "fail"
+        ],
+        "expected": ""
+      }
+    ],
+    "mapping": [
+      [
+        "main.goat",
+        false
+      ],
+      [
+        "math.goat",
+        false
+      ],
+      [
+        "math.goat",
+        true
+      ],
+      [
+        "math.goat",
+        true
+      ]
+    ]
+  },
+  {
+    "id": "integration.module_source_diagnostics.external-first",
+    "name": "external-first",
+    "compiles": [
+      {
+        "name": "app",
+        "code": "const local = include \"math.goat\";\nconst first = include \"../../outside-a/math.goat\";\nconst second = include \"../../outside-b/math.goat\";\nfirst.fail();\n",
+        "version": "1",
+        "files": {
+          "math.goat": "public fail = func() {\n    throw \"internal failure\";\n};",
+          "../../outside-a/math.goat": "// PRIVATE_SOURCE_COMMENT_NOT_FOR_SHIPPING\npublic fail = func() {\n    throw \"first failure\";\n};",
+          "../../outside-b/math.goat": "// PRIVATE_SOURCE_COMMENT_NOT_FOR_SHIPPING\npublic fail = func() {\n    throw \"second failure\";\n};"
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "app@1:",
+          "math.goat (external file #2)",
+          ":3:5",
+          "fail"
+        ],
+        "expected": ""
+      }
+    ],
+    "mapping": [
+      [
+        "main.goat",
+        false
+      ],
+      [
+        "math.goat",
+        false
+      ],
+      [
+        "math.goat",
+        true
+      ],
+      [
+        "math.goat",
+        true
+      ]
+    ]
+  },
+  {
+    "id": "integration.module_source_diagnostics.external-second",
+    "name": "external-second",
+    "compiles": [
+      {
+        "name": "app",
+        "code": "const local = include \"math.goat\";\nconst first = include \"../../outside-a/math.goat\";\nconst second = include \"../../outside-b/math.goat\";\nsecond.fail();\n",
+        "version": "1",
+        "files": {
+          "math.goat": "public fail = func() {\n    throw \"internal failure\";\n};",
+          "../../outside-a/math.goat": "// PRIVATE_SOURCE_COMMENT_NOT_FOR_SHIPPING\npublic fail = func() {\n    throw \"first failure\";\n};",
+          "../../outside-b/math.goat": "// PRIVATE_SOURCE_COMMENT_NOT_FOR_SHIPPING\npublic fail = func() {\n    throw \"second failure\";\n};"
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "app@1:",
+          "math.goat (external file #3)",
+          ":3:5",
+          "fail"
+        ],
+        "expected": ""
+      }
+    ],
+    "mapping": [
+      [
+        "main.goat",
+        false
+      ],
+      [
+        "math.goat",
+        false
+      ],
+      [
+        "math.goat",
+        true
+      ],
+      [
+        "math.goat",
+        true
+      ]
+    ]
+  },
+  {
+    "id": "integration.module_source_diagnostics.relocation",
+    "name": "relocation",
+    "compiles": [
+      {
+        "name": "app",
+        "code": "const lib = include \"lib/vector.goat\";\nlib.length();\n",
+        "version": "1",
+        "files": {
+          "lib/vector.goat": "public length = func() {\n    throw \"mapping\";\n};\n"
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "app@1: lib/vector.goat:2:5",
+          "length"
+        ],
+        "expected": ""
+      }
+    ]
+  },
+  {
+    "id": "integration.module_source_diagnostics.imported",
+    "name": "imported",
+    "compiles": [
+      {
+        "name": "library",
+        "code": "external fail = func() {\n    throw \"imported\";\n};",
+        "version": "2",
+        "files": {}
+      },
+      {
+        "name": "app",
+        "code": "const lib = import \"library@2\";\nconst fail = func() {\n    lib.fail();\n};\nfail();\n",
+        "version": "1",
+        "files": {}
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "library@2: main.goat:2:5",
+          "app@1: main.goat:",
+          "fail"
+        ],
+        "expected": ""
+      }
+    ]
+  },
+  {
+    "id": "integration.module_source_diagnostics.anonymous",
+    "name": "anonymous",
+    "compiles": [
+      {
+        "name": "library",
+        "code": "external make = func() {\n    return func() {\n        throw \"anonymous failure\";\n    };\n};",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "name": "app",
+        "code": "const lib = import \"library@1\";\nconst f = lib.make();\nf();",
+        "version": "1",
+        "files": {}
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "library@1: main.goat:3:9",
+          "app@1: main.goat:"
+        ],
+        "expected": ""
+      }
+    ]
+  },
+  {
+    "id": "integration.module_source_diagnostics.saved-failure",
+    "name": "saved-failure",
+    "compiles": [
+      {
+        "name": "app",
+        "code": "try { include \"bad.goat\"; } catch(e) { println(\"caught\"); }\n\n\ninclude \"bad.goat\";\n",
+        "version": "1",
+        "files": {
+          "bad.goat": "println(\"once\");\nthrow \"saved\";\n"
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "app@1: bad.goat:2:1",
+          "app@1: main.goat:1:"
+        ],
+        "expected": "once\ncaught\n"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_source_diagnostics.unicode",
+    "name": "unicode",
+    "compiles": [
+      {
+        "name": "app",
+        "code": "const lib = include \"lib/вектор 😀.goat\";\nlib.length();",
+        "version": "1",
+        "files": {
+          "lib/вектор 😀.goat": "public length = func() {\n    throw \"unicode\";\n};"
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "app@1: lib/вектор 😀.goat:2:5",
+          "length"
+        ],
+        "expected": ""
+      }
+    ]
+  },
+  {
+    "id": "integration.module_source_diagnostics.escaped-label",
+    "name": "escaped-label",
+    "compiles": [
+      {
+        "name": "app",
+        "code": "const lib = include \"literal\\\\name\\nnext\u001b\\b.goat\"; lib.fail();",
+        "version": "1",
+        "files": {
+          "literal\\name\nnext\u001b\b.goat": "public fail = func() {\n    throw \"escaped\";\n};"
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "literal\\\\name\\nnext\\u001b\\u0008\\u007f\\u0085.goat:2:5"
+        ],
+        "expected": ""
+      }
+    ]
+  },
+  {
+    "id": "integration.module_source_diagnostics.frozen",
+    "name": "frozen",
+    "compiles": [
+      {
+        "name": "library",
+        "code": "const f = include \"lib/error.goat\"; external fail = f.fail;",
+        "version": "1",
+        "files": {
+          "lib/error.goat": "public fail = func() {\n    throw \"frozen\";\n};"
+        }
+      },
+      {
+        "name": "app",
+        "code": "const lib = import \"library@1\";\nlib.fail();",
+        "version": "1",
+        "files": {}
+      }
+    ],
+    "diagnostics": [
+      {
+        "fragments": [
+          "library@1: lib/error.goat:2:5",
+          "app@1: main.goat:",
+          "fail"
+        ],
+        "expected": ""
+      }
+    ]
+  }
+]

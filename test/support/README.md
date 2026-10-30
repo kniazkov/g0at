@@ -129,7 +129,7 @@ migrated and #394 removes the transitional layer.
 
 Remaining `module_execution_support` consumers:
 `scripts/check_module_threads.py`,
-`check_module_exit.py`, `check_module_source_diagnostics.py`,
+`check_module_exit.py`,
 `check_module_delivery.py`,
 `check_module_cli.py`, and
 `check_module_dispatch.py`.
@@ -322,3 +322,11 @@ Mappings, parity baselines and negative controls are in
 The independent archive/hash oracle verifies nonzero main indexes; the shared
 barrier checks frozen execution after deleting the entire project. The Python
 execution helper and format reference remain for the explicitly listed consumers.
+
+Source diagnostic migration (#363): `module_source_diagnostics_scenarios` replaces
+`check_module_source_diagnostics.py` with ten independent IDs (the relocation
+pair remains one identity comparison). See
+[`../data/module-source-diagnostics/README.md`](../data/module-source-diagnostics/README.md)
+for mapping, Debug/Release/UBSan parity, negative controls and the explicit
+Windows escaped-filename skip. The remaining Python consumers above retain the
+shared compatibility helper until #394; no source-diagnostic consumer remains.

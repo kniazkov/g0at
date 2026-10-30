@@ -75,7 +75,7 @@
 - [x] 42. [#360 — Перенести на Си: Контекстные константы и provenance](https://github.com/kniazkov/g0at/issues/360) — [контекст](../test/data/module-context/README.md), [provenance](../test/data/module-provenance/README.md); PR и CI — в задаче.
 - [x] 43. [#361 — Перенести на Си: Присваивания и доступ](https://github.com/kniazkov/g0at/issues/361) — [карта сценариев и проверка](../test/data/module-assignment/README.md); PR и CI — в задаче.
 - [x] 44. [#362 — Перенести на Си: Выполнение импортов и интерфейсы](https://github.com/kniazkov/g0at/issues/362)
-- [ ] 45. [#363 — Перенести на Си: Диагностика исходников](https://github.com/kniazkov/g0at/issues/363)
+- [x] 45. [#363 — Перенести на Си: Диагностика исходников](https://github.com/kniazkov/g0at/issues/363) — [карта сценариев и проверка](../test/data/module-source-diagnostics/README.md); PR и CI — в задаче.
 - [ ] 46. [#364 — Перенести на Си: Информационные поля](https://github.com/kniazkov/g0at/issues/364)
 - [ ] 47. [#365 — Перенести на Си: Dispatch и согласованность](https://github.com/kniazkov/g0at/issues/365)
 - [ ] 48. [#366 — Перенести на Си: Валидация модулей](https://github.com/kniazkov/g0at/issues/366)
