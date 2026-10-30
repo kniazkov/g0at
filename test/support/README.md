@@ -87,7 +87,6 @@ Remaining Python import consumers (including dynamic imports) are:
 `check_module_inspect.py`,
 `check_module_loading.py`, `check_module_memory.py`, `check_module_merge.py`,
 `check_module_musl.py`, `check_module_search.py`,
-`check_module_validation.py`,
 `check_module_writer.py`, and `check_inspect_probe.py`. They retain their current
 API and data paths; their migration remains in the ordered checklist.
 
@@ -339,8 +338,15 @@ no production validator computes expected projection or merge results.
 Dispatch/consistency migration (#365): `module_dispatch_consistency_scenarios`
 replaces both Python runners with 144 stable IDs and explicit independent
 bytecode inspection. See [mapping and validation](../data/module-dispatch-consistency/README.md).
-`module_interface_fixtures.py` remains for `check_module_validation.py`,
-`check_module_inspect.py` and `check_module_merge.py`; those consumers and the
+`module_interface_fixtures.py` remains for `check_module_inspect.py` and
+`check_module_merge.py`; those consumers and the
 remaining execution helper consumers above are not migrated here. Cleanup is
 tracked by #394. The frozen consistency corpus already contains the original
 external declaration instructions and is not rebuilt by a production helper.
+
+Validation migration (#366): `module_validation_scenarios` uses shared execution,
+independent JSON/hash/ZIP construction for real constructor libraries, and a frozen
+malformed corpus sent unchanged to the real host. There are 62 stable IDs; see
+[mapping and reproduction](../data/module-validation/README.md). The retired runner
+exported no imported helpers; `module_interface_fixtures.py` remains for inspect
+and merge until #394.

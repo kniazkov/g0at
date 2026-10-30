@@ -95,7 +95,7 @@ runtime не подменяются ручным редактированием 
   Хеши различных DLL/SO совпадать не обязаны.
 - `check_module_memory.py` использует управляемые ошибки выделения и ограничения
   размеров, в том числе в MINGW32, без гигабайтных выделений.
-- `integration.module_consistency.*` (CTest), `check_module_validation.py` и
+- `integration.module_consistency.*` (CTest), `integration.module_validation.*` (CTest) и
   `check_module_container.py` проверяют ссылки, сводки, дубликаты, целостность,
   CRC/размеры/сжатие до исполнения пользовательского кода.
 - `integration.module_interface.*` (CTest) проверяет гарантии производителя и потребление

@@ -2,6 +2,10 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Common consumer fixtures for the nonexecuting validation API.
  */
+/* Keep test assertions and their setup active against Release libraries (#366). */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
 #include "vm/module_validation.h"
