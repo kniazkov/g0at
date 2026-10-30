@@ -2,6 +2,12 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Deterministic writer and atomic-publication component harness.
  */
+/* The component host performs setup/I/O inside assertions; keep those checks
+ * active when linked to Release production libraries for #364 parity. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
+
 #include "lib/files/binary_file.h"
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"

@@ -1235,3 +1235,13 @@ The relocation pair remains one identity comparison. See
 for external file IDs, immutable relocated metadata/bytecode, saved and frozen
 traces, UTF-8/control escaping, and the explicit Unix-only filename skip on
 Windows. Label: `module-source-diagnostics-migration`.
+
+## Information fields and merge (#364)
+
+`module_information_scenarios.c` replaces both information Python runners with
+206 CTest IDs (331 + 240 original checks), including an nm network-symbol audit,
+writer golden/idempotence, significant hashes and interactive author ordering.
+See [the mapping and validation](../../data/module-information/README.md) and
+[complete ID table](../../data/module-information/cases.md). The component writer
+host now retains assertion setup/checks in Release; production code is unchanged.
+Label: `module-information-migration`.

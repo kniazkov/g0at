@@ -330,3 +330,9 @@ pair remains one identity comparison). See
 for mapping, Debug/Release/UBSan parity, negative controls and the explicit
 Windows escaped-filename skip. The remaining Python consumers above retain the
 shared compatibility helper until #394; no source-diagnostic consumer remains.
+
+Information fields/merge migration (#364): `module_information_scenarios` uses
+the shared execution, independent JSON/ZIP and significant-hash helpers for
+206 independently selected IDs. The two retired Python runners exported no
+helpers. See [mapping and reproduction](../data/module-information/README.md);
+no production validator computes expected projection or merge results.

@@ -236,8 +236,23 @@ foreach(access_case model_vm wire_files wire_declarations)
     "$<TARGET_FILE:module_access_scenarios>" integration.module_access.${access_case} "$<TARGET_FILE:module_access_testing>"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 endforeach()
-goat_python(integration.module_information "integration" scripts/check_module_information.py "$<TARGET_FILE:module_json_testing>" "$<TARGET_FILE:module_writer_testing>")
-goat_python(integration.module_information_merge "integration" scripts/check_module_information_merge.py "$<TARGET_FILE:module_json_testing>")
+set(information_ids integration.module_information.no-network-symbols)
+foreach(information_fixture information information_merge)
+  set(information_path "${PROJECT_SOURCE_DIR}/test/data/module-information/${information_fixture}.json")
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${information_path}")
+  file(STRINGS "${information_path}" information_lines REGEX "^[ \t]*\"id\":")
+  foreach(information_line IN LISTS information_lines)
+    string(REGEX REPLACE ".*\"id\": \"([^\"]+)\".*" "\\1" information_id "${information_line}")
+    list(APPEND information_ids "${information_id}")
+  endforeach()
+endforeach()
+foreach(information_id IN LISTS information_ids)
+  goat_scenario(${information_id} "integration;module-information-migration" TIMEOUT 240 COMMAND
+    "$<TARGET_FILE:module_information_scenarios>" "${information_id}"
+    "$<TARGET_FILE:module_json_testing>" "$<TARGET_FILE:module_writer_testing>" "${CMAKE_NM}"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data"
+    "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
+endforeach()
 goat_python(integration.module_merge "integration" scripts/check_module_merge.py "$<TARGET_FILE:goat-merge>" "${CMAKE_C_COMPILER}")
 goat_scenario(native.module_json "integration;metadata-json" TIMEOUT 200 COMMAND
   "$<TARGET_FILE:module_json_scenarios>" native.module_json "$<TARGET_FILE:module_json_testing>"
@@ -364,8 +379,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 373)
-  message(FATAL_ERROR "Expected all 373 integration scenarios (source diagnostic cases split in #363); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 577)
+  message(FATAL_ERROR "Expected all 577 integration scenarios (information cases split in #364); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
