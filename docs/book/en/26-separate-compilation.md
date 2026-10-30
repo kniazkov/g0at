@@ -87,4 +87,4 @@ For named ZIP-module examples and relocation, follow [chapter 30](30-modules.md)
 
 `--run` does not rebuild a missing artifact. Module loading and standalone pure-resource fallback are different contracts, as explained in [chapter 25](25-native-dispatch-and-vm-fallback.md).
 
-Tests include `check_binary_program.sh`, `check_module_cli.py`, `integration.module_graph`, `check_module_loading.py`, and the delivery suite. Linux GCC/Clang x86-64/ARM64 and Windows MINGW32/MINGW64/UCRT64 are covered. Exact old glibc 2.14/2.17 and Windows 10 execution are not established merely by a green newer runner; [delivery evidence](../../module-delivery-tests.md) records tested environments and the remaining lower-bound plan.
+Tests include `check_binary_program.sh`, `check_module_cli.py`, `integration.module_graph`, `integration.module_loading.*`, and the delivery suite. Linux GCC/Clang x86-64/ARM64 and Windows MINGW32/MINGW64/UCRT64 are covered. Exact old glibc 2.14/2.17 and Windows 10 execution are not established merely by a green newer runner; [delivery evidence](../../module-delivery-tests.md) records tested environments and the remaining lower-bound plan.

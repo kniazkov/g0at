@@ -126,7 +126,7 @@ Goat и не разрешает удаление файлов из-под про
   racing requests and unchanged codes after output failure.
 - `check_native_exit.py` covers rejected calls across the ABI boundary and
   process termination while another native worker cannot return.
-- `check_module_loading.py` retains first-call serialization, snapshot lifetime,
+- `integration.module_loading.*` retains first-call serialization, snapshot lifetime,
   late worker loading, pre-READY failure and death of an already ready cleaner.
   Real loaded DLL/SO adapters loop forever or block without cooperation; an
   explicit marker proves entry before VM exit, and cleanup is awaited separately.
