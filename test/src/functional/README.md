@@ -1272,3 +1272,12 @@ platform, with no skips.
 See [exact-input parity, mapping and reproduction](../../data/module-writer/README.md).
 Both real hosts are target dependencies, including Release partial-write fault
 proof. Strict publication is the CI default; ACL opt-in is direct/local-only.
+
+## Native producer and mapped libraries (#368)
+
+`module_build_scenarios` and `module_library_scenarios` replace both Python
+runners with 36 IDs, label `module-build-library-migration`. See
+[build mapping/reproduction](../../data/module-build/README.md) and
+[library mapping/ELF applicability](../../data/module-library/README.md).
+Real compiler and loader operations remain mandatory; only 15 ELF-specific library
+cases skip Windows. Release keeps library-host assertion setup active.

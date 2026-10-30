@@ -2,6 +2,10 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Exercise the production mapped-range loader with controlled real images.
  */
+/* Preserve metadata setup and mapped-range assertions against Release libraries (#368). */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include "lib/files/binary_file.h"
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"

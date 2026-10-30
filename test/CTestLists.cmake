@@ -101,8 +101,18 @@ goat_python(integration.native_requirements "integration" scripts/check_native_r
 goat_python(integration.native_toolchains "integration" scripts/check_native_toolchains.py "$<TARGET_FILE:native_toolchain_testing>" "${CMAKE_C_COMPILER}")
 goat_python(integration.native_cleanup "integration" scripts/check_native_cleanup.py "$<TARGET_FILE:native_cleanup_testing>" "${CMAKE_C_COMPILER}")
 goat_python(integration.module_native_values "integration" scripts/check_module_native_values.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_native_values_testing>" "${CMAKE_C_COMPILER}")
-goat_python(integration.module_build "integration" scripts/check_module_build.py "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}")
-goat_python(integration.module_library "integration" scripts/check_module_library.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_library_testing>" "${CMAKE_C_COMPILER}")
+foreach(module_build_case numeric empty-required empty-off empty-auto-explicit included missing-auto missing-required unsupported-target foreign-target only-dependency)
+  goat_scenario(integration.module_build.${module_build_case} "integration;module-build-library-migration" TIMEOUT 390 COMMAND
+    "$<TARGET_FILE:module_build_scenarios>" "integration.module_build.${module_build_case}"
+    "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+foreach(module_library_case original valid missing-descriptor writable-descriptor bad-magic overflow outside-image unterminated different-name missing-last-symbol data-symbol data-in-text valid-sysv data-in-text-sysv object-alias-sysv function-alias-sysv valid-gnu data-in-text-gnu object-alias-gnu function-alias-gnu valid-both data-in-text-both object-alias-both function-alias-both unreadable-descriptor foreign-owner)
+  goat_scenario(integration.module_library.${module_library_case} "integration;module-build-library-migration" TIMEOUT 330 COMMAND
+    "$<TARGET_FILE:module_library_scenarios>" "integration.module_library.${module_library_case}"
+    "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_library_testing>" "${CMAKE_C_COMPILER}"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 goat_python(integration.module_loading "integration" scripts/check_module_loading.py "$<TARGET_FILE:module_loading_testing>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}")
 goat_python(integration.module_inspect "integration" scripts/check_module_inspect.py "$<TARGET_FILE:goat-inspect>" "${CMAKE_C_COMPILER}")
 goat_python(integration.inspect_probe "integration" scripts/check_inspect_probe.py "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}" "$<TARGET_FILE:inspect_probe_testing>")
@@ -431,8 +441,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 838)
-  message(FATAL_ERROR "Expected all 838 integration scenarios (writer cases split in #367); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 872)
+  message(FATAL_ERROR "Expected all 872 integration scenarios (build/library cases split in #368); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

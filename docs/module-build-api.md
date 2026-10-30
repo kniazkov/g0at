@@ -79,7 +79,7 @@ PE проверяет разрядность, runtime и разрешённый 
 небезопасной ручной уборки из-под работающих процессов нет.
 
 Проверки: `check_native_artifact.py`, `check_native_toolchains.py`, `check_native_requirements.py`,
-`check_native_cleanup.py`, `check_module_build.py`, `check_module_native_values.py`.
+`check_native_cleanup.py`, `integration.module_build.*` (CTest), `check_module_native_values.py`.
 Существующие native/unit/runtime suites сохраняются. Нижняя версия Windows 10
 и старые glibc требуют отдельного контрольного окружения: CI на текущем runner
 не объявляется проверкой запуска на этих нижних границах. Представление
@@ -184,3 +184,5 @@ use type-wide argument summaries, not observed values: observing square(7) also
 permits the same adapter for square(9).
 
 Сквозная приёмка / End-to-end acceptance: [#219](module-delivery-tests.md).
+
+C migration scenarios and direct invocation: [native producer](../test/data/module-build/README.md), [mapped libraries](../test/data/module-library/README.md).

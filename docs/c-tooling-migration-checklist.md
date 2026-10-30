@@ -80,7 +80,7 @@
 - [x] 47. [#365 — Перенести на Си: Dispatch и согласованность](https://github.com/kniazkov/g0at/issues/365) — [карта и проверки](../test/data/module-dispatch-consistency/README.md); assertions в трёх test-host TU сохранены для Release; полный producer — обязательный CI, локально cleanup=2; PR и CI — в задаче.
 - [x] 48. [#366 — Перенести на Си: Валидация модулей](https://github.com/kniazkov/g0at/issues/366) — [карта и проверки](../test/data/module-validation/README.md); assertions validation test-host сохранены для Release; PR и CI — в задаче.
 - [x] 49. [#367 — Перенести на Си: Запись модулей](https://github.com/kniazkov/g0at/issues/367) — [карта и проверки](../test/data/module-writer/README.md); partial-write assertions fault-host сохранены для Release; PR и CI — в задаче.
-- [ ] 50. [#368 — Перенести на Си: Сборка и библиотека модулей](https://github.com/kniazkov/g0at/issues/368)
+- [x] 50. [#368 — Перенести на Си: Сборка и библиотека модулей](https://github.com/kniazkov/g0at/issues/368) — [карта сборки](../test/data/module-build/README.md), [карта библиотек](../test/data/module-library/README.md); assertions library test-host сохранены для Release; PR и CI — в задаче.
 - [ ] 51. [#369 — Перенести на Си: Загрузка модулей](https://github.com/kniazkov/g0at/issues/369)
 - [ ] 52. [#370 — Перенести на Си: Память и fault injection](https://github.com/kniazkov/g0at/issues/370)
 - [ ] 53. [#371 — Перенести на Си: CLI модулей](https://github.com/kniazkov/g0at/issues/371)
