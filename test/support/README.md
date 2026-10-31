@@ -85,8 +85,7 @@ Remaining Python import consumers (including dynamic imports) are:
 `check_module_container.py`, `check_module_delivery.py`,
 `check_module_hash.py`,
 `check_module_merge.py`,
-`check_module_musl.py`, `check_module_search.py`,
-and `check_inspect_probe.py`. They retain their current
+`check_module_musl.py` and `check_module_search.py`. They retain their current
 API and data paths; their migration remains in the ordered checklist.
 
 ## Independent binary and fixture oracle (#336)
@@ -132,7 +131,7 @@ and `check_module_delivery.py`.
 
 Remaining `inspect_report_test_support` consumers:
 `scripts/check_module_book.py`,
-`check_module_merge.py`, `check_module_delivery.py`, and `check_inspect_probe.py`.
+`check_module_merge.py` and `check_module_delivery.py`.
 These keep their existing IDs and entry points; this step does not migrate their
 scenario bodies or remove any Python test.
 
@@ -214,7 +213,6 @@ The existing Python helper stays unchanged for these remaining consumers:
 
 | Consumer | Scheduled migration |
 | --- | --- |
-| `scripts/check_inspect_probe.py` | #373 |
 | `scripts/check_cleanup_service.py` | #376 |
 | `scripts/check_native_cleanup.py` | #381 |
 
@@ -358,3 +356,13 @@ execution, independent ZIP/SHA-256 and canonical JSON helpers. The two retired
 Python runners exported no live imported helpers. See the
 [build](../data/module-build/README.md) and [library](../data/module-library/README.md)
 maps for 36 IDs, actual compiler/load evidence and bounded ELF alias mutation.
+
+Inspector probe migration (#373) reuses the test-only independent transport in
+`module_loading_owner.c` through its protocol-free command API. It captures both
+streams and supplies a bounded copied stdin payload, can keep stdin open through
+owner exit, and kills only the retained owner identity. It never adopts or kills
+the cleaner/descendant tree under test. The loading protocol API remains intact.
+Generic stdin follows `communicate` semantics for an already-closed reader;
+other transport errors still fail. Independent Debug/Release controls cover early
+reader exit, copied binary input, EOF versus held-open input, explicit owner kill,
+wrong exit, deadline failure and rejected oversized input (14/14 controls).

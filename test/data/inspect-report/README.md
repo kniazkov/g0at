@@ -30,7 +30,6 @@ counts that newline. Base64 padding bits/decoded byte limits are semantic checks
 outside the Python schema helper, not silently added here.
 
 Python helpers remain unchanged until their ordered consumer migrations:
-`check_inspect_probe.py` (#373),
 `check_module_book.py` (#392), `check_module_merge.py` (#374), and
 `check_module_delivery.py` (#388). No scenario is
 removed or renamed in those existing suites.
