@@ -147,3 +147,11 @@ control transport.
 Two additional no-execution controls deliberately hung the text and JSON loop
 hosts: each failed at the shared 60-second deadline, with clean child teardown
 and retained diagnostics. Total independent controls: 90/90.
+
+Git treats content-addressed `blobs/**` as `-text` to prevent checkout-time newline
+conversion. This includes the original multiline constructor C source: its SHA-256
+covers the exact LF bytes, even when Windows uses `core.autocrlf=true`. The runner
+continues to require exact hashes; it never normalizes fixture bytes to hide a
+changed input. An isolated autocrlf checkout reproduces the missing-attribute
+failure (constructor source 479 → 493 bytes, 14 inserted CR bytes), and with this
+attribute all 72 blob hashes remain unchanged.
