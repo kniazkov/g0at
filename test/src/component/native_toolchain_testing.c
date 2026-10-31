@@ -6,6 +6,10 @@
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
 
+/* Test logging and contracts must execute in Release too. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,0 +1,1 @@
+println((import "default-auto@1").f(8));

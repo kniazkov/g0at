@@ -1,0 +1,1 @@
+external seed=(import "cycleapp@1").seed;

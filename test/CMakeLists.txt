@@ -406,3 +406,7 @@ if(GOAT_TEST_ALLOC_FAILURE)
   target_link_libraries(module_memory_scenarios PRIVATE goat_language_execution_support goat_format_oracle yyjson)
   add_dependencies(module_memory_scenarios module_memory_testing)
 endif()
+
+add_executable(module_cli_scenarios src/functional/module_cli_scenarios.c)
+target_link_libraries(module_cli_scenarios PRIVATE goat_language_execution_support goat_format_oracle goat_process_watch_support yyjson)
+add_dependencies(module_cli_scenarios goat native_toolchain_testing)

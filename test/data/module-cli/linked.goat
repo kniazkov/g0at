@@ -1,0 +1,1 @@
+println("real source"); println((import "linkdep@1").value);
