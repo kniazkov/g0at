@@ -14,6 +14,26 @@ typedef struct {
     size_t size;
 } loading_bytes_t;
 
+/** Protocol-free independent owner transport. No descendant adoption or tree kill:
+ * the tested cleanup service must remain responsible for its own descendants.
+ * Arguments/environment must remain live for start; input is copied (at most 4096 bytes).
+ * Paths should be absolute; cwd is inherited. Successful/failing runs retain full captures.
+ */
+loading_owner_t *loading_owner_command_start(scenario_run_t *r,
+                                             const char *root,
+                                             const char *name,
+                                             const char *const *arguments,
+                                             const char *const *environment,
+                                             const void *input,
+                                             size_t input_size,
+                                             bool close_stdin);
+const child_result_t *loading_owner_command_poll(loading_owner_t *o);
+void loading_owner_command_wait(loading_owner_t *o,
+                                int expected_exit,
+                                uint64_t timeout_ms,
+                                bool close_stdin);
+void loading_owner_command_kill(loading_owner_t *o, uint64_t timeout_ms);
+
 loading_owner_t *loading_owner_start(scenario_run_t *r,
                                      const char *runner,
                                      const char *root,

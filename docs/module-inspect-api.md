@@ -115,7 +115,7 @@ EOF, отдельный временный рабочий каталог и вл
 остаётся предупреждением и не отменяет VM.
 
 Совместная приёмка использует существующие наборы `integration.module_inspect.*` (CTest),
-`scripts/check_inspect_probe.py` и `scripts/check_module_merge.py`: локальные и
+`integration.inspect_probe.*` (CTest) и `scripts/check_module_merge.py`: локальные и
 графовые ссылки, недостающие зависимости, общие узлы, выбор цели и отсутствие
 исполнения при merge проверяются вместе с прежними гарантиями публикации.
 
@@ -138,7 +138,7 @@ EOF, отдельный временный рабочий каталог и вл
 рабочая утилита их не поддерживает. JSON проверяется по полной схеме:
 
 ```sh
-python3 scripts/check_inspect_probe.py build/goat-inspect build/module_import_execution_testing cc build/inspect_probe_testing
+ctest --test-dir build --output-on-failure -L inspect-probe-migration
 ```
 
 ## English
@@ -256,7 +256,7 @@ actual load occurred, not that loading succeeded. Missing matching native alone
 remains a warning and does not disable the VM.
 
 Joint acceptance uses the existing `integration.module_inspect.*` (CTest),
-`scripts/check_inspect_probe.py` and `scripts/check_module_merge.py` suites:
+`integration.inspect_probe.*` (CTest) and `scripts/check_module_merge.py` suites:
 local versus graph references, missing dependencies, shared nodes, target
 selection and nonexecuting merge accompany the existing publication guarantees.
 
@@ -280,5 +280,5 @@ continuing cleanup. Fault hooks are compiled only into the test executable, not
 the production utility. JSON is checked against the full report schema:
 
 ```sh
-python3 scripts/check_inspect_probe.py build/goat-inspect build/module_import_execution_testing cc build/inspect_probe_testing
+ctest --test-dir build --output-on-failure -L inspect-probe-migration
 ```

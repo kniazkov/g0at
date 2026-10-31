@@ -1,0 +1,15 @@
+{
+  "baseline": "fc4695581793a8bef9059f72289a483683798351",
+  "inputs": {
+    "scripts/check_inspect_probe.py": "ba39aa69d8b895cef2f6f24bfadee6423fecb92f12ddaf4f888a14e657e40149",
+    "scripts/inspect_report_test_support.py": "90c101924cc6a5f833525401cde2bd1d3bad5d948716535734ae76bca4787d7f",
+    "scripts/process_test_support.py": "4bccb31b4724319e745e2b630be4686d4d9bfaa53affac6c5a2b426c7e6a9a15",
+    "test/src/component/inspect_probe_library.c": "b9a429896200b53fe78202714a2db04b168b77eb043ed5f46f73ffe1913e8237",
+    "test/src/component/inspect_probe_worker.c": "7898586268b4e7f9a01ed96d3dfa98c2ba6cacea1ee197453e089ad372e0df7e",
+    "test/src/component/inspect_probe_testing.c": "953b531916e3fff03240b370a7e7195ff0a2196e70d4193099e9c96a01893859"
+  },
+  "main_goat_sha256": "469628fe17e33a0af2cb4e9d9ed0bdd1bc6f624a1e81d7a3aa2725855c943e13",
+  "main_goat_origin": "build(): exact default source argument, including original lack of trailing newline",
+  "frozen_native_binaries": false,
+  "native_construction": "Real compiler + current host native-build; custom descriptor bytes derive independently from validated archive metadata using reference canonical form and GOATND01 header. Existing inspect_probe_library.c and inspect_probe_worker.c stay runtime source inputs."
+}

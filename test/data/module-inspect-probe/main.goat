@@ -1,0 +1,1 @@
+external square=func(n){return n*n;}; println(square(7));

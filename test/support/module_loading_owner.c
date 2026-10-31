@@ -53,7 +53,8 @@ struct loading_owner_t {
     stream_t out, err;
     FILE *log;
     size_t line_offset, input_offset, input_size;
-    bool eof, ended;
+    bool eof, ended, allow_closed_input;
+    const unsigned char *input_data;
     process_watch_t **watches;
     size_t watch_count;
 };
@@ -282,12 +283,17 @@ static const child_result_t *raw_poll(loading_owner_t *o) {
     if (o->input && o->input_offset < o->input_size) {
         DWORD count = 0;
         if (!WriteFile(o->input,
-                       "G\n" + o->input_offset,
+                       o->input_data + o->input_offset,
                        (DWORD)(o->input_size - o->input_offset),
                        &count,
-                       NULL))
-            o->result.system_error = GetLastError();
-        else
+                       NULL)) {
+            unsigned long error = GetLastError();
+            if (o->allow_closed_input && (error == ERROR_BROKEN_PIPE || error == ERROR_NO_DATA)) {
+                close_native(&o->input);
+                o->input_offset = o->input_size;
+            } else
+                o->result.system_error = error;
+        } else
             o->input_offset += count;
     }
     if (o->eof && o->input_offset == o->input_size)
@@ -418,12 +424,19 @@ static void drain(loading_owner_t *o, size_t channel) {
 
 static const child_result_t *raw_poll(loading_owner_t *o) {
     if (o->input >= 0 && o->input_offset < o->input_size) {
-        ssize_t count =
-            send(o->input, "G\n" + o->input_offset, o->input_size - o->input_offset, MSG_NOSIGNAL);
+        ssize_t count = send(o->input,
+                             o->input_data + o->input_offset,
+                             o->input_size - o->input_offset,
+                             MSG_NOSIGNAL);
         if (count > 0)
             o->input_offset += (size_t)count;
-        else if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
-            o->result.system_error = errno;
+        else if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+            if (o->allow_closed_input && errno == EPIPE) {
+                close_native(&o->input);
+                o->input_offset = o->input_size;
+            } else
+                o->result.system_error = errno;
+        }
     }
     if (o->eof && o->input_offset == o->input_size)
         close_native(&o->input);
@@ -535,14 +548,7 @@ static const char *const *environment(loading_owner_t *o, const char *cleaner_fa
     return values;
 }
 
-loading_owner_t *loading_owner_start(scenario_run_t *r,
-                                     const char *runner,
-                                     const char *root,
-                                     const char *name,
-                                     const char *archive,
-                                     const char *mode,
-                                     const char *fault,
-                                     const char *cleaner_fault) {
+static loading_owner_t *allocate_owner(scenario_run_t *r, const char *root, const char *name) {
     loading_owner_t *o = calloc(1, sizeof(*o));
     scenario_require(r, o != NULL, "allocate loading owner");
 #ifndef _WIN32
@@ -561,6 +567,52 @@ loading_owner_t *loading_owner_start(scenario_run_t *r,
     o->out.file = FOPEN(language_join(r, o->directory, "stdout.bin"), "wb");
     o->err.file = FOPEN(language_join(r, o->directory, "stderr.bin"), "wb");
     REQUIRE(o, o->out.file && o->err.file);
+    return o;
+}
+
+loading_owner_t *loading_owner_command_start(scenario_run_t *r,
+                                             const char *root,
+                                             const char *name,
+                                             const char *const *arguments,
+                                             const char *const *env,
+                                             const void *input,
+                                             size_t input_size,
+                                             bool close_stdin) {
+    loading_owner_t *o = allocate_owner(r, root, name);
+    REQUIRE(o, arguments && arguments[0] && env && input_size <= 4096);
+    REQUIRE(o, !input_size || input);
+    unsigned char *copy = language_owned(r, ALLOC(input_size + 1));
+    if (input_size)
+        memcpy(copy, input, input_size);
+    o->allow_closed_input = true;
+    o->input_data = copy;
+    o->input_size = input_size;
+    o->eof = close_stdin;
+    o->log = FOPEN(language_join(r, o->directory, "command.log"), "wb");
+    REQUIRE(o, o->log);
+    for (size_t i = 0; arguments[i]; i++)
+        REQUIRE(o, fprintf(o->log, "argv[%zu]=%s\n", strlen(arguments[i]), arguments[i]) >= 0);
+    REQUIRE(o, fprintf(o->log, "stdin-bytes=%zu close-stdin=%d\n", input_size, close_stdin) >= 0);
+    /* Record only explicit test hooks and temporary roots, never inherited secrets. */
+    for (size_t i = 0; env[i]; i++)
+        if (!strncmp(env[i], "GOAT_PROBE_TEST_", 16) || !strncmp(env[i], "GOAT_INSPECT_", 13)
+            || environment_name(env[i], "TMPDIR") || environment_name(env[i], "TMP")
+            || environment_name(env[i], "TEMP"))
+            REQUIRE(o, fprintf(o->log, "env=%s\n", env[i]) >= 0);
+    REQUIRE(o, !fflush(o->log));
+    raw_start(o, arguments, env);
+    return o;
+}
+
+loading_owner_t *loading_owner_start(scenario_run_t *r,
+                                     const char *runner,
+                                     const char *root,
+                                     const char *name,
+                                     const char *archive,
+                                     const char *mode,
+                                     const char *fault,
+                                     const char *cleaner_fault) {
+    loading_owner_t *o = allocate_owner(r, root, name);
     const char *args[] = {runner, archive, mode ? mode : "auto", fault ? fault : "run", NULL};
     o->log = FOPEN(language_join(r, o->directory, "command.log"), "wb");
     REQUIRE(o, o->log);
@@ -621,6 +673,7 @@ void loading_owner_wait_line(loading_owner_t *o, const char *expected) {
 
 void loading_owner_resume(loading_owner_t *o) {
     REQUIRE(o, !o->eof && !o->input_size);
+    o->input_data = (const unsigned char *)"G\n";
     o->input_size = 2;
     pump(o);
 }
@@ -635,6 +688,40 @@ static process_watch_result_t exited(void *arg, unsigned long *error) {
     bool drained = o->output[0] < 0 && o->output[1] < 0;
 #endif
     return result->status == CHILD_RUNNING || !drained ? PROCESS_WATCH_TIMEOUT : PROCESS_WATCH_OK;
+}
+
+const child_result_t *loading_owner_command_poll(loading_owner_t *o) {
+    return pump(o);
+}
+
+void loading_owner_command_wait(loading_owner_t *o,
+                                int expected_exit,
+                                uint64_t timeout_ms,
+                                bool close_stdin) {
+    if (close_stdin)
+        o->eof = true;
+    unsigned long error = 0;
+    REQUIRE(o, process_watch_until(exited, o, deadline(o, timeout_ms), &error) == PROCESS_WATCH_OK);
+    REQUIRE(o, o->result.status == CHILD_EXITED && o->result.exit_code == expected_exit);
+    o->ended = true;
+}
+
+void loading_owner_command_kill(loading_owner_t *o, uint64_t timeout_ms) {
+    /* The launcher's live process identity is retained until wait/reap. */
+    const child_result_t *state = pump(o);
+    REQUIRE(o, state->status == CHILD_RUNNING);
+    close_native(&o->input);
+    o->input_offset = o->input_size;
+#ifdef _WIN32
+    REQUIRE(o, TerminateProcess(o->process, 137));
+#else
+    REQUIRE(o, kill(o->pid, SIGKILL) == 0);
+#endif
+    o->eof = true;
+    unsigned long error = 0;
+    REQUIRE(o, process_watch_until(exited, o, deadline(o, timeout_ms), &error) == PROCESS_WATCH_OK);
+    REQUIRE(o, o->reaped);
+    o->ended = true;
 }
 
 static void finish_transport(loading_owner_t *o) {
