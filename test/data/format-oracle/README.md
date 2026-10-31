@@ -224,7 +224,6 @@ print(counts); print(len(records),hashlib.sha256(path.read_bytes()).hexdigest())
 subsequent migrations still depend on them. Direct consumers at this step:
 
 - `docs/module-format-v1/test_reference.py`
-- `scripts/check_inspect_probe.py`
 - `scripts/check_module_canonical.py`
 - `scripts/check_module_container.py`
 - `scripts/check_module_delivery.py`

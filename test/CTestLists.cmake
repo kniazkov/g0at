@@ -128,7 +128,16 @@ foreach(module_inspect_line IN LISTS module_inspect_ids)
     "$<TARGET_FILE:goat-inspect>" "${CMAKE_C_COMPILER}" "${CMAKE_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1")
 endforeach()
-goat_python(integration.inspect_probe "integration" scripts/check_inspect_probe.py "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}" "$<TARGET_FILE:inspect_probe_testing>")
+set(inspect_probe_cases success capture-0 capture-65536 capture-65537 capture-262144 stdin load-crash load-hang output-hang unload-crash unload-hang load-exit-zero default-timeout descriptor-missing descriptor-mismatch descriptor-overflow symbol-missing load-error explicit-current foreign opposite-os-compatible diamond diamond-foreign first-candidate-current first-candidate-foreign later-candidate-foreign missing-transitive repacked-still-missing repacked-complete invalid-graph text-output fault-start fault-capture fault-unload fault-diagnostic fault-exit-nonzero fault-exit-hang cleaner-start-exit cleaner-start-silent cleanup-timeout-valid cleanup-timeout-load-exit-zero cleanup-timeout-load-crash cleanup-timeout-load-hang owner-killed-before-extraction tree tree-crash tree-hang owner-killed)
+foreach(inspect_probe_case IN LISTS inspect_probe_cases)
+  goat_scenario(integration.inspect_probe.${inspect_probe_case} "integration;inspect-probe-migration" TIMEOUT 210 COMMAND
+    "$<TARGET_FILE:inspect_probe_scenarios>" "integration.inspect_probe.${inspect_probe_case}"
+    "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}"
+    "$<TARGET_FILE:inspect_probe_testing>" "$<TARGET_FILE:goat-merge>" "${PROJECT_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/docs/module-format-v1")
+endforeach()
+# Temporary strict original comparison, removed only after full Python/C verification.
+goat_python(validation.inspect_probe_original "integration;inspect-probe-migration;migration-baseline" scripts/check_inspect_probe.py "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}" "$<TARGET_FILE:inspect_probe_testing>")
 set(module_cli_cases missing-include basic override-valid native-overrides damaged-native search-precedence cycle descriptor-link direct-source descriptor-context listing listing-link-fail listing-missing listing-path listing-timeout auto-preferred auto-fallback listing-mixed explicit-no-fallback off-no-probe controlled-native descriptor-off default-auto dependency-native-required reports uppercase source-collision hardlink-output directory-output symlink-output legacy)
 foreach(index RANGE 0 10)
   list(APPEND module_cli_cases invalid-descriptor-${index})
@@ -476,8 +485,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1163)
-  message(FATAL_ERROR "Expected all 1163 integration scenarios (inspector cases split in #372); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1210)
+  message(FATAL_ERROR "Expected all 1210 integration scenarios (inspector probe cases split in #373); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
