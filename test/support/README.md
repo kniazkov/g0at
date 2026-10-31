@@ -129,8 +129,7 @@ migrated and #394 removes the transitional layer.
 Remaining `module_execution_support` consumers:
 `scripts/check_module_threads.py`,
 `check_module_exit.py`,
-`check_module_delivery.py`, and
-`check_module_cli.py`.
+and `check_module_delivery.py`.
 
 Remaining `inspect_report_test_support` consumers:
 `scripts/check_module_inspect.py`, `check_module_book.py`,
@@ -216,7 +215,6 @@ The existing Python helper stays unchanged for these remaining consumers:
 
 | Consumer | Scheduled migration |
 | --- | --- |
-| `scripts/check_module_cli.py` (`until` only) | #371 |
 | `scripts/check_inspect_probe.py` | #373 |
 | `scripts/check_cleanup_service.py` | #376 |
 | `scripts/check_native_cleanup.py` | #381 |

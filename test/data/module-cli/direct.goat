@@ -1,0 +1,1 @@
+println(__main__); println((include "helper.goat").value); println((import "value@1").value);

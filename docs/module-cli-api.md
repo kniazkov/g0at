@@ -95,7 +95,8 @@ ZIP-модули по умолчанию используют auto; прежни
 идентификатором сборки компилятора. Это не время, путь или случайный ID упаковки;
 сведения исключены из mainHash и не заменяют проверки формата или ABI.
 
-Проверки CLI находятся в `scripts/check_module_cli.py`; существующие проверки
+Проверки CLI находятся в CTest `integration.module_cli.*`
+([карта и команды запуска](../test/data/module-cli/README.md)); существующие проверки
 исходников, бинарного запуска, compiler discovery, native и очистки сохраняются.
 Результат тестов подтверждается CI каждого изменения, а не наличием документации.
 Ограниченное завершение `exit` реализовано в #230 ([API](module-exit-api.md));
@@ -194,7 +195,8 @@ and a stable compiler-build identifier, never a packaging time, absolute path or
 random identifier. Provenance is excluded from mainHash and does not replace
 format/ABI checks.
 
-CLI coverage lives in `scripts/check_module_cli.py`; existing source, standalone
+CLI coverage lives in CTest `integration.module_cli.*`
+([scenario map and commands](../test/data/module-cli/README.md)); existing source, standalone
 binary, toolchain, native and cleanup checks remain. Actual test outcomes are
 established by each change's CI, not by the existence of this document. Bounded
 exit is implemented in #230 ([API](module-exit-api.md)); the [inspector](module-inspect-api.md)
