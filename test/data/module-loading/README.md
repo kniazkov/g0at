@@ -60,3 +60,22 @@ stdout, malformed RESULT JSON, wrong native-call marker bytes, wrong write count
 false loaded status, wrong native-load count, duplicate RESULT records, 256-KiB stdout/stderr, and an owner that exits before its READY barrier. They must each fail an intended
 assertion and retain diagnostics. The proxies are verification tools, not runtime
 Python dependencies. Full C scenarios are run with Python discovery disabled.
+
+### Windows deletion observation
+
+The post-merge Windows MINGW64 Release run
+[41114729913](https://github.com/kniazkov/g0at/actions/runs/41114729913)
+captured `ERROR_ACCESS_DENIED` (native 5, `open stat`) while waiting for the
+cleaner's `goat-run-*` directory to disappear. Opening a delete-pending Windows
+directory for attributes can fail before its last handle closes. Only this
+bounded absence wait retries access-denied/sharing-violation observations;
+they are never accepted as evidence of absence. Success still requires
+`FS_NOT_FOUND`, followed by the unchanged `cleaner.done` marker check. Other
+filesystem probes stay strict, and other I/O errors fail immediately.
+
+The callback's negative controls use the real `process_watch_until` deadline:
+permanent native 5, permanent native 32 and a permanently existing path must time
+out; an unrelated I/O error must fail immediately. The sequence native 5, native
+32, existing path, `FS_NOT_FOUND` must succeed only on the fourth probe. The
+control harness substitutes only the filesystem probe and owner pump, not the
+callback or polling loop, so it can test Windows error outcomes on Linux.
