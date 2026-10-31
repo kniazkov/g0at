@@ -94,3 +94,15 @@ The C runner uses shared deadlines, unique build-local workspaces, retained
 binary output/diagnostics and `--keep-work`. The original Python validation stays
 available until full strict cross-platform parity CI is established; subsequent
 removal must not remove the Unix-socket or terminal contracts.
+
+## Exact checkout bytes on Windows
+
+The first Windows CI passed the unchanged original runner and all other C cases,
+but the constructor stopped at the fixture SHA256 check. Its plain-text C-source
+blob was eligible for Git's automatic LF-to-CRLF checkout conversion. A local
+`core.autocrlf=true` checkout reproduced the changed SHA256; the narrow
+`.gitattributes` rule `test/data/module-merge/blobs/* -text` preserves all 128
+content-addressed blobs byte-for-byte. This changes checkout policy, not test
+expectations or constructor behavior. Debug/Release negative controls still
+reject the CRLF-altered blob, while the byte-preserving checkout passes. All 128
+checksums also pass after a forced autocrlf checkout with the rule applied.
