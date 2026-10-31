@@ -39,10 +39,11 @@ transitive archives therefore do not prevent merging valid explicit inputs.
 Neither neighboring `modules` nor `GOAT_MODULE_PATH` supplies implicit inputs;
 merging does not select a current/foreign target or invoke an OS library loader.
 The result may pass archive validation yet fail subsequent graph inspection.
-The existing `scripts/check_module_merge.py` and `integration.inspect_probe.*` (CTest)
+The existing `integration.module_merge.*` (CTest) and `integration.inspect_probe.*` (CTest)
 suites exercise this boundary alongside nonexecution and atomic publication.
-Before running these scripts standalone, build `goat-inspect` and `goat-merge`
-side by side in the same executable directory (for example, `build`).
+Build `module_merge_scenarios` (which depends on `goat-inspect` and `goat-merge`)
+and run `ctest --test-dir build -L module-merge-migration --output-on-failure`.
+See [the scenario map and direct invocation](../test/data/module-merge/README.md).
 
 Native variants with identical requirements and native hash are deduplicated;
 different hashes under identical requirements are errors. Ambiguous compatible
@@ -123,7 +124,7 @@ source**, с сохранением первого вхождения. Разн�
 `modules`, ни `GOAT_MODULE_PATH` не добавляют неявных источников; merge не выбирает
 текущую/чужую цель и не вызывает загрузчик библиотек ОС. Результат может пройти
 локальную проверку архива, но не последующую инспекцию графа. Существующие наборы
-`scripts/check_module_merge.py` и `integration.inspect_probe.*` (CTest) проверяют эту
+`integration.module_merge.*` (CTest) и `integration.inspect_probe.*` (CTest) проверяют эту
 границу вместе с отсутствием исполнения и атомарной публикацией.
 Перед самостоятельным запуском этих скриптов соберите `goat-inspect` и `goat-merge`
 в одном каталоге исполняемых файлов (например, `build`).

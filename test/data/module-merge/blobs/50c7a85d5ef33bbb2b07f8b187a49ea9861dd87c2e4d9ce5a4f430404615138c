@@ -1,0 +1,14 @@
+#include <stdio.h>
+#include <stdlib.h>
+static void mark(void) {
+    const char *p = getenv("GOAT_MERGE_MARKER");
+    if (p) { FILE *f = fopen(p, "wb"); if (f) { fputs("loaded", f); fclose(f); } }
+}
+#ifdef _WIN32
+#include <windows.h>
+BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID reserved) {
+    (void)h; (void)reserved; if (reason == DLL_PROCESS_ATTACH) mark(); return TRUE;
+}
+#else
+__attribute__((constructor)) static void initialize(void) { mark(); }
+#endif
