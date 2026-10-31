@@ -136,8 +136,6 @@ foreach(inspect_probe_case IN LISTS inspect_probe_cases)
     "$<TARGET_FILE:inspect_probe_testing>" "$<TARGET_FILE:goat-merge>" "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/docs/module-format-v1")
 endforeach()
-# Temporary strict original comparison, removed only after full Python/C verification.
-goat_python(validation.inspect_probe_original "integration;inspect-probe-baseline;migration-baseline" scripts/check_inspect_probe.py "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}" "$<TARGET_FILE:inspect_probe_testing>")
 set(module_cli_cases missing-include basic override-valid native-overrides damaged-native search-precedence cycle descriptor-link direct-source descriptor-context listing listing-link-fail listing-missing listing-path listing-timeout auto-preferred auto-fallback listing-mixed explicit-no-fallback off-no-probe controlled-native descriptor-off default-auto dependency-native-required reports uppercase source-collision hardlink-output directory-output symlink-output legacy)
 foreach(index RANGE 0 10)
   list(APPEND module_cli_cases invalid-descriptor-${index})

@@ -95,9 +95,9 @@ Every other contract passed. Debug's 54 original/C inspector and merge command
 transcripts matched argv/hooks/exits/full output after workspace/UUID substitution;
 Release matched 53/54, with the actual `tree-hang` cleanup difference preserved.
 These are explicitly not claimed as full local green runs. The original Python
-validation is temporarily registered alongside the C tests in its originally
-supported glibc/Windows Debug/Release CI jobs; it is removed only after strict
-remote verification. The musl C matrix runs all 48 scenarios without skips.
+validation was temporarily registered alongside the C tests in its originally
+supported glibc/Windows Debug/Release CI jobs, then removed after strict remote
+verification described below. The musl C matrix runs all 48 scenarios without skips.
 
 Independent negative validation passed 80/80 inspector controls across Debug and
 Release: 68 deliberate corruptions and 12 positive controls. It covers schema and
@@ -157,3 +157,14 @@ existing directories are rejected, equivalent dot-component paths are accepted,
 and every injected failure releases the cleanup gate without leftover directories.
 Actual Windows behavior remains a separate CI gate, not inferred from these
 portable lexical tests.
+
+## Completed remote validation before Python removal
+
+Head `87fd78ff72859c6258787659d6b41c7cfbd45025` passed the complete GitHub
+matrix: Build/test run 41204974552 (11/11 jobs), vectors 41204974603 (3/3).
+Direct job-log inspection confirmed 48 Debug + 48 Release C cases in all nine
+Linux/glibc, Linux/musl and Windows configurations: 864 passes, zero skips.
+The unchanged Python baseline also passed both configurations of all seven
+originally supported glibc/Windows jobs: 14/14 runs. Only after this gate were the
+Python runner and temporary registration removed. Final-head CI links are kept
+in the PR description so adding verification links does not trigger another build.
