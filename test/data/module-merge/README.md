@@ -91,9 +91,8 @@ not replace the original positive cases or strict platform CI.
 ```
 
 The C runner uses shared deadlines, unique build-local workspaces, retained
-binary output/diagnostics and `--keep-work`. The original Python validation stays
-available until full strict cross-platform parity CI is established; subsequent
-removal must not remove the Unix-socket or terminal contracts.
+binary output/diagnostics and `--keep-work`. The original Python runner was removed only after the complete strict remote
+parity gate below. Unix-socket and terminal contracts remain registered.
 
 ## Exact checkout bytes on Windows
 
@@ -106,3 +105,16 @@ content-addressed blobs byte-for-byte. This changes checkout policy, not test
 expectations or constructor behavior. Debug/Release negative controls still
 reject the CRLF-altered blob, while the byte-preserving checkout passes. All 128
 checksums also pass after a forced autocrlf checkout with the rule applied.
+
+## Completed strict remote parity gate
+
+Head `9bceca18659f27ee95584100f94b24228e5af8e3` passed
+[Build/test 11/11](https://github.com/kniazkov/g0at/actions/runs/41230302405)
+and [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41230302471).
+Direct job logs confirm 3,438 C passes: 196 Debug + 196 Release on six
+Linux/musl jobs and 181 + 181 on three Windows jobs. The 90 skips are exactly
+the 15 documented POSIX-only cases in both configurations on Windows; no other
+case skipped. The unchanged original Python suite passed all 14 Debug/Release
+runs on its seven existing glibc/Windows platforms. Only after this full green
+gate were the original runner and its temporary validation registration removed.
+The C sources and corpus are unchanged from that validated head.

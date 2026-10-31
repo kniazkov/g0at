@@ -353,8 +353,6 @@ foreach(information_id IN LISTS information_ids)
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data"
     "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 endforeach()
-# Retain the original strict runner until the remote parity gate is green.
-goat_python(validation.module_merge_original "integration;module-merge-baseline" scripts/check_module_merge.py "$<TARGET_FILE:goat-merge>" "${CMAKE_C_COMPILER}")
 include("${PROJECT_SOURCE_DIR}/test/data/module-merge/case-ids.cmake")
 foreach(module_merge_case IN LISTS module_merge_case_ids)
   goat_scenario(integration.module_merge.${module_merge_case} "integration;module-merge-migration" TIMEOUT 120 COMMAND
