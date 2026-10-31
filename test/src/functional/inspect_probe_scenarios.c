@@ -753,6 +753,21 @@ static void basic_cases(suite_t *s) {
     }
     report_t value = report(c, archive, mode, expected, options);
     jval_t *p = checked_loading(c, value);
+    if (!strcmp(kind, "unload-crash") || !strcmp(kind, "unload-hang")) {
+        /* musl keeps DSOs mapped at dlclose: their destructors execute only at
+         * process exit. Do not accept either stage opportunistically from the
+         * report: cross-check its runtime against this test host's build. */
+#if defined(__linux__) && !defined(__GLIBC__)
+        const bool musl = true;
+#else
+        const bool musl = false;
+#endif
+        REQUIRE(eq(get(get(value.json, "target"), "runtime"), "musl") == musl);
+        if (musl) {
+            stage = "exit";
+            completed(r, p);
+        }
+    }
     probe_state(r, p, state, stage);
     if (!strcmp(kind, "success")) {
         completed(r, p);

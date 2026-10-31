@@ -95,8 +95,9 @@ Every other contract passed. Debug's 54 original/C inspector and merge command
 transcripts matched argv/hooks/exits/full output after workspace/UUID substitution;
 Release matched 53/54, with the actual `tree-hang` cleanup difference preserved.
 These are explicitly not claimed as full local green runs. The original Python
-validation is temporarily registered alongside the C tests in all applicable
-Debug/Release CI jobs; it is removed only after strict remote verification.
+validation is temporarily registered alongside the C tests in its originally
+supported glibc/Windows Debug/Release CI jobs; it is removed only after strict
+remote verification. The musl C matrix runs all 48 scenarios without skips.
 
 Independent negative validation passed 80/80 inspector controls across Debug and
 Release: 68 deliberate corruptions and 12 positive controls. It covers schema and
@@ -115,3 +116,23 @@ zero missing fixtures. All original graph, merge, timing and report assertions
 before the tree cases passed unchanged. The same local tree-cleanup limitation
 remained race-dependent; no diagnostic/state field was removed from comparison.
 The final existing module-loading regression passed 94/94 in Debug and Release.
+
+### musl destructor stage
+
+The original probe suite was not part of the earlier musl job. Its first direct
+musl execution and the C replacement both exposed the same overly glibc-specific
+expectation for two actual destructor faults. [musl's documented dlclose behavior](https://wiki.musl-libc.org/functional-differences-from-glibc.html#Unloading-libraries)
+keeps libraries mapped and invokes destructors only on process exit. Therefore
+`unload-crash` and `unload-hang` require **exit** plus all four completed stages on
+musl, and still require **unload** on the other supported runtimes. The report's
+runtime is cross-checked against the runner's compile-time libc classification;
+no result-dependent fallback is accepted. Crash/timeout state, events, diagnostic,
+cleanup and time bounds remain unchanged. Injected `fault-unload` still requires
+unload on every platform. No production behavior is modified.
+
+The musl-stage adjustment passed 5/5 affected real glibc scenarios in Debug,
+Release and UBSan. Independent predicate controls passed 28/28: real glibc rejects
+spoofed musl or exit-stage reports, and a temporary test-only forced musl predicate
+rejects unload stage, missing completed stages and mismatched runtime. Those
+synthetic controls do not claim real musl execution; the native musl CI is that
+separate runtime gate.
