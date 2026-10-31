@@ -82,7 +82,7 @@
 - [x] 49. [#367 — Перенести на Си: Запись модулей](https://github.com/kniazkov/g0at/issues/367) — [карта и проверки](../test/data/module-writer/README.md); partial-write assertions fault-host сохранены для Release; PR и CI — в задаче.
 - [x] 50. [#368 — Перенести на Си: Сборка и библиотека модулей](https://github.com/kniazkov/g0at/issues/368) — [карта сборки](../test/data/module-build/README.md), [карта библиотек](../test/data/module-library/README.md); assertions library test-host сохранены для Release; PR и CI — в задаче.
 - [x] 51. [#369 — Перенести на Си: Загрузка модулей](https://github.com/kniazkov/g0at/issues/369) — test-only зависимость: assertions loading-host для Release и owner.pid для независимого наблюдения owner.
-- [ ] 52. [#370 — Перенести на Си: Память и fault injection](https://github.com/kniazkov/g0at/issues/370)
+- [x] 52. [#370 — Перенести на Си: Память и fault injection](https://github.com/kniazkov/g0at/issues/370) — [карта и проверки](../test/data/module-memory/README.md); test-only зависимость: assertions memory-host сохранены для Release; PR и CI — в задаче.
 - [ ] 53. [#371 — Перенести на Си: CLI модулей](https://github.com/kniazkov/g0at/issues/371)
 - [ ] 54. [#372 — Перенести на Си: Инспектор](https://github.com/kniazkov/g0at/issues/372)
 - [ ] 55. [#373 — Перенести на Си: Probe инспектора](https://github.com/kniazkov/g0at/issues/373)

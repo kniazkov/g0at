@@ -8,6 +8,10 @@
 #include "vm/module_snapshot.h"
 #include "vm/vm.h"
 
+/* Test contracts include side effects and must also execute in Release. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>

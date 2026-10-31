@@ -18,7 +18,10 @@ graph-depth limit is introduced.
 ## Controlled tests
 
 Configure a separate test-only tree with `-DGOAT_TEST_ALLOC_FAILURE=ON`, build
-`module_memory_testing`, then run `scripts/check_module_memory.py` against it.
+`module_memory_scenarios`, then run
+`ctest --test-dir <build> --output-on-failure -L module-memory-migration`.
+Run separate Debug and Release configurations; see the [scenario map and direct
+invocation](../test/data/module-memory/README.md).
 The option instruments malloc/calloc/realloc in core, shared module validation,
 yyjson and ZIP/zlib. Production builds default to OFF and expose no fault knob.
 The injector starts only at the loading boundary after search preparation.

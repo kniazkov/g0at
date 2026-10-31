@@ -1,0 +1,113 @@
+{
+  "baseline": "f8da48d6b8c769761eaf4363d27aa06a317804e8",
+  "source": "scripts/check_module_memory.py",
+  "timestamp": [
+    1980,
+    1,
+    1,
+    0,
+    0,
+    0
+  ],
+  "fixtures": {
+    "dep": {
+      "file": "dep.gbin",
+      "size": 922,
+      "expanded": 1105,
+      "sha256": "0746c5cd0ad1703f37680f6b7106c28474bbaf6f2ba9cc89ca0946541e6e71b7",
+      "record": {
+        "name": "dep",
+        "version": "1",
+        "hash": "78c26d6b53437c8f46b251c47e65faa3112245bb46fd4ce848ccf6a6c0cc76df"
+      }
+    },
+    "root": {
+      "file": "root.gbin",
+      "size": 487,
+      "expanded": 468,
+      "sha256": "f9b438d84d6617022bfb951ffeb6a372e358b10e6683c70852f7df0cabba1fd7",
+      "record": {
+        "name": "app",
+        "version": "1",
+        "hash": "590caa079e3aeedbc1233e26b905ef93cf03a5682022b9882b111f88cb5d3ce1"
+      }
+    },
+    "plain": {
+      "file": "plain.gbin",
+      "size": 423,
+      "expanded": 341,
+      "sha256": "dcc589465300ac98cd045e1fd8a36382d075fe06dc334d6f6ff01086fd57e4d2",
+      "record": {
+        "name": "app",
+        "version": "1",
+        "hash": "043066561bcc8c66a81e95b4205438ce37b9896174ec43438cc0a7487a8ccada"
+      }
+    },
+    "count20": {
+      "file": "count20.gbin",
+      "size": 429,
+      "expanded": 341,
+      "sha256": "2c233cfd09ee6914aa368138fd3bb418a7f6ea9a4efbccd9634b520bd0860f98",
+      "record": {
+        "name": "app",
+        "version": "1",
+        "hash": "d039ab8bedd0a595f855d967c608cc962f385be86b2e1acbee90c7dd3fe825b5"
+      }
+    },
+    "count24": {
+      "file": "count24.gbin",
+      "size": 427,
+      "expanded": 341,
+      "sha256": "5c7236cf6448d8a4dd2a38848db8c80f645bb1e9c1f5869bab60a0a0c3431718",
+      "record": {
+        "name": "app",
+        "version": "1",
+        "hash": "a6a3bac81582e0dd085476d70aceadaa67b97d4768933aa0a75229a0be623600"
+      }
+    },
+    "count28": {
+      "file": "count28.gbin",
+      "size": 429,
+      "expanded": 341,
+      "sha256": "969b39444f5f315b950468abbe7d40d93e5a186207a62ccfb645d0ed59dae677",
+      "record": {
+        "name": "app",
+        "version": "1",
+        "hash": "dbad429e094cb90e3dfcae7d45c943b4cfa133d45727258737be61af0bcfc3db"
+      }
+    },
+    "count32": {
+      "file": "count32.gbin",
+      "size": 429,
+      "expanded": 341,
+      "sha256": "e3c642f4f491e430c4534a2aaac69281159c200d21b011acd1105475fb71c1a1",
+      "record": {
+        "name": "app",
+        "version": "1",
+        "hash": "20fb2543fd8ab7bc94e3d4677a39683a298911e662317a2998dbe8035581c4d9"
+      }
+    },
+    "count36": {
+      "file": "count36.gbin",
+      "size": 427,
+      "expanded": 341,
+      "sha256": "b06039aeccb4291b2fadd0d5a24a7cd28986789cebf1ad503894a8186cd138e5",
+      "record": {
+        "name": "app",
+        "version": "1",
+        "hash": "d6e99bf48f5b0298e22af25ea17e0adfd73bfe9463a5a9a37dfd21e182023fb9"
+      }
+    },
+    "huge": {
+      "file": "huge.gbin",
+      "size": 423,
+      "expanded": 341,
+      "sha256": "ab130237e13bd54aba5ffb64d47741c3763b35c70ecc1d87d3e4772c310d57d5",
+      "record": {
+        "name": "app",
+        "version": "1",
+        "hash": "043066561bcc8c66a81e95b4205438ce37b9896174ec43438cc0a7487a8ccada"
+      }
+    }
+  }
+}

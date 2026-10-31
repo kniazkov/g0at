@@ -152,10 +152,12 @@ jobs:
             '
       - name: Module loading allocation failures
         run: |
-          cmake -S . -B build/memory-fault -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DGOAT_TEST_ALLOC_FAILURE=ON
-          cmake --build build/memory-fault --parallel 2 --target module_memory_testing
-          python3 scripts/check_module_memory.py build/memory-fault/module_memory_testing
+          for mode in Debug Release; do
+            cmake -S . -B build/memory-fault-$mode -DCMAKE_BUILD_TYPE=$mode \
+              -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DGOAT_TEST_ALLOC_FAILURE=ON
+            cmake --build build/memory-fault-$mode --parallel 2 --target module_memory_scenarios
+            ctest --test-dir build/memory-fault-$mode --output-on-failure -L module-memory-migration
+          done
       - name: Module JSON with nonzero automatic-variable initialization
         run: |
           cmake -S . -B build/json-stack-pattern \
@@ -385,13 +387,13 @@ jobs:
         run: ctest --test-dir build --output-on-failure -R "^native.c_module$"
       - name: Module loading allocation failures
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: |
-          cmake -S . -B build/memory-fault -G "MinGW Makefiles" \
-            -DCMAKE_BUILD_TYPE=Debug -DGOAT_TEST_ALLOC_FAILURE=ON
-          cmake --build build/memory-fault --parallel 2 --target module_memory_testing
-          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_memory.py build/memory-fault/module_memory_testing.exe
+          for mode in Debug Release; do
+            cmake -S . -B build/memory-fault-$mode -G "MinGW Makefiles" \
+              -DCMAKE_BUILD_TYPE=$mode -DGOAT_TEST_ALLOC_FAILURE=ON
+            cmake --build build/memory-fault-$mode --parallel 2 --target module_memory_scenarios
+            ctest --test-dir build/memory-fault-$mode --output-on-failure -L module-memory-migration
+          done
       - name: Check Windows API target compatibility
         shell: msys2 {0}
         run: bash scripts/check_windows_target.sh build/windows-target
