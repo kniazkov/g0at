@@ -85,7 +85,7 @@ Remaining Python import consumers (including dynamic imports) are:
 `check_module_container.py`, `check_module_delivery.py`,
 `check_module_hash.py`,
 `check_module_inspect.py`,
-`check_module_memory.py`, `check_module_merge.py`,
+`check_module_merge.py`,
 `check_module_musl.py`, `check_module_search.py`,
 and `check_inspect_probe.py`. They retain their current
 API and data paths; their migration remains in the ordered checklist.

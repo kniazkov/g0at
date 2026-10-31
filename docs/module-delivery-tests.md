@@ -93,7 +93,7 @@ runtime не подменяются ручным редактированием 
   `integration.module_writer.*` (CTest) и format-vectors проверяют одни и те же закреплённые
   байты/основные SHA-256 на всех платформах, включая 32-битный процесс.
   Хеши различных DLL/SO совпадать не обязаны.
-- `check_module_memory.py` использует управляемые ошибки выделения и ограничения
+- `fault.module_memory.*` (CTest) использует управляемые ошибки выделения и ограничения
   размеров, в том числе в MINGW32, без гигабайтных выделений.
 - `integration.module_consistency.*` (CTest), `integration.module_validation.*` (CTest) и
   `check_module_container.py` проверяют ссылки, сводки, дубликаты, целостность,

@@ -346,7 +346,11 @@ foreach(scenario check roundtrip stale missing missing-input reject-unicode reje
     "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
 endforeach()
 if(GOAT_TEST_ALLOC_FAILURE)
-  goat_python(fault.module_memory "fault" scripts/check_module_memory.py $<TARGET_FILE:module_memory_testing>)
+  foreach(memory_case baseline persistent once after-last boundaries add-overflow multiply-overflow limit-exact limit-archive limit-root-expanded limit-dependency-expanded count20 count24 count28 count32 count36 declared-expanded)
+    goat_scenario(fault.module_memory.${memory_case} "fault;module-memory-migration" TIMEOUT 330 COMMAND
+      "$<TARGET_FILE:module_memory_scenarios>" "fault.module_memory.${memory_case}" "$<TARGET_FILE:module_memory_testing>"
+      "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+  endforeach()
 endif()
 goat_scenario(native.bytecode_v1 "native;standalone-bytecode" TIMEOUT 200 COMMAND
   "$<TARGET_FILE:bytecode_v1_testing>" native.bytecode_v1 "$<TARGET_FILE:goat>"

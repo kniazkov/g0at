@@ -400,3 +400,9 @@ add_dependencies(module_library_scenarios module_import_execution_testing module
 add_executable(module_loading_scenarios src/functional/module_loading_scenarios.c src/functional/module_loading_cases.c src/functional/module_loading_lifecycle.c support/module_loading_fixture.c support/module_loading_owner.c)
 target_link_libraries(module_loading_scenarios PRIVATE goat_module_execution_support goat_language_execution_support goat_format_oracle goat_process_watch_support yyjson)
 add_dependencies(module_loading_scenarios module_loading_testing module_import_execution_testing)
+
+if(GOAT_TEST_ALLOC_FAILURE)
+  add_executable(module_memory_scenarios src/functional/module_memory_scenarios.c)
+  target_link_libraries(module_memory_scenarios PRIVATE goat_language_execution_support goat_format_oracle yyjson)
+  add_dependencies(module_memory_scenarios module_memory_testing)
+endif()
