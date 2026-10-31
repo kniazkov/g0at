@@ -136,3 +136,24 @@ spoofed musl or exit-stage reports, and a temporary test-only forced musl predic
 rejects unload stage, missing completed stages and mismatched runtime. Those
 synthetic controls do not claim real musl execution; the native musl CI is that
 separate runtime gate.
+
+### Windows temporary-path spelling
+
+The first Windows C run rejected the four cleanup-timeout cases at an additional
+canonical-string comparison, while the unchanged Python baseline passed. Windows
+`canonical_fs_path` normalizes backslashes to slashes; the original contract used
+`Path.is_absolute()`, existence and lexical `Path` equality, not byte-equality to a
+canonical filesystem spelling. The C cases now check those original properties:
+absolute drive/UNC or POSIX root, actual existence, then normalized lexical path
+equality (separator/dot/trailing handling and Windows case folding, without
+resolving `..` or symlink aliases). Relative or different existing directories
+still fail. Built-in tests exercise Windows and POSIX path rules on every host.
+Failure diagnostics include both compared paths; CI artifacts retain the raw owner
+stdout/stderr captures in addition to command logs.
+
+The path correction passed all five affected scenarios in Debug, Release and
+UBSan, plus 8/8 independent Debug/Release controls: relative existing and wrong
+existing directories are rejected, equivalent dot-component paths are accepted,
+and every injected failure releases the cleanup gate without leftover directories.
+Actual Windows behavior remains a separate CI gate, not inferred from these
+portable lexical tests.

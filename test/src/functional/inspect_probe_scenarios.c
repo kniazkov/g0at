@@ -1042,6 +1042,91 @@ static bool release_gate(void *argument) {
     return ok;
 }
 
+/* pathlib-style lexical checks: no realpath/symlink identity substitution. */
+static bool path_separator(char c, bool windows) {
+    return c == '/' || (windows && c == '\\');
+}
+
+static bool lexical_absolute(const char *path, bool windows) {
+    size_t n = strlen(path);
+    if (!windows)
+        return n && path[0] == '/';
+    if (n >= 3 && ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z'))
+        && path[1] == ':' && path_separator(path[2], true))
+        return true;
+    if (n < 5 || !path_separator(path[0], true) || !path_separator(path[1], true))
+        return false;
+    const char *server = path + 2, *end = server;
+    while (*end && !path_separator(*end, true))
+        end++;
+    if (end == server || !*end)
+        return false;
+    const char *share = end + 1;
+    return *share && !path_separator(*share, true);
+}
+
+static const char *lexical_path(scenario_run_t *r, const char *path, bool windows) {
+    size_t length = strlen(path), in = 0, out = 0;
+    char *normalized = language_owned(r, ALLOC(length + 2));
+    if (windows && length >= 2 && path[1] == ':') {
+        normalized[out++] = path[in++];
+        normalized[out++] = path[in++];
+        if (path_separator(path[in], windows)) {
+            normalized[out++] = '/';
+            in++;
+        }
+    } else if (path_separator(path[0], windows)) {
+        normalized[out++] = '/';
+        in++;
+        if (path_separator(path[in], windows)
+            && (windows || !path_separator(path[in + 1], windows))) {
+            normalized[out++] = '/';
+            in++;
+        }
+    }
+    while (in < length) {
+        while (path_separator(path[in], windows))
+            in++;
+        size_t begin = in;
+        while (path[in] && !path_separator(path[in], windows))
+            in++;
+        size_t count = in - begin;
+        if (!count || (count == 1 && path[begin] == '.'))
+            continue;
+        if (out && normalized[out - 1] != '/' && !(windows && out == 2 && normalized[1] == ':'))
+            normalized[out++] = '/';
+        memcpy(normalized + out, path + begin, count);
+        out += count;
+    }
+    normalized[out] = 0;
+    if (!windows)
+        return normalized;
+    string_value_t decoded = decode_utf8_n(normalized, out);
+    REQUIRE(decoded.data || !out);
+    string_value_t lower =
+        unicode_string_case((string_view_t){decoded.data, decoded.length}, false);
+    char *result = encode_utf8_view((string_view_t){lower.data, lower.length}, NULL);
+    FREE_STRING(lower);
+    FREE_STRING(decoded);
+    return language_owned(r, result);
+}
+
+static void lexical_path_controls(scenario_run_t *r) {
+    REQUIRE(lexical_absolute("C:\\work\\dir", true));
+    REQUIRE(lexical_absolute("//server/share/dir", true));
+    REQUIRE(!lexical_absolute("C:work/dir", true));
+    REQUIRE(!lexical_absolute("/work/dir", true));
+    REQUIRE(!lexical_absolute("relative/dir", true));
+    REQUIRE(!lexical_absolute("//server", true));
+    REQUIRE(
+        !strcmp(lexical_path(r, "C:\\Work\\.\\dir\\", true), lexical_path(r, "c:/work/dir", true)));
+    REQUIRE(strcmp(lexical_path(r, "C:/work/wrong", true), lexical_path(r, "c:/work/dir", true)));
+    REQUIRE(strcmp(lexical_path(r, "C:/work/../dir", true), lexical_path(r, "c:/dir", true)));
+    REQUIRE(lexical_absolute("/work/dir", false) && !lexical_absolute("work/dir", false));
+    REQUIRE(!strcmp(lexical_path(r, "/work//./dir/", false), "/work/dir"));
+    REQUIRE(strcmp(lexical_path(r, "/Work/dir", false), lexical_path(r, "/work/dir", false)));
+}
+
 static void cleanup_timeout(suite_t *s) {
     scenario_run_t *r = s->r;
     const char *mode = s->c->kind + 16;
@@ -1071,9 +1156,23 @@ static void cleanup_timeout(suite_t *s) {
     REQUIRE(eq(get(cleanup, "state"), "failed")
             && yyjson_mut_arr_size(get(cleanup, "diagnostics")) > 0);
     const char *temporary = str(r, get(cleanup, "temporaryDirectory"));
-    const char *absolute = canonical(r, temporary);
-    REQUIRE(absolute && !strcmp(absolute, temporary) && exists(r, temporary));
-    REQUIRE(!strcmp(temporary, wait_marker(c, mark(c, "cleanup-started"), 1000)));
+    const char *marker_path = wait_marker(c, mark(c, "cleanup-started"), 1000);
+#ifdef _WIN32
+    const bool windows = true;
+#else
+    const bool windows = false;
+#endif
+    bool absolute = lexical_absolute(temporary, windows);
+    bool same = !strcmp(lexical_path(r, temporary, windows), lexical_path(r, marker_path, windows));
+    if (!absolute || !same)
+        fprintf(stderr,
+                "cleanup path mismatch: report=[%s], marker=[%s], absolute=%d, same=%d\n",
+                temporary,
+                marker_path,
+                (int)absolute,
+                (int)same);
+    REQUIRE(absolute && exists(r, temporary));
+    REQUIRE(same);
     REQUIRE(yyjson_mut_arr_size(get(cleanup, "remainingPaths")) == 0);
     touch(r, gate);
     wait_absent(c, temporary, 15000);
@@ -1150,6 +1249,8 @@ static void owner_cases(suite_t *s) {
 static void body(scenario_run_t *r, void *argument) {
     config_t *c = argument;
     suite_t s = {.r = r, .c = c, .root = scenario_work_directory(scenario_run_context(r))};
+    if (!strcmp(c->kind, "success"))
+        lexical_path_controls(r);
     s.f = ip_create(r,
                     c->builder,
                     c->cc,

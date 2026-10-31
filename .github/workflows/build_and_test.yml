@@ -330,6 +330,8 @@ jobs:
             build/**/scenario-*/**/*.log
             build/**/scenario-*/**/*.stdout
             build/**/scenario-*/**/*.stderr
+            build/**/scenario-*/owner-*/stdout.bin
+            build/**/scenario-*/owner-*/stderr.bin
           if-no-files-found: ignore
   windows:
     name: Build and test (Windows, GCC ${{ matrix.msystem }})
@@ -530,4 +532,6 @@ jobs:
             build/**/scenario-*/**/*.log
             build/**/scenario-*/**/*.stdout
             build/**/scenario-*/**/*.stderr
+            build/**/scenario-*/owner-*/stdout.bin
+            build/**/scenario-*/owner-*/stderr.bin
           if-no-files-found: ignore
