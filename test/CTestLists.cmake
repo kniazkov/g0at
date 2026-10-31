@@ -119,7 +119,15 @@ foreach(module_loading_case off valid-auto valid-required no-match-auto no-match
     "$<TARGET_FILE:module_loading_testing>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
 endforeach()
-goat_python(integration.module_inspect "integration" scripts/check_module_inspect.py "$<TARGET_FILE:goat-inspect>" "${CMAKE_C_COMPILER}")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-inspect/cases.json")
+file(STRINGS "${PROJECT_SOURCE_DIR}/test/data/module-inspect/cases.json" module_inspect_ids REGEX "^[ ]+\"id\":")
+foreach(module_inspect_line IN LISTS module_inspect_ids)
+  string(REGEX REPLACE "^[ ]+\"id\": \"([^\"]+)\",?$" "\\1" module_inspect_id "${module_inspect_line}")
+  goat_scenario(integration.module_inspect.${module_inspect_id} "integration;module-inspect-migration" TIMEOUT 210 COMMAND
+    "$<TARGET_FILE:module_inspect_scenarios>" "integration.module_inspect.${module_inspect_id}"
+    "$<TARGET_FILE:goat-inspect>" "${CMAKE_C_COMPILER}" "${CMAKE_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1")
+endforeach()
 goat_python(integration.inspect_probe "integration" scripts/check_inspect_probe.py "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:module_import_execution_testing>" "${CMAKE_C_COMPILER}" "$<TARGET_FILE:inspect_probe_testing>")
 set(module_cli_cases missing-include basic override-valid native-overrides damaged-native search-precedence cycle descriptor-link direct-source descriptor-context listing listing-link-fail listing-missing listing-path listing-timeout auto-preferred auto-fallback listing-mixed explicit-no-fallback off-no-probe controlled-native descriptor-off default-auto dependency-native-required reports uppercase source-collision hardlink-output directory-output symlink-output legacy)
 foreach(index RANGE 0 10)
@@ -468,8 +476,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1031)
-  message(FATAL_ERROR "Expected all 1031 integration scenarios (CLI cases split in #371); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1163)
+  message(FATAL_ERROR "Expected all 1163 integration scenarios (inspector cases split in #372); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

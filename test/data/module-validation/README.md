@@ -111,5 +111,5 @@ limitations are outside this migration. Exact-head GitHub workflows remain the
 cross-platform authority; PR/green-run links are recorded in the implementation PR.
 
 The retired script exported no imported helpers. `module_interface_fixtures.py`
-is retained for `check_module_inspect.py` and `check_module_merge.py`;
+is retained for `check_module_merge.py`;
 `reference.py` remains for its other consumers. Final cleanup is tracked by #394.

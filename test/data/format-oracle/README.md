@@ -229,7 +229,6 @@ subsequent migrations still depend on them. Direct consumers at this step:
 - `scripts/check_module_container.py`
 - `scripts/check_module_delivery.py`
 - `scripts/check_module_hash.py`
-- `scripts/check_module_inspect.py`
 - `test/support/module_loading_fixture.c` (#369)
 - `scripts/check_module_merge.py`
 - `scripts/check_module_musl.py`
