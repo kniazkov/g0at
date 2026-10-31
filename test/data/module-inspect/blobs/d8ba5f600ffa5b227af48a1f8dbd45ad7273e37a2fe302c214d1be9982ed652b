@@ -1,0 +1,1 @@
+{"architecture": "x86", "bits": 32, "cpuFeatures": ["i686"], "endian": "little", "minimumOs": [10], "os": "windows", "runtime": {"family": "msvcrt", "minimumVersion": [0]}}

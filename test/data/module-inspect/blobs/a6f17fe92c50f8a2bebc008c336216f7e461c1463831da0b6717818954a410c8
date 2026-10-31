@@ -1,0 +1,1 @@
+{"architecture": "x86_64", "bits": 64, "cpuFeatures": ["sse2"], "endian": "little", "minimumOs": [999], "os": "linux", "runtime": {"family": "glibc", "minimumVersion": [2, 28]}}

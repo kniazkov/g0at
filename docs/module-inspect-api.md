@@ -114,7 +114,7 @@ EOF, отдельный временный рабочий каталог и вл
 фактической загрузки, а не её успех. Отсутствие подходящего native само по себе
 остаётся предупреждением и не отменяет VM.
 
-Совместная приёмка использует существующие наборы `scripts/check_module_inspect.py`,
+Совместная приёмка использует существующие наборы `integration.module_inspect.*` (CTest),
 `scripts/check_inspect_probe.py` и `scripts/check_module_merge.py`: локальные и
 графовые ссылки, недостающие зависимости, общие узлы, выбор цели и отсутствие
 исполнения при merge проверяются вместе с прежними гарантиями публикации.
@@ -129,7 +129,7 @@ EOF, отдельный временный рабочий каталог и вл
 
 Перед самостоятельным запуском скриптов соберите `goat-inspect` и `goat-merge`
 в одном каталоге исполняемых файлов (например, `build`).
-Проверка метаданных CLI: `python3 scripts/check_module_inspect.py build/goat-inspect`.
+После сборки цели `module_inspect_scenarios` проверка метаданных CLI: `ctest --test-dir build --output-on-failure -L module-inspect-migration`.
 Общие наборы native, валидации, дочерних процессов и службы очистки дополняют
 сквозные проверки изолированных проб: стадии загрузки/выгрузки, ABI, бинарный
 вывод, дедлайны, EOF stdin, единичная проба общего узла, аварии, отказы запуска,
@@ -255,7 +255,7 @@ copy for native compatibility. For a foreign target, `not_checked` means no
 actual load occurred, not that loading succeeded. Missing matching native alone
 remains a warning and does not disable the VM.
 
-Joint acceptance uses the existing `scripts/check_module_inspect.py`,
+Joint acceptance uses the existing `integration.module_inspect.*` (CTest),
 `scripts/check_inspect_probe.py` and `scripts/check_module_merge.py` suites:
 local versus graph references, missing dependencies, shared nodes, target
 selection and nonexecuting merge accompany the existing publication guarantees.
@@ -270,7 +270,8 @@ probes never produce invented captured streams or loading successes.
 
 Before running the scripts standalone, build `goat-inspect` and `goat-merge`
 side by side in the same executable directory (for example, `build`).
-Run `python3 scripts/check_module_inspect.py build/goat-inspect` for metadata CLI
+Build target `module_inspect_scenarios`, then run
+`ctest --test-dir build --output-on-failure -L module-inspect-migration` for metadata CLI
 coverage. Shared native, validation, child-process and cleanup-service suites
 complement end-to-end isolated-probe coverage: load/unload stages, ABI, binary
 output, deadlines, EOF stdin, one probe per shared node, crashes, startup failures,
