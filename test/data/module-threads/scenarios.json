@@ -1,0 +1,1527 @@
+[
+  {
+    "id": "integration.module_threads.main-ready-function",
+    "name": "main-ready-function",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func(x) { return x + 1; }; const t = spawn(f, 41); println(join(t)); println(join(t)); println(\"main-end\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "42\n42\nmain-end\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "42\n42\nmain-end\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "42\n42\nmain-end\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "42\n42\nmain-end\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.ordinary-helper",
+    "name": "ordinary-helper",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { const t = spawn(func() { return 13; }); return join(t); }; println(f());",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "13\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "13\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "13\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "13\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.ready-main-value",
+    "name": "ready-main-value",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "var value = 17; const t = spawn(func() { return value; }); println(join(t));",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.pending-direct-name-var-read",
+    "name": "pending-direct-name-var-read",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { return late; }; const t = spawn(f); try { join(t); } catch(e) { println(\"pending\"); } var late = 17; println(join(spawn(f)));",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.pending-direct-name-var-write",
+    "name": "pending-direct-name-var-write",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { late = 99; }; const t = spawn(f); try { join(t); } catch(e) { println(\"pending\"); } var late = 17; join(spawn(f)); println(late);",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.pending-direct-name-const-read",
+    "name": "pending-direct-name-const-read",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { return late; }; const t = spawn(f); try { join(t); } catch(e) { println(\"pending\"); } const late = 17; println(join(spawn(f)));",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.pending-direct-name-read",
+    "name": "pending-direct-name-read",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "public const f = func() { return late; }; const t = spawn(f); try { join(t); } catch(e) { println(\"pending\"); } public var late = 17; println(join(spawn(f)));",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.pending-direct-name-write",
+    "name": "pending-direct-name-write",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "public const f = func() { late = 99; }; const t = spawn(f); try { join(t); } catch(e) { println(\"pending\"); } public var late = 17; join(spawn(f)); println(late);",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "unlink",
+        "path": "sources/app-1/main.gbin"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": null,
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.gbin"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "inherit"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.pending-main-read",
+    "name": "pending-main-read",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { const root = include \"main.goat\"; return root.late; }; const t = spawn(f); try { join(t); } catch(e) { println(\"pending\"); } public var late = 17; println(join(spawn(f)));",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "pending\n17\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.pending-main-write",
+    "name": "pending-main-write",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { const root = include \"main.goat\"; root.late = 99; }; const t = spawn(f); try { join(t); } catch(e) { println(\"pending\"); } public var late = 17; join(spawn(f)); println(late);",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "pending\n99\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.thread-exception-identity",
+    "name": "thread-exception-identity",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const error = { public var code = 7; }; const t = spawn(func() { throw error; }); try { join(t); } catch(e) { println(e == error); e.code = 8; } try { join(t); } catch(e) { println(e.code); }",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\n8\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\n8\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\n8\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\n8\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.thread-invalid-arguments",
+    "name": "thread-invalid-arguments",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { spawn(42); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } try { join(-1); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } try { join(99999999); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } println(join(spawn(func() { return 4; })));",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ntrue\ntrue\n4\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\ntrue\ntrue\n4\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\ntrue\ntrue\n4\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\ntrue\ntrue\n4\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.descendant-lifetime",
+    "name": "descendant-lifetime",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { return 42; }; spawn(func() { spawn(func() { println(f()); }); });",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "42\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "42\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "42\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "42\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.nested-joins",
+    "name": "nested-joins",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const child = spawn(func() { return join(spawn(func() { return 37; })); }); println(join(child));",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "37\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "none",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "37\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "37\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--optimize",
+          "all",
+          "--native",
+          "auto",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "37\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.include-restrictions-and-restore",
+    "name": "include-restrictions-and-restore",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "include \"init.goat\"; println(join(spawn(func() { return 42; })));",
+        "version": "1",
+        "files": {
+          "init.goat": "try { spawn(func() {}); } catch(e) { println(e == Exceptions.INVALID_OPERATION); } try { join(9999); } catch(e) { println(e == Exceptions.INVALID_OPERATION); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ntrue\n42\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.include-escaped-error-restore",
+    "name": "include-escaped-error-restore",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "var saved = null; try { include \"bad.goat\"; } catch(e) { saved = e; } println(join(spawn(func() { return 7; }))); try { include \"bad.goat\"; } catch(e) { println(e == saved); } println(join(spawn(func() { return 8; })));",
+        "version": "1",
+        "files": {
+          "bad.goat": "println(\"once\"); spawn(func() {});"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "once\n7\ntrue\n8\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.ready-helper-keeps-restrictions",
+    "name": "ready-helper-keeps-restrictions",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const helper = include \"helper.goat\"; include \"init.goat\"; println(helper.work());",
+        "version": "1",
+        "files": {
+          "helper.goat": "public work = func() { return join(spawn(func() { return 25; })); }; public wait = func(id) { return join(id); };",
+          "init.goat": "const h = include \"helper.goat\"; try { h.work(); } catch(e) { println(e == Exceptions.INVALID_OPERATION); } try { h.wait(9999); } catch(e) { println(e == Exceptions.INVALID_OPERATION); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ntrue\n25\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.nested-include-keeps-outer-restriction",
+    "name": "nested-include-keeps-outer-restriction",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "include \"outer.goat\"; println(join(spawn(func() { return 9; })));",
+        "version": "1",
+        "files": {
+          "inner.goat": "public value = 1;",
+          "outer.goat": "include \"inner.goat\"; try { spawn(func() {}); } catch(e) { println(e == Exceptions.INVALID_OPERATION); } try { join(999); } catch(e) { println(e == Exceptions.INVALID_OPERATION); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ntrue\n9\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.cyclic-include-with-owner",
+    "name": "cyclic-include-with-owner",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const a = include \"a.goat\"; println(a.value); println(join(spawn(func() { return a.value; })));",
+        "version": "1",
+        "files": {
+          "a.goat": "include \"b.goat\"; public value = 42;",
+          "b.goat": "const a = include \"a.goat\"; try { a.value; } catch(e) { println(\"pending\"); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "pending\n42\n42\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.imports-dynamic-and-lifetime",
+    "name": "imports-dynamic-and-lifetime",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "helper",
+        "code": "external work = func() { return join(spawn(func() { return 31; })); };",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "compile",
+        "name": "outer",
+        "code": "const helper = import \"helper@1\"; try { helper.work(); } catch(e) { println(e == Exceptions.INVALID_OPERATION); } external value = 42;",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const helper = import \"helper@1\"; const outer = import \"outer@1\"; println(helper.work()); spawn(func() { const module = import \"outer@1\"; spawn(func() { println(module.value); }); });",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\n31\n42\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.concurrent-same-include",
+    "name": "concurrent-same-include",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { return include \"library.goat\"; }; const a = spawn(f); const b = spawn(f); println(join(a) == join(b));",
+        "version": "1",
+        "files": {
+          "library.goat": "println(\"once\"); public value = 42;"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "once\ntrue\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.concurrent-failed-include",
+    "name": "concurrent-failed-include",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { try { return include \"bad.goat\"; } catch(e) { return e; } }; const a = spawn(f); const b = spawn(f); println(join(a) == join(b));",
+        "version": "1",
+        "files": {
+          "bad.goat": "println(\"once\"); throw { public code = 42; };"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "once\ntrue\n",
+        "status": 0,
+        "stderr_policy": "ignore",
+        "cwd": "unrelated"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.initializer-io-independent-worker",
+    "name": "initializer-io-independent-worker",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "public var started = false; const ready = include \"ready.goat\"; const a = spawn(func() { include \"blocked.goat\"; }); const b = spawn(func() { while (!started) {} ready.work(); }); join(a); join(b); println(\"done\");",
+        "version": "1",
+        "files": {
+          "ready.goat": "public work = func() { join(spawn(func() {})); println(\"ready\"); input(); };",
+          "blocked.goat": "const main = include \"main.goat\"; println(\"waiting\"); main.started = true; input();"
+        }
+      },
+      {
+        "kind": "handshake",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.lifetime-native-absolute",
+    "name": "lifetime-native-absolute",
+    "steps": [
+      {
+        "kind": "write",
+        "path": "lifetime путь😀/main.goat",
+        "text": "bootstrap(); public value = 42; public f = func() { const c = include \"child.goat\"; return c.value; };"
+      },
+      {
+        "kind": "write",
+        "path": "lifetime путь😀/child.goat",
+        "text": "public value = 17;"
+      },
+      {
+        "kind": "lifetime",
+        "spelling": "absolute"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_threads.lifetime-native-relative",
+    "name": "lifetime-native-relative",
+    "steps": [
+      {
+        "kind": "write",
+        "path": "lifetime путь😀/main.goat",
+        "text": "bootstrap(); public value = 42; public f = func() { const c = include \"child.goat\"; return c.value; };"
+      },
+      {
+        "kind": "write",
+        "path": "lifetime путь😀/child.goat",
+        "text": "public value = 17;"
+      },
+      {
+        "kind": "lifetime",
+        "spelling": "relative"
+      }
+    ]
+  }
+]

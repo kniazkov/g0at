@@ -1,0 +1,17 @@
+{
+  "source": "scripts/check_module_threads.py",
+  "source_sha256": "de8fe601dd8fad0f5e1f094a06c06b413edccaf4c599b4b81635f780675033ed",
+  "base_commit": "8ca351d0b513c660e2438ee7c71e760e431e4f1a",
+  "method": "Original AST project calls and literal compile/run bodies executed against recording stubs. program boundary records unchanged ordered CLI matrix. Native literal fixtures and two-pipe protocol copied verbatim; no production-derived expected values.",
+  "scenario_count": 25,
+  "fixture_sha256": "ad06d8842a51ecbce5b4a28263d71453898f0c716070a9e2f6d16a23727856b1",
+  "step_counts": {
+    "compile": 25,
+    "invoke": 78,
+    "unlink": 10,
+    "handshake": 1,
+    "write": 4,
+    "lifetime": 2
+  },
+  "original_execution_count": 106
+}

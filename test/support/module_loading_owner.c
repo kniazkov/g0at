@@ -194,8 +194,9 @@ static void raw_start(loading_owner_t *o, const char *const *args, const char *c
     REQUIRE(o, quoted);
     wchar_t *command = wide_text(o, quoted);
     FREE(quoted);
-    wchar_t *environment = wide_environment(o, env);
+    wchar_t *environment = env ? wide_environment(o, env) : NULL;
     wchar_t *executable = wide_text(o, args[0]);
+    wchar_t *cwd = o->options.working_directory ? wide_text(o, o->options.working_directory) : NULL;
     REQUIRE(o, !o->options.stdin_pty && !o->options.new_session);
     bool input_ok;
     if (o->options.stdin_file) {
@@ -245,7 +246,7 @@ static void raw_start(loading_owner_t *o, const char *const *args, const char *c
                             TRUE,
                             EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
                             environment,
-                            NULL,
+                            cwd,
                             &startup.StartupInfo,
                             &process);
     }
@@ -407,6 +408,8 @@ static void raw_start(loading_owner_t *o, const char *const *args, const char *c
     pid_t pid = ok ? fork() : -1;
     int error = errno;
     if (!pid) {
+        if (o->options.working_directory && chdir(o->options.working_directory))
+            _exit(126);
         if (o->options.new_session && setsid() < 0)
             _exit(126);
         if (dup2(in[0], STDIN_FILENO) < 0 || dup2(out[1], STDOUT_FILENO) < 0
@@ -415,7 +418,10 @@ static void raw_start(loading_owner_t *o, const char *const *args, const char *c
             _exit(126);
         for (long fd = 3; fd < maximum; fd++)
             close((int)fd);
-        execve(args[0], (char *const *)args, (char *const *)env);
+        if (env)
+            execve(args[0], (char *const *)args, (char *const *)env);
+        else
+            execv(args[0], (char *const *)args);
         _exit(127);
     }
     close_native(&in[0]);
@@ -623,7 +629,7 @@ loading_owner_t *loading_owner_command_start_options(scenario_run_t *r,
     REQUIRE(o, !(o->options.stdin_file && o->options.stdin_pty));
     REQUIRE(o, !o->options.stdin_file || !input_size);
     REQUIRE(o, !o->options.stdin_pty || !close_stdin);
-    REQUIRE(o, arguments && arguments[0] && env && input_size <= 4096);
+    REQUIRE(o, arguments && arguments[0] && input_size <= 4096);
     REQUIRE(o, !input_size || input);
     unsigned char *copy = language_owned(r, ALLOC(input_size + 1));
     if (input_size)
@@ -638,11 +644,13 @@ loading_owner_t *loading_owner_command_start_options(scenario_run_t *r,
         REQUIRE(o, fprintf(o->log, "argv[%zu]=%s\n", strlen(arguments[i]), arguments[i]) >= 0);
     REQUIRE(o, fprintf(o->log, "stdin-bytes=%zu close-stdin=%d\n", input_size, close_stdin) >= 0);
     /* Record only explicit test hooks and temporary roots, never inherited secrets. */
-    for (size_t i = 0; env[i]; i++)
+    for (size_t i = 0; env && env[i]; i++)
         if (!strncmp(env[i], "GOAT_PROBE_TEST_", 16) || !strncmp(env[i], "GOAT_INSPECT_", 13)
             || environment_name(env[i], "TMPDIR") || environment_name(env[i], "TMP")
             || environment_name(env[i], "TEMP"))
             REQUIRE(o, fprintf(o->log, "env=%s\n", env[i]) >= 0);
+    if (o->options.working_directory)
+        REQUIRE(o, fprintf(o->log, "cwd=%s\n", o->options.working_directory) >= 0);
     REQUIRE(o, !fflush(o->log));
     raw_start(o, arguments, env);
     return o;

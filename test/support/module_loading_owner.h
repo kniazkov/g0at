@@ -17,6 +17,7 @@ typedef struct {
 /** Protocol-free independent owner transport. No descendant adoption or tree kill:
  * the tested cleanup service must remain responsible for its own descendants.
  * Arguments/environment must remain live for start; input is copied (at most 4096 bytes).
+ * NULL environment inherits the native parent environment unchanged.
  * Paths should be absolute; cwd is inherited. Successful/failing runs retain full captures.
  */
 loading_owner_t *loading_owner_command_start(scenario_run_t *r,
@@ -30,11 +31,13 @@ loading_owner_t *loading_owner_command_start(scenario_run_t *r,
 
 /** Independent transport variants for process-primitive tests. Zero means pipe stdin.
  * File input is opened read-only. PTY input is POSIX-only and preserves canonical
- * terminal behavior. new_session is POSIX-only, matching start_new_session=True. */
+ * terminal behavior. new_session is POSIX-only, matching start_new_session=True.
+ * working_directory is optional, absolute, and affects only the new child. */
 typedef struct {
     const char *stdin_file;
     bool stdin_pty;
     bool new_session;
+    const char *working_directory;
 } loading_owner_options_t;
 
 loading_owner_t *loading_owner_command_start_options(scenario_run_t *r,

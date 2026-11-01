@@ -12,6 +12,10 @@
 #include "model/thread.h"
 #include "vm/vm.h"
 
+/* Fixture actions and lifetime assertions must execute in Release too. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 
