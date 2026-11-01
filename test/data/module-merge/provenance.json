@@ -1,0 +1,76 @@
+{
+  "baseline": "a8fba6dbfa03352a0d4952cf843a5a8ea990b2ee",
+  "source_sha256": "01f0f611c5d69b8cbc589e101a4ec95163385adb2ca5fce62decaf871f16146a",
+  "cases": 196,
+  "original_checked_locally": 194,
+  "socket_not_executed_locally": [
+    "source.socket",
+    "destination.socket"
+  ],
+  "zip_timestamp": [
+    1980,
+    1,
+    1,
+    0,
+    0,
+    0
+  ],
+  "blob_count": 128,
+  "blob_bytes": 97424,
+  "compiled_native_blobs": false,
+  "expected_outputs_independently_rebuilt_exact": 72,
+  "local_c_validation": {
+    "Debug": {
+      "passed": 194,
+      "socket_strict": "EPERM (2 cases)"
+    },
+    "Release": {
+      "passed": 194,
+      "socket_strict": "EPERM (2 cases)"
+    },
+    "UBSan": {
+      "passed": 194,
+      "socket_strict": "EPERM (2 cases)"
+    }
+  },
+  "dynamic_constructor_parity": {
+    "Debug": {
+      "config": "Debug",
+      "original_unchanged_success_helper_pass": true,
+      "source_exact": true,
+      "compiled_library_exact": true,
+      "bytecode_payload_exact": true,
+      "metadata_semantically_exact": true,
+      "input_zip_exact": false,
+      "input_sha256": "5dfc1a759772e91bbee0c7c3874cc01d1f6dad6f7d3f31b6f7893bb742f74e80",
+      "input_members": {
+        "module.json": "c08982b4943dcccfa25f96d9226ba09b47f90338bd96329ef0f54153c220e2ae",
+        "bytecode.bin": "46014bdce37592fbfa940410c4d70c935ff41a18a0c798149b6dbb84f8bf6592",
+        "native/constructor.so": "8155f931012cb57d434503c054958fe980406db9e29260de722a8f9970ba6bf8"
+      },
+      "output_exact": true,
+      "output_sha256": "d8a24d5fed5d78b7043e6d0f172962cdbaa8801bb13b261b31734c0f80d48a17",
+      "marker_absent": true,
+      "input_unchanged": true
+    },
+    "Release": {
+      "config": "Release",
+      "original_unchanged_success_helper_pass": true,
+      "source_exact": true,
+      "compiled_library_exact": true,
+      "bytecode_payload_exact": true,
+      "metadata_semantically_exact": true,
+      "input_zip_exact": false,
+      "input_sha256": "5dfc1a759772e91bbee0c7c3874cc01d1f6dad6f7d3f31b6f7893bb742f74e80",
+      "input_members": {
+        "module.json": "c08982b4943dcccfa25f96d9226ba09b47f90338bd96329ef0f54153c220e2ae",
+        "bytecode.bin": "46014bdce37592fbfa940410c4d70c935ff41a18a0c798149b6dbb84f8bf6592",
+        "native/constructor.so": "8155f931012cb57d434503c054958fe980406db9e29260de722a8f9970ba6bf8"
+      },
+      "output_exact": true,
+      "output_sha256": "d8a24d5fed5d78b7043e6d0f172962cdbaa8801bb13b261b31734c0f80d48a17",
+      "marker_absent": true,
+      "input_unchanged": true
+    }
+  }
+}

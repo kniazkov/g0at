@@ -353,7 +353,14 @@ foreach(information_id IN LISTS information_ids)
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data"
     "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 endforeach()
-goat_python(integration.module_merge "integration" scripts/check_module_merge.py "$<TARGET_FILE:goat-merge>" "${CMAKE_C_COMPILER}")
+include("${PROJECT_SOURCE_DIR}/test/data/module-merge/case-ids.cmake")
+foreach(module_merge_case IN LISTS module_merge_case_ids)
+  goat_scenario(integration.module_merge.${module_merge_case} "integration;module-merge-migration" TIMEOUT 120 COMMAND
+    "$<TARGET_FILE:module_merge_scenarios>" "integration.module_merge.${module_merge_case}"
+    "$<TARGET_FILE:goat-merge>" "$<TARGET_FILE:goat-inspect>" "${CMAKE_C_COMPILER}"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}"
+    "${PROJECT_SOURCE_DIR}/docs/module-format-v1")
+endforeach()
 goat_scenario(native.module_json "integration;metadata-json" TIMEOUT 200 COMMAND
   "$<TARGET_FILE:module_json_scenarios>" native.module_json "$<TARGET_FILE:module_json_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
@@ -483,8 +490,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1210)
-  message(FATAL_ERROR "Expected all 1210 integration scenarios (inspector probe cases split in #373); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1405)
+  message(FATAL_ERROR "Expected all 1405 integration scenarios (module merge cases split in #374); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

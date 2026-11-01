@@ -86,7 +86,7 @@
 - [x] 53. [#371 — Перенести на Си: CLI модулей](https://github.com/kniazkov/g0at/issues/371) — [карта и проверки](../test/data/module-cli/README.md); test-only зависимость: assertions compiler-wrapper для Release; PR и CI — в задаче.
 - [x] 54. [#372 — Перенести на Си: Инспектор](https://github.com/kniazkov/g0at/issues/372)
 - [x] 55. [#373 — Перенести на Си: Probe инспектора](https://github.com/kniazkov/g0at/issues/373)
-- [ ] 56. [#374 — Перенести на Си: Merge модулей](https://github.com/kniazkov/g0at/issues/374)
+- [x] 56. [#374 — Перенести на Си: Merge модулей](https://github.com/kniazkov/g0at/issues/374)
 - [ ] 57. [#375 — Перенести на Си: Дочерние процессы](https://github.com/kniazkov/g0at/issues/375)
 - [ ] 58. [#376 — Перенести на Си: Служба очистки](https://github.com/kniazkov/g0at/issues/376)
 - [ ] 59. [#377 — Перенести на Си: Завершение процессов и модулей](https://github.com/kniazkov/g0at/issues/377)

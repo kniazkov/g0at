@@ -115,7 +115,7 @@ EOF, отдельный временный рабочий каталог и вл
 остаётся предупреждением и не отменяет VM.
 
 Совместная приёмка использует существующие наборы `integration.module_inspect.*` (CTest),
-`integration.inspect_probe.*` (CTest) и `scripts/check_module_merge.py`: локальные и
+`integration.inspect_probe.*` (CTest) и `integration.module_merge.*` (CTest): локальные и
 графовые ссылки, недостающие зависимости, общие узлы, выбор цели и отсутствие
 исполнения при merge проверяются вместе с прежними гарантиями публикации.
 
@@ -256,7 +256,7 @@ actual load occurred, not that loading succeeded. Missing matching native alone
 remains a warning and does not disable the VM.
 
 Joint acceptance uses the existing `integration.module_inspect.*` (CTest),
-`integration.inspect_probe.*` (CTest) and `scripts/check_module_merge.py` suites:
+`integration.inspect_probe.*` (CTest) and `integration.module_merge.*` (CTest) suites:
 local versus graph references, missing dependencies, shared nodes, target
 selection and nonexecuting merge accompany the existing publication guarantees.
 

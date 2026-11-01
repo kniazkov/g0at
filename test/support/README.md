@@ -84,7 +84,6 @@ Remaining Python import consumers (including dynamic imports) are:
 `check_module_canonical.py`,
 `check_module_container.py`, `check_module_delivery.py`,
 `check_module_hash.py`,
-`check_module_merge.py`,
 `check_module_musl.py` and `check_module_search.py`. They retain their current
 API and data paths; their migration remains in the ordered checklist.
 
@@ -131,7 +130,7 @@ and `check_module_delivery.py`.
 
 Remaining `inspect_report_test_support` consumers:
 `scripts/check_module_book.py`,
-`check_module_merge.py` and `check_module_delivery.py`.
+and `check_module_delivery.py`.
 These keep their existing IDs and entry points; this step does not migrate their
 scenario bodies or remove any Python test.
 
@@ -332,8 +331,9 @@ no production validator computes expected projection or merge results.
 Dispatch/consistency migration (#365): `module_dispatch_consistency_scenarios`
 replaces both Python runners with 144 stable IDs and explicit independent
 bytecode inspection. See [mapping and validation](../data/module-dispatch-consistency/README.md).
-`module_interface_fixtures.py` remains for `check_module_merge.py`; that consumer and the
-remaining execution helper consumers above are not migrated here. Cleanup is
+`module_interface_fixtures.py` remains pending final cleanup after its last runner
+consumer migrated in #374. The remaining execution helper consumers above are
+not migrated here. Cleanup is
 tracked by #394. The frozen consistency corpus already contains the original
 external declaration instructions and is not rebuilt by a production helper.
 
@@ -366,3 +366,13 @@ Generic stdin follows `communicate` semantics for an already-closed reader;
 other transport errors still fail. Independent Debug/Release controls cover early
 reader exit, copied binary input, EOF versus held-open input, explicit owner kill,
 wrong exit, deadline failure and rejected oversized input (14/14 controls).
+
+## Module merge migration (#374)
+
+`module_merge_scenarios` replaces the Python merge runner with 196 stable IDs.
+`merge_terminal.*` supplies bounded, echo-disabled real POSIX terminal input,
+callback-safe process cleanup and retained binary diagnostics.
+`merge_constructor.*` compiles the original constructor fixture on the current
+platform, builds its archive with the independent test oracle and verifies that
+merge never loads it. No production behavior or hooks change. See
+[the complete map and validation](../data/module-merge/README.md).
