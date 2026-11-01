@@ -166,7 +166,7 @@ callback-функции spawn по-прежнему могут получать 
 
 `module_serialization_scenarios` exercises controlled concurrent requests,
 serialized independent initializers, saved failures and reentrant includes.
-`scripts/check_module_threads.py` exercises the language/VM/native thread paths,
+`module_threads_scenarios` exercises the language/VM/native thread paths,
 dynamic restrictions, direct-entry readiness and blocking-I/O handshakes.
 `module_thread_lifetime_testing` checks entry → worker → grandchild survival,
 first native use after entry completion and exactly-once final cleanup. Tests use
@@ -176,7 +176,7 @@ protection, not a language initialization timeout. The process diagnostic
 
 `module_serialization_scenarios` проверяет управляемые конкурентные запросы,
 сериализацию независимых инициализаторов, сохранённые ошибки и повторный include.
-`scripts/check_module_threads.py` проверяет потоки через язык/VM/native, динамические
+`module_threads_scenarios` проверяет потоки через язык/VM/native, динамические
 ограничения, готовность прямого входного файла и согласованное блокирующее I/O.
 `module_thread_lifetime_testing` проверяет цепочку входной поток → рабочий → потомок,
 первый вызов native после завершения входного потока и единственную финальную

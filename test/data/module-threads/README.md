@@ -71,10 +71,10 @@ Every row has prefix `integration.module_threads.`; steps remain ordered.
 
 ## Validation
 
-Run CTest `-L module-threads-migration` in Debug and Release and compare unchanged
-Python via `validation.module_threads_original` before removing it. Full remote
-platform parity, including Windows and musl, is required before final deletion.
-Local results and independent mutation controls are recorded below when complete.
+Run CTest `-L module-threads-migration` in Debug and Release. The unchanged
+Python runner was compared through `validation.module_threads_original` before
+removal. Full remote platform parity, including Windows and musl, passed at
+`adc76203e09de08c57c7d3b1c50993cc004f3deb`; CI links are recorded in PR #456.
 
 Local Linux validation:
 
@@ -98,5 +98,5 @@ Local Linux validation:
   and non-ASCII `TMPDIR`, inherited and explicit Unicode working directories,
   and bounded rejection of a nonexistent working directory. These controls
   exercise the independent raw transport, not the production module runtime.
-- Full remote original/C parity remains required; the original script stays in
-  place for that check before deletion.
+- Full remote original/C parity passed before Python deletion. Final removal
+  CI evidence is maintained in PR #456.

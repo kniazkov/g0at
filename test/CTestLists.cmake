@@ -341,7 +341,6 @@ foreach(module_threads_line IN LISTS module_threads_lines)
     "$<TARGET_FILE:module_thread_lifetime_testing>"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/module-threads")
 endforeach()
-goat_python(validation.module_threads_original "integration;threads-parity" scripts/check_module_threads.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 # One ID per legacy project or CLI case/optimizer, from the same read-only table.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-assignment/scenarios.json")
 file(STRINGS "${PROJECT_SOURCE_DIR}/test/data/module-assignment/scenarios.json" assignment_ids REGEX "^[ ]+\"id\":")
