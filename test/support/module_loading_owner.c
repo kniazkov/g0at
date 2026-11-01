@@ -799,7 +799,7 @@ void loading_owner_wait_eof(loading_owner_t *o, uint64_t timeout_ms) {
                 == PROCESS_WATCH_OK);
 }
 
-void loading_owner_pin_pid(loading_owner_t *o, uint64_t pid) {
+process_watch_t *loading_owner_watch_pid(loading_owner_t *o, uint64_t pid) {
     unsigned long error = 0;
     process_watch_t *w = process_watch_open(pid, &error);
     REQUIRE(o, w);
@@ -810,6 +810,11 @@ void loading_owner_pin_pid(loading_owner_t *o, uint64_t pid) {
     }
     o->watches = next;
     o->watches[o->watch_count++] = w;
+    return w;
+}
+
+void loading_owner_pin_pid(loading_owner_t *o, uint64_t pid) {
+    (void)loading_owner_watch_pid(o, pid);
 }
 
 bool loading_owner_pid_alive(loading_owner_t *o, uint64_t pid) {
@@ -1240,4 +1245,28 @@ yyjson_val *loading_owner_end(loading_owner_t *o, int code, bool cleanup, bool e
         }
     }
     return record;
+}
+
+static process_watch_result_t input_sent(void *arg, unsigned long *error) {
+    (void)error;
+    loading_owner_t *o = arg;
+    pump(o);
+    return o->input_offset == o->input_size ? PROCESS_WATCH_OK : PROCESS_WATCH_TIMEOUT;
+}
+
+void loading_owner_send(loading_owner_t *o, const void *data, size_t size, uint64_t timeout_ms) {
+    REQUIRE(o, !o->eof && o->input_offset == o->input_size && size <= 4096);
+    REQUIRE(o, !size || data);
+    unsigned char *copy = language_owned(o->run, ALLOC(size + 1));
+    if (size)
+        memcpy(copy, data, size);
+    o->input_data = copy;
+    o->input_offset = 0;
+    o->input_size = size;
+    /* Unlike optional initial input, commands must reach a live receiver. */
+    o->allow_closed_input = false;
+    unsigned long error = 0;
+    REQUIRE(o,
+            process_watch_until(input_sent, o, deadline(o, timeout_ms), &error)
+                == PROCESS_WATCH_OK);
 }

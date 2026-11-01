@@ -104,3 +104,8 @@ void loading_owner_watch_wait(loading_owner_t *o, process_watch_t *watch);
  * Afterwards the launcher's wait only reaps/drains and verifies transport cleanup.
  */
 void loading_owner_kill_and_reap(loading_owner_t *o);
+
+/** Send bounded protocol bytes to an open owner stdin; each call waits for delivery. */
+void loading_owner_send(loading_owner_t *o, const void *data, size_t size, uint64_t timeout_ms);
+/** Scenario-owned pin at a live readiness barrier, for bounded independent waits. */
+process_watch_t *loading_owner_watch_pid(loading_owner_t *o, uint64_t pid);
