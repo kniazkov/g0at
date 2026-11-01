@@ -377,7 +377,7 @@ foreach(kind canonical hash)
     "$<TARGET_FILE:module_canonical_hash_scenarios>" native.module_${kind} "$<TARGET_FILE:module_json_testing>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
 endforeach()
-# Original runner stays registered only through the strict parity gate (#376).
+# Original/C parity confirmed on all target configurations before Python removal (#376).
 set(cleanup_service_cases channel retry lazy startup-missing startup-exit startup-silent startup-late normal owner-quit owner-exit detached-client invalid-native-name killed-owner dead-cleaner-0 dead-cleaner-23 active-compiler child-deadline cleanup-race-00 cleanup-race-01 cleanup-race-02 cleanup-race-03 cleanup-race-04 cleanup-race-05 cleanup-race-06 cleanup-race-07 launch-race-00 launch-race-01 launch-race-02 launch-race-03 launch-race-04 launch-race-05 launch-race-06 launch-race-07 busy permanently-busy parallel-lifetime)
 foreach(cleanup_service_case IN LISTS cleanup_service_cases)
   goat_scenario(integration.cleanup_service.${cleanup_service_case} "integration;process;cleanup-service-migration" TIMEOUT 180 COMMAND
@@ -386,7 +386,6 @@ foreach(cleanup_service_case IN LISTS cleanup_service_cases)
 endforeach()
 set_tests_properties(integration.cleanup_service.parallel-lifetime PROPERTIES TIMEOUT 360)
 
-goat_python(validation.cleanup_service_original "integration;process;cleanup-service-parity" scripts/check_cleanup_service.py $<TARGET_FILE:cleanup_service_testing>)
 goat_python(format.reference "format" docs/module-format-v1/test_reference.py)
 goat_scenario(format.schema "format;module-schema" TIMEOUT 40 COMMAND
   "$<TARGET_FILE:module_schema_generator_testing>" check "$<TARGET_FILE:module_schema_generator>"

@@ -5,8 +5,8 @@ Runner: `test/src/functional/cleanup_service_scenarios.c`. Fixture remains
 Release validation. No production behavior or policy changed.
 
 Each expanded suffix below is a stable `integration.cleanup_service.<suffix>` ID
-(36 IDs). The original serial acceptance script is preserved during the strict
-original/C CI gate and removed only after that gate succeeds.
+(36 IDs). The original serial acceptance script was removed after the strict original/C
+CI gate passed for all 18 target configurations.
 
 | CTest suffix | Original checks retained |
 |---|---|
@@ -93,3 +93,14 @@ Python Path normalizes this; the initial C byte-position check rejected it. The
 comparison now normalizes repeated/trailing separators (plus Windows slash/case)
 while still rejecting a different parent, nested descendants, `.` and `..`.
 Twenty direct C predicate controls cover POSIX and Windows lexical branches.
+
+
+## Confirmed remote parity
+
+Head `097f2b5b0705b1179305628187007fe4ebda9d37` passed Build run 41283388976
+(11/11 jobs) and vectors run 41283389106 (3/3). Direct job logs confirm 618 C
+passes, exactly 30 documented platform-only skips, and 18/18 original Python runs:
+Debug/Release on four glibc compiler/architecture pairs, both musl architectures,
+and all three Windows targets. Only then was the original script and temporary
+validation registration removed. C runner, shared transport and fixture remain
+unchanged from this validated head. Final CI links are recorded in the PR.
