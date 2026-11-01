@@ -1,0 +1,10 @@
+{
+  "issue": 377,
+  "source": "scripts/check_process_exit.py",
+  "sha256": "a651eed1e93f85c5044cadb78c5f0656e7c91210fa9fa21ab4f219ddbabed97c",
+  "base_commit": "982272a7df41b7d415d59abc7dc2cc1f1f1dccc5",
+  "ctest_ids": 22,
+  "original_invocations": 24,
+  "fixture": "test/src/component/process_exit_testing.c",
+  "fixture_test_only_change": "Keep side-effectful assertions enabled in Debug and Release for all three host variants."
+}

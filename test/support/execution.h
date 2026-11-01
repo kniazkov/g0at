@@ -22,6 +22,16 @@ bool scenario_execute(const scenario_options_t *options,
 scenario_context_t *scenario_run_context(scenario_run_t *run);
 child_deadline_t scenario_run_deadline(const scenario_run_t *run);
 void scenario_checkpoint(scenario_run_t *run);
+/** @brief Execute a cooperative substep within min(outer deadline, now + timeout).
+ * A nonzero timeout and body are mandatory. Nested scopes never extend a parent.
+ * On success the outer deadline is restored. Failure aborts the entire scenario,
+ * preserving normal deferred cleanup; this does not catch or resume failures.
+ */
+void scenario_with_timeout(scenario_run_t *run,
+                           uint64_t timeout_ms,
+                           scenario_body_t body,
+                           void *user);
+
 void scenario_require(scenario_run_t *run, bool condition, const char *message);
 /** @brief Register owned cleanup; return true from the callback on success.
  * A false result marks the scenario failed without skipping remaining cleanup callbacks.

@@ -81,6 +81,20 @@ void scenario_require(scenario_run_t *run, bool condition, const char *message) 
         fail(run, message);
 }
 
+void scenario_with_timeout(scenario_run_t *run,
+                           uint64_t timeout_ms,
+                           scenario_body_t body,
+                           void *user) {
+    scenario_require(run, timeout_ms != 0 && body != NULL, "invalid substep timeout/body");
+    child_deadline_t outer = run->deadline, inner = child_deadline_after(timeout_ms);
+    if (inner < outer)
+        run->deadline = inner;
+    scenario_checkpoint(run);
+    body(run, user);
+    scenario_checkpoint(run);
+    run->deadline = outer;
+}
+
 void scenario_defer(scenario_run_t *run, bool (*cleanup)(void *), void *resource) {
     if (!cleanup)
         fail(run, "missing resource cleanup callback");

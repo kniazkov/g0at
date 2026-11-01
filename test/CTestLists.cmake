@@ -38,7 +38,7 @@ foreach(scenario alive-wait kill deadline close owner-death condition)
   goat_scenario(process.watch.${scenario} "process-watch" TIMEOUT 20 COMMAND
     "$<TARGET_FILE:process_watch_testing>" "${scenario}")
 endforeach()
-foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash timeout cumulative invalid-timeout host-hang host-crash command start-error cleanup-failure barrier barrier-wrong barrier-eof barrier-timeout barrier-after-timeout barrier-action-failure barrier-action-deadline barrier-nested barrier-null barrier-empty handshake handshake-wrong handshake-early handshake-timeout handshake-hold-timeout handshake-after-timeout)
+foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash timeout cumulative invalid-timeout host-hang host-crash command start-error cleanup-failure barrier barrier-wrong barrier-eof barrier-timeout barrier-after-timeout barrier-action-failure barrier-action-deadline barrier-nested barrier-null barrier-empty scoped-shorter scoped-no-extension scoped-restore scoped-nested scoped-zero scoped-null scoped-expired handshake handshake-wrong handshake-early handshake-timeout handshake-hold-timeout handshake-after-timeout)
   goat_scenario(framework.execution.${scenario} "scenario-execution" TIMEOUT 30 COMMAND "$<TARGET_FILE:scenario_execution_testing>"
     "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
   # Internal deadlines are at most 5 seconds; leave time for process-tree cleanup and artifacts.
@@ -310,8 +310,28 @@ foreach(source_case external-local external-first external-second relocation imp
     "$<TARGET_FILE:module_source_diagnostics_scenarios>" integration.module_source_diagnostics.${source_case} "$<TARGET_FILE:module_import_execution_testing>"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-goat_python(integration.process_exit "integration" scripts/check_process_exit.py "$<TARGET_FILE:process_exit_testing>" "$<TARGET_FILE:process_exit_failure_testing>" "$<TARGET_FILE:process_exit_delayed_testing>")
-goat_python(integration.module_exit "integration" scripts/check_module_exit.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
+set(process_exit_cases arbiter unprepared prepare-race failed-prepare delayed-prepare fast-three error pipe-error write-stdout write-stderr write-both lock-stdout lock-stderr shared-budget race-00 race-01 race-02 race-03 race-04 race-05 race-06 race-07)
+foreach(process_exit_case IN LISTS process_exit_cases)
+  goat_scenario(integration.process_exit.${process_exit_case} "integration;process-exit-migration" TIMEOUT 120 COMMAND
+    "$<TARGET_FILE:process_exit_scenarios>" "integration.process_exit.${process_exit_case}"
+    "$<TARGET_FILE:process_exit_testing>" "$<TARGET_FILE:process_exit_failure_testing>" "$<TARGET_FILE:process_exit_delayed_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+  # Like the original serial runner, don't compete with other tests while measuring
+  # the shared flush budget and scheduler-sensitive subsecond fast-exit bound.
+  set_tests_properties(integration.process_exit.${process_exit_case} PROPERTIES RUN_SERIAL TRUE)
+endforeach()
+goat_python(validation.process_exit_original "integration;exit-parity" scripts/check_process_exit.py "$<TARGET_FILE:process_exit_testing>" "$<TARGET_FILE:process_exit_failure_testing>" "$<TARGET_FILE:process_exit_delayed_testing>")
+set(module_exit_path "${PROJECT_SOURCE_DIR}/test/data/module-exit/scenarios.json")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${module_exit_path}")
+file(STRINGS "${module_exit_path}" module_exit_lines REGEX "^[ ]+\"id\":")
+foreach(module_exit_line IN LISTS module_exit_lines)
+  string(REGEX REPLACE ".*\"id\": \"([^\"]+)\".*" "\\1" module_exit_id "${module_exit_line}")
+  goat_scenario(${module_exit_id} "integration;module-exit-migration" TIMEOUT 360 COMMAND
+    "$<TARGET_FILE:module_exit_scenarios>" "${module_exit_id}"
+    "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/module-exit")
+endforeach()
+goat_python(validation.module_exit_original "integration;exit-parity" scripts/check_module_exit.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 goat_python(integration.module_threads "integration" scripts/check_module_threads.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 # One ID per legacy project or CLI case/optimizer, from the same read-only table.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-assignment/scenarios.json")
@@ -506,8 +526,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1494)
-  message(FATAL_ERROR "Expected all 1494 integration scenarios (cleanup service cases split in #376); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1559)
+  message(FATAL_ERROR "Expected all 1559 integration scenarios (exit cases split in #377); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

@@ -401,12 +401,102 @@ static int supervised(scenario_options_t options, FILE *diagnostics, bool crash)
     return 0;
 }
 
+typedef struct {
+    const char *mode;
+    char *work;
+    unsigned called, cleaned;
+    child_deadline_t outer, inner;
+} scoped_state_t;
+
+static bool scoped_cleanup(void *user) {
+    ((scoped_state_t *)user)->cleaned++;
+    return true;
+}
+
+static void scoped_leaf(scenario_run_t *run, void *user) {
+    scoped_state_t *s = user;
+    s->called++;
+    scenario_require(run, scenario_run_deadline(run) <= s->inner, "nested scope cannot extend");
+}
+
+static void scoped_inner(scenario_run_t *run, void *user) {
+    scoped_state_t *s = user;
+    s->inner = scenario_run_deadline(run);
+    scenario_require(run, s->inner <= s->outer, "scope cannot extend outer deadline");
+    if (!strcmp(s->mode, "scoped-shorter") || !strcmp(s->mode, "scoped-no-extension")) {
+        pause_ms(150);
+        return;
+    }
+    if (!strcmp(s->mode, "scoped-nested")) {
+        scenario_with_timeout(run, 10000, scoped_leaf, s);
+        scenario_require(run, scenario_run_deadline(run) == s->inner, "restore nested large cap");
+        scenario_with_timeout(run, 500, scoped_leaf, s);
+        scenario_require(run, scenario_run_deadline(run) == s->inner, "restore nested small cap");
+    }
+}
+
+static void scoped_body(scenario_run_t *run, void *user) {
+    scoped_state_t *s = user;
+    s->work = copy_text(scenario_work_directory(scenario_run_context(run)));
+    scenario_defer(run, scoped_cleanup, s);
+    scenario_require(run, s->work != NULL, "retain scoped test work path");
+    s->outer = scenario_run_deadline(run);
+    if (!strcmp(s->mode, "scoped-expired")) {
+        pause_ms(150);
+        scenario_with_timeout(run, 1000, scoped_leaf, s);
+        return;
+    }
+    if (!strcmp(s->mode, "scoped-zero")) {
+        scenario_with_timeout(run, 0, scoped_leaf, s);
+        return;
+    }
+    if (!strcmp(s->mode, "scoped-null")) {
+        scenario_with_timeout(run, 1000, NULL, s);
+        return;
+    }
+    uint64_t cap = !strcmp(s->mode, "scoped-no-extension") ? 10000
+                   : !strcmp(s->mode, "scoped-shorter")    ? 50
+                   : !strcmp(s->mode, "scoped-restore")    ? 150
+                                                           : 2000;
+    scenario_with_timeout(run, cap, scoped_inner, s);
+    scenario_require(run, scenario_run_deadline(run) == s->outer, "restore outer deadline");
+    if (!strcmp(s->mode, "scoped-restore")) {
+        pause_ms(200);
+        scenario_checkpoint(run);
+    }
+}
+
+static int scoped_test(const char *mode, const char *build, const char *data) {
+    bool expected = !strcmp(mode, "scoped-restore") || !strcmp(mode, "scoped-nested");
+    bool short_outer = !strcmp(mode, "scoped-no-extension") || !strcmp(mode, "scoped-expired");
+    CHECK(expected || short_outer || !strcmp(mode, "scoped-shorter") || !strcmp(mode, "scoped-zero")
+          || !strcmp(mode, "scoped-null"));
+    scoped_state_t state = {.mode = mode};
+    scenario_options_t options = {.name = mode,
+                                  .build_directory = build,
+                                  .data_directory = data,
+                                  .keep_work = true};
+    bool actual = scenario_execute(&options, short_outer ? 80 : 2500, scoped_body, &state);
+    CHECK(actual == expected && state.cleaned == 1 && state.work);
+    CHECK(state.called == (!strcmp(mode, "scoped-nested") ? 2u : 0u));
+    if (!expected)
+        CHECK(log_contains(state.work,
+                           (!strcmp(mode, "scoped-zero") || !strcmp(mode, "scoped-null"))
+                               ? "invalid substep timeout/body"
+                               : "scenario deadline exceeded"));
+    CHECK(remove_work(state.work));
+    free(state.work);
+    return 0;
+}
+
 static int run_test(int argc, char **argv) {
     if (argc == 5 && !strcmp(argv[1], "--worker"))
         return worker(argv[2]);
     if (argc != 4)
         return 2;
     const char *mode = argv[1];
+    if (!strncmp(mode, "scoped-", 7))
+        return scoped_test(mode, argv[2], argv[3]);
     FILE *diagnostics = tmpfile();
     CHECK(diagnostics);
     scenario_options_t options = {mode, argv[2], argv[3], false, diagnostics};

@@ -9,6 +9,10 @@
 #include "lib/process/process_exit.h"
 #include "lib/threads/os_thread.h"
 
+/* The fixture uses assertions for actions and checks in every build mode. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
