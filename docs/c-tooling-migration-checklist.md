@@ -90,7 +90,7 @@
 - [x] 57. [#375 — Перенести на Си: Дочерние процессы](https://github.com/kniazkov/g0at/issues/375)
 - [x] 58. [#376 — Перенести на Си: Служба очистки](https://github.com/kniazkov/g0at/issues/376)
 - [x] 59. [#377 — Перенести на Си: Завершение процессов и модулей](https://github.com/kniazkov/g0at/issues/377) — test-only зависимость: assertions process-exit fixture сохранены для Release во всех трёх hosts, scoped deadline helper сохраняет per-command 60 s module-exit; PR и CI — в задаче.
-- [ ] 60. [#378 — Перенести на Си: Потоки модулей](https://github.com/kniazkov/g0at/issues/378)
+- [x] 60. [#378 — Перенести на Си: Потоки модулей](https://github.com/kniazkov/g0at/issues/378) — test-only зависимость: assertions module-thread-lifetime fixture сохраняются для Release, raw-owner transport получает optional cwd и inherited environment для исходного handshake/lifetime; PR и CI — в задаче.
 - [ ] 61. [#379 — Перенести на Си: Native toolchains и требования](https://github.com/kniazkov/g0at/issues/379)
 - [ ] 62. [#380 — Перенести на Си: Native artifacts и integrity](https://github.com/kniazkov/g0at/issues/380)
 - [ ] 63. [#381 — Перенести на Си: Очистка native](https://github.com/kniazkov/g0at/issues/381)

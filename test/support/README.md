@@ -124,9 +124,7 @@ Debug/Release CI. Python helpers remain untouched until their last consumer is
 migrated and #394 removes the transitional layer.
 
 Remaining `module_execution_support` consumers:
-`scripts/check_module_threads.py`,
-`check_module_exit.py`,
-and `check_module_delivery.py`.
+`scripts/check_module_delivery.py`.
 
 Remaining `inspect_report_test_support` consumers:
 `scripts/check_module_book.py`,

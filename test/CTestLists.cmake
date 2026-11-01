@@ -330,7 +330,17 @@ foreach(module_exit_line IN LISTS module_exit_lines)
     "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/module-exit")
 endforeach()
-goat_python(integration.module_threads "integration" scripts/check_module_threads.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
+set(module_threads_path "${PROJECT_SOURCE_DIR}/test/data/module-threads/scenarios.json")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${module_threads_path}")
+file(STRINGS "${module_threads_path}" module_threads_lines REGEX "^[ ]+\"id\":")
+foreach(module_threads_line IN LISTS module_threads_lines)
+  string(REGEX REPLACE ".*\"id\": \"([^\"]+)\".*" "\\1" module_threads_id "${module_threads_line}")
+  goat_scenario(${module_threads_id} "integration;module-threads-migration" TIMEOUT 360 COMMAND
+    "$<TARGET_FILE:module_threads_scenarios>" "${module_threads_id}"
+    "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>"
+    "$<TARGET_FILE:module_thread_lifetime_testing>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/module-threads")
+endforeach()
 # One ID per legacy project or CLI case/optimizer, from the same read-only table.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-assignment/scenarios.json")
 file(STRINGS "${PROJECT_SOURCE_DIR}/test/data/module-assignment/scenarios.json" assignment_ids REGEX "^[ ]+\"id\":")
@@ -524,8 +534,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1559)
-  message(FATAL_ERROR "Expected all 1559 integration scenarios (exit cases split in #377); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1583)
+  message(FATAL_ERROR "Expected all 1583 integration scenarios (module thread cases split in #378); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
