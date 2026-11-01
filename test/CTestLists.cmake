@@ -105,8 +105,29 @@ goat_scenario(integration.module_abi "integration;module-abi-native-migration" T
   "$<TARGET_FILE:module_abi_scenarios>" integration.module_abi "$<TARGET_FILE:module_abi_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 goat_python(integration.native_artifact "integration" scripts/check_native_artifact.py "$<TARGET_FILE:native_artifact_testing>" "${CMAKE_C_COMPILER}")
-goat_python(integration.native_requirements "integration" scripts/check_native_requirements.py "$<TARGET_FILE:native_requirements_testing>")
-goat_python(integration.native_toolchains "integration" scripts/check_native_toolchains.py "$<TARGET_FILE:native_toolchain_testing>" "${CMAKE_C_COMPILER}")
+set(native_requirements_path "${PROJECT_SOURCE_DIR}/test/data/native-requirements/scenarios.json")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${native_requirements_path}")
+file(STRINGS "${native_requirements_path}" native_requirements_lines REGEX "^[ ]+\"id\":")
+set(native_requirements_ids)
+foreach(native_requirements_line IN LISTS native_requirements_lines)
+  string(REGEX REPLACE ".*\"id\": \"([^\"]+)\".*" "\\1" native_requirements_id "${native_requirements_line}")
+  list(APPEND native_requirements_ids "${native_requirements_id}")
+endforeach()
+foreach(native_requirements_case IN ITEMS stack-main stack-worker stack-small stack-limited stack-blocked)
+  list(APPEND native_requirements_ids "integration.native_requirements.${native_requirements_case}")
+endforeach()
+foreach(native_requirements_id IN LISTS native_requirements_ids)
+  goat_scenario(${native_requirements_id} "integration;native-requirements-migration" TIMEOUT 30 COMMAND
+    "$<TARGET_FILE:native_requirements_scenarios>" "${native_requirements_id}"
+    "$<TARGET_FILE:native_requirements_testing>" "${PROJECT_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-requirements")
+endforeach()
+foreach(native_toolchains_case IN ITEMS cache reprobe linux-relro unicode-temp timeout-cache unsupported-target zero-timeout absent-compiler link-failure hang-query hang-link avx2 sha2 crypto foreign-libc musl-trace musl-crypto unknown-profile path-first path-fallback path-timeout path-unsearched path-list explicit-failure)
+  goat_scenario(integration.native_toolchains.${native_toolchains_case} "integration;native-toolchains-migration" TIMEOUT 510 COMMAND
+    "$<TARGET_FILE:native_toolchains_scenarios>" "integration.native_toolchains.${native_toolchains_case}"
+    "$<TARGET_FILE:native_toolchain_testing>" "${CMAKE_C_COMPILER}" host
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 goat_python(integration.native_cleanup "integration" scripts/check_native_cleanup.py "$<TARGET_FILE:native_cleanup_testing>" "${CMAKE_C_COMPILER}")
 goat_python(integration.module_native_values "integration" scripts/check_module_native_values.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_native_values_testing>" "${CMAKE_C_COMPILER}")
 foreach(module_build_case numeric empty-required empty-off empty-auto-explicit included missing-auto missing-required unsupported-target foreign-target only-dependency)
@@ -534,8 +555,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1583)
-  message(FATAL_ERROR "Expected all 1583 integration scenarios (module thread cases split in #378); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1680)
+  message(FATAL_ERROR "Expected all 1680 integration scenarios (native toolchain/requirement cases split in #379); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
