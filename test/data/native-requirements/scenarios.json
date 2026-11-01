@@ -1,0 +1,850 @@
+[
+  {
+    "id": "integration.native_requirements.elf-baseline",
+    "name": "elf-baseline",
+    "target": "glibc",
+    "succeeds": true,
+    "contains": [
+      "3.2.0.0 2.9.0.0"
+    ],
+    "files": {
+      "image.bin": "blobs/919f7e57022a224267b11949239861fd82dd616aa679aa8c64c30807265954cf.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-dependency-228",
+    "name": "elf-dependency-228",
+    "target": "glibc",
+    "succeeds": true,
+    "contains": [
+      "2.28.0.0"
+    ],
+    "files": {
+      "image.bin": "blobs/4cd07b0d6c0fca548cc006583a4e739d424a557cebe45e25e8ad49d434e07b88.bin",
+      "dependency.so": "blobs/822f02f1325f220dea55f1db2f9bd4ee5186564e0b3a08b469d06155bd55e6cd.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-dependency-240",
+    "name": "elf-dependency-240",
+    "target": "glibc",
+    "succeeds": true,
+    "contains": [
+      "2.40.0.0"
+    ],
+    "files": {
+      "image.bin": "blobs/4cd07b0d6c0fca548cc006583a4e739d424a557cebe45e25e8ad49d434e07b88.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-dt-relr",
+    "name": "elf-dt-relr",
+    "target": "glibc",
+    "succeeds": true,
+    "contains": [
+      "2.36.0.0"
+    ],
+    "files": {
+      "image.bin": "blobs/912a268c44a5efb945110dcf376931b83022f601e61dbf02550794e113a0c5a7.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-future",
+    "name": "elf-future",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/21f411aa5f06943ff55eedc512698a696807b89397da8f0b62c42dd94ac59236.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-private",
+    "name": "elf-private",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/19852aa4475db43b6bbf2454e59f58405b0d9933411f09f486c1a40d2360b68c.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-gcc",
+    "name": "elf-gcc",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/4ef308da2258afa4b8e5a28b585f509f31cc85061c1bf6e7984665696ca6994e.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-missing-dependency",
+    "name": "elf-missing-dependency",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/b1250301b81376dcec9e8f990933c92b0606654a8b4556b73d413dd7c14fb90d.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-wrong-machine",
+    "name": "elf-wrong-machine",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/b8ef0e6a8275c0bcee8553c49c60e68cbc10c326f022442d96c9aa2bb02c3aff.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-no-note",
+    "name": "elf-no-note",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/537e59e5cec34751cb44f933089dde77aa3be6d1d74b949cde00941ed8ff3273.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-truncated",
+    "name": "elf-truncated",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/8209b760c85ec7cab804382e41d4fae43c98205cd876844b20f766fdb69f7075.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-section-overflow",
+    "name": "elf-section-overflow",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/7b338f964eda6f5c258147e8b69460d787c3e73b20e056200b02fbffc0fa5577.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-version-overflow",
+    "name": "elf-version-overflow",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/5dc3fba0a810ce7022df0500bb8786cf5d41b247eaf78dcccd1daf5365896886.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.elf-big-endian",
+    "name": "elf-big-endian",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/e570f0b841773aff0b3fb0ad30eb84951eb4043b849f0b671cd0368b4224823b.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-baseline",
+    "name": "musl-baseline",
+    "target": "musl",
+    "succeeds": true,
+    "contains": [
+      "2.6.39.0 1.2.5.0"
+    ],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-as-glibc",
+    "name": "musl-as-glibc",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.glibc-as-musl",
+    "name": "glibc-as-musl",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/919f7e57022a224267b11949239861fd82dd616aa679aa8c64c30807265954cf.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-no-dependency",
+    "name": "musl-no-dependency",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/41fcf5828f2dbc8dd1fe5713d741cb555a7fd61610cd93190dee79670bb3c387.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-no-banner",
+    "name": "musl-no-banner",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/ecdcdce0a75f8de4ae02da257fdbfcd1ea8b2c659dcd3d722356c9dbe5908610.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-duplicate-release",
+    "name": "musl-duplicate-release",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/45895f5c984fd7cc002c43492f4d669064bf6640752a821272b02716d480315d.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-dev-release",
+    "name": "musl-dev-release",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/23285285fee5de4d6d311867171b64020214a6dcac54bd7dd18932ba94651ceb.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-short-release",
+    "name": "musl-short-release",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/020f3e8e772630c28bc9e7501b264bdca354c75fce02e7b82fe8323997ff8ae4.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-version-overflow",
+    "name": "musl-version-overflow",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/27ac2161fe76b3abe4425c3a6438cec350bdd8e06cdcc1ab1331755c6302742f.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-unsupported-major",
+    "name": "musl-unsupported-major",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/7b7d1e50a7e28aa3da6306d80b3d6ea1b19a13c8f3e8f46c8c4a928d58e6614e.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-load-offset-overflow",
+    "name": "musl-load-offset-overflow",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/8c1f380cdfc4fc13f1343cad0d73b51d8f4ddf7289ba1ab4b0656790daa43e15.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-load-filesz-overflow",
+    "name": "musl-load-filesz-overflow",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/3a852e4ab20ed37b07b3293c60a50378ea4cbb2c48003fff40ea58d61ae59306.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-load-memsz-small",
+    "name": "musl-load-memsz-small",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/07e5f7c49f2e30d93024b7adbca1224b6c7e4ff88539c01df58e4351a0056cca.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-flags-none",
+    "name": "musl-flags-none",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/502eaac7062b9f39745f4b998db1ded75fa739de518f5740100b5a8ecf61f91f.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-flags-write",
+    "name": "musl-flags-write",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/140dca064d67a8ad8a0d9c778ce5fca199ab39c1620c5586438a9db4a1b2ddac.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-flags-read-write",
+    "name": "musl-flags-read-write",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/f41b5be880fe67a119618c0060f9475405820753452b1b76001d8bcf0ce8df46.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-flags-read-execute",
+    "name": "musl-flags-read-execute",
+    "target": "musl",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/e677ee658c7625cc1804bb8b61b42bb79d1d9721b003bdeb987625a38d600c14.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-aarch64",
+    "name": "musl-aarch64",
+    "target": "musl-aarch64",
+    "succeeds": true,
+    "contains": [
+      "3.7.0.0 1.2.5.0"
+    ],
+    "files": {
+      "image.bin": "blobs/2c386bd534a12a1926b491eda9f0baae876299126c6823d73f31d82eebf91874.bin",
+      "libc.so": "blobs/46f197c6feada943b4abf2aecbe0c85d4c2a94a3b165dec435efef9f07b8d5f5.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-wrong-machine",
+    "name": "musl-wrong-machine",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/46f197c6feada943b4abf2aecbe0c85d4c2a94a3b165dec435efef9f07b8d5f5.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-glibc-libc",
+    "name": "musl-glibc-libc",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1b940cf0fd81d305f8a2adda73276c933b637b6c64416088a99d6232bc5c8899.bin",
+      "libc.so": "blobs/919f7e57022a224267b11949239861fd82dd616aa679aa8c64c30807265954cf.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.musl-glibc-versions",
+    "name": "musl-glibc-versions",
+    "target": "musl",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/f4fe814abdf496e5f3b3376233bc8dcfa659382508145b3d4bceff1dd7c165b8.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt",
+    "name": "pe-msvcrt",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [
+      "10.0.0.0 0.0.0.0"
+    ],
+    "files": {
+      "image.bin": "blobs/5527412f1595587e04b462b5c3362b2f9e3463a2006e12410da010e1e6adf482.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-iob",
+    "name": "pe-iob",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/4a428c9e4aec30d256feec95cc5485d4f9ef8de515cefdce0bfbf9f17617e13b.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-p-iob",
+    "name": "pe-p-iob",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/64c18c471d0782a88ba571b987c86b773fbcb8c8ec6f92f7bf2e2410b79198a3.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-kernel-GetCPInfo",
+    "name": "pe-kernel-GetCPInfo",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/d2e89aec9d0dfb4ceb42f7521771cb8cbc1b058b00fd08fdad4242ea52d786f0.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-kernel-GetStringTypeW",
+    "name": "pe-kernel-GetStringTypeW",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/e967c20aeee65af230e1a99ef73e1ba8a202c6830cc66dacc6ff185544736422.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-kernel-MultiByteToWideChar",
+    "name": "pe-kernel-MultiByteToWideChar",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/1ecfa04dbdd954b948746c61af5e752872412b009ad5fad353217c6d3887105c.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-kernel-WideCharToMultiByte",
+    "name": "pe-kernel-WideCharToMultiByte",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/3df70878f540047263970db2167cf0008bcb2baabea411dd5941d7354b8085a7.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-ucrt-_create_locale",
+    "name": "pe-ucrt-_create_locale",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/a692bf1689b0668b83ef1e06f82f0d604e678bc98d773a896e18c5f9a9e72ea8.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-ucrt-_free_locale",
+    "name": "pe-ucrt-_free_locale",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/bfcb4760a82a85456ad3eaabcb853e7a3278e369bf4ddf956d7302024a329845.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-ucrt-_strtod_l",
+    "name": "pe-ucrt-_strtod_l",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/0ea5e7ecefac4767dde9fa5b140aedfad36ede8a17e1c4d33f8b09e7367ec418.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-ucrt-_vsnprintf_l",
+    "name": "pe-ucrt-_vsnprintf_l",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/8ddd0b5353ddb3bff919e184ec1804c6d7d8651f1baab03856155d8e525e2b17.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-__lc_codepage",
+    "name": "pe-msvcrt-__lc_codepage",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/f1d96144c816660fbf529198b1902c9a34ee16799fb88f3e478c8c41610e16f6.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-__p___mb_cur_max",
+    "name": "pe-msvcrt-__p___mb_cur_max",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/64898368b4bc65c1b0198ce04ebc7c4da628c364e3df760668f9ef72fd1eff4d.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-_setjmp3",
+    "name": "pe-msvcrt-_setjmp3",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/b967fcfbf0a18ca1a4089783cf27eeb8c5533a0e01fd1e7095652cda7cf2ae13.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-localeconv",
+    "name": "pe-msvcrt-localeconv",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/d53ece3815782654cf514537ee923656db5afe8ce83291fb6ddb878d7de718ad.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-longjmp",
+    "name": "pe-msvcrt-longjmp",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/4dd7e457ee2792614544bbd676c11a90cc8ec2550c6f90fa98ab68ced2b2dc92.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-strchr",
+    "name": "pe-msvcrt-strchr",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/0195459ed520e1352ad46eb22aa9d5aa1ecc3b9dd8bb8abd1b0cf3515a1393de.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-___lc_codepage_func",
+    "name": "pe-msvcrt-___lc_codepage_func",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/ee94bbb6256529f25da1de7a44883c0c9c51d9f8afba4fd5fa2f525a84cb9aa1.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-___mb_cur_max_func",
+    "name": "pe-msvcrt-___mb_cur_max_func",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/df752a28ad06f202925df9e1b04fcc3f5deba35805b49672ba01c8a3b0e39c18.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-_setjmp",
+    "name": "pe-msvcrt-_setjmp",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/5cc2f00ace9971f6034d3d7ba2820dc073e3126548e1380cf9da5a57b52d41ac.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-private-__intrinsic_setjmp",
+    "name": "pe-private-__intrinsic_setjmp",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/6b516776a70a59e8b41f8a0dec815a71721a330f73d079c567b3448078ff69c1.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-private-longjmp",
+    "name": "pe-private-longjmp",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/b578662eaddd1c84a439222c42010da1fc2d78326e6beae182e7c133342512b3.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-private-strchr",
+    "name": "pe-private-strchr",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/6e03b4a0ddf8b73e6275c86cac9b544cef9d89538e7d67ee1953713f30127f9d.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-unknown-symbols",
+    "name": "pe-unknown-symbols",
+    "target": "msvcrt",
+    "succeeds": false,
+    "contains": [
+      "msvcrt.dll!future",
+      "KERNEL32.dll!Unknown"
+    ],
+    "files": {
+      "image.bin": "blobs/ed1ce3f0cc5f1ebd6bd6251be04f67364f56fa43b60990503b5613c6083d2131.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-inventory-truncated",
+    "name": "pe-inventory-truncated",
+    "target": "msvcrt",
+    "succeeds": false,
+    "contains": [
+      "[inventory truncated]"
+    ],
+    "files": {
+      "image.bin": "blobs/36fbf5b4820afc4a33c8941e0508934f91c8e3f81c9eeeb4e1df2b7c068d4b68.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-ucrtbase",
+    "name": "pe-ucrtbase",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/b375d87fcf3a8c19d7754dd22f9d8c623920abd2024e012c72f7a90be4ff60e8.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-ucrt-api-runtime",
+    "name": "pe-ucrt-api-runtime",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/bf7bed4bd48de7c40be5bf7d6a8b218d5d89803e887b7e14d67ba3544fcecf01.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-as-ucrt",
+    "name": "pe-msvcrt-as-ucrt",
+    "target": "ucrt",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/5527412f1595587e04b462b5c3362b2f9e3463a2006e12410da010e1e6adf482.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-unknown-dll",
+    "name": "pe-unknown-dll",
+    "target": "msvcrt",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/ea0c1f806129e387e61df3fc6216f26d0f94b4487e5193cee4c59b76249ecc6d.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-wrong-machine",
+    "name": "pe-wrong-machine",
+    "target": "msvcrt",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/c3024822c801536ee3169016a16af33b993968d845c978f78105ac83a76aee3e.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-os11",
+    "name": "pe-os11",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [
+      "11.0.0.0"
+    ],
+    "files": {
+      "image.bin": "blobs/f894bcda85ecc41e6696edf5746a9cd95c4c9e9cdd869adecaf707535b6d66a9.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-delay-import",
+    "name": "pe-delay-import",
+    "target": "msvcrt",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/70004a00c0a9cc7e103f64b13b0521b110be84daf84083f447977d059c50b06a.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-future-symbol",
+    "name": "pe-future-symbol",
+    "target": "msvcrt",
+    "succeeds": false,
+    "contains": [
+      "msvcrt.dll!future"
+    ],
+    "files": {
+      "image.bin": "blobs/6c74581744cc3be1e245fe5d0c5270925e377adeb9205846e9aac3b187d66946.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-ordinal-import",
+    "name": "pe-ordinal-import",
+    "target": "msvcrt",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/9379a2a51553d89e62cf2c3a5ff82244af8bb23ae361c99d749fda722c446f31.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.not-executable",
+    "name": "not-executable",
+    "target": "glibc",
+    "succeeds": false,
+    "contains": [],
+    "files": {
+      "image.bin": "blobs/aabc4dc64ad6ffef101f0fec08a3d1ba6428d419e886c2cbc56a74ff0a5f7a3e.bin",
+      "libc.so": "blobs/4079e0dd03d455214864a96d7b02585bd94096c386bb37dde1eb9ebcc51a38b0.bin",
+      "dependency.so": "blobs/e69c02536d44b67575e0727009dad874debf9d1b221a197ff5b2647dd25ddc63.bin"
+    }
+  }
+]
