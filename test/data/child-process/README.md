@@ -138,3 +138,17 @@ was not a readiness/transport failure. Relinking the identical Release probe
 and fixture objects against the original master transport and the new transport
 then gave 3/3 passes each in alternating isolated runs. This does not establish
 the cause of the initial cleanup failure; full shared-suite CI remains required.
+
+## Completed strict remote parity gate
+
+Head `596611b64043f208555f2fdef659d211eb96cc10` passed
+[Build/test 11/11](https://github.com/kniazkov/g0at/actions/runs/41262791478)
+and [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41262791482)
+on the first attempt. Direct job logs confirm 978 C passes: 55 Debug + 55 Release
+on six Linux/musl jobs, and 53 + 53 on three Windows jobs. The 12 skips are
+exactly the two documented POSIX-only cases in both configurations on Windows.
+The unchanged original Python suite passed all 14 runs on its seven existing
+glibc/Windows platforms. All shared loading/probe regression suites passed too.
+Only after this complete green gate were the original runner and its temporary
+validation registration removed. The C sources, helpers and five byte fixtures
+are unchanged from that validated head; local limitations above are not hidden.

@@ -80,8 +80,6 @@ goat_suite(core.functional "core;functional" "${CMAKE_COMMAND}"
   "-DSOURCE=${PROJECT_SOURCE_DIR}/test/data/functional" "-DWORK=${CMAKE_BINARY_DIR}/ctest-functional"
   -P "${CMAKE_CURRENT_SOURCE_DIR}/run_functional.cmake")
 goat_python(integration.module_book "integration" scripts/check_module_book.py "$<TARGET_FILE:goat>")
-# Original strict baseline retained until full remote parity is green.
-goat_python(validation.child_process_original "integration;child-process-baseline" scripts/check_child_process.py "$<TARGET_FILE:child_process_testing>" "$<TARGET_FILE:goat>")
 set(child_process_cases empty exit stdin closed-input inherit parent stdin-open-pipe stdin-file stdin-pty capture-exact capture-over capture-large arguments missing expired stop timeout-pause timeout-continuous timeout-budget timeout-tree crash tree-exit tree-fail tree-crash owner-isolation owner-group-term parent-death launch-death-00 launch-death-01 launch-death-02 launch-death-03 launch-death-04 launch-death-05 launch-death-06 launch-death-07 launch-death-08 launch-death-09 launch-death-10 launch-death-11 launch-death-12 launch-death-13 launch-death-14 launch-death-15 launch-death-16 launch-death-17 launch-death-18 launch-death-19 compiler-probe invalid-timeout-zero invalid-timeout-negative invalid-timeout-decimal invalid-timeout-empty invalid-timeout-plus invalid-timeout-overflow invalid-timeout-huge)
 foreach(child_process_case IN LISTS child_process_cases)
   goat_scenario(integration.child_process.${child_process_case} "integration;child-process-migration" TIMEOUT 150 COMMAND
