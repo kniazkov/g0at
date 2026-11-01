@@ -376,3 +376,13 @@ callback-safe process cleanup and retained binary diagnostics.
 platform, builds its archive with the independent test oracle and verifies that
 merge never loads it. No production behavior or hooks change. See
 [the complete map and validation](../data/module-merge/README.md).
+
+## Child-process migration (#375)
+
+`child_process_scenarios` uses the existing independent raw owner transport,
+never the process supervisor whose tree cleanup is being tested. Narrow test-only
+transport extensions cover real file/PTY stdin, owner-only reap, line/EOF
+observation, process-group termination and original zombie-sensitive PID
+existence checks. Only identities pinned at a live readiness barrier are eligible
+for deferred failure cleanup; late race output is not an authority to signal a
+possibly reused numeric PID. See [the full map and validation](../data/child-process/README.md).

@@ -18,7 +18,7 @@ Linux запускает отдельного наблюдателя-subreaper �
 
 Существующая сборка DLL/SO использует общий API, пустой stdin и ограниченные диагностики в памяти вместо неограниченного log-файла. Она не ограничена сроком пробы. `--native-probe-timeout` принимает целые секунды 1..4294967295, по умолчанию 10. Параметр хранится в CLI; обнаружение кандидатов, `--cc` и `--list-native-targets` реализуются в #211 и должны передать один срок всем вызовам `native_compiler_run` для кандидата. Общий сервис уборки и файловый слой реализованы в #245/#249; интеграция потребителей и inspect остаётся в #210/#211/#214/#230.
 
-`scripts/check_child_process.py` запускает управляемые C-процессы с независимым внешним таймаутом. Проверяются успех/ошибка/авария, остановка, общий бюджет, потоки и границы, EOF/наследование ввода, quoting, отдельный результат, устойчивое ожидание родителя, потомки/внуки, выход корня до потомков, смерть владельца и независимые параллельные запуски. Готовность дерева подтверждают сами потомки через канал; паузы не задают порядок теста. Набор включён в Linux и все три Windows-конфигурации CI.
+`integration.child_process.*` (CTest) запускает управляемые C-процессы с независимым внешним таймаутом. Проверяются успех/ошибка/авария, остановка, общий бюджет, потоки и границы, EOF/наследование ввода, quoting, отдельный результат, устойчивое ожидание родителя, потомки/внуки, выход корня до потомков, смерть владельца и независимые параллельные запуски. Готовность дерева подтверждают сами потомки через канал; паузы не задают порядок теста. Набор включён в Linux и все три Windows-конфигурации CI.
 
 Дополнения для #245: `working_directory` меняет cwd только ребёнка;
 `poll_child_process` возвращает CHILD_RUNNING без ожидания, но окончательное
@@ -48,7 +48,7 @@ Explicit `survive_parent` supports the independent cleanup service in #245. Such
 
 Existing DLL/SO compilation now uses the common API, EOF stdin and bounded in-memory diagnostics instead of an unlimited log file. User compilation remains unlimited. CLI `--native-probe-timeout` accepts integer seconds 1..4294967295, default 10. Candidate discovery, `--cc` and `--list-native-targets` belong to #211, which must pass one deadline to all `native_compiler_run` calls for a candidate. The shared cleanup service and filesystem layer are implemented in #245/#249; consumer and inspect integration remains in #210/#211/#214/#230.
 
-`scripts/check_child_process.py` exercises controlled C fixtures with independent external watchdogs on Linux and all three Windows CI configurations. Coverage includes exit/failure/crash, stop, shared budgets, binary stream boundaries, EOF/inherited input, quoting, separate results, parent references, children/grandchildren, early root exit, owner death, launch races and independent concurrent trees. Descendant readiness is acknowledged over a pipe rather than inferred from sleeps.
+`integration.child_process.*` (CTest) exercises controlled C fixtures with independent external watchdogs on Linux and all three Windows CI configurations. Coverage includes exit/failure/crash, stop, shared budgets, binary stream boundaries, EOF/inherited input, quoting, separate results, parent references, children/grandchildren, early root exit, owner death, launch races and independent concurrent trees. Descendant readiness is acknowledged over a pipe rather than inferred from sleeps.
 
 Extensions for #245: `working_directory` changes only the child's cwd.
 `poll_child_process` returns CHILD_RUNNING without waiting; final tree shutdown

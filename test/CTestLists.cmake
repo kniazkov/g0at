@@ -80,7 +80,15 @@ goat_suite(core.functional "core;functional" "${CMAKE_COMMAND}"
   "-DSOURCE=${PROJECT_SOURCE_DIR}/test/data/functional" "-DWORK=${CMAKE_BINARY_DIR}/ctest-functional"
   -P "${CMAKE_CURRENT_SOURCE_DIR}/run_functional.cmake")
 goat_python(integration.module_book "integration" scripts/check_module_book.py "$<TARGET_FILE:goat>")
-goat_python(integration.child_process "integration" scripts/check_child_process.py "$<TARGET_FILE:child_process_testing>" "$<TARGET_FILE:goat>")
+set(child_process_cases empty exit stdin closed-input inherit parent stdin-open-pipe stdin-file stdin-pty capture-exact capture-over capture-large arguments missing expired stop timeout-pause timeout-continuous timeout-budget timeout-tree crash tree-exit tree-fail tree-crash owner-isolation owner-group-term parent-death launch-death-00 launch-death-01 launch-death-02 launch-death-03 launch-death-04 launch-death-05 launch-death-06 launch-death-07 launch-death-08 launch-death-09 launch-death-10 launch-death-11 launch-death-12 launch-death-13 launch-death-14 launch-death-15 launch-death-16 launch-death-17 launch-death-18 launch-death-19 compiler-probe invalid-timeout-zero invalid-timeout-negative invalid-timeout-decimal invalid-timeout-empty invalid-timeout-plus invalid-timeout-overflow invalid-timeout-huge)
+foreach(child_process_case IN LISTS child_process_cases)
+  goat_scenario(integration.child_process.${child_process_case} "integration;child-process-migration" TIMEOUT 150 COMMAND
+    "$<TARGET_FILE:child_process_scenarios>" "integration.child_process.${child_process_case}"
+    "$<TARGET_FILE:child_process_testing>" "$<TARGET_FILE:goat>"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+# Keep the independent 120-second scenario deadline; allow two owned cleanup margins.
+set_tests_properties(integration.child_process.owner-isolation PROPERTIES TIMEOUT 300)
 goat_scenario(integration.zip "integration;zip-migration" TIMEOUT 200 COMMAND
   "$<TARGET_FILE:zip_scenarios>" integration.zip "$<TARGET_FILE:zip_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
@@ -490,8 +498,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1405)
-  message(FATAL_ERROR "Expected all 1405 integration scenarios (module merge cases split in #374); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1459)
+  message(FATAL_ERROR "Expected all 1459 integration scenarios (child process cases split in #375); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
