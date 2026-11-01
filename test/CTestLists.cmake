@@ -377,7 +377,15 @@ foreach(kind canonical hash)
     "$<TARGET_FILE:module_canonical_hash_scenarios>" native.module_${kind} "$<TARGET_FILE:module_json_testing>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
 endforeach()
-goat_python(integration.cleanup_service "integration;process" scripts/check_cleanup_service.py $<TARGET_FILE:cleanup_service_testing>)
+# Original/C parity confirmed on all target configurations before Python removal (#376).
+set(cleanup_service_cases channel retry lazy startup-missing startup-exit startup-silent startup-late normal owner-quit owner-exit detached-client invalid-native-name killed-owner dead-cleaner-0 dead-cleaner-23 active-compiler child-deadline cleanup-race-00 cleanup-race-01 cleanup-race-02 cleanup-race-03 cleanup-race-04 cleanup-race-05 cleanup-race-06 cleanup-race-07 launch-race-00 launch-race-01 launch-race-02 launch-race-03 launch-race-04 launch-race-05 launch-race-06 launch-race-07 busy permanently-busy parallel-lifetime)
+foreach(cleanup_service_case IN LISTS cleanup_service_cases)
+  goat_scenario(integration.cleanup_service.${cleanup_service_case} "integration;process;cleanup-service-migration" TIMEOUT 180 COMMAND
+    "$<TARGET_FILE:cleanup_service_scenarios>" "integration.cleanup_service.${cleanup_service_case}"
+    "$<TARGET_FILE:cleanup_service_testing>" "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+set_tests_properties(integration.cleanup_service.parallel-lifetime PROPERTIES TIMEOUT 360)
+
 goat_python(format.reference "format" docs/module-format-v1/test_reference.py)
 goat_scenario(format.schema "format;module-schema" TIMEOUT 40 COMMAND
   "$<TARGET_FILE:module_schema_generator_testing>" check "$<TARGET_FILE:module_schema_generator>"
@@ -498,8 +506,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1459)
-  message(FATAL_ERROR "Expected all 1459 integration scenarios (child process cases split in #375); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1494)
+  message(FATAL_ERROR "Expected all 1494 integration scenarios (cleanup service cases split in #376); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

@@ -1,0 +1,26 @@
+{
+  "issue": 376,
+  "source": "scripts/check_cleanup_service.py",
+  "sha256": "5edc5cde009ed845173c98e30767bf7e84c4d2d757022a3e9c308f7cb0859ad7",
+  "base_commit": "dffb11effda33765c1ca96cf663a82638a8b4685",
+  "cases": 36,
+  "mapping": {
+    "channel": "duplex large frames, read/write deadlines, peer close without SIGPIPE",
+    "retry": "deterministic 30-second retry policy: immediate/retry/saturation",
+    "lazy": "no cleaner PID or goat-run directory",
+    "startup-{missing,exit,silent,late}": "four startup failures: shared sticky state, no native files, ack then owner exit; silent/late cleaner handle exit",
+    "normal": "eight initial callers; short result/output, explicit idempotent finish, saved/old bytes preserved",
+    "owner-{quit,exit}": "ordinary/23 exit triggers independent cleanup",
+    "detached-client": "channel release not owner death; touch still works",
+    "invalid-native-name": "POSIX invalid UTF-8 filename: finish4, done1, diagnostic directory retained",
+    "killed-owner": "external owner termination triggers cleanup",
+    "dead-cleaner-{0,23}": "READY retained, short communication error, user exit unchanged, directory retained",
+    "active-compiler": "compiler/descendant pinned and stopped before directory cleanup",
+    "child-deadline": "managed compiler deadline, ran0/3, finish0 and cleanup",
+    "cleanup-race-00..07": "all eight finish/send versus owner death races",
+    "launch-race-00..07": "all eight run/send versus owner death races",
+    "busy": "Windows locked file: client5s timeout does not cancel same cleanup; unlock after owner exits",
+    "permanently-busy": "Windows file remains locked through 30s failure, cleaner exits with done1; directory retained",
+    "parallel-lifetime": "same long-lived parallel compiler/worker survives full original sequence, including both eight-race loops and Windows busy paths, then independently observed termination"
+  }
+}
