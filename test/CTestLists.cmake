@@ -320,7 +320,6 @@ foreach(process_exit_case IN LISTS process_exit_cases)
   # the shared flush budget and scheduler-sensitive subsecond fast-exit bound.
   set_tests_properties(integration.process_exit.${process_exit_case} PROPERTIES RUN_SERIAL TRUE)
 endforeach()
-goat_python(validation.process_exit_original "integration;exit-parity" scripts/check_process_exit.py "$<TARGET_FILE:process_exit_testing>" "$<TARGET_FILE:process_exit_failure_testing>" "$<TARGET_FILE:process_exit_delayed_testing>")
 set(module_exit_path "${PROJECT_SOURCE_DIR}/test/data/module-exit/scenarios.json")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${module_exit_path}")
 file(STRINGS "${module_exit_path}" module_exit_lines REGEX "^[ ]+\"id\":")
@@ -331,7 +330,6 @@ foreach(module_exit_line IN LISTS module_exit_lines)
     "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/module-exit")
 endforeach()
-goat_python(validation.module_exit_original "integration;exit-parity" scripts/check_module_exit.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 goat_python(integration.module_threads "integration" scripts/check_module_threads.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:goat>")
 # One ID per legacy project or CLI case/optimizer, from the same read-only table.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/module-assignment/scenarios.json")

@@ -61,4 +61,4 @@ build/debug/process_exit_scenarios integration.process_exit.fast-three build/deb
 ```
 
 Repeat with Release. Exact local/parity/negative-control and final CI evidence is
-recorded in the containing PR; original Python remains until the parity gate.
+recorded in the containing PR; original Python was removed after the full parity gate passed.

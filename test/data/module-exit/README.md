@@ -117,5 +117,5 @@ exactly-once deferred cleanup; failed cases verify the diagnostic and remove the
 own retained work. Debug/Release pass all 14 invocations.
 
 Full original/C remote parity and final Python-removal CI are recorded in the PR;
-Python is retained until that parity gate is green. This task does not alter language
+The original Python was removed after that parity gate passed. This task does not alter language
 semantics or production exit behavior.
