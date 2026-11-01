@@ -203,28 +203,51 @@ static size_t run_count(owner_t *o) {
     return count;
 }
 
+/* Python Path equality ignores repeated/trailing separators; on Windows it also
+ * folds slash direction and case. Do not resolve symlinks or accept descendants. */
+static char *comparison_path(const char *path) {
+    char *out = malloc(strlen(path) + 1);
+    if (!out)
+        return NULL;
+    size_t used = 0;
+    for (size_t i = 0; path[i]; i++) {
+        unsigned char c = (unsigned char)path[i];
+#ifdef _WIN32
+        if (c == '\\')
+            c = '/';
+        c = (unsigned char)tolower(c);
+#endif
+        if (c == '/' && used && out[used - 1] == '/')
+            continue;
+        out[used++] = (char)c;
+    }
+    while (used > 1 && out[used - 1] == '/')
+        used--;
+    out[used] = 0;
+    return out;
+}
+
+static bool direct_child(const char *root, const char *path) {
+    char *a = comparison_path(root), *b = comparison_path(path);
+    bool valid = false;
+    if (a && b) {
+        size_t n = strlen(a);
+        if (strlen(b) > n + 1 && !memcmp(a, b, n) && b[n] == '/') {
+            const char *leaf = b + n + 1;
+            valid = !strchr(leaf, '/') && strcmp(leaf, ".") && strcmp(leaf, "..");
+        }
+    }
+    free(a);
+    free(b);
+    return valid;
+}
+
 static void ready(owner_t *o) {
     scenario_run_t *r = o->s->r;
     const char *v = line(o, 10000);
     REQUIRE(!strncmp(v, "ready ", 6));
     o->directory = v + 6;
-    size_t n = strlen(o->root);
-    REQUIRE(strlen(o->directory) > n);
-    for (size_t i = 0; i < n; i++) {
-#ifdef _WIN32
-        unsigned char a = (unsigned char)o->directory[i], b = (unsigned char)o->root[i];
-        if (a == '\\')
-            a = '/';
-        if (b == '\\')
-            b = '/';
-        REQUIRE(tolower(a) == tolower(b));
-#else
-        REQUIRE(o->directory[i] == o->root[i]);
-#endif
-    }
-    REQUIRE(o->directory[n] == '/' || o->directory[n] == '\\');
-    const char *leaf = o->directory + n + 1;
-    REQUIRE(*leaf && !strchr(leaf, '/') && !strchr(leaf, '\\'));
+    REQUIRE(direct_child(o->root, o->directory));
     REQUIRE(exists(r, language_join(r, o->directory, "данные 😀.tmp")));
     o->cleaner = pin(o, o->pid);
     REQUIRE(run_count(o) == 1);

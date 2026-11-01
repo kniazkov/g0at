@@ -86,3 +86,10 @@ ready prefix/Unicode/multiplicity, short status/output, finish status, retained
 directory, done status, saved/old bytes, owner exit and held-live-cleaner faults.
 The held cleaner must fail at the original 10-second bound. Exact totals and
 sanitizer/shared transport regression results are recorded in the PR.
+
+The first remote parity run exposed a Windows-only oracle mismatch: GetTempPathW
+supplies a trailing separator and the service's path join adds another separator.
+Python Path normalizes this; the initial C byte-position check rejected it. The
+comparison now normalizes repeated/trailing separators (plus Windows slash/case)
+while still rejecting a different parent, nested descendants, `.` and `..`.
+Twenty direct C predicate controls cover POSIX and Windows lexical branches.
