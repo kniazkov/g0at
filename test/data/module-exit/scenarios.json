@@ -1,0 +1,3445 @@
+[
+  {
+    "id": "integration.module_exit.status-0",
+    "name": "status-0",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "print(\"buffered\"); exit(0); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "buffered",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.status-1",
+    "name": "status-1",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "print(\"buffered\"); exit(1); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 1,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 1,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "buffered",
+        "status": 1,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 1,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 1,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.status-7",
+    "name": "status-7",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "print(\"buffered\"); exit(7); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "buffered",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.status-127",
+    "name": "status-127",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "print(\"buffered\"); exit(127); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 127,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 127,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "buffered",
+        "status": 127,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 127,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 127,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.status-128",
+    "name": "status-128",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "print(\"buffered\"); exit(128); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 128,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 128,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "buffered",
+        "status": 128,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 128,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 128,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.status-254",
+    "name": "status-254",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "print(\"buffered\"); exit(254); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 254,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 254,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "buffered",
+        "status": 254,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 254,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 254,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.status-255",
+    "name": "status-255",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "print(\"buffered\"); exit(255); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 255,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "buffered",
+        "status": 255,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "buffered",
+        "status": 255,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 255,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "buffered",
+        "status": 255,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.normal-no-unwind",
+    "name": "normal-no-unwind",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const stop = func() { try { try { print(\"stop\"); exit(7); } catch(e) { println(\"caught\"); } finally { println(\"inner\"); } } finally { println(\"outer\"); return 99; } }; try { stop(); } finally { println(\"main\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "stop",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "stop",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "stop",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "stop",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "stop",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "auto",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "stop",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.exit-in-finally",
+    "name": "exit-in-finally",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { throw \"pending\"; } finally { print(\"finally\"); exit(9); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "finally",
+        "status": 9,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "finally",
+        "status": 9,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "finally",
+        "status": 9,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "finally",
+        "status": 9,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "finally",
+        "status": 9,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.exit-indirect-expression",
+    "name": "exit-indirect-expression",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const stop = exit; const after = func() { println(\"unreachable\"); return 1; }; const consume = func(a,b) { println(\"unreachable\"); }; consume(stop(17), after()); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "",
+        "status": 17,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "",
+        "status": 17,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "",
+        "status": 17,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "",
+        "status": 17,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "",
+        "status": 17,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "auto",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "",
+        "status": 17,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.exit-method",
+    "name": "exit-method",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const holder = { public stop = exit; }; holder.stop(19); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "",
+        "status": 19,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "",
+        "status": 19,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "",
+        "status": 19,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "",
+        "status": 19,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "",
+        "status": 19,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.exit-shadowing",
+    "name": "exit-shadowing",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const exit = func(code) { return code + 1; }; println(exit(7));",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "8\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "8\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "8\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "8\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "8\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.caught-invalid-function",
+    "name": "caught-invalid-function",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { try { exit(256); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } return 42; }; println(f());",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\n42\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\n42\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\n42\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\n42\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\n42\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.exit-replaces-return",
+    "name": "exit-replaces-return",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const f = func() { try { return 42; } finally { print(\"finally\"); exit(11); } }; println(f());",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "finally",
+        "status": 11,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "finally",
+        "status": 11,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "finally",
+        "status": 11,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "finally",
+        "status": 11,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "finally",
+        "status": 11,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.cli-entry-points",
+    "name": "cli-entry-points",
+    "steps": [
+      {
+        "kind": "write",
+        "path": "main.goat",
+        "text": "print(\"binary\"); exit(7); println(\"unreachable\");"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--compile",
+          "--native",
+          "off",
+          "$ROOT/main.goat"
+        ],
+        "expected": "",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--run",
+          "--native",
+          "off",
+          "$ROOT/main.gbin"
+        ],
+        "expected": "binary",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--save-native",
+          "$ROOT/missing/report",
+          "$ROOT/main.goat"
+        ],
+        "expected": "binary",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "interactive",
+        "argv": [
+          "$GOAT",
+          "--interactive"
+        ],
+        "stdin": "exit(7);\nprintln(\"unreachable\");\n",
+        "status": 7,
+        "absent": "unreachable",
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-0",
+    "name": "invalid-0",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(-1); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-1",
+    "name": "invalid-1",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(256); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-2",
+    "name": "invalid-2",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(9223372036854775807); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-3",
+    "name": "invalid-3",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(-9223372036854775807); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-4",
+    "name": "invalid-4",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(\"7\"); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-5",
+    "name": "invalid-5",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(7.0); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-6",
+    "name": "invalid-6",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(7.5); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-7",
+    "name": "invalid-7",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(true); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-8",
+    "name": "invalid-8",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(false); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-9",
+    "name": "invalid-9",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(null); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-10",
+    "name": "invalid-10",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit('a'); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-11",
+    "name": "invalid-11",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit({}); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-12",
+    "name": "invalid-12",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(func() {}); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-13",
+    "name": "invalid-13",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.invalid-14",
+    "name": "invalid-14",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { exit(0, 1); println(\"unreachable\"); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.argument-evaluation",
+    "name": "argument-evaluation",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const argument = func() { println(\"argument\"); throw \"value\"; }; try { exit(argument()); } catch(e) { println(e); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "argument\nvalue\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "argument\nvalue\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "argument\nvalue\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "argument\nvalue\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "argument\nvalue\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.include-caught-then-exit",
+    "name": "include-caught-then-exit",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const library = include \"library.goat\"; println(\"ready\"); try { library.stop(); } finally { println(\"unreachable\"); }",
+        "version": "1",
+        "files": {
+          "library.goat": "public stop = func() { exit(7); }; try { stop(); } catch(e) { println(e == Exceptions.EXIT_DURING_INITIALIZATION); } finally { println(\"initializer finally\"); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ninitializer finally\nready\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ninitializer finally\nready\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\ninitializer finally\nready\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\ninitializer finally\nready\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\ninitializer finally\nready\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.callback-into-main",
+    "name": "callback-into-main",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "public stop = func() { println(__main__); exit(7); }; include \"helper.goat\"; println(\"ready\"); stop();",
+        "version": "1",
+        "files": {
+          "helper.goat": "const root = include \"main.goat\"; try { root.stop(); } catch(e) { println(e == Exceptions.EXIT_DURING_INITIALIZATION); } finally { println(\"helper finally\"); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ntrue\nhelper finally\nready\ntrue\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ntrue\nhelper finally\nready\ntrue\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\ntrue\nhelper finally\nready\ntrue\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\ntrue\nhelper finally\nready\ntrue\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\ntrue\nhelper finally\nready\ntrue\n",
+        "status": 7,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.include-sticky-failure",
+    "name": "include-sticky-failure",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "var saved = null; try { include \"bad.goat\"; } catch(e) { saved = e; println(e == Exceptions.EXIT_DURING_INITIALIZATION); } try { include \"bad.goat\"; } catch(e) { println(e == saved); } finally { println(\"caller finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {
+          "bad.goat": "println(\"once\"); try { exit(0); } finally { println(\"initializer finally\"); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "once\ninitializer finally\ntrue\ntrue\ncaller finally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "once\ninitializer finally\ntrue\ntrue\ncaller finally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "once\ninitializer finally\ntrue\ntrue\ncaller finally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "once\ninitializer finally\ntrue\ntrue\ncaller finally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "once\ninitializer finally\ntrue\ntrue\ncaller finally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.initializer-invalid-argument",
+    "name": "initializer-invalid-argument",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "include \"helper.goat\"; println(\"after\");",
+        "version": "1",
+        "files": {
+          "helper.goat": "try { exit(256); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } try { exit(7); } catch(e) { println(e == Exceptions.EXIT_DURING_INITIALIZATION); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.initializer-finally-replaces-pending",
+    "name": "initializer-finally-replaces-pending",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { include \"bad.goat\"; } catch(e) { println(e == Exceptions.EXIT_DURING_INITIALIZATION); } println(\"after\");",
+        "version": "1",
+        "files": {
+          "bad.goat": "try { throw \"original\"; } finally { println(\"initializer finally\"); exit(7); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "initializer finally\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "initializer finally\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "initializer finally\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "initializer finally\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "initializer finally\ntrue\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.import-caught-then-exit",
+    "name": "import-caught-then-exit",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "library",
+        "code": "external stop = func() { exit(255); }; if (!__main__) { try { stop(); } catch(e) { println(e == Exceptions.EXIT_DURING_INITIALIZATION); } finally { println(\"import finally\"); } } else { print(\"direct\"); stop(); }",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/modules/library/1.gbin"
+        ],
+        "expected": "direct",
+        "status": 255,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const lib = import \"library@1\"; println(\"ready\"); try { lib.stop(); } catch(e) { println(\"unreachable\"); } finally { println(\"unreachable\"); }",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nimport finally\nready\n",
+        "status": 255,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.import-sticky-failure",
+    "name": "import-sticky-failure",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "bad",
+        "code": "println(\"once\"); try { exit(7); } finally { println(\"import finally\"); }",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "var saved = null; try { import \"bad@1\"; } catch(e) { saved = e; println(e == Exceptions.EXIT_DURING_INITIALIZATION); } try { import \"bad@1\"; } catch(e) { println(e == saved); } finally { println(\"caller finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "once\nimport finally\ntrue\ntrue\ncaller finally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "ignore"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.transitive-dynamic-context",
+    "name": "transitive-dynamic-context",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "leaf",
+        "code": "external stop = func() { exit(23); };",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "compile",
+        "name": "outer",
+        "code": "const leaf = import \"leaf@1\"; external stop = leaf.stop; try { stop(); } catch(e) { println(e == Exceptions.EXIT_DURING_INITIALIZATION); } finally { println(\"outer finally\"); }",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "const leaf = import \"leaf@1\"; const outer = import \"outer@1\"; println(\"ready\"); outer.stop(); println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nouter finally\nready\n",
+        "status": 23,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.initializer-uncaught",
+    "name": "initializer-uncaught",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "include \"bad.goat\"; println(\"unreachable\");",
+        "version": "1",
+        "files": {
+          "bad.goat": "try { exit(7); } finally { println(\"initializer finally\"); }"
+        }
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "initializer finally\n",
+        "status": 1,
+        "diagnostic": "EXIT_DURING_INITIALIZATION",
+        "stderr_policy": "contains"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "initializer finally\n",
+        "status": 1,
+        "diagnostic": "EXIT_DURING_INITIALIZATION",
+        "stderr_policy": "contains"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "initializer finally\n",
+        "status": 1,
+        "diagnostic": "EXIT_DURING_INITIALIZATION",
+        "stderr_policy": "contains"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "initializer finally\n",
+        "status": 1,
+        "diagnostic": "EXIT_DURING_INITIALIZATION",
+        "stderr_policy": "contains"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "initializer finally\n",
+        "status": 1,
+        "diagnostic": "EXIT_DURING_INITIALIZATION",
+        "stderr_policy": "contains"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.top-return-uncaught",
+    "name": "top-return-uncaught",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "return; println(\"unreachable\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "",
+        "status": 1,
+        "diagnostic": "RETURN_OUTSIDE_FUNCTION",
+        "stderr_policy": "contains"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "",
+        "status": 1,
+        "diagnostic": "RETURN_OUTSIDE_FUNCTION",
+        "stderr_policy": "contains"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "",
+        "status": 1,
+        "diagnostic": "RETURN_OUTSIDE_FUNCTION",
+        "stderr_policy": "contains"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "",
+        "status": 1,
+        "diagnostic": "RETURN_OUTSIDE_FUNCTION",
+        "stderr_policy": "contains"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "",
+        "status": 1,
+        "diagnostic": "RETURN_OUTSIDE_FUNCTION",
+        "stderr_policy": "contains"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.top-return-bare",
+    "name": "top-return-bare",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { return; } catch(e) { println(e == Exceptions.RETURN_OUTSIDE_FUNCTION); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.import-return-bare",
+    "name": "import-return-bare",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "bad",
+        "code": "println(\"once\"); try { return; } finally { println(\"import finally\"); }",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "var saved = null; try { import \"bad@1\"; } catch(e) { saved = e; println(e == Exceptions.RETURN_OUTSIDE_FUNCTION); } try { import \"bad@1\"; } catch(e) { println(e == saved); } finally { println(\"caller finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "once\nimport finally\ntrue\ntrue\ncaller finally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "ignore"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.top-return-value",
+    "name": "top-return-value",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "try { return 42; } catch(e) { println(e == Exceptions.RETURN_OUTSIDE_FUNCTION); } finally { println(\"finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "$ROOT/sources/app-1/module.gmod"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "none",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$GOAT",
+          "--native",
+          "off",
+          "--optimize",
+          "all",
+          "$ROOT/sources/app-1/main.goat"
+        ],
+        "expected": "true\nfinally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "empty"
+      }
+    ]
+  },
+  {
+    "id": "integration.module_exit.import-return-value",
+    "name": "import-return-value",
+    "steps": [
+      {
+        "kind": "compile",
+        "name": "bad",
+        "code": "println(\"once\"); try { return 42; } finally { println(\"import finally\"); }",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "compile",
+        "name": "app",
+        "code": "var saved = null; try { import \"bad@1\"; } catch(e) { saved = e; println(e == Exceptions.RETURN_OUTSIDE_FUNCTION); } try { import \"bad@1\"; } catch(e) { println(e == saved); } finally { println(\"caller finally\"); } println(\"after\");",
+        "version": "1",
+        "files": {}
+      },
+      {
+        "kind": "invoke",
+        "argv": [
+          "$HOST",
+          "binary",
+          "$ROOT/app.gbin"
+        ],
+        "expected": "once\nimport finally\ntrue\ntrue\ncaller finally\nafter\n",
+        "status": 0,
+        "diagnostic": null,
+        "stderr_policy": "ignore"
+      }
+    ]
+  }
+]

@@ -6,3 +6,6 @@ test/data/module-merge/blobs/* -text
 
 # Exact child-process stdin, argument and capture bytes on all checkout hosts.
 test/data/child-process/*.bin -text
+
+# Frozen exit/return invocation corpus must keep its provenance bytes on Windows.
+test/data/module-exit/scenarios.json -text

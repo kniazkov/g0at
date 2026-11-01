@@ -1,0 +1,10 @@
+{
+  "source": "scripts/check_module_exit.py",
+  "source_sha256": "e7cfe8104ca8646f97ba920a940cab0a245761590da5f5521d9521c19e63ae9e",
+  "base_commit": "982272a7df41b7d415d59abc7dc2cc1f1f1dccc5",
+  "method": "AST replaced invoke with recorder; stub ExecutionSuite recorded original compile/put/run literals; only interactive subprocess mocked. No production execution or expected-value generation.",
+  "scenario_count": 45,
+  "compile_steps": 50,
+  "invoke_steps": 207,
+  "fixture_sha256": "94074912e0e29bff372e9d5caf65b447808db8f5d479ab0c8e2d5edca53d6fc6"
+}
