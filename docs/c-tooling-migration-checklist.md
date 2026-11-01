@@ -87,7 +87,7 @@
 - [x] 54. [#372 — Перенести на Си: Инспектор](https://github.com/kniazkov/g0at/issues/372)
 - [x] 55. [#373 — Перенести на Си: Probe инспектора](https://github.com/kniazkov/g0at/issues/373)
 - [x] 56. [#374 — Перенести на Си: Merge модулей](https://github.com/kniazkov/g0at/issues/374)
-- [ ] 57. [#375 — Перенести на Си: Дочерние процессы](https://github.com/kniazkov/g0at/issues/375)
+- [x] 57. [#375 — Перенести на Си: Дочерние процессы](https://github.com/kniazkov/g0at/issues/375)
 - [ ] 58. [#376 — Перенести на Си: Служба очистки](https://github.com/kniazkov/g0at/issues/376)
 - [ ] 59. [#377 — Перенести на Си: Завершение процессов и модулей](https://github.com/kniazkov/g0at/issues/377)
 - [ ] 60. [#378 — Перенести на Си: Потоки модулей](https://github.com/kniazkov/g0at/issues/378)

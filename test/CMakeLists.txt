@@ -422,3 +422,7 @@ add_dependencies(inspect_probe_scenarios goat-inspect goat-merge inspect_probe_t
 add_executable(module_merge_scenarios src/functional/module_merge_scenarios.c support/merge_terminal.c support/merge_constructor.c)
 target_link_libraries(module_merge_scenarios PRIVATE goat_language_execution_support goat_format_oracle goat_inspect_report_support yyjson)
 add_dependencies(module_merge_scenarios goat-merge goat-inspect)
+
+add_executable(child_process_scenarios src/functional/child_process_scenarios.c support/module_loading_owner.c)
+target_link_libraries(child_process_scenarios PRIVATE goat_language_execution_support goat_format_oracle goat_process_watch_support yyjson)
+add_dependencies(child_process_scenarios child_process_testing goat)

@@ -303,7 +303,7 @@
 | Платформы, CPU, runtime, ABI, переносимые хеши | [Сквозная поставка и границы](module-delivery-tests.md); `integration.module_native` (CTest), `check_native_requirements.py`, `check_native_toolchains.py`, `check_module_delivery.py`, `check_module_delivery_requirements.py`, format-vectors |
 | Информационные поля и cCompiler | [Информация](module-information-api.md), [объединение](module-merge-api.md); `check_module_information.py`, `integration.module_build.*` (CTest), `integration.module_inspect.*` (CTest), `integration.module_merge.*` (CTest) |
 | Deflate, атомарная публикация, права и входы merge | [Writer](module-writer-api.md), [merge](module-merge-api.md); `integration.module_writer.*` (CTest), `check_module_container.py`, `integration.module_merge.*` (CTest) и fault-проверки общего файлового API |
-| Проба inspect, дерево процессов и очистка | [Inspect](module-inspect-api.md), [уборщик](cleanup-service-api.md); `integration.inspect_probe.*` (CTest), `check_child_process.py`, `check_cleanup_service.py` |
+| Проба inspect, дерево процессов и очистка | [Inspect](module-inspect-api.md), [уборщик](cleanup-service-api.md); `integration.inspect_probe.*` (CTest), `integration.child_process.*` (CTest), `check_cleanup_service.py` |
 | AC-01–AC-28 | [Реальные многофайловые проверки](book/ru/access-control-examples.md#проверки-на-реальных-файлах-и-модулях-218); `module_multifile_access_scenarios` |
 
 Завершение v1 не означает поддержку всех сред или выполнение всех возможных

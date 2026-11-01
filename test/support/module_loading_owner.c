@@ -29,6 +29,7 @@
 #include "test/support/language_execution.h"
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #define REQUIRE(o, x) scenario_require((o)->run, (x), #x)
@@ -49,6 +50,7 @@ struct loading_owner_t {
     int input, output[2];
 #endif
     bool started, reaped;
+    loading_owner_options_t options;
     char *directory;
     stream_t out, err;
     FILE *log;
@@ -84,9 +86,9 @@ static bool close_owner(void *arg) {
         raw_stop(o);
     if (o->log) {
         if (fprintf(o->log,
-                    "final status=%d exit=%d signal=%d system=%lu cleanup=%lu reaped=%d\n",
+                    "final status=%d exit=%lld signal=%d system=%lu cleanup=%lu reaped=%d\n",
                     (int)o->result.status,
-                    o->result.exit_code,
+                    (long long)o->result.exit_code,
                     o->result.signal_number,
                     (unsigned long)o->result.system_error,
                     (unsigned long)o->result.cleanup_error,
@@ -194,9 +196,22 @@ static void raw_start(loading_owner_t *o, const char *const *args, const char *c
     FREE(quoted);
     wchar_t *environment = wide_environment(o, env);
     wchar_t *executable = wide_text(o, args[0]);
-    bool ok = CreatePipe(&inherited[0], &o->input, &sa, 4096)
-              && SetHandleInformation(o->input, HANDLE_FLAG_INHERIT, 0)
-              && CreatePipe(&o->output[0], &inherited[1], &sa, 4096)
+    REQUIRE(o, !o->options.stdin_pty && !o->options.new_session);
+    bool input_ok;
+    if (o->options.stdin_file) {
+        inherited[0] = CreateFileW(wide_text(o, o->options.stdin_file),
+                                   GENERIC_READ,
+                                   FILE_SHARE_READ,
+                                   &sa,
+                                   OPEN_EXISTING,
+                                   FILE_ATTRIBUTE_NORMAL,
+                                   NULL);
+        input_ok = inherited[0] != INVALID_HANDLE_VALUE;
+    } else {
+        input_ok = CreatePipe(&inherited[0], &o->input, &sa, 4096)
+                   && SetHandleInformation(o->input, HANDLE_FLAG_INHERIT, 0);
+    }
+    bool ok = input_ok && CreatePipe(&o->output[0], &inherited[1], &sa, 4096)
               && SetHandleInformation(o->output[0], HANDLE_FLAG_INHERIT, 0)
               && CreatePipe(&o->output[1], &inherited[2], &sa, 4096)
               && SetHandleInformation(o->output[1], HANDLE_FLAG_INHERIT, 0);
@@ -360,17 +375,40 @@ static void close_native(int *fd) {
 
 static void raw_start(loading_owner_t *o, const char *const *args, const char *const *env) {
     int in[2] = {-1, -1}, out[2] = {-1, -1}, err[2] = {-1, -1};
-    bool ok = !socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, in) && !pipe2(out, O_CLOEXEC)
-              && !pipe2(err, O_CLOEXEC);
+    bool ok;
+    if (o->options.stdin_file) {
+        in[0] = open(o->options.stdin_file, O_RDONLY | O_CLOEXEC);
+        ok = in[0] >= 0;
+    } else if (o->options.stdin_pty) {
+        in[1] = posix_openpt(O_RDWR | O_NOCTTY | O_CLOEXEC);
+        ok = in[1] >= 0 && !grantpt(in[1]) && !unlockpt(in[1])
+             && fcntl(in[1], F_SETFL, O_NONBLOCK) == 0;
+        if (ok) {
+            char *name = ptsname(in[1]);
+            ok = name && (in[0] = open(name, O_RDWR | O_NOCTTY | O_CLOEXEC)) >= 0;
+        }
+        /* Match Python: queue the terminal input before spawning the fixture. */
+        if (ok && o->input_size) {
+            ssize_t written = write(in[1], o->input_data, o->input_size);
+            ok = written >= 0 && (size_t)written == o->input_size;
+            if (ok)
+                o->input_offset = o->input_size;
+        }
+    } else {
+        ok = !socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, in);
+    }
+    ok = ok && !pipe2(out, O_CLOEXEC) && !pipe2(err, O_CLOEXEC);
     if (ok)
-        ok = fcntl(in[1], F_SETFL, O_NONBLOCK) == 0 && fcntl(out[0], F_SETFL, O_NONBLOCK) == 0
-             && fcntl(err[0], F_SETFL, O_NONBLOCK) == 0;
+        ok = (in[1] < 0 || fcntl(in[1], F_SETFL, O_NONBLOCK) == 0)
+             && fcntl(out[0], F_SETFL, O_NONBLOCK) == 0 && fcntl(err[0], F_SETFL, O_NONBLOCK) == 0;
     long maximum = sysconf(_SC_OPEN_MAX);
     if (maximum < 0)
         maximum = 65536;
     pid_t pid = ok ? fork() : -1;
     int error = errno;
     if (!pid) {
+        if (o->options.new_session && setsid() < 0)
+            _exit(126);
         if (dup2(in[0], STDIN_FILENO) < 0 || dup2(out[1], STDOUT_FILENO) < 0
             || dup2(err[1], STDERR_FILENO) < 0 || fcntl(STDIN_FILENO, F_SETFD, 0) < 0
             || fcntl(STDOUT_FILENO, F_SETFD, 0) < 0 || fcntl(STDERR_FILENO, F_SETFD, 0) < 0)
@@ -570,15 +608,21 @@ static loading_owner_t *allocate_owner(scenario_run_t *r, const char *root, cons
     return o;
 }
 
-loading_owner_t *loading_owner_command_start(scenario_run_t *r,
-                                             const char *root,
-                                             const char *name,
-                                             const char *const *arguments,
-                                             const char *const *env,
-                                             const void *input,
-                                             size_t input_size,
-                                             bool close_stdin) {
+loading_owner_t *loading_owner_command_start_options(scenario_run_t *r,
+                                                     const char *root,
+                                                     const char *name,
+                                                     const char *const *arguments,
+                                                     const char *const *env,
+                                                     const void *input,
+                                                     size_t input_size,
+                                                     bool close_stdin,
+                                                     const loading_owner_options_t *options) {
     loading_owner_t *o = allocate_owner(r, root, name);
+    if (options)
+        o->options = *options;
+    REQUIRE(o, !(o->options.stdin_file && o->options.stdin_pty));
+    REQUIRE(o, !o->options.stdin_file || !input_size);
+    REQUIRE(o, !o->options.stdin_pty || !close_stdin);
     REQUIRE(o, arguments && arguments[0] && env && input_size <= 4096);
     REQUIRE(o, !input_size || input);
     unsigned char *copy = language_owned(r, ALLOC(input_size + 1));
@@ -602,6 +646,25 @@ loading_owner_t *loading_owner_command_start(scenario_run_t *r,
     REQUIRE(o, !fflush(o->log));
     raw_start(o, arguments, env);
     return o;
+}
+
+loading_owner_t *loading_owner_command_start(scenario_run_t *r,
+                                             const char *root,
+                                             const char *name,
+                                             const char *const *arguments,
+                                             const char *const *env,
+                                             const void *input,
+                                             size_t input_size,
+                                             bool close_stdin) {
+    return loading_owner_command_start_options(r,
+                                               root,
+                                               name,
+                                               arguments,
+                                               env,
+                                               input,
+                                               input_size,
+                                               close_stdin,
+                                               NULL);
 }
 
 loading_owner_t *loading_owner_start(scenario_run_t *r,
@@ -638,6 +701,156 @@ static const child_result_t *pump(loading_owner_t *o) {
     REQUIRE(o, !result->system_error);
     REQUIRE(o, !result->cleanup_error);
     return result;
+}
+
+/* Byte-exact protocol transport and independently bounded observation for #375. */
+static bool output_closed(loading_owner_t *o, size_t channel) {
+#ifdef _WIN32
+    return !o->output[channel];
+#else
+    return o->output[channel] < 0;
+#endif
+}
+
+bool loading_owner_next_line(loading_owner_t *o, uint64_t timeout_ms, loading_bytes_t *line) {
+    REQUIRE(o, line);
+    uint64_t end_time = deadline(o, timeout_ms);
+    for (;;) {
+        pump(o);
+        size_t begin = o->line_offset, end = begin;
+        while (end < o->out.size && o->out.data[end] != '\n')
+            end++;
+        if (end < o->out.size || output_closed(o, 0)) {
+            if (end < o->out.size)
+                end++;
+            *line = (loading_bytes_t){end > begin ? o->out.data + begin : NULL, end - begin};
+            o->line_offset = end;
+            return end > begin;
+        }
+        uint64_t now = process_watch_now_ms();
+        REQUIRE(o, now < end_time);
+#ifdef _WIN32
+        /* Anonymous synchronous Windows pipes have no waitable read-completion
+         * event. PeekNamedPipe above is nonblocking; cap notification latency at
+         * one millisecond rather than the generic 10ms predicate cadence. Wait
+         * on our retained owner handle while live; do not spin after owner exit.
+         * This changes readiness latency only, never the deadline/EOF contract. */
+        if (o->reaped)
+            Sleep(1);
+        else {
+            DWORD state = WaitForSingleObject(o->process, 1);
+            REQUIRE(o, state == WAIT_TIMEOUT || state == WAIT_OBJECT_0);
+        }
+#else
+        /* Wake on actual pipe readability: launch-window death must not acquire
+         * an artificial polling delay between LAUNCHING and killing the owner. */
+        uint64_t remaining = end_time - now;
+        struct pollfd fds[2] = {{o->output[0], POLLIN, 0}, {o->output[1], POLLIN, 0}};
+        int state = poll(fds, 2, remaining > INT_MAX ? INT_MAX : (int)remaining);
+        REQUIRE(o, state >= 0 || errno == EINTR);
+        REQUIRE(o, !(fds[0].revents & POLLNVAL) && !(fds[1].revents & POLLNVAL));
+#endif
+    }
+}
+
+static process_watch_result_t owner_reaped(void *argument, unsigned long *error) {
+    (void)error;
+    loading_owner_t *o = argument;
+    pump(o);
+    return o->reaped ? PROCESS_WATCH_OK : PROCESS_WATCH_TIMEOUT;
+}
+
+void loading_owner_reap(loading_owner_t *o, uint64_t timeout_ms) {
+    unsigned long error = 0;
+    REQUIRE(o,
+            process_watch_until(owner_reaped, o, deadline(o, timeout_ms), &error)
+                == PROCESS_WATCH_OK);
+}
+
+void loading_owner_terminate(loading_owner_t *o, bool group_term, uint64_t timeout_ms) {
+    /* Do not poll/reap before sending: an unreaped child pins its numeric PID.
+     * Session group signals are permitted only for our own explicitly new session. */
+    REQUIRE(o, o->started && !o->reaped);
+#ifdef _WIN32
+    REQUIRE(o, !group_term);
+    REQUIRE(o,
+            TerminateProcess(o->process, 137)
+                || WaitForSingleObject(o->process, 0) == WAIT_OBJECT_0);
+#else
+    REQUIRE(o, !group_term || o->options.new_session);
+    REQUIRE(o,
+            kill(group_term ? -o->pid : o->pid, group_term ? SIGTERM : SIGKILL) == 0
+                || errno == ESRCH);
+#endif
+    loading_owner_reap(o, timeout_ms);
+}
+
+static process_watch_result_t output_eof(void *argument, unsigned long *error) {
+    (void)error;
+    loading_owner_t *o = argument;
+    pump(o);
+    return output_closed(o, 0) && output_closed(o, 1) ? PROCESS_WATCH_OK : PROCESS_WATCH_TIMEOUT;
+}
+
+void loading_owner_wait_eof(loading_owner_t *o, uint64_t timeout_ms) {
+    unsigned long error = 0;
+    REQUIRE(o,
+            process_watch_until(output_eof, o, deadline(o, timeout_ms), &error)
+                == PROCESS_WATCH_OK);
+}
+
+void loading_owner_pin_pid(loading_owner_t *o, uint64_t pid) {
+    unsigned long error = 0;
+    process_watch_t *w = process_watch_open(pid, &error);
+    REQUIRE(o, w);
+    process_watch_t **next = realloc(o->watches, (o->watch_count + 1) * sizeof(*next));
+    if (!next) {
+        process_watch_close(&w, &error);
+        REQUIRE(o, next);
+    }
+    o->watches = next;
+    o->watches[o->watch_count++] = w;
+}
+
+bool loading_owner_pid_alive(loading_owner_t *o, uint64_t pid) {
+#ifdef _WIN32
+    REQUIRE(o, pid && pid <= UINT32_MAX);
+    HANDLE h = OpenProcess(SYNCHRONIZE, FALSE, (DWORD)pid);
+    if (!h) {
+        REQUIRE(o, GetLastError() == ERROR_INVALID_PARAMETER);
+        return false;
+    }
+    DWORD state = WaitForSingleObject(h, 0);
+    BOOL closed = CloseHandle(h);
+    REQUIRE(o, closed && (state == WAIT_OBJECT_0 || state == WAIT_TIMEOUT));
+    return state == WAIT_TIMEOUT;
+#else
+    REQUIRE(o, pid && pid <= INT_MAX);
+    if (!kill((pid_t)pid, 0))
+        return true;
+    REQUIRE(o, errno == ESRCH);
+    return false;
+#endif
+}
+
+typedef struct {
+    loading_owner_t *owner;
+    uint64_t pid;
+} pid_condition_t;
+
+static process_watch_result_t pid_absent(void *argument, unsigned long *error) {
+    (void)error;
+    pid_condition_t *c = argument;
+    pump(c->owner);
+    return loading_owner_pid_alive(c->owner, c->pid) ? PROCESS_WATCH_TIMEOUT : PROCESS_WATCH_OK;
+}
+
+void loading_owner_pid_gone(loading_owner_t *o, uint64_t pid, uint64_t timeout_ms) {
+    pid_condition_t c = {o, pid};
+    unsigned long error = 0;
+    REQUIRE(o,
+            process_watch_until(pid_absent, &c, deadline(o, timeout_ms), &error)
+                == PROCESS_WATCH_OK);
 }
 
 static process_watch_result_t line_ready(void *arg, unsigned long *error) {

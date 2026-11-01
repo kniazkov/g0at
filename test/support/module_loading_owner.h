@@ -27,6 +27,39 @@ loading_owner_t *loading_owner_command_start(scenario_run_t *r,
                                              const void *input,
                                              size_t input_size,
                                              bool close_stdin);
+
+/** Independent transport variants for process-primitive tests. Zero means pipe stdin.
+ * File input is opened read-only. PTY input is POSIX-only and preserves canonical
+ * terminal behavior. new_session is POSIX-only, matching start_new_session=True. */
+typedef struct {
+    const char *stdin_file;
+    bool stdin_pty;
+    bool new_session;
+} loading_owner_options_t;
+
+loading_owner_t *loading_owner_command_start_options(scenario_run_t *r,
+                                                     const char *root,
+                                                     const char *name,
+                                                     const char *const *arguments,
+                                                     const char *const *environment,
+                                                     const void *input,
+                                                     size_t input_size,
+                                                     bool close_stdin,
+                                                     const loading_owner_options_t *options);
+/** A complete line includes its original newline bytes. False means actual pipe
+ * EOF, not merely owner exit. Returned bytes remain valid until the next pump. */
+bool loading_owner_next_line(loading_owner_t *o, uint64_t timeout_ms, loading_bytes_t *line);
+/** Reap only the owner, independently of descendant-held output pipe EOF. */
+void loading_owner_reap(loading_owner_t *o, uint64_t timeout_ms);
+void loading_owner_terminate(loading_owner_t *o, bool group_term, uint64_t timeout_ms);
+void loading_owner_wait_eof(loading_owner_t *o, uint64_t timeout_ms);
+/** Pin only PIDs synchronized at a live readiness barrier. Deferred failure
+ * cleanup may signal these handles, never an unpinned or reopened numeric PID. */
+void loading_owner_pin_pid(loading_owner_t *o, uint64_t pid);
+/** Original existence semantics: POSIX kill(pid,0), including zombies as alive;
+ * Windows SYNCHRONIZE handle wait. Unexpected native errors fail closed. */
+bool loading_owner_pid_alive(loading_owner_t *o, uint64_t pid);
+void loading_owner_pid_gone(loading_owner_t *o, uint64_t pid, uint64_t timeout_ms);
 const child_result_t *loading_owner_command_poll(loading_owner_t *o);
 void loading_owner_command_wait(loading_owner_t *o,
                                 int expected_exit,

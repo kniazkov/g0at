@@ -3,3 +3,6 @@ third_party/unicode/17.0.0/*.txt text eol=lf
 
 # Content-addressed merge fixtures require byte-identical checkouts on every host.
 test/data/module-merge/blobs/* -text
+
+# Exact child-process stdin, argument and capture bytes on all checkout hosts.
+test/data/child-process/*.bin -text

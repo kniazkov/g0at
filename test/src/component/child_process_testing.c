@@ -1,6 +1,6 @@
 /** @file child_process_testing.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Controlled process fixtures; the Python harness supplies an external watchdog.
+ * @brief Controlled process fixtures; an independent harness supplies an external watchdog.
  */
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
