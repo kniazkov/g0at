@@ -147,4 +147,5 @@ Local Linux glibc validation passed:
   the fixture's actual diagnostics are ASCII, so this stricter malformed-output
   policy does not alter any frozen case. Both malformed-stream controls reject.
 
-Full remote original/C parity is still required before Python removal.
+Full remote original/C parity passed at `f5fcfe0021d4203b070646672d63737f766f8506`
+before Python removal. Parity and final CI links are recorded in PR #457.

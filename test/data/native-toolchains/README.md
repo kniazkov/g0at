@@ -55,7 +55,8 @@ compiler copies and resolved assembler/linker symlinks inhabit isolated PATH;
 original PATH tail for runtime DLL discovery. Raw binary argv logs retain NULs;
 normal text log parsing accepts native CRLF without changing the assertions.
 
-Original Python remains unchanged until full remote original/C parity is green.
+Original Python was removed after full remote original/C parity passed at
+`f5fcfe0021d4203b070646672d63737f766f8506`. Parity and final CI links are in PR #457.
 
 ## Local validation evidence
 
@@ -66,7 +67,7 @@ Original Python remains unchanged until full remote original/C parity is green.
   diagnostic was hidden. This executor lacks `/proc/thread-self/children` and
   the existing cleanup limitation also affects these compiler descendants.
   These runs are **not green**; strict cleanup checks remain unchanged and full
-  remote original/C parity is required. Earlier runs varied in which commands
+  remote original/C parity was required and subsequently passed. Earlier runs varied in which commands
   triggered this environment limitation; no retry is presented as a full pass.
 - Independent native-C fake harness controls: 122/122 across Debug and Release.
   Positive cases and mutations covered availability, exact matching-line cache

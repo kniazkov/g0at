@@ -128,8 +128,6 @@ foreach(native_toolchains_case IN ITEMS cache reprobe linux-relro unicode-temp t
     "$<TARGET_FILE:native_toolchain_testing>" "${CMAKE_C_COMPILER}" host
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-goat_python(validation.native_requirements_original "integration;native-tooling-parity" scripts/check_native_requirements.py "$<TARGET_FILE:native_requirements_testing>")
-goat_python(validation.native_toolchains_original "integration;native-tooling-parity" scripts/check_native_toolchains.py "$<TARGET_FILE:native_toolchain_testing>" "${CMAKE_C_COMPILER}")
 goat_python(integration.native_cleanup "integration" scripts/check_native_cleanup.py "$<TARGET_FILE:native_cleanup_testing>" "${CMAKE_C_COMPILER}")
 goat_python(integration.module_native_values "integration" scripts/check_module_native_values.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_native_values_testing>" "${CMAKE_C_COMPILER}")
 foreach(module_build_case numeric empty-required empty-off empty-auto-explicit included missing-auto missing-required unsupported-target foreign-target only-dependency)
