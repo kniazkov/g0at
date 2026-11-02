@@ -154,7 +154,7 @@ static const char *field(scenario_run_t *r, yyjson_val *obj, const char *name) {
     return s;
 }
 
-static bool boolean(scenario_run_t *r, yyjson_val *obj, const char *name) {
+static bool boolean_field(scenario_run_t *r, yyjson_val *obj, const char *name) {
     yyjson_val *v = yyjson_obj_get(obj, name);
     REQUIRE(yyjson_is_bool(v));
     return yyjson_get_bool(v);
@@ -262,8 +262,8 @@ static void body(scenario_run_t *r, void *user) {
     REQUIRE(!strchr(name, '/') && !strchr(name, '\\') && strcmp(name, ".") && strcmp(name, ".."));
     const char *data = language_join(r, c->fixtures, name),
                *root = scenario_work_directory(scenario_run_context(r));
-    bool old = boolean(r, record, "legacy"), terminal = boolean(r, record, "terminal"),
-         exited = boolean(r, record, "exited");
+    bool old = boolean_field(r, record, "legacy"), terminal = boolean_field(r, record, "terminal"),
+         exited = boolean_field(r, record, "exited");
     const char *library = old ? legacy(r, c, root) : NULL;
     yyjson_val *files = yyjson_obj_get(record, "files");
     REQUIRE(yyjson_is_arr(files));
