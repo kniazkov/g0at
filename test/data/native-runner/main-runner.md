@@ -78,12 +78,12 @@ Existing native sources, expected output, examples, drivers and manifest are
 consumed read-only; no oracle fixture is regenerated. `main-provenance.json`
 records original source/manifest hashes and coverage counts.
 
-During remote parity the original scripts remain untouched. Afterwards the full
-Python runner and `test/src/native/checks/runner.py` can be removed/reduced, but
+Full remote parity passed with the original scripts unchanged. The Python
+manifest runner and `test/src/native/checks/runner.py` have now been removed, but
 `string_method_errors.py` still imports `require`, `execute`, `compare_output`
 (and their `normalized`/`ROOT` dependencies) from `scripts/check_native.py`.
-Keep only this explicitly documented compatibility layer until that consumer's
-later migration/final cleanup; do not silently retain a second runnable suite.
+Only this explicitly documented compatibility layer remains until that consumer's
+later migration/final cleanup; there is no second runnable Python suite.
 This dependency was recorded in issue #383 and the checklist before changes.
 
 ## Local evidence and limitations
@@ -114,3 +114,13 @@ This dependency was recorded in issue #383 and the checklist before changes.
 
 Full remote original/C parity on the supported platforms is mandatory before
 Python deletion. No production or cleanup check was weakened for local success.
+
+## Remote parity and removal
+
+Parity head `7dd605b0a47e541e4eedb72c40d229de75ac5186` passed
+[Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41495133812) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41495133951).
+The initial musl AArch64 saturation adapter failure did not reproduce after
+adding diagnostic retention only; its exact cause remains unproven. No assertion
+or deadline was relaxed. Python removal follows this complete gate; final CI
+must still verify the removal commit.

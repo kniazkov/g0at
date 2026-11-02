@@ -516,7 +516,6 @@ foreach(native_runner_policy_case IN ITEMS output-good output-missing-nul output
     "$<TARGET_FILE:native_runner_policy_testing>" "helpers.native_runner.${native_runner_policy_case}"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-goat_python(validation.native_runner_original "native;native-runner-parity" scripts/check_native.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native-original")
 if(NOT WIN32)
 goat_shell(native.native_library "native" check_native_library.sh $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_library")
 endif()

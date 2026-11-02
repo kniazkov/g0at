@@ -116,7 +116,7 @@ bash scripts/check_native_abi.sh build/goat build/native-abi
 ### Нативные функциональные сценарии
 
 Сценарии находятся в `test/data/native`; общий список — `test/data/native/list.json`.
-Запуск: `python3 scripts/check_native.py build/goat "build/native functional"`.
+Запуск: `ctest --test-dir build -R '^integration.native_functional\.' --output-on-failure`.
 Каждый сценарий сравнивает вывод VM с обязательным нативным выполнением и запуском
 сохранённого модуля, проверяя реальные вызовы адаптеров без откатов. Чтобы добавить
 тест, достаточно нового `program.goat` и записи в списке; CI менять не нужно.

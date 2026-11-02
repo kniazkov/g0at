@@ -21,8 +21,7 @@ loop's implementation into the test.
 
 The existing manifest's logical `checks/runner.py` entry is routed to the C
 selftest executable (`all BUILD DATA`), rather than launching Python or recursively
-invoking the main native suite. The original Python file remains alongside it
-until full remote parity authorizes removal. Other check entries retain their
+invoking the main native suite. The original Python selftest was removed after full remote original/C parity. Other check entries retain their
 explicit Python adapter during this migration.
 
 ## Original groups expanded into stable IDs

@@ -99,7 +99,7 @@
 - [x] 62. [#380 — Перенести на Си: Native artifacts и integrity](https://github.com/kniazkov/g0at/issues/380) — test-only зависимость: path/bytes assertion native-artifact fixture сохраняется в Release; PR и CI — в задаче.
 - [x] 63. [#381 — Перенести на Си: Очистка native](https://github.com/kniazkov/g0at/issues/381) — test-only зависимость: раздельные close-stdin/wait-stderr raw-owner операции сохраняют исходные EOF deadlines; PR и CI — в задаче.
 - [x] 64. [#382 — Перенести на Си: Native exit и значения](https://github.com/kniazkov/g0at/issues/382) — [PR #460](https://github.com/kniazkov/g0at/pull/460), original/C parity: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/41438905339), [векторы](https://github.com/kniazkov/g0at/actions/runs/41438905517).
-- [ ] 65. [#383 — Перенести на Си: Native runner и его самопроверки](https://github.com/kniazkov/g0at/issues/383)
+- [x] 65. [#383 — Перенести на Си: Native runner и его самопроверки](https://github.com/kniazkov/g0at/issues/383) — [PR #461](https://github.com/kniazkov/g0at/pull/461), original/C parity: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/41495133812), [векторы](https://github.com/kniazkov/g0at/actions/runs/41495133951); compatibility helpers временно остаются для #385.
 - [ ] 66. [#384 — Перенести на Си: Native access и libm](https://github.com/kniazkov/g0at/issues/384)
 - [ ] 67. [#385 — Перенести на Си: Native strings](https://github.com/kniazkov/g0at/issues/385)
 - [ ] 68. [#386 — Перенести на Си: Насыщающая арифметика](https://github.com/kniazkov/g0at/issues/386)
