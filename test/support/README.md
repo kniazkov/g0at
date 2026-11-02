@@ -206,12 +206,15 @@ Exit is observed by pidfd readiness / process-handle signalling, not by sleeping
 The condition helper polls a caller-supplied bounded predicate like Python `until`;
 only the predicate proves completion. Timeout and OS failure are distinct results.
 
-The existing Python helper stays unchanged for these remaining consumers:
+The former Python process-watch consumers have migrated:
 
-| Consumer | Scheduled migration |
-| --- | --- |
-| `scripts/check_cleanup_service.py` | #376 |
-| `scripts/check_native_cleanup.py` | #381 |
+| Former consumer | C scenarios | Migration |
+| --- | --- | --- |
+| `scripts/check_cleanup_service.py` | `integration.cleanup_service.*` | #376 |
+| `scripts/check_native_cleanup.py` | `integration.native_cleanup.*` | #381 |
+
+No Python consumers of `process_test_support.py` remain; the helper itself is
+retained for the separately scheduled final removal, not deleted by #381.
 
 Final removal remains #394. No existing consumer, scenario, sanitizer, fault test,
 or musl test is removed in this step. The new C runner is added to the existing

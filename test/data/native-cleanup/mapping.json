@@ -1,0 +1,333 @@
+[
+  {
+    "id": "integration.native_cleanup.empty-inventory",
+    "source": "empty.goat",
+    "policy": {
+      "status": 1,
+      "stderr": "nonempty; no case-insensitive leak",
+      "stdout": "EOF within2s; SIDE forbidden",
+      "cleaner": "cleaner.pid absent",
+      "workspace": "no goat-run-*"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.failure-exit-auto",
+    "source": "program.goat",
+    "policy": {
+      "status": 0,
+      "lines": [
+        "READY",
+        "9"
+      ],
+      "release": "go\\n after READY",
+      "stderr": "Native preparation failed (cleanup-error) occurs exactly once; no case-insensitive leak",
+      "compiler": "compiler.query absent",
+      "workspace": "no goat-run-*"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.failure-exit-required",
+    "source": "program.goat",
+    "policy": {
+      "status": 1,
+      "lines": [],
+      "release": "none",
+      "stderr": "Native preparation failed (cleanup-error) occurs exactly once; no case-insensitive leak",
+      "compiler": "compiler.query absent",
+      "workspace": "no goat-run-*"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.failure-silent-auto",
+    "source": "program.goat",
+    "policy": {
+      "status": 0,
+      "lines": [
+        "READY",
+        "9"
+      ],
+      "release": "go\\n after READY",
+      "stderr": "Native preparation failed (cleanup-error) occurs exactly once; no case-insensitive leak",
+      "compiler": "compiler.query absent",
+      "workspace": "no goat-run-*"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.failure-silent-required",
+    "source": "program.goat",
+    "policy": {
+      "status": 1,
+      "lines": [],
+      "release": "none",
+      "stderr": "Native preparation failed (cleanup-error) occurs exactly once; no case-insensitive leak",
+      "compiler": "compiler.query absent",
+      "workspace": "no goat-run-*"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.cleaner-death-auto-normal",
+    "source": "program.goat",
+    "policy": {
+      "status": 0,
+      "lines": [
+        "READY",
+        "9"
+      ],
+      "barrier": "native*/* artifacts present; kill pinned cleaner; wait before go\\n",
+      "stderr": "empty",
+      "report": "succeeded integer >0"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.cleaner-death-auto-exit",
+    "source": "code-exit.goat",
+    "policy": {
+      "status": 23,
+      "lines": [
+        "READY",
+        "9"
+      ],
+      "barrier": "native*/* artifacts present; kill pinned cleaner; wait before go\\n",
+      "stderr": "empty",
+      "report": "absent"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.cleaner-death-required-normal",
+    "source": "program.goat",
+    "policy": {
+      "status": 0,
+      "lines": [
+        "READY",
+        "9"
+      ],
+      "barrier": "native*/* artifacts present; kill pinned cleaner; wait before go\\n",
+      "stderr": "empty",
+      "report": "succeeded integer >0"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.cleaner-death-required-exit",
+    "source": "code-exit.goat",
+    "policy": {
+      "status": 23,
+      "lines": [
+        "READY",
+        "9"
+      ],
+      "barrier": "native*/* artifacts present; kill pinned cleaner; wait before go\\n",
+      "stderr": "empty",
+      "report": "absent"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.normal-normal",
+    "source": "program.goat",
+    "policy": {
+      "status": 0,
+      "lines": [
+        "READY",
+        "9"
+      ],
+      "release": "go\\n after cleaner PID pin",
+      "stderr": "empty",
+      "cleanup": "cleaner exited; no goat-run-*"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.normal-exit",
+    "source": "code-exit.goat",
+    "policy": {
+      "status": 23,
+      "lines": [
+        "READY",
+        "9"
+      ],
+      "release": "go\\n after cleaner PID pin",
+      "stderr": "empty",
+      "cleanup": "cleaner exited; no goat-run-*"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.module-descriptor-auto-normal",
+    "source": "module-normal.goat",
+    "policy": {
+      "status": 0,
+      "producer": "build required: status0, empty stderr, cleaner.done0, no goat-run-*, archive regular file",
+      "lines": [
+        "9",
+        "READY",
+        "10",
+        "EOF"
+      ],
+      "barrier": "exactly1 goat-run-*; pinned cleaner alive; owner alive; >=1 regular .dll/.so recursively present",
+      "release": "go\\n only after barrier",
+      "stderr": "empty",
+      "cleanup": "cleaner exited within40s; cleaner.done0; prior workspace absent; archive retained",
+      "archive_identity": "snapshot original archive bytes before consumption and require exact byte identity afterward, preserving reuse invariant after splitting"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.module-descriptor-required-normal",
+    "source": "module-normal.goat",
+    "policy": {
+      "status": 0,
+      "producer": "build required: status0, empty stderr, cleaner.done0, no goat-run-*, archive regular file",
+      "lines": [
+        "9",
+        "READY",
+        "10",
+        "EOF"
+      ],
+      "barrier": "exactly1 goat-run-*; pinned cleaner alive; owner alive; >=1 regular .dll/.so recursively present",
+      "release": "go\\n only after barrier",
+      "stderr": "empty",
+      "cleanup": "cleaner exited within40s; cleaner.done0; prior workspace absent; archive retained",
+      "archive_identity": "snapshot original archive bytes before consumption and require exact byte identity afterward, preserving reuse invariant after splitting"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.module-archive-auto-normal",
+    "source": "module-normal.goat",
+    "policy": {
+      "status": 0,
+      "producer": "build required: status0, empty stderr, cleaner.done0, no goat-run-*, archive regular file",
+      "lines": [
+        "9",
+        "READY",
+        "10",
+        "EOF"
+      ],
+      "barrier": "exactly1 goat-run-*; pinned cleaner alive; owner alive; >=1 regular .dll/.so recursively present",
+      "release": "go\\n only after barrier",
+      "stderr": "empty",
+      "cleanup": "cleaner exited within40s; cleaner.done0; prior workspace absent; archive retained",
+      "archive_identity": "snapshot original archive bytes before consumption and require exact byte identity afterward, preserving reuse invariant after splitting"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.module-archive-required-normal",
+    "source": "module-normal.goat",
+    "policy": {
+      "status": 0,
+      "producer": "build required: status0, empty stderr, cleaner.done0, no goat-run-*, archive regular file",
+      "lines": [
+        "9",
+        "READY",
+        "10",
+        "EOF"
+      ],
+      "barrier": "exactly1 goat-run-*; pinned cleaner alive; owner alive; >=1 regular .dll/.so recursively present",
+      "release": "go\\n only after barrier",
+      "stderr": "empty",
+      "cleanup": "cleaner exited within40s; cleaner.done0; prior workspace absent; archive retained",
+      "archive_identity": "snapshot original archive bytes before consumption and require exact byte identity afterward, preserving reuse invariant after splitting"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.module-descriptor-auto-exit",
+    "source": "module-exit.goat",
+    "policy": {
+      "status": 23,
+      "producer": "build required: status0, empty stderr, cleaner.done0, no goat-run-*, archive regular file",
+      "lines": [
+        "9",
+        "READY",
+        "10",
+        "EOF"
+      ],
+      "barrier": "exactly1 goat-run-*; pinned cleaner alive; owner alive; >=1 regular .dll/.so recursively present",
+      "release": "go\\n only after barrier",
+      "stderr": "empty",
+      "cleanup": "cleaner exited within40s; cleaner.done0; prior workspace absent; archive retained",
+      "archive_identity": "snapshot original archive bytes before consumption and require exact byte identity afterward, preserving reuse invariant after splitting"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.module-descriptor-required-exit",
+    "source": "module-exit.goat",
+    "policy": {
+      "status": 23,
+      "producer": "build required: status0, empty stderr, cleaner.done0, no goat-run-*, archive regular file",
+      "lines": [
+        "9",
+        "READY",
+        "10",
+        "EOF"
+      ],
+      "barrier": "exactly1 goat-run-*; pinned cleaner alive; owner alive; >=1 regular .dll/.so recursively present",
+      "release": "go\\n only after barrier",
+      "stderr": "empty",
+      "cleanup": "cleaner exited within40s; cleaner.done0; prior workspace absent; archive retained",
+      "archive_identity": "snapshot original archive bytes before consumption and require exact byte identity afterward, preserving reuse invariant after splitting"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.module-archive-auto-exit",
+    "source": "module-exit.goat",
+    "policy": {
+      "status": 23,
+      "producer": "build required: status0, empty stderr, cleaner.done0, no goat-run-*, archive regular file",
+      "lines": [
+        "9",
+        "READY",
+        "10",
+        "EOF"
+      ],
+      "barrier": "exactly1 goat-run-*; pinned cleaner alive; owner alive; >=1 regular .dll/.so recursively present",
+      "release": "go\\n only after barrier",
+      "stderr": "empty",
+      "cleanup": "cleaner exited within40s; cleaner.done0; prior workspace absent; archive retained",
+      "archive_identity": "snapshot original archive bytes before consumption and require exact byte identity afterward, preserving reuse invariant after splitting"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.module-archive-required-exit",
+    "source": "module-exit.goat",
+    "policy": {
+      "status": 23,
+      "producer": "build required: status0, empty stderr, cleaner.done0, no goat-run-*, archive regular file",
+      "lines": [
+        "9",
+        "READY",
+        "10",
+        "EOF"
+      ],
+      "barrier": "exactly1 goat-run-*; pinned cleaner alive; owner alive; >=1 regular .dll/.so recursively present",
+      "release": "go\\n only after barrier",
+      "stderr": "empty",
+      "cleanup": "cleaner exited within40s; cleaner.done0; prior workspace absent; archive retained",
+      "archive_identity": "snapshot original archive bytes before consumption and require exact byte identity afterward, preserving reuse invariant after splitting"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.saved-library",
+    "source": "export.goat",
+    "policy": {
+      "status": 0,
+      "stderr": "empty",
+      "saved": "nonempty .dll onWindows/.so otherwise",
+      "workspace": "no goat-run-*"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.compiled-artifacts",
+    "source": "export.goat",
+    "policy": {
+      "status": 0,
+      "stderr": "empty",
+      "saved": "nonempty .gbin AND .dll/.so",
+      "workspace": "no goat-run-*"
+    }
+  },
+  {
+    "id": "integration.native_cleanup.interrupted-build",
+    "source": null,
+    "policy": {
+      "owners": 2,
+      "barrier": "both cleaner/compiler/worker identities pinned; compiler.output UTF8 path; parent.parent.parent same filesystem identity as owner root; module.c regular file; both cleaners alive",
+      "kill": "ownerA then wait its compiler,worker,cleaner; its workspace and unpublished target absent; ownerB all3 processes still alive; killB and wait all3",
+      "cleanup": "raw owner, never supervisor tree cleanup"
+    }
+  }
+]

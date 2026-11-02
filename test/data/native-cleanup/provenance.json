@@ -1,0 +1,36 @@
+{
+  "source": "scripts/check_native_cleanup.py",
+  "source_sha256": "f1576e6dfa30ca0ab71df4e9f6be6ee093d3ae97431c28b047b8561e245cc4f8",
+  "base_commit": "b953d9f797e1aa7cd660370a06fbd36d649c3535",
+  "method": "Extracted literal AST write_text arguments and original conditional suffixes; module descriptor evaluated using the original json.dumps(dict(...)) expression. No production code or expected-output generation.",
+  "fixtures": {
+    "program.goat": {
+      "sha256": "8a5ebffeb7f904a01320b8c834b3ea79719692945ea940e87b8072723b4a1eb9",
+      "bytes": 71
+    },
+    "empty.goat": {
+      "sha256": "eee146051fd8fbf13a408ca7885020c21100bcb1df0b95d0a913dbe20afc82b9",
+      "bytes": 16
+    },
+    "code-exit.goat": {
+      "sha256": "9405d578a5ac478b44eba77f83e75aff32c06ee02c73b86f454feedf41916ec6",
+      "bytes": 80
+    },
+    "module-normal.goat": {
+      "sha256": "c0b189841717e476c84871d26535e76012bee39d7ca5c54f4c8840a3761cc9af",
+      "bytes": 90
+    },
+    "module-exit.goat": {
+      "sha256": "fea027502fa8054bc25f549345c8429b59b292161b0cfbae0683a86800121b98",
+      "bytes": 143
+    },
+    "module.gmod": {
+      "sha256": "786cd2d94a71ef71215ec5fcbc33aaaeef50e5aba24922977cf7877e4e2b27d7",
+      "bytes": 83
+    },
+    "export.goat": {
+      "sha256": "25cd32cefe5e0861920b6d096372eda79e940b5c4752614050c505e64f5c4304",
+      "bytes": 43
+    }
+  }
+}

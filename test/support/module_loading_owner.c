@@ -807,6 +807,25 @@ void loading_owner_wait_eof(loading_owner_t *o, uint64_t timeout_ms) {
                 == PROCESS_WATCH_OK);
 }
 
+void loading_owner_close_stdin(loading_owner_t *o) {
+    o->eof = true;
+    pump(o);
+}
+
+static process_watch_result_t stderr_eof(void *argument, unsigned long *error) {
+    (void)error;
+    loading_owner_t *o = argument;
+    pump(o);
+    return output_closed(o, 1) ? PROCESS_WATCH_OK : PROCESS_WATCH_TIMEOUT;
+}
+
+void loading_owner_wait_stderr(loading_owner_t *o, uint64_t timeout_ms) {
+    unsigned long error = 0;
+    REQUIRE(o,
+            process_watch_until(stderr_eof, o, deadline(o, timeout_ms), &error)
+                == PROCESS_WATCH_OK);
+}
+
 process_watch_t *loading_owner_watch_pid(loading_owner_t *o, uint64_t pid) {
     unsigned long error = 0;
     process_watch_t *w = process_watch_open(pid, &error);

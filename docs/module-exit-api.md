@@ -130,7 +130,7 @@ Goat и не разрешает удаление файлов из-под про
   late worker loading, pre-READY failure and death of an already ready cleaner.
   Real loaded DLL/SO adapters loop forever or block without cooperation; an
   explicit marker proves entry before VM exit, and cleanup is awaited separately.
-- `check_native_cleanup.py` verifies direct source and actual CLI module
+- `integration.native_cleanup.*` verifies direct source and actual CLI module
   descriptor/archive execution in auto/required modes, ordinary/explicit exit,
   no deletion while the owner is alive, retained saved artifacts and interrupted
   compiler descendants. It waits for cleaner process completion or its explicit

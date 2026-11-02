@@ -137,7 +137,12 @@ foreach(native_toolchains_case IN ITEMS cache reprobe linux-relro unicode-temp t
     "$<TARGET_FILE:native_toolchain_testing>" "${CMAKE_C_COMPILER}" host
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-goat_python(integration.native_cleanup "integration" scripts/check_native_cleanup.py "$<TARGET_FILE:native_cleanup_testing>" "${CMAKE_C_COMPILER}")
+foreach(native_cleanup_case IN ITEMS empty-inventory failure-exit-auto failure-exit-required failure-silent-auto failure-silent-required cleaner-death-auto-normal cleaner-death-auto-exit cleaner-death-required-normal cleaner-death-required-exit normal-normal normal-exit module-descriptor-auto-normal module-descriptor-auto-exit module-descriptor-required-normal module-descriptor-required-exit module-archive-auto-normal module-archive-auto-exit module-archive-required-normal module-archive-required-exit saved-library compiled-artifacts interrupted-build)
+  goat_scenario(integration.native_cleanup.${native_cleanup_case} "integration;native-cleanup-migration" TIMEOUT 510 COMMAND
+    "$<TARGET_FILE:native_cleanup_scenarios>" "integration.native_cleanup.${native_cleanup_case}"
+    "$<TARGET_FILE:native_cleanup_testing>" "${CMAKE_C_COMPILER}" "${PROJECT_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-cleanup")
+endforeach()
 goat_python(integration.module_native_values "integration" scripts/check_module_native_values.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_native_values_testing>" "${CMAKE_C_COMPILER}")
 foreach(module_build_case numeric empty-required empty-off empty-auto-explicit included missing-auto missing-required unsupported-target foreign-target only-dependency)
   goat_scenario(integration.module_build.${module_build_case} "integration;module-build-library-migration" TIMEOUT 390 COMMAND
@@ -569,8 +574,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1704)
-  message(FATAL_ERROR "Expected all 1704 integration scenarios (native artifact cases split in #380); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1725)
+  message(FATAL_ERROR "Expected all 1725 integration scenarios (native cleanup cases split in #381); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
