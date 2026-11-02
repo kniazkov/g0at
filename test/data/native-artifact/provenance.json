@@ -1,0 +1,13 @@
+{
+  "source": "scripts/check_native_artifact.py",
+  "source_sha256": "2996ee6371efa0f485d258eebe61d63b3d4e747c4b95e433e1161fd39765a7ba",
+  "base_commit": "9d3850c7da1dfee29497e446afa00aa7296f7a6f",
+  "method": "Original Python ELF/PE builders, mutation loops, JSON/envelope metadata construction and constructor source generation executed unchanged. Only check/validate subprocess boundaries recorded and compile/inspection stubbed. No production-generated oracle.",
+  "vector_sha256": {
+    "docs/module-format-v1/vectors/native-description.json": "20ba3d64ab9953b3b934cf409f52acfe7a4f83db0e87d0c3cc28f14742f44b07",
+    "docs/module-format-v1/vectors/empty.module.json": "1a06cac76d65b08f584dd5e9df7d46de2359cfd0628eb227422c03bf8d0330da"
+  },
+  "scenario_count": 25,
+  "corpus_sha256": "37016221ac3db4e3713fe8407f1347574b5a7e9aeea4d2e66b4ab518e761d292",
+  "constructor_sha256": "b15f81b3779e168693d2488317dfba97fff1022ebc0c712ca3076f6a7972b517"
+}

@@ -1,0 +1,9 @@
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __attribute__((visibility("default")))
+#endif
+EXPORT const unsigned char goat_module_descriptor_v1[] = {71,79,65,84,78,68,48,49,2,0,0,0,0,0,0,0,123,125,0};
+EXPORT int adapter(void) { return 42; }
+#include <stdlib.h>
+__attribute__((constructor)) static void must_not_run(void) { abort(); }

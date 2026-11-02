@@ -104,7 +104,16 @@ goat_scenario(integration.module_native "integration;module-abi-native-migration
 goat_scenario(integration.module_abi "integration;module-abi-native-migration" TIMEOUT 240 COMMAND
   "$<TARGET_FILE:module_abi_scenarios>" integration.module_abi "$<TARGET_FILE:module_abi_testing>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
-goat_python(integration.native_artifact "integration" scripts/check_native_artifact.py "$<TARGET_FILE:native_artifact_testing>" "${CMAKE_C_COMPILER}")
+set(native_artifact_path "${PROJECT_SOURCE_DIR}/test/data/native-artifact/scenarios.json")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${native_artifact_path}")
+file(STRINGS "${native_artifact_path}" native_artifact_lines REGEX "^[ ]+\"id\":")
+foreach(native_artifact_line IN LISTS native_artifact_lines)
+  string(REGEX REPLACE ".*\"id\": \"([^\"]+)\".*" "\\1" native_artifact_id "${native_artifact_line}")
+  goat_scenario(${native_artifact_id} "integration;native-artifact-migration" TIMEOUT 90 COMMAND
+    "$<TARGET_FILE:native_artifact_scenarios>" "${native_artifact_id}"
+    "$<TARGET_FILE:native_artifact_testing>" "${CMAKE_C_COMPILER}" "${PROJECT_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-artifact")
+endforeach()
 set(native_requirements_path "${PROJECT_SOURCE_DIR}/test/data/native-requirements/scenarios.json")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${native_requirements_path}")
 file(STRINGS "${native_requirements_path}" native_requirements_lines REGEX "^[ ]+\"id\":")
@@ -460,7 +469,12 @@ endif()
 goat_scenario(native.bytecode_v1 "native;standalone-bytecode" TIMEOUT 200 COMMAND
   "$<TARGET_FILE:bytecode_v1_testing>" native.bytecode_v1 "$<TARGET_FILE:goat>"
   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
-goat_python(native.native_integrity "native" scripts/check_native_integrity.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_integrity")
+foreach(native_integrity_case IN ITEMS sha256-binding substitution append-corruption preload-constructor)
+  goat_scenario(native.native_integrity.${native_integrity_case} "native;native-integrity-migration" TIMEOUT 390 COMMAND
+    "$<TARGET_FILE:native_integrity_scenarios>" "native.native_integrity.${native_integrity_case}"
+    "$<TARGET_FILE:goat>" "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
+    "${PROJECT_SOURCE_DIR}/test/data/native-integrity")
+endforeach()
 foreach(scenario native.for native.index)
   goat_scenario(${scenario} "native;language-roundtrip" TIMEOUT 200 COMMAND
     "$<TARGET_FILE:loop_index_testing>" "${scenario}" "$<TARGET_FILE:goat>"
@@ -555,8 +569,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1680)
-  message(FATAL_ERROR "Expected all 1680 integration scenarios (native toolchain/requirement cases split in #379); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1704)
+  message(FATAL_ERROR "Expected all 1704 integration scenarios (native artifact cases split in #380); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
