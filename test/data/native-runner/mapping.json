@@ -1,0 +1,114 @@
+[
+  {
+    "id": "helpers.native_runner.output-good",
+    "origin": "output comparison"
+  },
+  {
+    "id": "helpers.native_runner.output-missing-nul",
+    "origin": "output comparison"
+  },
+  {
+    "id": "helpers.native_runner.output-missing-newline",
+    "origin": "output comparison"
+  },
+  {
+    "id": "helpers.native_runner.output-space",
+    "origin": "output comparison"
+  },
+  {
+    "id": "helpers.native_runner.output-extra-line",
+    "origin": "output comparison"
+  },
+  {
+    "id": "helpers.native_runner.report-good",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-mode",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-preparation",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-bound-zero",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-bound-count",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-zero-calls",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-attempts",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-succeeded",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-retries",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-missing-mode",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-missing-preparation",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-missing-bound",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-missing-attempts",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-missing-succeeded",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-missing-retries",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-vm-good",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.report-vm-native",
+    "origin": "report checks"
+  },
+  {
+    "id": "helpers.native_runner.continuation",
+    "origin": "continuation"
+  },
+  {
+    "id": "helpers.native_runner.report-unicode",
+    "origin": "additional policy edge controls"
+  },
+  {
+    "id": "helpers.native_runner.report-duplicates",
+    "origin": "additional policy edge controls"
+  },
+  {
+    "id": "helpers.native_runner.manifest-validation",
+    "origin": "additional policy edge controls"
+  },
+  {
+    "id": "helpers.native_runner.selection-order",
+    "origin": "additional policy edge controls"
+  },
+  {
+    "id": "helpers.native_runner.selection-unknown",
+    "origin": "additional policy edge controls"
+  }
+]

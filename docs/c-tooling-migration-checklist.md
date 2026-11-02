@@ -31,6 +31,8 @@
 
 Дополнительная тестовая зависимость #382: в `test/src/component/module_native_values_testing.c` сохраняются реальные ABI assertions при `NDEBUG` через локальный guard перед `<assert.h>`; original/C parity использует один и тот же host в Debug/Release, production не меняется.
 
+Дополнительная совместимость #383: `scripts/check_native.py` после parity временно сохраняет только `ROOT`, `require`, `normalized`, `compare_output`, `execute` для `test/src/native/checks/string_method_errors.py` (#385, финальная очистка #394); manifest/main и Python-самопроверки заменяются Си, остальные check-программы пока запускаются через явный Python-adapter.
+
 ## Порядок задач
 
 - [x] 01. [#319 — Ввести корневой CMakeLists.txt](https://github.com/kniazkov/g0at/issues/319) — [PR #396](https://github.com/kniazkov/g0at/pull/396), зелёный CI: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/40448768780), [векторы формата](https://github.com/kniazkov/g0at/actions/runs/40448768760).

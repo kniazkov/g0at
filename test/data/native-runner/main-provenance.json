@@ -1,0 +1,15 @@
+{
+  "originalSourcesSha256": {
+    "scripts/check_native.py": "594bf7978b1523e226cadcbad8e4764ff2409758b176cb8f6e7a6f9d54229643",
+    "test/data/native/list.json": "156f4ca9a1631db3ec08c4dcb7b38c9aaa5a6469b270894a15435e2ef2d761e9",
+    "test/src/native/checks/runner.py": "13ab756bb9cb072c43e83ffc692fc33608a67a02f1215a8368fbaed78b2f9f15",
+    "test/src/native/checks/string_method_errors.py": "31ceaf9fe368249e331a16fec488cc18d2f991ab7c60aaff0b7295b4ce9b5a4e"
+  },
+  "cases": 22,
+  "programCases": 16,
+  "checkCases": 6,
+  "programCommands": 76,
+  "checkCommands": 6,
+  "dataPolicy": "Existing native manifest/program/expected-output/example/driver bytes are reused read-only; no frozen reference is regenerated.",
+  "compatibility": "After full parity, check_native.py retains only imported execution/output helpers for string_method_errors.py; runner.py logical check routes to the C policy selftest."
+}

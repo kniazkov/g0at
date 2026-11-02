@@ -1,0 +1,11 @@
+{
+  "source": "test/src/native/checks/runner.py",
+  "source_sha256": "13ab756bb9cb072c43e83ffc692fc33608a67a02f1215a8368fbaed78b2f9f15",
+  "base_commit": "462af010f157698b30a2ca35be967a409a123b46",
+  "method": "Original binary literals and report dictionaries/mutations are direct independent C test inputs; no production output generates expectations. Five additional IDs exercise shared policy boundaries.",
+  "original_groups": 3,
+  "expanded_original_ids": 23,
+  "additional_ids": 5,
+  "decimal_inventory_source": "Python unicodedata Nd zero codepoints",
+  "unicode_version": "15.0.0"
+}
