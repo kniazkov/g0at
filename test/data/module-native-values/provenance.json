@@ -1,0 +1,24 @@
+{
+  "source": "scripts/check_module_native_values.py",
+  "source_sha256": "6592297611069d6ed7b157fc9e69a0828302a1f9d67eb30ba654e02e9f7a2a68",
+  "base_commit": "ec1a4ce346a0e0dd66adc242e411a8b2e133dc6d",
+  "method": "Literal AST source and write_text arguments, original json.dumps descriptor expression; no production oracle generation.",
+  "fixtures": {
+    "values.goat": {
+      "sha256": "7c78be10620d9b3da8e187134458209fa1449b59715c159df9461074be698748",
+      "bytes": 382
+    },
+    "unsafe-character.goat": {
+      "sha256": "24665d866a0245294673f36e15699b15b6a0c6ad48c806bb5c187159a0ae5ccf",
+      "bytes": 191
+    },
+    "unsafe-only.goat": {
+      "sha256": "3e4865e77f81c994492e38bd60f1ec519000812ee921de728e1998d67d6a9b83",
+      "bytes": 79
+    },
+    "module.gmod": {
+      "sha256": "8a6ebe6530f894df698846f1fc09011a84c44f376a615356ae40e300bf5c7871",
+      "bytes": 107
+    }
+  }
+}

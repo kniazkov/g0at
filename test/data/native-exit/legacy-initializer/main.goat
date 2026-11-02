@@ -1,0 +1,1 @@
+public stop = func(x) { return 100; }; include "init.goat"; print("ready"); stop(7);

@@ -28,3 +28,8 @@ test/data/native-integrity/*.inc -text
 # Original native cleanup scenario source and descriptor bytes.
 test/data/native-cleanup/*.goat -text
 test/data/native-cleanup/module.gmod -text
+
+# Frozen native exit and module value invocation bytes.
+test/data/native-exit/** -text
+test/data/module-native-values/*.goat -text
+test/data/module-native-values/*.gmod -text

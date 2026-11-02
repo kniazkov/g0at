@@ -143,7 +143,7 @@ foreach(native_cleanup_case IN ITEMS empty-inventory failure-exit-auto failure-e
     "$<TARGET_FILE:native_cleanup_testing>" "${CMAKE_C_COMPILER}" "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-cleanup")
 endforeach()
-goat_python(integration.module_native_values "integration" scripts/check_module_native_values.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_native_values_testing>" "${CMAKE_C_COMPILER}")
+goat_python(validation.module_native_values_original "integration;native-exit-values-parity" scripts/check_module_native_values.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_native_values_testing>" "${CMAKE_C_COMPILER}")
 foreach(module_build_case numeric empty-required empty-off empty-auto-explicit included missing-auto missing-required unsupported-target foreign-target only-dependency)
   goat_scenario(integration.module_build.${module_build_case} "integration;module-build-library-migration" TIMEOUT 390 COMMAND
     "$<TARGET_FILE:module_build_scenarios>" "integration.module_build.${module_build_case}"
@@ -200,7 +200,20 @@ foreach(module_cli_case IN LISTS module_cli_cases)
 endforeach()
 goat_python(integration.module_delivery "integration" scripts/check_module_delivery.py "$<TARGET_FILE:goat>" "$<TARGET_FILE:goat-inspect>" "${CMAKE_C_COMPILER}")
 goat_python(integration.module_delivery_requirements "integration" scripts/check_module_delivery_requirements.py "audit" "$<TARGET_FILE:goat>" "$<TARGET_FILE:native_toolchain_testing>" "$<TARGET_FILE:module_native_testing>" "${CMAKE_C_COMPILER}")
-goat_python(integration.native_exit "integration" scripts/check_native_exit.py "$<TARGET_FILE:module_dispatch_testing>" "${CMAKE_C_COMPILER}")
+foreach(native_exit_case IN ITEMS exit-prefixes code-0 code-7 code-255 invalid-0 invalid-1 invalid-2 invalid-3 invalid-4 invalid-5 arity-0 arity-2 invalid-then-valid native-initializer native-no-finally exit-forged exit-ignored legacy-call-0 legacy-call-7 legacy-call-255 legacy-invalid legacy-initializer legacy-forged-257 legacy-forged-258 loop-vm loop-native block-vm block-native)
+  goat_scenario(integration.native_exit.${native_exit_case} "integration;native-exit-values-migration" TIMEOUT 110 COMMAND
+    "$<TARGET_FILE:native_exit_scenarios>" "integration.native_exit.${native_exit_case}"
+    "$<TARGET_FILE:module_dispatch_testing>" "${CMAKE_C_COMPILER}" "${PROJECT_SOURCE_DIR}"
+    "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-exit")
+endforeach()
+foreach(native_values_case IN ITEMS abi-values unsafe-character-vm required-unsafe-only)
+  goat_scenario(integration.module_native_values.${native_values_case} "integration;native-exit-values-migration" TIMEOUT 310 COMMAND
+    "$<TARGET_FILE:module_native_values_scenarios>" "integration.module_native_values.${native_values_case}"
+    "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_native_values_testing>"
+    "${CMAKE_C_COMPILER}" "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
+    "${PROJECT_SOURCE_DIR}/test/data/module-native-values")
+endforeach()
+goat_python(validation.native_exit_original "integration;native-exit-values-parity" scripts/check_native_exit.py "$<TARGET_FILE:module_dispatch_testing>" "${CMAKE_C_COMPILER}")
 set(dispatch_consistency_ids integration.module_dispatch.identity integration.module_consistency.api integration.module_consistency.producer-identities)
 foreach(dispatch_consistency_fixture dispatch consistency)
   set(dispatch_consistency_path "${PROJECT_SOURCE_DIR}/test/data/module-dispatch-consistency/${dispatch_consistency_fixture}.json")
@@ -574,8 +587,8 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1725)
-  message(FATAL_ERROR "Expected all 1725 integration scenarios (native cleanup cases split in #381); found ${goat_integration_count}")
+if(NOT goat_integration_count EQUAL 1754)
+  message(FATAL_ERROR "Expected all 1754 integration scenarios (native exit and values cases split in #382); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

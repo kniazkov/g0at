@@ -1,0 +1,1 @@
+const stop = func(x) { return 100; }; try { stop(257); } catch(e) { print("caught"); } print("after");

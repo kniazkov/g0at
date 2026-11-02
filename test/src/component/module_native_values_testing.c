@@ -9,6 +9,9 @@
 #include "module/module_abi.h"
 #include "module/module_json.h"
 
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

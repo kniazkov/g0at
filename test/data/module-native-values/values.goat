@@ -1,0 +1,7 @@
+external square=func(x){return x*x;}; square(7);
+external real=func(x){return x;}; real(1.5);
+external boolean=func(x){return x;}; boolean(true);
+external character=func(x){return x;}; character('a');
+external text=func(x){return x;}; text("observed");
+external upper=func(x){return x.toUpperCase();}; upper("observed");
+external trim=func(x){return x.trim();}; trim(" observed ");
