@@ -78,7 +78,7 @@ PE проверяет разрядность, runtime и разрешённый 
 Гибель уже готового уборщика не меняет код завершения выполняющейся программы;
 небезопасной ручной уборки из-под работающих процессов нет.
 
-Проверки: `check_native_artifact.py`, `check_native_toolchains.py`, `check_native_requirements.py`,
+Проверки: `check_native_artifact.py`, `native_toolchains_scenarios`, `native_requirements_scenarios`,
 `check_native_cleanup.py`, `integration.module_build.*` (CTest), `check_module_native_values.py`.
 Существующие native/unit/runtime suites сохраняются. Нижняя версия Windows 10
 и старые glibc требуют отдельного контрольного окружения: CI на текущем runner

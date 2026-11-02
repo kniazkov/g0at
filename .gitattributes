@@ -12,3 +12,8 @@ test/data/module-exit/scenarios.json -text
 
 # Frozen independent module-thread migration oracle.
 test/data/module-threads/scenarios.json -text
+
+# Frozen native-image parser fixtures must retain every byte.
+test/data/native-requirements/blobs/*.bin -text
+test/data/native-requirements/scenarios.json -text
+test/data/native-toolchains/*.json -text

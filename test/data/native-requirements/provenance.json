@@ -1,0 +1,9 @@
+{
+  "source": "scripts/check_native_requirements.py",
+  "source_sha256": "ccf9bc84907837e0a7afbb557ff5b98ba999dc17e4ba3f32ac5b06c22fddeb6a",
+  "base_commit": "60bed8c3effa6a21978544605cb39969dd222b9d",
+  "method": "Original Python ELF/PE/musl builders and mutation loops executed unchanged; only check replaced by byte recorder and Linux stack subprocess block omitted. Every dependency file snapshot retained. No production parser generates expectations.",
+  "image_cases": 70,
+  "stack_cases": 5,
+  "corpus_sha256": "1381a94b9f26754b4813306e7ce3d37183915f799ea0b3333dcbc2841ef1ee20"
+}
