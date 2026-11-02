@@ -17,3 +17,10 @@ test/data/module-threads/scenarios.json -text
 test/data/native-requirements/blobs/*.bin -text
 test/data/native-requirements/scenarios.json -text
 test/data/native-toolchains/*.json -text
+
+# Native artifact and integrity fixtures preserve original exact bytes.
+test/data/native-artifact/blobs/*.bin -text
+test/data/native-artifact/scenarios.json -text
+test/data/native-artifact/constructor.c.txt -text
+test/data/native-integrity/*.goat -text
+test/data/native-integrity/*.inc -text

@@ -1,0 +1,201 @@
+[
+  {
+    "kind": "inspect",
+    "image": "blobs/550da5049f74e6e10567b4b87f4a0267aaed99d24176b28cff9d4aac93ace177.bin",
+    "symbol": "adapter",
+    "succeeds": true,
+    "name": "elf-valid",
+    "id": "integration.native_artifact.elf-valid"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/550da5049f74e6e10567b4b87f4a0267aaed99d24176b28cff9d4aac93ace177.bin",
+    "symbol": "missing",
+    "succeeds": false,
+    "name": "elf-missing-adapter",
+    "id": "integration.native_artifact.elf-missing-adapter"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/550da5049f74e6e10567b4b87f4a0267aaed99d24176b28cff9d4aac93ace177.bin",
+    "symbol": "goat_module_descriptor_v1",
+    "succeeds": false,
+    "name": "elf-descriptor-not-function",
+    "id": "integration.native_artifact.elf-descriptor-not-function"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/1d7f3667bf0fd0ec6beff89d6c1e508ef4d942829e00fb62ff235858dc143572.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "elf-descriptor-not-object",
+    "id": "integration.native_artifact.elf-descriptor-not-object"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/60cbd72228d073f61a043452d17fc25637a72e04475b0ed16eb2d4bfee5ae59c.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "elf-descriptor-hidden",
+    "id": "integration.native_artifact.elf-descriptor-hidden"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/ec66919f4953c2cc85bb2d6532b109adf41f458271c87560c7690e0380c8aa22.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "elf-descriptor-undefined",
+    "id": "integration.native_artifact.elf-descriptor-undefined"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/e9add69803c3275d247e38775cebce748922d1ab1c22bec148e303475e8bf381.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "elf-symbol-size-overflow",
+    "id": "integration.native_artifact.elf-symbol-size-overflow"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/f6bc4bac3920cb836afd6e23bb8802087833dd8dd576ad7abe214e27b6e632e1.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "elf-envelope-size-overflow",
+    "id": "integration.native_artifact.elf-envelope-size-overflow"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/c478905d8ce9a8d62862757debc1d21afd8b8ac0a430d99b2f97b40d9f7e48f4.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "elf-envelope-not-terminated",
+    "id": "integration.native_artifact.elf-envelope-not-terminated"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/f581b2cfd5ea9998a14d144fa47eee2e860f2cfb696c213e754254944cb2f28a.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "elf-adapter-not-executable",
+    "id": "integration.native_artifact.elf-adapter-not-executable"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/ba4908666a176aec2428f1fb5194f58d3eea000a01ecdbdbf54ff703e56e9fb6.bin",
+    "symbol": "adapter",
+    "succeeds": true,
+    "name": "pe64-valid",
+    "id": "integration.native_artifact.pe64-valid"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/45450f45b82101c432d1ec18a9973125e5e482529b5c92096b7cca0acf2bc412.bin",
+    "symbol": "adapter",
+    "succeeds": true,
+    "name": "pe32-valid",
+    "id": "integration.native_artifact.pe32-valid"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/ba4908666a176aec2428f1fb5194f58d3eea000a01ecdbdbf54ff703e56e9fb6.bin",
+    "symbol": "missing",
+    "succeeds": false,
+    "name": "pe-missing-adapter",
+    "id": "integration.native_artifact.pe-missing-adapter"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/7a5c27b8e5daeb0adcd1c8de7067c9d9504b37199b03ad052fd6ec55fc228fed.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "pe-forwarded-adapter",
+    "id": "integration.native_artifact.pe-forwarded-adapter"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/e9ee58d5926b84d9d6fa7049328703d7f721382a2e47df262a4460d1b1ba0362.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "pe-descriptor-forwarder",
+    "id": "integration.native_artifact.pe-descriptor-forwarder"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/63e9b017f48fe5abaab99a5f9b0803e279c0fbf7e464ef5184be064ccef3fbf0.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "pe-adapter-in-data",
+    "id": "integration.native_artifact.pe-adapter-in-data"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/7ee7439bdbdc4b6bf88d83933bd3a855183675a343b05a74a156fd07c7c65eef.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "pe-ordinal-overflow",
+    "id": "integration.native_artifact.pe-ordinal-overflow"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/63166fd8f66db1de361fa908d673a7fb100efdb5d12810f0c28fe9cccac1523f.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "pe-envelope-size-overflow",
+    "id": "integration.native_artifact.pe-envelope-size-overflow"
+  },
+  {
+    "kind": "inspect",
+    "image": "blobs/5464533c9647b67eb320c40ccc5959537c09102ae75388f6a7675b433e745c9d.bin",
+    "symbol": "adapter",
+    "succeeds": false,
+    "name": "not-image",
+    "id": "integration.native_artifact.not-image"
+  },
+  {
+    "kind": "validate",
+    "image": "blobs/5352d5e3a39ae8eefa561d0dc2821d797364cfc0c8225fda9128ff9bc74f06c6.bin",
+    "metadata": "blobs/796b34dec421b7955734a7b0c49970819b64d254fec05674b382768a0bf5516a.bin",
+    "succeeds": true,
+    "name": "metadata-valid",
+    "id": "integration.native_artifact.metadata-valid"
+  },
+  {
+    "kind": "validate",
+    "image": "blobs/5352d5e3a39ae8eefa561d0dc2821d797364cfc0c8225fda9128ff9bc74f06c6.bin",
+    "metadata": "blobs/0711e4228d408b9a5abea56fc6d38ca02e9c73924485b6ea4b0cea9bf3b67616.bin",
+    "succeeds": false,
+    "name": "metadata-main-hash",
+    "id": "integration.native_artifact.metadata-main-hash"
+  },
+  {
+    "kind": "validate",
+    "image": "blobs/5352d5e3a39ae8eefa561d0dc2821d797364cfc0c8225fda9128ff9bc74f06c6.bin",
+    "metadata": "blobs/137db76a5725fe9d8848f169c14aef97591802faa21f0d161f310b0befc8d32b.bin",
+    "succeeds": false,
+    "name": "metadata-minimum-os",
+    "id": "integration.native_artifact.metadata-minimum-os"
+  },
+  {
+    "kind": "validate",
+    "image": "blobs/5352d5e3a39ae8eefa561d0dc2821d797364cfc0c8225fda9128ff9bc74f06c6.bin",
+    "metadata": "blobs/19653bae61ae2577344df86e2e957437b7786792345b6928babb77b52c5e68ba.bin",
+    "succeeds": false,
+    "name": "metadata-specialization-id",
+    "id": "integration.native_artifact.metadata-specialization-id"
+  },
+  {
+    "kind": "validate",
+    "image": "blobs/3e4770742bb8667bd586a8951838ee20c7b0ff5fa14600c7982e6339a97eea81.bin",
+    "metadata": "blobs/796b34dec421b7955734a7b0c49970819b64d254fec05674b382768a0bf5516a.bin",
+    "succeeds": false,
+    "name": "metadata-wrong-adapter",
+    "id": "integration.native_artifact.metadata-wrong-adapter"
+  },
+  {
+    "id": "integration.native_artifact.real-compiler-constructor",
+    "name": "real-compiler-constructor",
+    "kind": "compile",
+    "source": "constructor.c.txt",
+    "succeeds": true
+  }
+]
