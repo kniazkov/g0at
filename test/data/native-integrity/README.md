@@ -49,7 +49,7 @@ Marker absence checks any existing filesystem object, not just regular files.
 - C runner: Debug 1/4, Release 0/4, UBSan 0/4. Every failure is a normal child exit
   zero followed by supervisor `cleanup=2`; no oracle assertion was relaxed.
   This executor lacks `/proc/thread-self/children`. These are **not green runs**;
-  full remote original/C parity is required before deleting Python.
+  full remote original/C parity was required and subsequently passed.
 - Independent native-C fake observations: 94/94 controls across Debug and Release.
   Cases include bad magic/hash/status/output/UTF-8, generated-C decoding/newline normalization, rejected library status and
   stdout, auto fallback status/output, constructor pre-load marker, accepted
@@ -58,4 +58,5 @@ Marker absence checks any existing filesystem object, not just regular files.
   stdout. Each configuration additionally audits the paired bytes independently
   with Python hashlib and a separate FNV calculation (no production helper).
 - Corpus extraction is byte-exact; format/diff checks passed. Original Python is
-  unchanged pending the remote parity gate.
+  removed only after the remote parity gate passed at
+  `bc257368fade94723159b9596a363e431d44245c`. Parity and final CI evidence is in PR #458.

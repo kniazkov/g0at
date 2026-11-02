@@ -114,7 +114,6 @@ foreach(native_artifact_line IN LISTS native_artifact_lines)
     "$<TARGET_FILE:native_artifact_testing>" "${CMAKE_C_COMPILER}" "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-artifact")
 endforeach()
-goat_python(validation.native_artifact_original "integration;native-artifact-parity" scripts/check_native_artifact.py "$<TARGET_FILE:native_artifact_testing>" "${CMAKE_C_COMPILER}")
 set(native_requirements_path "${PROJECT_SOURCE_DIR}/test/data/native-requirements/scenarios.json")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${native_requirements_path}")
 file(STRINGS "${native_requirements_path}" native_requirements_lines REGEX "^[ ]+\"id\":")
@@ -476,7 +475,6 @@ foreach(native_integrity_case IN ITEMS sha256-binding substitution append-corrup
     "$<TARGET_FILE:goat>" "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
     "${PROJECT_SOURCE_DIR}/test/data/native-integrity")
 endforeach()
-goat_python(validation.native_integrity_original "native;native-integrity-parity" scripts/check_native_integrity.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_integrity")
 foreach(scenario native.for native.index)
   goat_scenario(${scenario} "native;language-roundtrip" TIMEOUT 200 COMMAND
     "$<TARGET_FILE:loop_index_testing>" "${scenario}" "$<TARGET_FILE:goat>"

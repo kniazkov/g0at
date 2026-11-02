@@ -96,7 +96,8 @@ Local Linux validation passed:
   source against the original Python boundaries.
 - clang-format 18 checks the runner and host; `git diff --check` passes.
 
-The original Python remains intact pending full remote platform parity.
+Original Python was removed after full remote platform parity passed at
+`bc257368fade94723159b9596a363e431d44245c`. Parity and final CI evidence is in PR #458.
 
 Explicit compiler paths containing `/` or `\` are resolved against the caller's
 working directory before entering isolated scenario work; bare compiler names
