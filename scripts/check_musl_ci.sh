@@ -2,6 +2,26 @@
 # Copyright 2026 Ivan Kniazkov
 # Run inside the native-architecture Alpine CI container, not an emulator.
 set -euo pipefail
+# Keep the migrated native runner's nested diagnostics even when Docker exits early.
+finish_native_diagnostics() {
+    local status=$?
+    trap - EXIT
+    set +e
+    while IFS= read -r -d '' file; do
+        local destination="/results/native-runner-diagnostics/${file#/work/}"
+        mkdir -p "$(dirname "$destination")"
+        cp "$file" "$destination"
+        if [ "$status" -ne 0 ] && [[ "$file" == */execution.log || "$file" == *.stderr ]]; then
+            printf '\n--- %s ---\n' "$file"
+            tail -c 65536 "$file"
+        fi
+    done < <(find /work/debug/native-functional /work/release/native-functional \
+        /work/debug/ctest/native-original /work/release/ctest/native-original \
+        -type f \( -name '*.log' -o -name '*.stdout' -o -name '*.stderr' \
+        -o -name '*.report' -o -name '*.command.json' -o -name 'case.name' \) -print0 2>/dev/null)
+    exit "$status"
+}
+trap finish_native_diagnostics EXIT
 mkdir -p /work/source
 # Avoid copying the host's .git or glibc build tree into the musl build.
 for item in CMakeLists.txt .github lib src scripts docs test tools example include third_party README.md README.ru.md LICENSE.txt; do
