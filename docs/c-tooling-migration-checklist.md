@@ -93,7 +93,7 @@
 - [x] 60. [#378 — Перенести на Си: Потоки модулей](https://github.com/kniazkov/g0at/issues/378) — test-only зависимость: assertions module-thread-lifetime fixture сохраняются для Release, raw-owner transport получает optional cwd и inherited environment для исходного handshake/lifetime; PR и CI — в задаче.
 - [x] 61. [#379 — Перенести на Си: Native toolchains и требования](https://github.com/kniazkov/g0at/issues/379)
 - [x] 62. [#380 — Перенести на Си: Native artifacts и integrity](https://github.com/kniazkov/g0at/issues/380) — test-only зависимость: path/bytes assertion native-artifact fixture сохраняется в Release; PR и CI — в задаче.
-- [ ] 63. [#381 — Перенести на Си: Очистка native](https://github.com/kniazkov/g0at/issues/381)
+- [x] 63. [#381 — Перенести на Си: Очистка native](https://github.com/kniazkov/g0at/issues/381) — test-only зависимость: раздельные close-stdin/wait-stderr raw-owner операции сохраняют исходные EOF deadlines; PR и CI — в задаче.
 - [ ] 64. [#382 — Перенести на Си: Native exit и значения](https://github.com/kniazkov/g0at/issues/382)
 - [ ] 65. [#383 — Перенести на Си: Native runner и его самопроверки](https://github.com/kniazkov/g0at/issues/383)
 - [ ] 66. [#384 — Перенести на Си: Native access и libm](https://github.com/kniazkov/g0at/issues/384)

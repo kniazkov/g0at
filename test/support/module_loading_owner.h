@@ -56,6 +56,10 @@ bool loading_owner_next_line(loading_owner_t *o, uint64_t timeout_ms, loading_by
 void loading_owner_reap(loading_owner_t *o, uint64_t timeout_ms);
 void loading_owner_terminate(loading_owner_t *o, bool group_term, uint64_t timeout_ms);
 void loading_owner_wait_eof(loading_owner_t *o, uint64_t timeout_ms);
+/** Close input without waiting for stdout EOF; observe stderr independently.
+ * This preserves protocols with a separate, shorter stdout EOF deadline. */
+void loading_owner_close_stdin(loading_owner_t *o);
+void loading_owner_wait_stderr(loading_owner_t *o, uint64_t timeout_ms);
 /** Pin only PIDs synchronized at a live readiness barrier. Deferred failure
  * cleanup may signal these handles, never an unpinned or reopened numeric PID. */
 void loading_owner_pin_pid(loading_owner_t *o, uint64_t pid);
