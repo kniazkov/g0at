@@ -143,7 +143,6 @@ foreach(native_cleanup_case IN ITEMS empty-inventory failure-exit-auto failure-e
     "$<TARGET_FILE:native_cleanup_testing>" "${CMAKE_C_COMPILER}" "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-cleanup")
 endforeach()
-goat_python(validation.native_cleanup_original "integration;native-cleanup-parity" scripts/check_native_cleanup.py "$<TARGET_FILE:native_cleanup_testing>" "${CMAKE_C_COMPILER}")
 goat_python(integration.module_native_values "integration" scripts/check_module_native_values.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_native_values_testing>" "${CMAKE_C_COMPILER}")
 foreach(module_build_case numeric empty-required empty-off empty-auto-explicit included missing-auto missing-required unsupported-target foreign-target only-dependency)
   goat_scenario(integration.module_build.${module_build_case} "integration;module-build-library-migration" TIMEOUT 390 COMMAND

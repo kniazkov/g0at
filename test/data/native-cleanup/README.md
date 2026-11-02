@@ -89,8 +89,8 @@ The unchanged Python Debug run passed its first seven aggregate groups but faile
 in interrupted-build at original line 244: the compiler workspace still existed
 following owner/compiler/worker/cleaner exit. This local executor's inherited
 cleanup limitation is not hidden or claimed green. Full C/original remote parity
-is required before deleting Python; the runner's real-platform results are reported
-with the PR evidence rather than inferred from the fake-owner controls.
+was required before deleting Python; the successful gate is recorded below rather
+than inferred from the fake-owner controls.
 
 Independent module IDs snapshot the produced archive before consumption and require
 byte-for-byte identity afterwards, not only continued existence. This preserves
@@ -111,7 +111,7 @@ the original stdout-specific deadline. This control is included in both builds.
   observed processes exit; this is not reported as a green suite.
 - Unchanged Python: **7/8 aggregate groups** in all three configurations, failing
   at the same remaining-workspace assertion. No migration check was relaxed to
-  hide that shared local limitation; full remote parity remains the gate.
+  hide that shared local limitation; full remote parity was the removal gate (results below).
 - Independent controls: **111 passed** in total: 48 owner/protocol/artifact
   controls across Debug and Release; 45 deep filesystem identity, suffix and
   report controls across Debug, Release and UBSan; 12 module descriptor/archive
@@ -124,3 +124,20 @@ the original stdout-specific deadline. This control is included in both builds.
 Final review accepted the explicit Windows path conversion and lexical-parent
 handling while retaining filesystem-identity comparison and exact three-level
 containment. Fixture byte hashes remain unchanged.
+
+## Remote parity gate and Python removal
+
+PR [#459](https://github.com/kniazkov/g0at/pull/459), exact parity head
+`fc546034bac3824f33a6840e21e526849078b1e1`, passed the complete original-Python-plus-C
+matrix on its first attempt: [Build 41406084136](https://github.com/kniazkov/g0at/actions/runs/41406084136)
+(11/11 jobs) and [module vectors 41406084137](https://github.com/kniazkov/g0at/actions/runs/41406084137)
+(3/3 jobs). This includes Linux GCC/Clang x86-64/AArch64, musl, and Windows
+MINGW32/MINGW64/UCRT64, with the configured Debug/Release coverage. Audited logs from all nine execution
+jobs show the original suite passed twice and the 22 C IDs passed in both builds:
+18 original-suite passes and 396 C scenario passes in total.
+
+Only after that green parity gate, `scripts/check_native_cleanup.py` and the
+temporary `validation.native_cleanup_original` registration/parity labels were
+removed. The 22 permanent C IDs and their platform coverage remain unchanged.
+Historical source names, hashes and local limitations above are retained for
+provenance. The final removal commit must pass its own full CI before merge.
