@@ -1,0 +1,1 @@
+{"specializations": [{"specializationId": 1, "functionId": 1, "symbol": "goat_fn_1_v1", "signature": {"id": "goat.adapter.v1", "arguments": ["integer", "integer"], "result": "integer"}, "when": {"argumentTypes": ["integer", "integer"]}}], "actions": ["exit"], "legacyLibrary": null}

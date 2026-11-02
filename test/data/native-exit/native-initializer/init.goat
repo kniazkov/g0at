@@ -1,0 +1,1 @@
+const root = include "main.goat"; try { root.stop(7); } catch(e) { println(e == Exceptions.EXIT_DURING_INITIALIZATION); } finally { println("finally"); }

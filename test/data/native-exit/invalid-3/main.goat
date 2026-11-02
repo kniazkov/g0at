@@ -1,0 +1,1 @@
+const stop = func(x) { return 100; }; try { stop(true); } catch(e) { println(e == Exceptions.INVALID_ARGUMENT); } finally { println("finally"); } println("after");

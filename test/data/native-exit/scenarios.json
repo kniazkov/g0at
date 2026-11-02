@@ -1,0 +1,355 @@
+[
+  {
+    "id": "integration.native_exit.code-0",
+    "name": "code-0",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "before",
+    "status": 0,
+    "terminal": false,
+    "exited": true,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.code-7",
+    "name": "code-7",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "before",
+    "status": 7,
+    "terminal": false,
+    "exited": true,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.code-255",
+    "name": "code-255",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "before",
+    "status": 255,
+    "terminal": false,
+    "exited": true,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.invalid-0",
+    "name": "invalid-0",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "true\nfinally\nafter\n",
+    "status": 0,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.invalid-1",
+    "name": "invalid-1",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "true\nfinally\nafter\n",
+    "status": 0,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.invalid-2",
+    "name": "invalid-2",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "true\nfinally\nafter\n",
+    "status": 0,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.invalid-3",
+    "name": "invalid-3",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "true\nfinally\nafter\n",
+    "status": 0,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.invalid-4",
+    "name": "invalid-4",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "true\nfinally\nafter\n",
+    "status": 0,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.invalid-5",
+    "name": "invalid-5",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "true\nfinally\nafter\n",
+    "status": 0,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.arity-0",
+    "name": "arity-0",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "true\n",
+    "status": 0,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.arity-2",
+    "name": "arity-2",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "true\n",
+    "status": 0,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.invalid-then-valid",
+    "name": "invalid-then-valid",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "caught",
+    "status": 7,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.native-initializer",
+    "name": "native-initializer",
+    "files": [
+      "main.goat",
+      "init.goat",
+      "config.json"
+    ],
+    "expected": "true\nfinally\nready",
+    "status": 7,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.native-no-finally",
+    "name": "native-no-finally",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "",
+    "status": 7,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.exit-forged",
+    "name": "exit-forged",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "",
+    "status": 1,
+    "terminal": true,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.exit-ignored",
+    "name": "exit-ignored",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "",
+    "status": 1,
+    "terminal": true,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.legacy-call-0",
+    "name": "legacy-call-0",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "before",
+    "status": 0,
+    "terminal": false,
+    "exited": true,
+    "legacy": true
+  },
+  {
+    "id": "integration.native_exit.legacy-call-7",
+    "name": "legacy-call-7",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "before",
+    "status": 7,
+    "terminal": false,
+    "exited": true,
+    "legacy": true
+  },
+  {
+    "id": "integration.native_exit.legacy-call-255",
+    "name": "legacy-call-255",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "before",
+    "status": 255,
+    "terminal": false,
+    "exited": true,
+    "legacy": true
+  },
+  {
+    "id": "integration.native_exit.legacy-invalid",
+    "name": "legacy-invalid",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "true\nfinally\nafter\n",
+    "status": 0,
+    "terminal": false,
+    "exited": false,
+    "legacy": true
+  },
+  {
+    "id": "integration.native_exit.legacy-initializer",
+    "name": "legacy-initializer",
+    "files": [
+      "main.goat",
+      "init.goat",
+      "config.json"
+    ],
+    "expected": "true\nfinally\nready",
+    "status": 7,
+    "terminal": false,
+    "exited": false,
+    "legacy": true
+  },
+  {
+    "id": "integration.native_exit.legacy-forged-257",
+    "name": "legacy-forged-257",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "",
+    "status": 1,
+    "terminal": true,
+    "exited": false,
+    "legacy": true
+  },
+  {
+    "id": "integration.native_exit.legacy-forged-258",
+    "name": "legacy-forged-258",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "",
+    "status": 1,
+    "terminal": true,
+    "exited": false,
+    "legacy": true
+  },
+  {
+    "id": "integration.native_exit.loop-vm",
+    "name": "loop-vm",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "entered",
+    "status": 7,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.loop-native",
+    "name": "loop-native",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "entered",
+    "status": 7,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.block-vm",
+    "name": "block-vm",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "entered",
+    "status": 7,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  },
+  {
+    "id": "integration.native_exit.block-native",
+    "name": "block-native",
+    "files": [
+      "main.goat",
+      "config.json"
+    ],
+    "expected": "entered",
+    "status": 7,
+    "terminal": false,
+    "exited": false,
+    "legacy": false
+  }
+]

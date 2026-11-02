@@ -29,6 +29,8 @@
 
 Корневой CMakeLists.txt подключает отдельные каталоги. CTest — общая точка запуска; самостоятельный сценарий имеет отдельный стабильный ID и выбирается аргументом runner. Сценарии имеют общий timeout, освобождают процессы/ресурсы после ошибки; диагностика сохраняется при провале, успешные каталоги удаляются кроме --keep-work. Независимые тесты могут идти параллельно; performance запускается без конкурирующих тестов. Независимые эталоны не вызывают проверяемые production-функции для вычисления ожидаемого ответа.
 
+Дополнительная тестовая зависимость #382: в `test/src/component/module_native_values_testing.c` сохраняются реальные ABI assertions при `NDEBUG` через локальный guard перед `<assert.h>`; original/C parity использует один и тот же host в Debug/Release, production не меняется.
+
 ## Порядок задач
 
 - [x] 01. [#319 — Ввести корневой CMakeLists.txt](https://github.com/kniazkov/g0at/issues/319) — [PR #396](https://github.com/kniazkov/g0at/pull/396), зелёный CI: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/40448768780), [векторы формата](https://github.com/kniazkov/g0at/actions/runs/40448768760).
@@ -94,7 +96,7 @@
 - [x] 61. [#379 — Перенести на Си: Native toolchains и требования](https://github.com/kniazkov/g0at/issues/379)
 - [x] 62. [#380 — Перенести на Си: Native artifacts и integrity](https://github.com/kniazkov/g0at/issues/380) — test-only зависимость: path/bytes assertion native-artifact fixture сохраняется в Release; PR и CI — в задаче.
 - [x] 63. [#381 — Перенести на Си: Очистка native](https://github.com/kniazkov/g0at/issues/381) — test-only зависимость: раздельные close-stdin/wait-stderr raw-owner операции сохраняют исходные EOF deadlines; PR и CI — в задаче.
-- [ ] 64. [#382 — Перенести на Си: Native exit и значения](https://github.com/kniazkov/g0at/issues/382)
+- [x] 64. [#382 — Перенести на Си: Native exit и значения](https://github.com/kniazkov/g0at/issues/382) — [PR #460](https://github.com/kniazkov/g0at/pull/460), original/C parity: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/41438905339), [векторы](https://github.com/kniazkov/g0at/actions/runs/41438905517).
 - [ ] 65. [#383 — Перенести на Си: Native runner и его самопроверки](https://github.com/kniazkov/g0at/issues/383)
 - [ ] 66. [#384 — Перенести на Си: Native access и libm](https://github.com/kniazkov/g0at/issues/384)
 - [ ] 67. [#385 — Перенести на Си: Native strings](https://github.com/kniazkov/g0at/issues/385)

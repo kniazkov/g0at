@@ -1,0 +1,1 @@
+external convert=func(x){return chr(x);}; convert(-1); println("must not run");
