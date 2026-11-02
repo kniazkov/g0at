@@ -80,3 +80,26 @@ Independent controls passed **36/36** across Debug and Release:
 Logs: `/tmp/382-values-tests-{Debug,Release,UBSan}.log`, corresponding
 `original` logs, `/tmp/382-values-negative.log` and
 `/tmp/382-values-compiler-controls.log` in the implementation workspace.
+
+
+## Remote parity gate and Python removal
+
+The corrected parity head `130e06b4d4820b4d5633dbb8a709bd27a00a1fd0` in
+[PR #460](https://github.com/kniazkov/g0at/pull/460) passed the full
+[Build 41438905339](https://github.com/kniazkov/g0at/actions/runs/41438905339)
+(11/11 jobs) and [module vectors 41438905517](https://github.com/kniazkov/g0at/actions/runs/41438905517)
+(3/3 jobs). An initial Windows compile failure was corrected by renaming the
+native-exit helper `boolean` to `boolean_field`, avoiding the Windows SDK
+`rpcndr.h` typedef collision; parity evidence refers only to the corrected head.
+
+Audited logs from all nine runtime jobs each show two original native-exit suite
+passes, two original native-values suite passes, 56 native-exit C passes and six
+native-values C passes: **36 original aggregate passes and 558 C scenario passes**
+across Debug/Release, Linux GCC/Clang x86-64/AArch64, musl and Windows
+MINGW32/MINGW64/UCRT64.
+
+Only after this gate, the two original Python scripts and temporary parity
+registrations/labels were removed. All 31 permanent C IDs (28 exit + three values)
+and their platform coverage remain. Historical input names/hashes above are
+preserved for provenance. The final removal commit must pass its own complete CI
+before merge.

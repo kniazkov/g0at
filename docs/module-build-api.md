@@ -79,7 +79,7 @@ PE проверяет разрядность, runtime и разрешённый 
 небезопасной ручной уборки из-под работающих процессов нет.
 
 Проверки: `native_artifact_scenarios`, `native_toolchains_scenarios`, `native_requirements_scenarios`,
-`integration.native_cleanup.*`, `integration.module_build.*` (CTest), `check_module_native_values.py`.
+`integration.native_cleanup.*`, `integration.module_build.*` (CTest), `integration.module_native_values.*`.
 Существующие native/unit/runtime suites сохраняются. Нижняя версия Windows 10
 и старые glibc требуют отдельного контрольного окружения: CI на текущем runner
 не объявляется проверкой запуска на этих нижних границах. Представление

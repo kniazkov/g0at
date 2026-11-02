@@ -143,7 +143,6 @@ foreach(native_cleanup_case IN ITEMS empty-inventory failure-exit-auto failure-e
     "$<TARGET_FILE:native_cleanup_testing>" "${CMAKE_C_COMPILER}" "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-cleanup")
 endforeach()
-goat_python(validation.module_native_values_original "integration;native-exit-values-parity" scripts/check_module_native_values.py "$<TARGET_FILE:module_import_execution_testing>" "$<TARGET_FILE:module_native_values_testing>" "${CMAKE_C_COMPILER}")
 foreach(module_build_case numeric empty-required empty-off empty-auto-explicit included missing-auto missing-required unsupported-target foreign-target only-dependency)
   goat_scenario(integration.module_build.${module_build_case} "integration;module-build-library-migration" TIMEOUT 390 COMMAND
     "$<TARGET_FILE:module_build_scenarios>" "integration.module_build.${module_build_case}"
@@ -213,7 +212,6 @@ foreach(native_values_case IN ITEMS abi-values unsafe-character-vm required-unsa
     "${CMAKE_C_COMPILER}" "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
     "${PROJECT_SOURCE_DIR}/test/data/module-native-values")
 endforeach()
-goat_python(validation.native_exit_original "integration;native-exit-values-parity" scripts/check_native_exit.py "$<TARGET_FILE:module_dispatch_testing>" "${CMAKE_C_COMPILER}")
 set(dispatch_consistency_ids integration.module_dispatch.identity integration.module_consistency.api integration.module_consistency.producer-identities)
 foreach(dispatch_consistency_fixture dispatch consistency)
   set(dispatch_consistency_path "${PROJECT_SOURCE_DIR}/test/data/module-dispatch-consistency/${dispatch_consistency_fixture}.json")

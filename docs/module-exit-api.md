@@ -124,7 +124,7 @@ Goat и не разрешает удаление файлов из-под про
   build/process_exit_delayed_testing` exercises the atomic winner, fast unbuffered
   and buffered termination, blocked output/stream locks, one common deadline,
   racing requests and unchanged codes after output failure.
-- `check_native_exit.py` covers rejected calls across the ABI boundary and
+- `integration.native_exit.*` covers rejected calls across the ABI boundary and
   process termination while another native worker cannot return.
 - `integration.module_loading.*` retains first-call serialization, snapshot lifetime,
   late worker loading, pre-READY failure and death of an already ready cleaner.
