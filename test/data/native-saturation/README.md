@@ -321,7 +321,7 @@ run, deadline extension, driver change or compiler-flag change is introduced.
 ### Isolated AArch64 diagnostic compiler report
 
 After normal musl work has finished or failed, AArch64 performs one explicitly
-separate diagnostic compile. It copies the frozen 540,477-byte `driver.c.txt`
+separate original-driver diagnostic compile. It copies the frozen 540,477-byte `driver.c.txt`
 byte-for-byte and verifies the copy, then exports `saturation.goat` with the
 same Goat executable. The export keeps its original 120-second limit.
 
@@ -329,7 +329,7 @@ The additional GCC compile alone has a 300-second diagnostic deadline, allowing
 its final pass report to finish. The normal CTest commands, original 120-second
 compiler limit, 300-second scenario limit, frozen fixtures and assertions are
 unchanged. Diagnostic success never counts as a passing test and cannot replace
-a failed normal gate. The resulting binary is not executed.
+a failed normal gate. That original-driver diagnostic binary is not executed.
 
 The command retains `-std=c11 -O2 -Wall -Wextra -Werror`, the repository include
 path, `lib/numbers` quote-include path and `-lm`. Only `-ftime-report`,
@@ -355,3 +355,38 @@ Reporting and resource collection add overhead; these timings must not be
 presented as unchanged-gate timings or proof of stability. No normal test runs
 concurrently with the diagnostic. Some AArch64 passes have no individual time
 variable, and GGC reports do not account for every ordinary heap allocation.
+
+#### Additive partitioned comparison
+
+After the original diagnostic compile, an additional diagnostic partitions the same driver into 19 translation units of at most 64 complete
+operand blocks. It does not replace any normal test. The C partitioner requires
+the frozen wrapper, 1,196 volatile operand blocks and all 7,176 assertions in
+the original order. It writes their raw bytes unchanged, reopens each emitted
+chunk to compare it with the input, and reconstructs the complete original
+driver from those emitted bytes. `cmp` plus `partition-proof.sha256` record the
+byte-for-byte reconstruction; malformed input fails before chunk generation.
+
+The main translation unit includes generated `saturation.c` exactly once. Each
+chunk includes the same `native_runtime.h`, `integer_math.h` and assertion
+header. All files stay beside the original driver and generated headers, so
+include-search flags are unchanged. One GCC invocation compiles and links all
+chunks with the same flags and report options, under a 120-second deadline.
+The resulting `split64.exe` runs under an independent 120-second deadline.
+No LTO or new optimization flag is introduced.
+
+`status.log` distinguishes original compile, partition, split compile and split
+execution results. Their detailed command/status/output files remain in the
+archive, with `split64.command` and the equality hashes outside it. The observer
+continues across both variants, with phase timestamps to separate their costs.
+An ordinary failed original diagnostic or timeout does not skip the comparison
+when its recorded system and cleanup errors are both zero. Missing status or
+any system/cleanup error skips the comparison and fails closed, avoiding
+possibly concurrent leftover compiler processes. Either diagnostic failure is
+retained, while the normal musl job result remains authoritative.
+
+This preserves the complete arithmetic assertion corpus but changes function
+and translation-unit shape. It deliberately reduces giant-function compiler
+stress, so success does not prove equivalent compiler-stress coverage or resolve
+the normal gate failure. Local x86_64/glibc timing differences are not evidence
+of native AArch64/musl behavior. Only the controlled ARM comparison can measure
+that environment, and no adoption of this shape in the tests is implied.

@@ -51,6 +51,74 @@ args=("$compiler" -ftime-report -ftime-report-details -fmem-report
     "$replay_work/driver.c" -lm -o "$replay_work/builtin.exe")
 printf '%q ' "${args[@]}" > "$output/compiler.command"
 printf '\n' >> "$output/compiler.command"
+original_compile_status=0 split_compile_status=not-run split_run_status=not-run
+printf 'phase=original_compile start_wall=%s\n' "$(date +%s)" >> "$output/status.log"
 GOAT_LANGUAGE=en "$replay_work/diagnostic-command" 300000 "$repo" "$replay_work/compiler.status" \
-    "${args[@]}" > "$replay_work/compiler.stdout" 2> "$replay_work/compiler.stderr"
-# This diagnostic never executes the binary or counts as a passing CTest gate.
+    "${args[@]}" > "$replay_work/compiler.stdout" 2> "$replay_work/compiler.stderr" \
+    || original_compile_status=$?
+printf 'phase=original_compile end_wall=%s status=%s\n' \
+    "$(date +%s)" "$original_compile_status" >> "$output/status.log"
+# A failed compile may be compared only after confirmed owned-tree cleanup.
+original_result="$(cat "$replay_work/compiler.status" 2>/dev/null || true)"
+if [[ ! "$original_result" =~ ^status=[0-9]+\ exit=-?[0-9]+\ signal=[0-9]+\ system=0\ cleanup=0\ deadline_ms=300000$ ]]; then
+    printf 'comparison_skipped=unsafe_cleanup_or_missing_status original_compile_status=%s partition_status=skipped split_compile_status=skipped split_run_status=skipped\n' \
+        "$original_compile_status" >> "$output/status.log"
+    [ "$original_compile_status" -ne 0 ] || original_compile_status=125
+    exit "$original_compile_status"
+fi
+# Attempt the independent comparison after a safe failure or cleaned-up timeout.
+partition_status=0
+printf 'phase=partition start_wall=%s\n' "$(date +%s)" >> "$output/status.log"
+"$compiler" -std=c11 -O2 -Wall -Wextra -Werror \
+    "$repo/test/support/partition_saturation_diagnostic.c" \
+    -o "$replay_work/partition-driver" \
+    > "$replay_work/partition-build.stdout" 2> "$replay_work/partition-build.stderr" \
+    || partition_status=$?
+if [ "$partition_status" -eq 0 ]; then
+    "$replay_work/diagnostic-command" 120000 "$repo" "$replay_work/partition.status" \
+        "$replay_work/partition-driver" "$replay_work/driver.c" "$replay_work" \
+        > "$replay_work/partition.stdout" 2> "$replay_work/partition.stderr" \
+        || partition_status=$?
+fi
+if [ "$partition_status" -eq 0 ]; then
+    cmp "$replay_work/driver.c" "$replay_work/reconstructed-driver.c" || partition_status=$?
+fi
+if [ "$partition_status" -eq 0 ]; then
+    sha256sum "$replay_work/driver.c" "$replay_work/reconstructed-driver.c" \
+        > "$output/partition-proof.sha256" || partition_status=$?
+fi
+printf 'phase=partition end_wall=%s status=%s\n' \
+    "$(date +%s)" "$partition_status" >> "$output/status.log"
+if [ "$partition_status" -eq 0 ]; then
+    split_args=("$compiler" -ftime-report -ftime-report-details -fmem-report
+        -std=c11 -O2 -Wall -Wextra -Werror -I"$repo" -iquote"$repo/lib/numbers"
+        "$replay_work/main.c" "$replay_work"/part*.c -lm -o "$replay_work/split64.exe")
+    printf '%q ' "${split_args[@]}" > "$output/split64.command"
+    printf '\n' >> "$output/split64.command"
+    printf 'phase=split_compile start_wall=%s\n' "$(date +%s)" >> "$output/status.log"
+    split_compile_status=0
+    GOAT_LANGUAGE=en "$replay_work/diagnostic-command" 120000 "$repo" \
+        "$replay_work/split64-compile.status" "${split_args[@]}" \
+        > "$replay_work/split64-compile.stdout" 2> "$replay_work/split64-compile.stderr" \
+        || split_compile_status=$?
+    printf 'phase=split_compile end_wall=%s status=%s\n' \
+        "$(date +%s)" "$split_compile_status" >> "$output/status.log"
+    if [ "$split_compile_status" -eq 0 ]; then
+        split_run_status=0
+        printf 'phase=split_run start_wall=%s\n' "$(date +%s)" >> "$output/status.log"
+        "$replay_work/diagnostic-command" 120000 "$repo" "$replay_work/split64-run.status" \
+            "$replay_work/split64.exe" \
+            > "$replay_work/split64-run.stdout" 2> "$replay_work/split64-run.stderr" \
+            || split_run_status=$?
+        printf 'phase=split_run end_wall=%s status=%s\n' \
+            "$(date +%s)" "$split_run_status" >> "$output/status.log"
+    fi
+fi
+printf 'original_compile_status=%s partition_status=%s split_compile_status=%s split_run_status=%s\n' \
+    "$original_compile_status" "$partition_status" "$split_compile_status" "$split_run_status" \
+    >> "$output/status.log"
+# Neither diagnostic can replace the normal CTest gate. Preserve both failures.
+[ "$original_compile_status" -eq 0 ] || exit "$original_compile_status"
+[ "$partition_status" -eq 0 ] || exit "$partition_status"
+[ "$split_compile_status" = 0 ] || exit "$split_compile_status"
+[ "$split_run_status" = 0 ] || exit "$split_run_status"
