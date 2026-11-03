@@ -31,7 +31,7 @@
 
 Дополнительная тестовая зависимость #382: в `test/src/component/module_native_values_testing.c` сохраняются реальные ABI assertions при `NDEBUG` через локальный guard перед `<assert.h>`; original/C parity использует один и тот же host в Debug/Release, production не меняется.
 
-Совместимый слой #383 `scripts/check_native.py` удалён в #385 после полного original/C parity последнего потребителя `string_method_errors.py`. Manifest/main и самопроверки работают на Си; единственный оставшийся check-program Python-adapter — `saturation.py` (#386).
+Совместимый слой #383 `scripts/check_native.py` удалён в #385 после полного original/C parity последнего потребителя `string_method_errors.py`. Manifest/main, самопроверки и все check-program adapters работают на Си после #386. Логический manifest ID `checks/saturation.py` сохранён, но больше не требует Python runtime.
 
 ## Порядок задач
 
@@ -102,7 +102,7 @@
 - [x] 65. [#383 — Перенести на Си: Native runner и его самопроверки](https://github.com/kniazkov/g0at/issues/383) — [PR #461](https://github.com/kniazkov/g0at/pull/461), original/C parity: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/41495133812), [векторы](https://github.com/kniazkov/g0at/actions/runs/41495133951); compatibility helpers последнего потребителя удалены в #385 после полного parity.
 - [x] 66. [#384 — Перенести на Си: Native access и libm](https://github.com/kniazkov/g0at/issues/384) — [PR #462](https://github.com/kniazkov/g0at/pull/462), original/C parity: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/41578881805), [векторы](https://github.com/kniazkov/g0at/actions/runs/41578881774); 64 frozen inputs и исходные deadlines сохранены, Python удалён после полного gate.
 - [x] 67. [#385 — Перенести на Си: Native strings](https://github.com/kniazkov/g0at/issues/385) — [PR #463](https://github.com/kniazkov/g0at/pull/463), original/C parity: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/41597613910), [векторы](https://github.com/kniazkov/g0at/actions/runs/41597613872); 281 runtime comparison, 13 frozen inputs, ABI/lifetime, method reports и sanitizer flags сохранены; оба Python-checker и последний compatibility helper удалены после полного gate.
-- [ ] 68. [#386 — Перенести на Си: Насыщающая арифметика](https://github.com/kniazkov/g0at/issues/386)
+- [x] 68. [#386 — Перенести на Си: Насыщающая арифметика](https://github.com/kniazkov/g0at/issues/386) — [PR #464](https://github.com/kniazkov/g0at/pull/464), original/C parity на `38a029e15a4fab21942a3782dc14ef92b3d48892`: [сборка и тесты, attempt 4, 11/11](https://github.com/kniazkov/g0at/actions/runs/41623617966/attempts/4), [векторы, 3/3](https://github.com/kniazkov/g0at/actions/runs/41623617722); 29 C-сценариев, 1196 пар и 7176 assertions на вариант, deadlines 120/30/300 с сохранены. Python и временный parity wrapper удалены только после полного gate; финальный CI удаления проверяется отдельно.
 - [ ] 69. [#387 — Перенести на Си: Производительность native](https://github.com/kniazkov/g0at/issues/387)
 - [ ] 70. [#388 — Перенести на Си: Автономная доставка](https://github.com/kniazkov/g0at/issues/388)
 - [ ] 71. [#389 — Перенести на Си: Минимальные runtime-требования](https://github.com/kniazkov/g0at/issues/389)

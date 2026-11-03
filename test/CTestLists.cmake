@@ -533,14 +533,7 @@ if(NOT WIN32 AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
     -- -fsanitize=undefined -fno-sanitize-recover=all)
 endif()
-# #386: retain the original Python route until full cross-platform parity is green.
-if(Python3_Interpreter_FOUND)
-  goat_scenario(migration.native_saturation.original-parity "native;native-saturation-migration" TIMEOUT 660 COMMAND
-    "${CMAKE_COMMAND}" "-DPYTHON=${Python3_EXECUTABLE}" "-DGOAT=$<TARGET_FILE:goat>"
-    "-DRUNNER=$<TARGET_FILE:native_saturation_scenarios>"
-    "-DREPOSITORY=${PROJECT_SOURCE_DIR}" "-DBUILD=${CMAKE_BINARY_DIR}"
-    -P "${PROJECT_SOURCE_DIR}/test/run_native_saturation_original.cmake")
-endif()
+# #386: original Python parity passed before retiring its temporary route.
 foreach(native_saturation_case IN ITEMS vm-none-off vm-all-off vm-all-auto vm-all-required persisted helpers-builtin helpers-portable valid-minimum valid-spaced_minimum valid-double_negation valid-division valid-order valid-unchanged invalid-0 invalid-1 invalid-2 invalid-3 invalid-4 invalid-5 invalid-6 invalid-7 control-output control-report control-input control-oracle control-host control-invalid control-execution corpus)
   set(native_saturation_timeout 330)
   if(native_saturation_case MATCHES "^(helpers-builtin|helpers-portable|control-host)$")

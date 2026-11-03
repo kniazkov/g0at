@@ -498,7 +498,8 @@ target_link_libraries(native_string_method_scenarios PRIVATE goat_language_execu
 add_dependencies(native_string_method_scenarios goat)
 add_dependencies(native_runner_testing native_runtime_strings_scenarios native_string_method_scenarios)
 
-# #386: keep the original Python route until complete cross-platform parity.
+# #386: independent saturation scenarios after complete original/C parity.
 add_executable(native_saturation_scenarios src/functional/native_saturation_scenarios.c)
 target_link_libraries(native_saturation_scenarios PRIVATE goat_language_execution_support goat_integer_oracle goat_native_runner_policy yyjson)
 add_dependencies(native_saturation_scenarios goat)
+add_dependencies(native_runner_testing native_saturation_scenarios)

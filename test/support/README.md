@@ -46,9 +46,12 @@ four little-endian 32-bit limbs, then explicit int64 saturation. The test-only
 `goat_integer_oracle` target has no production dependency and is never linked
 into the interpreter. There is no `__int128` requirement or signed overflow.
 See `test/data/integer-oracle/README.md` for Python provenance, reproduction,
-scenario mapping and deliberate-corruption self-tests. The existing
-`test/src/native/checks/saturation.py` consumer is unchanged until #386;
-this step supplies its future independent C oracle, not a replacement runner.
+scenario mapping and deliberate-corruption self-tests. The #386
+`native_saturation_scenarios` runner now consumes this independent oracle. Its
+original Python checker was retired only after complete original/C parity in
+[PR #464](https://github.com/kniazkov/g0at/pull/464); all native check-program
+adapters now execute C, including the historical logical `checks/saturation.py`
+identifier. See [saturation provenance and coverage](../data/native-saturation/README.md).
 
 Run `ctest --test-dir build -L integer-oracle --output-on-failure` after building
 `integer_oracle_testing` (and `integer_oracle_ubsan_testing` on Unix GCC/Clang).

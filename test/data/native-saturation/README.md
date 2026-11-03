@@ -1,12 +1,13 @@
 # Native saturation migration (#386)
 
-This read-only corpus preserves the independent Python reference in
-`test/src/native/checks/saturation.py` while
-`test/src/functional/native_saturation_scenarios.c` adds independently selectable
-C scenarios. The Python script and its original native-manifest routing remain
-in place during parity validation. The migration checklist must remain unchecked
-until the complete required CI matrix passes; this directory is not evidence of
-that final gate having passed.
+This read-only corpus preserves the historical independent Python reference
+`test/src/native/checks/saturation.py` and its provenance. The C runner
+`test/src/functional/native_saturation_scenarios.c` now supplies all 29 selectable
+cases. The original Python script and temporary parity wrapper were removed
+only after the complete original/C parity gate passed at commit
+`38a029e15a4fab21942a3782dc14ef92b3d48892`; see the evidence below. The manifest's
+logical `checks/saturation.py` identifier now routes to the C aggregate and does
+not require a Python runtime. Final-removal CI is a separate pending gate.
 
 ## Exact original-to-C coverage
 
@@ -108,10 +109,10 @@ For invalid cases, the original condition remains nonzero exit plus the
 
 Source-file generation is a separate contract. The C writer reproduces
 `Path.write_text` platform translation, including LF-to-CRLF on Windows and
-missing final newlines where the Python source omitted them. The parity wrapper
-uses `file(READ ... HEX)` to compare actual source/driver bytes; text-mode CMake
+missing final newlines where the Python source omitted them. The historical parity wrapper
+used `file(READ ... HEX)` to compare actual source/driver bytes; text-mode CMake
 reads would hide CRLF differences. Frozen files and generated `expected.txt`
-retain an LF baseline on every platform; the wrapper compares expected output
+retain an LF baseline on every platform; the historical wrapper compared expected output
 using exact HEX bytes without newline normalization.
 
 Auto/required reports preserve the original narrow checks: integer `succeeded`
@@ -157,10 +158,10 @@ child keeps **30 seconds**. The `all` scenario retains the old manifest's
 **300-second aggregate** budget, rather than summing individual command caps.
 CTest case timeouts are 330 seconds, except `helpers-builtin`,
 `helpers-portable`, and `control-host`, which have 390-second outer limits.
-The complete original/C parity wrapper caps the unchanged Python process at
+The historical complete original/C parity wrapper capped the unchanged Python process at
 300 seconds. The C runner still enforces its internal 300-second aggregate
 budget; its external process timeout is 330 seconds to allow supervisor cleanup.
-The parity CTest outer limit is 660 seconds (300 + 330 + 30). These cleanup
+The historical parity CTest outer limit was 660 seconds (300 + 330 + 30). These cleanup
 margins do not extend a child's original execution cap or the C aggregate budget.
 
 Retained workspaces contain command/output diagnostics and generated artifacts.
@@ -169,16 +170,17 @@ C runner even though the real original Python run passes. Treat that as an
 unresolved infrastructure failure: preserve its diagnostics, fix or reproduce
 it in the intended environment, and rerun the unchanged tests. Do not bypass
 the supervisor, suppress the failure, increase deadlines, or claim full parity
-from the original run alone. No final cross-platform CI success is claimed here.
+from the original run alone. The remote parity gate below passed independently
+of this local limitation; final-removal CI is not claimed here.
 
-## Reproduction and complete parity gate
+## Current C reproduction
 
-Run from the repository root with CMake, Python 3 and the selected C compiler
-available. For a single-config Linux example:
+Run from the repository root with CMake and the selected C compiler available.
+These saturation scenarios do not require Python; other transitional repository
+tests may still use it. For a single-config Linux example:
 
 ```sh
-CC=gcc cmake -S . -B build/saturation-debug -DCMAKE_BUILD_TYPE=Debug \
-  -DGOAT_TEST_REQUIRE_PYTHON=ON
+CC=gcc cmake -S . -B build/saturation-debug -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/saturation-debug --target native_saturation_scenarios
 ctest --test-dir build/saturation-debug --output-on-failure \
   -L native-saturation-migration
@@ -196,30 +198,52 @@ build/saturation-debug/native_saturation_scenarios \
   build/saturation-debug/goat "$PWD" build/saturation-debug test/data --keep-work
 CC=gcc build/saturation-debug/native_saturation_scenarios all \
   build/saturation-debug/goat "$PWD" build/saturation-debug test/data --keep-work
-ctest --test-dir build/saturation-debug --output-on-failure \
-  -R '^migration.native_saturation.original-parity$'
 ```
-
-`test/run_native_saturation_original.cmake` creates a unique
-`native-original-saturation/scenario-<nonce>` base. It first runs the unchanged
-Python script in `original`, then the C `all --keep-work` selection in its own
-`converted/scenario-*` workspace. Both complete runs must succeed. It compares
-`saturation.goat`, `driver.c`, all six valid source files and all eight invalid
-source files in raw HEX, and checks C-generated expected output against the
-frozen Python result. Both stdout/stderr captures and workspaces remain for
-review. A passing `corpus` check alone is not this parity gate.
 
 Repeat with `-DCMAKE_BUILD_TYPE=Release` in a separate build directory. The
 normal `scripts/build.sh` and `scripts/build_mingw.cmd` explicit target lists
 include this runner. Linux and Windows Debug/Release workflow selections and
 `scripts/check_musl_ci.sh` Debug/Release selections include the migration label,
-which includes all 29 split cases and the complete original/C parity test when
-Python is available: 30 CTests in total. Require Python during this transitional
-gate; silently omitting the original parity test is not acceptable evidence for retirement.
+which now includes all 29 C cases, without a Python parity registration.
 On Windows use the corresponding `.exe` paths and shell path conventions.
 
-Only after the complete required Debug/Release Linux, Windows and musl matrix
-is green may a subsequent change retire the original Python script and temporary
-parity wrapper, switch legacy manifest execution to the C aggregate, and mark
-the migration checklist complete. Until then keep the Python reference, old
-routing and unchecked checklist intact.
+## Completed original/C parity gate and retirement
+
+[PR #464](https://github.com/kniazkov/g0at/pull/464) retained the unchanged original
+Python checker, legacy Python manifest route and temporary comparison wrapper
+until the exact parity head `38a029e15a4fab21942a3782dc14ef92b3d48892` passed:
+
+- [Build and test, attempt 4: 11/11 jobs](https://github.com/kniazkov/g0at/actions/runs/41623617966/attempts/4).
+- [Vectors: 3/3 jobs](https://github.com/kniazkov/g0at/actions/runs/41623617722).
+- The full musl Debug and Release selections each passed 1,937/1,937 tests.
+  Their complete original+C parity tests took 340.29 and 364 seconds,
+  respectively, on attempt 4.
+
+At that head the migration label covered 29 split cases plus the temporary
+original/C comparison, 30 tests total. The wrapper created a unique
+`native-original-saturation/scenario-<nonce>` base, ran the unchanged Python
+script in `original`, then ran C `all --keep-work` in its own
+`converted/scenario-*` workspace. Both complete executions had to succeed. It
+compared `saturation.goat`, `driver.c`, six valid and eight invalid source files
+using raw HEX, and compared C-generated expected output with the frozen Python
+result. It retained both stdout/stderr captures and generated workspaces. A
+passing `corpus` check alone was never accepted as full parity evidence.
+
+The historical wrapper and original can be inspected without restoring live
+Python dependencies:
+
+```sh
+git show 38a029e15a4fab21942a3782dc14ef92b3d48892:test/run_native_saturation_original.cmake
+git show 38a029e15a4fab21942a3782dc14ef92b3d48892:test/src/native/checks/saturation.py
+```
+
+The subsequent retirement change removes the Python checker and wrapper,
+switches legacy manifest execution to the C aggregate, and marks checklist
+step 68 complete. All check-program adapters now execute C. Final CI must still
+validate this removal commit; the successful parity-head runs are not a claim
+that final-removal CI has passed.
+
+Earlier GCC builtin-driver compilation hit the unchanged 120-second command
+limit intermittently. The successful rerun does not establish that this
+flakiness is fixed, and its deeper cause remains unknown. No original deadline,
+assertion, compiler flag, or cleanup check was relaxed to obtain the green gate.
