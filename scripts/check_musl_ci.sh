@@ -65,6 +65,17 @@ done
 cd /work/source
 export CC=gcc CXX=/nonexistent/cxx CMAKE_BUILD_PARALLEL_LEVEL=2
 mkdir -p /results
+if [ "$(uname -m)" = aarch64 ]; then
+    # Metadata only: these queries do not compile another program or change
+    # the selected compiler, its environment, or any existing test command.
+    {
+        uname -a
+        apk info -v gcc musl musl-dev
+        gcc -v
+        compiler_frontend="$(gcc -print-prog-name=cc1)"
+        sha256sum /usr/bin/gcc "$compiler_frontend" /lib/ld-musl-aarch64.so.1
+    } > /results/compiler-identity.log 2>&1
+fi
 gcc -std=c11 -O2 -Wall -Wextra -Werror test/support/musl_compile_observer.c -o /work/musl_compile_observer
 BUILD_DIR=/work/debug bash scripts/build.sh 2
 run_observed_ctest debug ctest --test-dir /work/debug --output-on-failure -L "language-roundtrip|unicode-interactive|standalone-bytecode|module-sources-files-migration|imports-include-migration|module-search-migration|module-dependencies-migration|module-graph-migration|module-snapshot-migration|module-identity-serialization-migration|module-initialization-migration|module-contract-exceptions-migration|module-scopes-prototypes-migration|module-access-migration|module-multifile-access-migration|module-context-provenance-migration|module-assignment-migration|module-execution-interface-migration|module-source-diagnostics-migration|module-information-migration|module-dispatch-consistency-migration|module-validation-migration|module-writer-migration|module-build-library-migration|module-loading-migration|module-cli-migration|module-inspect-migration|inspect-probe-migration|module-merge-migration|child-process-migration|cleanup-service-migration|process-exit-migration|module-exit-migration|module-threads-migration|native-requirements-migration|native-toolchains-migration|native-artifact-migration|native-integrity-migration|native-cleanup-migration|native-exit-values-migration|native-runner-migration|native-access-libm-migration|native-strings-migration|native-saturation-migration"
