@@ -403,6 +403,16 @@ static int run_test(int argc, char **argv) {
         unsigned long error = 0;
         bool alive = true;
         CHECK(state.observer_ok && state.watch);
+#ifdef _WIN32
+        /* Job active-process accounting can reach zero before a terminated
+         * descendant's process object is signaled. The root-only wait in the
+         * child API cannot synchronize that final teardown after a normal root
+         * exit. Require OS exit notification on the identity pinned while alive,
+         * within a bounded observation budget; never kill or reopen by PID. */
+        uint64_t observed = process_watch_now_ms();
+        CHECK(observed != UINT64_MAX && observed <= UINT64_MAX - 5000);
+        CHECK(process_watch_wait(state.watch, observed + 5000, &error) == PROCESS_WATCH_OK);
+#endif
         CHECK(process_watch_alive(state.watch, &alive, &error) == PROCESS_WATCH_OK && !alive);
         CHECK(process_watch_close(&state.watch, &error) == PROCESS_WATCH_OK);
         CHECK(
