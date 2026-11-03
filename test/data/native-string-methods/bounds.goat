@@ -1,0 +1,14 @@
+
+const slice = func(s, n) { return s.repeat(2).substring(n); };
+const character = func(s, n) { return "" + s.charAt(n); };
+const copies = func(s, n) { return s.repeat(n); };
+println(slice("ab", 1));
+println(character("ab", 1));
+println(copies("ab", 1));
+try { slice("ab", -1); } catch(e) { println("slice negative: " + e); }
+try { slice("ab", 5); } catch(e) { println("slice past end: " + e); }
+try { character("ab", -1); } catch(e) { println("char negative: " + e); }
+try { character("ab", 2); } catch(e) { println("char past end: " + e); }
+try { copies("ab", -1); } catch(e) { println("repeat negative: " + e); }
+try { copies("ab", 9223372036854775807); } catch(e) { println("repeat overflow: " + e); }
+println(slice("ab", 4));

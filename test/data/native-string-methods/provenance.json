@@ -1,0 +1,27 @@
+{
+  "original_commit": "4fcd4dbca7a043cede8f23b9b671307cab0b6e7f",
+  "source": "test/src/native/checks/string_method_errors.py",
+  "source_sha256": "31ceaf9fe368249e331a16fec488cc18d2f991ab7c60aaff0b7295b4ce9b5a4e",
+  "runner_sha256": "952b17fe504484ade9fb1fc0aab9bed5c34c528377b91702f2ed7830c2731878",
+  "capture": "Unchanged main(), real Debug and Release Goat, Path.write_text wrapped only to copy completed bytes before original unlink.",
+  "files": {
+    "bounds.goat": {
+      "sha256": "b4c312aedf1a554795173ff45757237dc106648ce02b1c9c98768a4bfb03a126",
+      "size": 730,
+      "windows_write_text_sha256": "736b38ec1c4ccbcbd04df456a16bcd397f3fcf7a94ededf3b487686335f04a0c",
+      "windows_write_text_size": 744
+    },
+    "types.goat": {
+      "sha256": "cc70f96b62f88d4d5e1e1903f3f1206098d5bf44bc432250f91cd70cfd368a27",
+      "size": 307,
+      "windows_write_text_sha256": "3c69c6673a491722dddcedda925daede674a129183a54739c29434831bd1698a",
+      "windows_write_text_size": 314
+    },
+    "identity.goat": {
+      "sha256": "b477eebb1bf36206f1796121349f9ee98fad9e05c5a9774b49dd66863f94ce0d",
+      "size": 180,
+      "windows_write_text_sha256": "9704310c53cc1718acb25cd7a5eaa21cf0e21a9a58774b5592068a01a9fb5045",
+      "windows_write_text_size": 186
+    }
+  }
+}

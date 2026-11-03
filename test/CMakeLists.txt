@@ -488,3 +488,12 @@ add_executable(native_libm_scenarios src/functional/native_libm_scenarios.c)
 target_link_libraries(native_libm_scenarios PRIVATE goat_language_execution_support yyjson)
 add_dependencies(native_libm_scenarios goat)
 add_dependencies(native_runner_testing native_access_scenarios native_libm_scenarios)
+
+# Native strings: frozen original sources, ABI/lifetime and method-error checks (#385).
+add_executable(native_runtime_strings_scenarios src/functional/native_runtime_strings_scenarios.c)
+target_link_libraries(native_runtime_strings_scenarios PRIVATE goat_language_execution_support)
+add_dependencies(native_runtime_strings_scenarios goat)
+add_executable(native_string_method_scenarios src/functional/native_string_method_scenarios.c)
+target_link_libraries(native_string_method_scenarios PRIVATE goat_language_execution_support goat_native_runner_policy)
+add_dependencies(native_string_method_scenarios goat)
+add_dependencies(native_runner_testing native_runtime_strings_scenarios native_string_method_scenarios)

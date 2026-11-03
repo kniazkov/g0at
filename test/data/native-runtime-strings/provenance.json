@@ -1,0 +1,80 @@
+{
+  "original_script": "test/src/native/checks/runtime_strings.py",
+  "original_sha256": "bc45d8e6699b414e02697f2b1d78813a1260a5fc6b6c7e15f06e1f05f6993995",
+  "source_commit": "4fcd4dbca7a043cede8f23b9b671307cab0b6e7f",
+  "capture": "Unmodified Python main() executed with mocked subprocess.run; actual Path.write_text writes captured on Linux as UTF-8/LF. No interpreter/native output was used to generate inputs or expected answers.",
+  "comparisons": 281,
+  "original_summary": "Native strings: 281 VM comparisons and boundary/ownership checks passed",
+  "source_files": [
+    {
+      "path": "test/src/native/runtime_strings/host.c",
+      "sha256": "f7eabf009de419e53d28a81e0fe5a8867b18f28c6c0e837a3071e802b09b6b86"
+    },
+    {
+      "path": "test/src/native/runtime_strings/checks.h",
+      "sha256": "c974638f9f7140f807503c31384e168d5bc1d5f66ce8dcf4ad5f7dc11f7763e7"
+    }
+  ],
+  "fixtures": [
+    {
+      "fixture": "automatic.c.txt",
+      "original_name": "automatic.c",
+      "bytes": 37005,
+      "sha256": "efaae216615de8cdc5832fef6911c893691144c44f9bfcf27640deb539ff27aa"
+    },
+    {
+      "fixture": "invalid-0.goat",
+      "original_name": "invalid-0.goat",
+      "bytes": 24,
+      "sha256": "569dcf5a7d42348b50200aa9aa09f50a7dae5944675b6fca1eda90b1b6ac0ff5"
+    },
+    {
+      "fixture": "invalid-1.goat",
+      "original_name": "invalid-1.goat",
+      "bytes": 41,
+      "sha256": "350c8f6c0a882c1a72bd26c3ec8742aaee42e0a5104bbe9fbce9a1507c2ca856"
+    },
+    {
+      "fixture": "invalid-2.goat",
+      "original_name": "invalid-2.goat",
+      "bytes": 31,
+      "sha256": "e56cdef49d39b4eaf9d0237fd2fd156e2e5752ca171a6efd2596d82638a27c06"
+    },
+    {
+      "fixture": "invalid-3.goat",
+      "original_name": "invalid-3.goat",
+      "bytes": 30,
+      "sha256": "aa181782033bc08ac41e72db053eee254163a12812a1f2aee0c1d09d2e8002c0"
+    },
+    {
+      "fixture": "invalid-4.goat",
+      "original_name": "invalid-4.goat",
+      "bytes": 48,
+      "sha256": "be723b071e259ae6ca4a48348b9f66b09e696825fa3cfc4758322c4a2ad56a21"
+    },
+    {
+      "fixture": "invalid-5.goat",
+      "original_name": "invalid-5.goat",
+      "bytes": 26,
+      "sha256": "05dab3df64d3b4180efd04eb0face2bd4aa0b75b38f8666fc04f57e272083f53"
+    },
+    {
+      "fixture": "invalid-6.goat",
+      "original_name": "invalid-6.goat",
+      "bytes": 43,
+      "sha256": "cc3dafdc6154060902959a53624ba12578de39f7cd31ce179a215c0eef3bc190"
+    },
+    {
+      "fixture": "strings.c.txt",
+      "original_name": "strings.c",
+      "bytes": 32753,
+      "sha256": "061a25fa9f365460a224e9e313108cd9446c521126f2b31c9583b776b499ef8c"
+    },
+    {
+      "fixture": "strings.goat",
+      "original_name": "strings.goat",
+      "bytes": 11218,
+      "sha256": "11b75c7c0eefed00c37e35bb909603818235e002ba2ec2470e56ff4fcac0edbc"
+    }
+  ]
+}

@@ -516,6 +516,23 @@ foreach(native_libm_negative IN ITEMS output report host)
     "$<TARGET_FILE:native_libm_scenarios>" "integration.native_libm.negative-${native_libm_negative}"
     "$<TARGET_FILE:goat>" "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
+# #385: originals retired only after complete Debug/Release cross-platform parity.
+foreach(native_string_case IN ITEMS external-sdk automatic-backend invalid-0 invalid-1 invalid-2 invalid-3 invalid-4 invalid-5 invalid-6 negative-output negative-invalid negative-host negative-cleanup)
+  goat_scenario(integration.native_runtime_strings.${native_string_case} "native;native-strings-migration" TIMEOUT 330 COMMAND
+    "$<TARGET_FILE:native_runtime_strings_scenarios>" "integration.native_runtime_strings.${native_string_case}"
+    "$<TARGET_FILE:goat>" "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+foreach(native_method_case IN ITEMS bounds types identity control-output control-saved-output control-stderr control-exit control-mode control-preparation control-bound control-attempts control-succeeded control-retries control-report-syntax control-policy)
+  goat_scenario(integration.native_string_methods.${native_method_case} "native;native-strings-migration" TIMEOUT 330 COMMAND
+    "$<TARGET_FILE:native_string_method_scenarios>" "integration.native_string_methods.${native_method_case}"
+    "$<TARGET_FILE:goat>" "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+if(NOT WIN32 AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+  goat_scenario(sanitizer.native_strings "sanitizer;native-strings-sanitizer" TIMEOUT 330 COMMAND
+    "$<TARGET_FILE:native_runtime_strings_scenarios>" all "$<TARGET_FILE:goat>"
+    "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
+    -- -fsanitize=undefined -fno-sanitize-recover=all)
+endif()
 # Derive stable IDs from the same read-only manifest consumed by the C runner.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/native/list.json")
 file(READ "${PROJECT_SOURCE_DIR}/test/data/native/list.json" native_runner_manifest)
@@ -555,7 +572,6 @@ if(WIN32)
   goat_shell(native.windows_library "native;windows" check_native_windows.sh $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/windows-library")
   goat_shell(native.windows_target "native;windows" check_windows_target.sh "${CMAKE_BINARY_DIR}/ctest/windows-target")
 else()
-  goat_python(sanitizer.native_strings "sanitizer" test/src/native/checks/runtime_strings.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/strings-ubsan" -fsanitize=undefined -fno-sanitize-recover=all)
   goat_shell(sanitizer.native_abi "sanitizer" check_native_abi.sh $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/abi-ubsan" -fsanitize=undefined,float-cast-overflow -fno-sanitize-recover=all)
   goat_shell(sanitizer.c_generation "sanitizer" check_c_generation.sh $<TARGET_FILE:unit_testing> "${CMAKE_BINARY_DIR}/ctest/c-ubsan" -fsanitize=undefined,float-cast-overflow -fno-sanitize-recover=all)
   if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
@@ -624,9 +640,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1827 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1855 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (native access/libm cases split in #384); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (native string cases split in #385); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

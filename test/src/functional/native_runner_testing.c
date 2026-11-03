@@ -16,7 +16,8 @@
 #define ARGS(...) ((const char *const[]){__VA_ARGS__, NULL})
 
 typedef struct {
-    const char *exe, *python, *selftest, *access, *libm, *root, *suite, *checks, *build, *data;
+    const char *exe, *python, *selftest, *access, *libm, *runtime_strings, *string_methods, *root,
+        *suite, *checks, *build, *data;
     bool keep;
     yyjson_val *record;
     unsigned command;
@@ -80,6 +81,10 @@ static bool validate_file(const char *relative, bool check, void *user) {
         return is_file(c->access);
     if (check && !strcmp(relative, "checks/libm.py"))
         return is_file(c->libm);
+    if (check && !strcmp(relative, "checks/runtime_strings.py"))
+        return is_file(c->runtime_strings);
+    if (check && !strcmp(relative, "checks/string_method_errors.py"))
+        return is_file(c->string_methods);
     char *path = join_fs_path(check ? c->checks : c->suite, relative, NULL);
     bool ok = path && is_file(path);
     FREE(path);
@@ -455,11 +460,16 @@ static void body(scenario_run_t *r, void *user) {
         const char *check = field(r, c->record, "check");
         if (!strcmp(check, "checks/runner.py"))
             execute(r, c, "check", ARGS(c->selftest, "all", work, c->data), NULL);
-        else if (!strcmp(check, "checks/access.py") || !strcmp(check, "checks/libm.py"))
+        else if (!strcmp(check, "checks/access.py") || !strcmp(check, "checks/libm.py")
+                 || !strcmp(check, "checks/runtime_strings.py")
+                 || !strcmp(check, "checks/string_method_errors.py"))
             execute(r,
                     c,
                     "check",
-                    ARGS(!strcmp(check, "checks/access.py") ? c->access : c->libm,
+                    ARGS(!strcmp(check, "checks/access.py")            ? c->access
+                         : !strcmp(check, "checks/libm.py")            ? c->libm
+                         : !strcmp(check, "checks/runtime_strings.py") ? c->runtime_strings
+                                                                       : c->string_methods,
                          "all",
                          c->exe,
                          c->root,
@@ -580,15 +590,27 @@ int main(int argc, char **argv) {
 #else
         const char *suffix = "";
 #endif
-        char access_name[64], libm_name[64];
+        char access_name[64], libm_name[64], runtime_strings_name[64], string_methods_name[64];
         snprintf(access_name, sizeof(access_name), "native_access_scenarios%s", suffix);
         snprintf(libm_name, sizeof(libm_name), "native_libm_scenarios%s", suffix);
         char *access = sibling(argv[4], access_name), *libm = sibling(argv[4], libm_name);
+        snprintf(runtime_strings_name,
+                 sizeof(runtime_strings_name),
+                 "native_runtime_strings_scenarios%s",
+                 suffix);
+        snprintf(string_methods_name,
+                 sizeof(string_methods_name),
+                 "native_string_method_scenarios%s",
+                 suffix);
+        char *runtime_strings = sibling(argv[4], runtime_strings_name),
+             *string_methods = sibling(argv[4], string_methods_name);
         config_t c = {.exe = exe,
                       .python = argv[3],
                       .selftest = argv[4],
                       .access = access,
                       .libm = libm,
+                      .runtime_strings = runtime_strings,
+                      .string_methods = string_methods,
                       .root = root,
                       .suite = suite,
                       .checks = checks,
@@ -656,6 +678,8 @@ int main(int argc, char **argv) {
         FREE(manifest);
         FREE(access);
         FREE(libm);
+        FREE(runtime_strings);
+        FREE(string_methods);
         FREE(build);
         FREE(checks);
         FREE(suite);

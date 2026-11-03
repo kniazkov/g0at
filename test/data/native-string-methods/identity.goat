@@ -1,0 +1,6 @@
+
+trim = func(s) { return "shadow:" + s; };
+const method = func(s) { return s.trim(); };
+const plain = func(s) { return trim(s); };
+println(method(" ok "));
+println(plain(" ok "));
