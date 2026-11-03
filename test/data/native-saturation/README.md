@@ -2,7 +2,7 @@
 
 This read-only corpus preserves the historical independent Python reference
 `test/src/native/checks/saturation.py` and its provenance. The C runner
-`test/src/functional/native_saturation_scenarios.c` now supplies all 29 selectable
+`test/src/functional/native_saturation_scenarios.c` now supplies all 30 selectable
 cases. The original Python script and temporary parity wrapper were removed
 only after the complete original/C parity gate passed at commit
 `38a029e15a4fab21942a3782dc14ef92b3d48892`; see the evidence below. The manifest's
@@ -317,3 +317,56 @@ contains both unmapping and `MADV_DONTNEED` paths, while musl's allocator also
 uses mappings. These are investigation candidates, not an established cause.
 No tracing, preloading, new package, security change, additional test/compiler
 run, deadline extension, driver change or compiler-flag change is introduced.
+
+
+## Bounded compiler harness
+
+The frozen `driver.c.txt`, C oracle, operand pairs, and original generated
+monolithic driver remain unchanged. Before each helper compile, the runner
+partitions its 1,196 ordered volatile blocks into 19 separate functions and
+translation units: 18 contain 64 blocks and the last contains 44. A small main
+calls every function exactly once in the original order. All 7,176 assertions
+remain in each builtin and portable variant. No arithmetic expression, expected
+value, volatile qualifier, or assertion is removed or rewritten.
+
+The main translation unit includes exported `saturation.c` exactly once.
+Each chunk uses the same `native_runtime.h`, `integer_math.h`, assertion header,
+and any negative-control macro overrides. The runner checks the generated block
+structure, rereads every emitted file, verifies its expected content (including
+ordered calls), and reconstructs the original driver from the actual chunk
+bodies. Equality is exact after the runner's existing universal-newline-to-LF
+normalization, not a claim about raw Windows on-disk newline bytes. Retained
+work includes `reconstructed-driver.c.txt` and `partition-proof.txt`.
+The independent frozen-driver comparison still precedes partitioning.
+
+One compiler invocation compiles all 20 translation units and links them within
+the unchanged 120-second deadline. Flags remain `-std=c11 -O2 -Wall -Wextra
+-Werror`, with `GOAT_FORCE_PORTABLE_INTEGER_MATH` only for the portable variant.
+There is no LTO, `NDEBUG`, weaker optimization, or per-chunk timeout reset.
+Source arguments are short relative names and compilation runs in the isolated
+scenario directory, keeping Windows command lines bounded. The shared process
+runner resolves the compiler executable before changing directory.
+
+`control-partition` uses always-active scenario checks, including Release builds.
+It rejects malformed declarations/assertion kinds in first, middle and last
+blocks; malformed/truncated input; missing, changed and assertion-removed first,
+middle and last chunk files; and missing or changed main calls. Existing host
+corruption controls still exercise both builtin and portable arithmetic helpers.
+Both individual helper cases and the complete aggregate use this same harness.
+
+### Controlled ARM comparison motivating the change
+
+[Diagnostic run 41701389054](https://github.com/kniazkov/g0at/actions/runs/41701389054)
+retained artifact 13266035504 for a same-run AArch64 musl/GCC comparison. The
+original builtin driver took about 122 seconds; the partitioned driver took
+about 21 seconds. Summed GCC first-scheduler time fell from 101.33 seconds to
+6.29 seconds across the 20 translation units. Actual emitted chunk bodies were
+independently reconstructed to the frozen 540,477-byte original, SHA-256
+`81ec07d2f971027d96a2f7362c2ac7fee3352f5f04e06b8a654e39efd91964ef`.
+
+This changes function and translation-unit compiler stress, while preserving
+arithmetic coverage and compiler flags. The comparison covered the builtin
+variant on one runner, not a universal timing guarantee or proof of a specific
+GCC allocation call site. The diagnostic's extended original compile allowance
+was separate from the authoritative 120-second test. This fix does not import
+that extended allowance or the diagnostic compiler-report machinery.
