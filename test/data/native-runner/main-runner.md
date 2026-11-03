@@ -10,20 +10,20 @@ manifest object, stable ID, adapter kind and ordered command labels.
   string_identity, string_lifetime, string_nested, string_concat, string_chain,
   quadratic, string_conversions, quadratic_repeated, loops, switch, conditional,
   compound.
-- **Three explicit Python compatibility adapters:** string_method_errors,
-  saturation, runtime_strings. Their original scripts
-  still run under the supplied Python interpreter; a missing interpreter is a
-  failure, not a skip.
-- **Two C check adapters (#384):** access_guards and libm route their unchanged
-  logical check paths to `native_access_scenarios all` and `native_libm_scenarios all`.
-  Both targets live beside the required policy selftest, keep the original outer
+- **One explicit Python compatibility adapter:** saturation still runs under
+  the supplied Python interpreter; a missing interpreter is a failure, not a skip.
+- **Four C check adapters (#384/#385):** access_guards, libm, runtime_strings and
+  string_method_errors route unchanged logical check paths to
+  `native_access_scenarios all`, `native_libm_scenarios all`,
+  `native_runtime_strings_scenarios all` and `native_string_method_scenarios all`.
+  Targets live beside the required policy selftest, keep the original outer
   300-second deadline, and receive the same Goat/repository/data paths.
 - **One C selftest adapter:** runner. The legacy manifest key `checks/runner.py`
   maps to `native_runner_policy_testing all`; both existence validation and
   execution use that C executable, never the replaced Python selftest.
 
 ```
-cmake --build BUILD --target native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios
+cmake --build BUILD --target native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios native_runtime_strings_scenarios native_string_method_scenarios
 ctest --test-dir BUILD -R '^integration.native_functional\.' --output-on-failure
 native_runner_testing all GOAT PYTHON SELFTEST REPOSITORY BUILD DATA --only access bool_char
 native_runner_testing integration.native_functional.access GOAT PYTHON SELFTEST REPOSITORY BUILD DATA [--keep-work]
@@ -83,12 +83,13 @@ consumed read-only; no oracle fixture is regenerated. `main-provenance.json`
 records original source/manifest hashes and coverage counts.
 
 Full remote parity passed with the original scripts unchanged. The Python
-manifest runner and `test/src/native/checks/runner.py` have now been removed, but
-`string_method_errors.py` still imports `require`, `execute`, `compare_output`
-(and their `normalized`/`ROOT` dependencies) from `scripts/check_native.py`.
-Only this explicitly documented compatibility layer remains until that consumer's
-later migration/final cleanup; there is no second runnable Python suite.
-This dependency was recorded in issue #383 and the checklist before changes.
+manifest runner and `test/src/native/checks/runner.py` were removed in #383.
+The temporary `scripts/check_native.py` execution/output helper remained for
+`string_method_errors.py`, then was removed with its final consumer after the
+complete #385 parity gate. Access/libm and both string check names now route to
+C scenario runners. Only `checks/saturation.py` remains a Python check adapter,
+for the next migration step #386. The unchanged manifest and provenance continue
+to record original logical check names; those names are not live Python imports.
 
 ## Local evidence and limitations
 

@@ -11,5 +11,5 @@
   "programCommands": 76,
   "checkCommands": 6,
   "dataPolicy": "Existing native manifest/program/expected-output/example/driver bytes are reused read-only; no frozen reference is regenerated.",
-  "compatibility": "After full parity, check_native.py retains only imported execution/output helpers for string_method_errors.py; runner.py logical check routes to the C policy selftest."
+  "compatibility": "After #383 parity, check_native.py retained only imported execution/output helpers for string_method_errors.py. The helper and final consumer were removed after complete #385 parity at ac2a69a6db9ccfb196bb5b957d4d48cefbfd1822. Original hashes remain historical provenance; runner.py logical check routes to the C policy selftest."
 }

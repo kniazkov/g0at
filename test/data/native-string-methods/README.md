@@ -7,8 +7,8 @@ Debug and Release Goat; a wrapper around `Path.write_text` copied the completed
 files before the original deleted them. No source was extracted/reconstructed
 from the AST, and no original assertion was bypassed. `provenance.json` records
 the source/helper hashes, fixture sizes/hashes and Windows write counterparts.
-The original checker and `scripts/check_native.py` remain unchanged through the
-remote original+C parity gate.
+The original checker and `scripts/check_native.py` were retained unchanged
+through the remote original+C parity gate recorded below, then removed.
 
 ## Interface and mapping
 
@@ -121,3 +121,21 @@ limitation. The total strings gate was 25/30 passing in each configuration;
 there is no claim of complete local parity. Independent differential testing of
 the actual C parser against Python covered 100,000 report inputs without a
 mismatch. Remote full parity is mandatory before Python removal.
+
+## Remote parity and retirement
+
+Exact parity head `ac2a69a6db9ccfb196bb5b957d4d48cefbfd1822` passed
+[Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41597613910) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41597613872).
+All nine Linux GCC/Clang, Windows MINGW32/MINGW64/UCRT64 and native musl jobs
+ran both unchanged original/C aggregate gates and all 28 new C scenarios in
+Debug and Release. Each gate passed twice per job; the four Linux jobs also
+passed the explicit UBSan original/C gate. All generated-input and output/report
+byte comparisons passed, including Windows CRLF expansion. No retry was needed.
+
+After that full gate, both original Python checkers, their last imported
+`scripts/check_native.py` compatibility helper, and the temporary parity wrapper
+were removed together with checklist item 67's completion mark. Original scripts
+remain available at the parity head for independent provenance reproduction.
+The permanent CTest IDs, manifest adapters, sanitizer invocation and complete CI
+coverage remain; the final-removal commit must pass its own full CI separately.

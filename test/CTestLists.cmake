@@ -516,21 +516,7 @@ foreach(native_libm_negative IN ITEMS output report host)
     "$<TARGET_FILE:native_libm_scenarios>" "integration.native_libm.negative-${native_libm_negative}"
     "$<TARGET_FILE:goat>" "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-# #385: retain originals until the complete cross-platform original/C parity gate.
-foreach(native_string_check IN ITEMS runtime_strings string_method_errors)
-  if(native_string_check STREQUAL "runtime_strings")
-    set(native_string_runner "$<TARGET_FILE:native_runtime_strings_scenarios>")
-  else()
-    set(native_string_runner "$<TARGET_FILE:native_string_method_scenarios>")
-  endif()
-  if(Python3_Interpreter_FOUND)
-    goat_scenario(migration.native_strings.original-${native_string_check} "native;native-strings-migration" TIMEOUT 690 COMMAND
-      "${CMAKE_COMMAND}" "-DCHECK=${native_string_check}" "-DPYTHON=${Python3_EXECUTABLE}"
-      "-DGOAT=$<TARGET_FILE:goat>" "-DRUNNER=${native_string_runner}"
-      "-DREPOSITORY=${PROJECT_SOURCE_DIR}" "-DBUILD=${CMAKE_BINARY_DIR}"
-      -P "${PROJECT_SOURCE_DIR}/test/run_native_strings_original.cmake")
-  endif()
-endforeach()
+# #385: originals retired only after complete Debug/Release cross-platform parity.
 foreach(native_string_case IN ITEMS external-sdk automatic-backend invalid-0 invalid-1 invalid-2 invalid-3 invalid-4 invalid-5 invalid-6 negative-output negative-invalid negative-host negative-cleanup)
   goat_scenario(integration.native_runtime_strings.${native_string_case} "native;native-strings-migration" TIMEOUT 330 COMMAND
     "$<TARGET_FILE:native_runtime_strings_scenarios>" "integration.native_runtime_strings.${native_string_case}"
@@ -546,13 +532,6 @@ if(NOT WIN32 AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     "$<TARGET_FILE:native_runtime_strings_scenarios>" all "$<TARGET_FILE:goat>"
     "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
     -- -fsanitize=undefined -fno-sanitize-recover=all)
-  if(Python3_Interpreter_FOUND)
-    goat_scenario(migration.native_strings.original-runtime_strings-ubsan "native;native-strings-sanitizer" TIMEOUT 690 COMMAND
-      "${CMAKE_COMMAND}" -DCHECK=runtime_strings -DSANITIZE=ON "-DPYTHON=${Python3_EXECUTABLE}"
-      "-DGOAT=$<TARGET_FILE:goat>" "-DRUNNER=$<TARGET_FILE:native_runtime_strings_scenarios>"
-      "-DREPOSITORY=${PROJECT_SOURCE_DIR}" "-DBUILD=${CMAKE_BINARY_DIR}"
-      -P "${PROJECT_SOURCE_DIR}/test/run_native_strings_original.cmake")
-  endif()
 endif()
 # Derive stable IDs from the same read-only manifest consumed by the C runner.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/native/list.json")
