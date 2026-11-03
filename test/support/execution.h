@@ -71,6 +71,16 @@ typedef struct {
  */
 scenario_command_result_t scenario_command_capture(scenario_run_t *run,
                                                    const child_options_t *options);
+/** @brief Time only owned-child start/wait with bounded in-memory capture.
+ * Nanosecond wall-clock duration excludes diagnostic setup, artifact persistence and
+ * result validation. Output is limited to CHILD_OUTPUT_LIMIT per stream: truncation
+ * fails, never silently compares a prefix. The ordinary unbounded API is unchanged.
+ * Retains normal shared deadlines, process-tree cleanup and failure artifacts.
+ */
+scenario_command_result_t scenario_command_capture_timed(scenario_run_t *run,
+                                                         const child_options_t *options,
+                                                         uint64_t *elapsed_ns);
+
 /** @brief Supervise a separate scenario host, requiring exit zero.
  * Prefer this top-level entry for arbitrary test hosts: a crash, exit error or hang becomes
  * failure while the outer process preserves output and stops the owned process tree.
