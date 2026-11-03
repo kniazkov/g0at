@@ -22,6 +22,9 @@ bool nr_check_report(const void *bytes,
                      bool native,
                      char *error,
                      size_t error_size);
+/** Original saturation.py's narrower policy: positive successes, equal attempts,
+ * zero retries. Other report fields are deliberately unconstrained. */
+bool nr_check_saturation_report(const void *bytes, size_t size);
 /** relative is the check path, or name/program.goat. Validate before selection. */
 typedef bool (*nr_exists_fn)(const char *relative, bool is_check, void *user);
 bool nr_manifest_validate(yyjson_val *cases,

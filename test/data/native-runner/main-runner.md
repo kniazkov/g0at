@@ -10,12 +10,11 @@ manifest object, stable ID, adapter kind and ordered command labels.
   string_identity, string_lifetime, string_nested, string_concat, string_chain,
   quadratic, string_conversions, quadratic_repeated, loops, switch, conditional,
   compound.
-- **One explicit Python compatibility adapter:** saturation still runs under
-  the supplied Python interpreter; a missing interpreter is a failure, not a skip.
-- **Four C check adapters (#384/#385):** access_guards, libm, runtime_strings and
-  string_method_errors route unchanged logical check paths to
+- **Five C check adapters (#384/#385/#386):** access_guards, libm, runtime_strings,
+  string_method_errors and saturation route unchanged logical check paths to
   `native_access_scenarios all`, `native_libm_scenarios all`,
-  `native_runtime_strings_scenarios all` and `native_string_method_scenarios all`.
+  `native_runtime_strings_scenarios all`, `native_string_method_scenarios all` and
+  `native_saturation_scenarios all`.
   Targets live beside the required policy selftest, keep the original outer
   300-second deadline, and receive the same Goat/repository/data paths.
 - **One C selftest adapter:** runner. The legacy manifest key `checks/runner.py`
@@ -23,7 +22,7 @@ manifest object, stable ID, adapter kind and ordered command labels.
   execution use that C executable, never the replaced Python selftest.
 
 ```
-cmake --build BUILD --target native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios native_runtime_strings_scenarios native_string_method_scenarios
+cmake --build BUILD --target native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios native_runtime_strings_scenarios native_string_method_scenarios native_saturation_scenarios
 ctest --test-dir BUILD -R '^integration.native_functional\.' --output-on-failure
 native_runner_testing all GOAT PYTHON SELFTEST REPOSITORY BUILD DATA --only access bool_char
 native_runner_testing integration.native_functional.access GOAT PYTHON SELFTEST REPOSITORY BUILD DATA [--keep-work]
@@ -86,9 +85,10 @@ Full remote parity passed with the original scripts unchanged. The Python
 manifest runner and `test/src/native/checks/runner.py` were removed in #383.
 The temporary `scripts/check_native.py` execution/output helper remained for
 `string_method_errors.py`, then was removed with its final consumer after the
-complete #385 parity gate. Access/libm and both string check names now route to
-C scenario runners. Only `checks/saturation.py` remains a Python check adapter,
-for the next migration step #386. The unchanged manifest and provenance continue
+complete #385 parity gate. Saturation followed after the complete #386 parity
+gate in [PR #464](https://github.com/kniazkov/g0at/pull/464). All check-program
+adapters now route to C scenario runners; the logical `checks/saturation.py`
+identifier does not require a Python runtime. The unchanged manifest and provenance continue
 to record original logical check names; those names are not live Python imports.
 
 ## Local evidence and limitations
@@ -129,3 +129,17 @@ The initial musl AArch64 saturation adapter failure did not reproduce after
 adding diagnostic retention only; its exact cause remains unproven. No assertion
 or deadline was relaxed. Python removal follows this complete gate; final CI
 must still verify the removal commit.
+
+
+### Saturation adapter retirement (#386)
+
+Parity head `38a029e15a4fab21942a3782dc14ef92b3d48892` passed
+[Build 11/11, attempt 4](https://github.com/kniazkov/g0at/actions/runs/41623617966/attempts/4)
+and [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41623617722)
+with the original Python checker and original/C wrapper still present. Only
+then were they removed and the logical saturation adapter routed to C.
+The C aggregate preserves its 300-second budget and original 120-second ordinary
+and 30-second invalid-command caps. See [saturation coverage and evidence](../native-saturation/README.md).
+Final-removal CI must still validate the retirement commit. Earlier intermittent
+GCC builtin-driver compilation at the 120-second cap is not claimed fixed; its
+deeper cause remains unknown.
