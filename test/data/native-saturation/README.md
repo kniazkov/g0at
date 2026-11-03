@@ -317,3 +317,31 @@ contains both unmapping and `MADV_DONTNEED` paths, while musl's allocator also
 uses mappings. These are investigation candidates, not an established cause.
 No tracing, preloading, new package, security change, additional test/compiler
 run, deadline extension, driver change or compiler-flag change is introduced.
+
+### Isolated AArch64 compiler-pass replay
+
+The subsequent diagnostic replay is explicitly separate from the normal gate.
+After the normal musl job has finished or failed, AArch64 runs the existing
+`helpers-builtin` C scenario once in `/results/compiler-pass-replay`. Only this
+additional invocation uses a compiler wrapper adding `-ftime-report`,
+`-ftime-report-details` and `-fmem-report`. The wrapper immediately executes the
+same `gcc`; `-O2`, the frozen 540,477-byte driver, all 7,176 assertions and the
+existing 120-second command/300-second scenario limits are unchanged. It uses
+the existing scenario process-tree cleanup, not a separate timeout mechanism.
+
+The replay retains GCC's report in its scenario `command-2.stderr`, with its
+command log, generated files, complete runner output and a separate resource
+observation. `status.log` records the replay and observer exit statuses. A
+reporting timeout is evidence of an incomplete report, never a successful
+compile. The original job exit status remains authoritative even if the
+additional replay passes. If the original build failed before producing the
+required executables, no replay is attempted.
+
+This adds at most one bounded helper scenario after the normal test workload,
+including a second compiler process. Reporting and resource collection have
+their own overhead; replay timing must not be presented as unchanged-gate
+timing or proof of stability. No other test runs concurrently with the replay
+in the container. Compiler pass totals can identify where time is accounted,
+but some AArch64 passes have no individual time variable, and GGC reports do
+not account for every ordinary heap allocation. No optimization is disabled
+and no allocator, kernel or security setting is changed.
