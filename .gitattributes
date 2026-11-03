@@ -33,3 +33,10 @@ test/data/native-cleanup/module.gmod -text
 test/data/native-exit/** -text
 test/data/module-native-values/*.goat -text
 test/data/module-native-values/*.gmod -text
+
+# Manifest native runner inputs remain byte-exact on Windows checkouts.
+test/data/native/list.json -text
+test/data/native/**/program.goat -text
+test/data/native/**/expected_output.txt -text
+test/data/native-runner/*.bin -text
+test/data/native-runner/*.json -text

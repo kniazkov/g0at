@@ -1,12 +1,12 @@
 # Нативные функциональные тесты / Native functional tests
 
 ```sh
-python3 scripts/check_native.py build/goat "build/native functional"
-python3 scripts/check_native.py build/goat "build/native functional" --only quadratic string_chain
+ctest --test-dir build -R '^integration.native_functional\.' --output-on-failure
+build/native_runner_testing all build/goat python3 build/native_runner_policy_testing . build test/data --only quadratic string_chain
 ```
 
 На Windows используй обычный Windows Python и `build/goat.exe`, с MinGW GCC в PATH.
-Запускать можно из любого каталога, если указать путь к скрипту и интерпретатору.
+CTest использует настроенные пути; для прямого запуска укажи пути к C runner, Goat, Python, selftest, корню репозитория, сборке и данным.
 
 `list.json` — общий список. Новый обычный тест добавляется без правки CI:
 
@@ -43,7 +43,7 @@ python3 scripts/check_native.py build/goat "build/native functional" --only quad
 тот же список, но сохраняют свои проверки ошибок, ABI и границ. Низкоуровневые
 проверки загрузчика/компилятора и sanitizer-конфигурации остаются отдельными шагами CI.
 
-Каждый запуск создаёт новый `run-*` в выходном каталоге. Там остаются stdout,
+Каждый сценарий создаёт новый `BUILD/native-functional/scenario-*`; `case.name` указывает имя теста. Там остаются stdout,
 stderr, команды, нативные отчёты и сгенерированные файлы. Ошибка одного теста не
 мешает выполнить остальные; при любом падении общий код возврата ненулевой.
 CI сохраняет весь этот каталог в артефакте `native-execution-*`.
@@ -66,5 +66,7 @@ preserve signature, generated-code, example consistency and adapter boundary che
 
 Specialized `check` entries run the differential arithmetic/libm/runtime suites
 from the same registry. Loader/compiler and sanitizer configurations remain separate
-CI infrastructure checks. Every run retains diagnostics in a fresh `run-*` directory,
+CI infrastructure checks. The logical `checks/runner.py` entry invokes the C policy selftest,
+not a Python file. Every case retains diagnostics in a fresh
+`BUILD/native-functional/scenario-*` directory (identified by `case.name`),
 continues after individual failures, and exits nonzero if any test fails.

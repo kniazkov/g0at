@@ -36,7 +36,7 @@ Repeated variants are legal; the first match wins. With `-w` / `--enable-warning
 
 Native generation supports eligible pure functions with integer, real, boolean, character and string selectors/variants. It preserves lazy evaluation and exact mixed integer/real equality, including large integers; string equality includes embedded zero code units. VM-only types and operations retain the existing native eligibility restrictions. `--native required` alone does not prove every call was native, so the grouped native fixture additionally checks successful dispatch counts and zero retries against VM output.
 
-The regular functional and grouped round-trip suites discover the `switch_*` fixtures automatically. `python3 scripts/check_native.py build/goat build/switch-native --only switch` runs the native comparison. The parser tests cover invalid labels/default placement, nesting and loop-transfer boundaries.
+The regular functional and grouped round-trip suites discover the `switch_*` fixtures automatically. `ctest --test-dir build -R '^integration.native_functional.switch$' --output-on-failure` runs the native comparison. The parser tests cover invalid labels/default placement, nesting and loop-transfer boundaries.
 
 ## Русский
 

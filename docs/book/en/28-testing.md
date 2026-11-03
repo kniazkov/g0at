@@ -116,7 +116,7 @@ The saturation contract is checked by `test/src/native/checks/saturation.py`. Ex
 ### Native functional scenarios
 
 Scenarios live in `test/data/native`, registered in `test/data/native/list.json`.
-Run `python3 scripts/check_native.py build/goat "build/native functional"`.
+Run `ctest --test-dir build -R '^integration.native_functional\.' --output-on-failure`.
 Each scenario compares unoptimized VM output with required-native execution and a
 saved native module, verifying actual adapter entries and zero retries. Add a
 `program.goat` and a registry entry to extend coverage without editing CI.

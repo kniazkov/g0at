@@ -496,7 +496,26 @@ foreach(scenario native.for native.index)
     "$<TARGET_FILE:loop_index_testing>" "${scenario}" "$<TARGET_FILE:goat>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-goat_python(native.native "native" scripts/check_native.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native")
+# Derive stable IDs from the same read-only manifest consumed by the C runner.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/native/list.json")
+file(READ "${PROJECT_SOURCE_DIR}/test/data/native/list.json" native_runner_manifest)
+string(JSON native_runner_count LENGTH "${native_runner_manifest}")
+if(native_runner_count LESS 1)
+  message(FATAL_ERROR "Native functional manifest must not be empty")
+endif()
+math(EXPR native_runner_last "${native_runner_count} - 1")
+foreach(native_runner_index RANGE 0 ${native_runner_last})
+  string(JSON native_runner_name GET "${native_runner_manifest}" ${native_runner_index} name)
+  goat_scenario(integration.native_functional.${native_runner_name} "native;native-runner-migration" TIMEOUT 2430 COMMAND
+    "$<TARGET_FILE:native_runner_testing>" "integration.native_functional.${native_runner_name}"
+    "$<TARGET_FILE:goat>" "${Python3_EXECUTABLE}" "$<TARGET_FILE:native_runner_policy_testing>"
+    "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+foreach(native_runner_policy_case IN ITEMS output-good output-missing-nul output-missing-newline output-space output-extra-line report-good report-mode report-preparation report-bound-zero report-bound-count report-zero-calls report-attempts report-succeeded report-retries report-missing-mode report-missing-preparation report-missing-bound report-missing-attempts report-missing-succeeded report-missing-retries report-vm-good report-vm-native continuation report-unicode report-duplicates manifest-validation selection-order selection-unknown)
+  goat_scenario(helpers.native_runner.${native_runner_policy_case} "native;native-runner-migration" TIMEOUT 45 COMMAND
+    "$<TARGET_FILE:native_runner_policy_testing>" "helpers.native_runner.${native_runner_policy_case}"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 if(NOT WIN32)
 goat_shell(native.native_library "native" check_native_library.sh $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_library")
 endif()
@@ -585,8 +604,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-if(NOT goat_integration_count EQUAL 1754)
-  message(FATAL_ERROR "Expected all 1754 integration scenarios (native exit and values cases split in #382); found ${goat_integration_count}")
+math(EXPR goat_expected_integration_count "1754 + ${native_runner_count}")
+if(NOT goat_integration_count EQUAL goat_expected_integration_count)
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (native manifest cases split in #383); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

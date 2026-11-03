@@ -1,0 +1,405 @@
+[
+  {
+    "originalManifestName": "access",
+    "ctestId": "integration.native_functional.access",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "access",
+      "calls": 4,
+      "bound": 3
+    }
+  },
+  {
+    "originalManifestName": "access_guards",
+    "ctestId": "integration.native_functional.access_guards",
+    "kind": "python-compat-adapter",
+    "commands": [
+      "check"
+    ],
+    "manifest": {
+      "name": "access_guards",
+      "check": "checks/access.py"
+    }
+  },
+  {
+    "originalManifestName": "runner",
+    "ctestId": "integration.native_functional.runner",
+    "kind": "c-policy-selftest",
+    "commands": [
+      "check"
+    ],
+    "manifest": {
+      "name": "runner",
+      "check": "checks/runner.py"
+    }
+  },
+  {
+    "originalManifestName": "bool_char",
+    "ctestId": "integration.native_functional.bool_char",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "generated",
+      "export",
+      "driver-build",
+      "driver",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "bool_char",
+      "calls": 66,
+      "bound": 21,
+      "driver": "driver.c",
+      "generated": {
+        "GOAT_NATIVE_BOOL": 1,
+        "GOAT_NATIVE_CHAR": 1,
+        "g_f1_b_": 1,
+        "g_f1_c_": 1,
+        "g_f1_i_": 1,
+        "g_f1_r_": 1,
+        "g_f1_s_": 1
+      }
+    }
+  },
+  {
+    "originalManifestName": "add_specializations",
+    "ctestId": "integration.native_functional.add_specializations",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "generated",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "add_specializations",
+      "calls": 14,
+      "bound": 1,
+      "generated": {
+        "__attribute__((noinline)) int64_t g_f1_i_i_(const goat_native_context_v2_t *g_context, int64_t g_p0, int64_t g_p1) {": 1,
+        "__attribute__((noinline)) double g_f1_i_r_(const goat_native_context_v2_t *g_context, int64_t g_p0, double g_p1) {": 1,
+        "__attribute__((noinline)) double g_f1_r_i_(const goat_native_context_v2_t *g_context, double g_p0, int64_t g_p1) {": 1,
+        "__attribute__((noinline)) double g_f1_r_r_(const goat_native_context_v2_t *g_context, double g_p0, double g_p1) {": 1,
+        "__attribute__((noinline)) goat_native_string_view_v2_t g_f1_s_s_(const goat_native_context_v2_t *g_context, goat_native_string_view_v2_t g_p0, goat_native_string_view_v2_t g_p1) {": 1,
+        "__attribute__((noinline)) goat_native_string_view_v2_t g_f1_s_i_(const goat_native_context_v2_t *g_context, goat_native_string_view_v2_t g_p0, int64_t g_p1) {": 1,
+        "__attribute__((noinline)) goat_native_string_view_v2_t g_f1_s_r_(const goat_native_context_v2_t *g_context, goat_native_string_view_v2_t g_p0, double g_p1) {": 1,
+        "GOAT_NATIVE_PURE": 7
+      }
+    }
+  },
+  {
+    "originalManifestName": "string_methods",
+    "ctestId": "integration.native_functional.string_methods",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "generated",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "string_methods",
+      "calls": 19,
+      "bound": 9,
+      "generated": {
+        "goat_native_string_length(": 1,
+        "goat_native_string_is_empty(": 1,
+        "goat_native_string_is_blank(": 1,
+        "goat_native_string_char_at(": 1,
+        "goat_native_string_substring(": 1,
+        "goat_native_string_contains(": 1,
+        "goat_native_string_index_of(": 1,
+        "goat_native_string_last_index_of(": 1,
+        "goat_native_string_starts_with(": 1,
+        "goat_native_string_ends_with(": 1,
+        "goat_native_string_trim(": 1,
+        "goat_native_string_to_upper_case(": 1,
+        "goat_native_string_to_lower_case(": 1,
+        "goat_native_string_repeat(": 1,
+        "goat_native_string_replace(": 1,
+        "goat_native_string_format(": 1
+      },
+      "output_contains": [
+        "BXDBXD:3\n",
+        "changed\n3\nalias\n"
+      ]
+    }
+  },
+  {
+    "originalManifestName": "string_method_errors",
+    "ctestId": "integration.native_functional.string_method_errors",
+    "kind": "python-compat-adapter",
+    "commands": [
+      "check"
+    ],
+    "manifest": {
+      "name": "string_method_errors",
+      "check": "checks/string_method_errors.py"
+    }
+  },
+  {
+    "originalManifestName": "string_identity",
+    "ctestId": "integration.native_functional.string_identity",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "generated",
+      "export",
+      "driver-build",
+      "driver",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "string_identity",
+      "calls": 1,
+      "example": "example/native_string_identity.goat",
+      "driver": "driver.c",
+      "generated": {
+        "GOAT_NATIVE_STRING": 1,
+        "GOAT_NATIVE_PURE": 1,
+        "goat_native_string_view_v2_t g_f1_s_": 1,
+        "return g_p0;": 1
+      },
+      "bound": 1
+    }
+  },
+  {
+    "originalManifestName": "string_lifetime",
+    "ctestId": "integration.native_functional.string_lifetime",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "string_lifetime",
+      "calls": 103,
+      "bound": 1
+    }
+  },
+  {
+    "originalManifestName": "string_nested",
+    "ctestId": "integration.native_functional.string_nested",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "string_nested",
+      "calls": 1,
+      "bound": 2
+    }
+  },
+  {
+    "originalManifestName": "string_concat",
+    "ctestId": "integration.native_functional.string_concat",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "generated",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "string_concat",
+      "calls": 1,
+      "example": "example/native_string_concat.goat",
+      "generated": {
+        "goat_native_string_concat(g_context,": 1,
+        "GOAT_NATIVE_PURE": 1
+      },
+      "bound": 1
+    }
+  },
+  {
+    "originalManifestName": "string_chain",
+    "ctestId": "integration.native_functional.string_chain",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "string_chain",
+      "calls": 105,
+      "bound": 2
+    }
+  },
+  {
+    "originalManifestName": "quadratic",
+    "ctestId": "integration.native_functional.quadratic",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "generated",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "quadratic",
+      "calls": 3,
+      "example": "example/native_quadratic.goat",
+      "generated": {
+        "goat_native_str_f64(g_context,": 1,
+        "goat_native_string_concat(g_context,": 4,
+        "GOAT_NATIVE_PURE": 1
+      },
+      "bound": 1
+    }
+  },
+  {
+    "originalManifestName": "string_conversions",
+    "ctestId": "integration.native_functional.string_conversions",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "string_conversions",
+      "calls": 16,
+      "output_contains": [
+        "2,3,3,4\n"
+      ]
+    }
+  },
+  {
+    "originalManifestName": "quadratic_repeated",
+    "ctestId": "integration.native_functional.quadratic_repeated",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "quadratic_repeated",
+      "calls": 103,
+      "bound": 1
+    }
+  },
+  {
+    "originalManifestName": "saturation",
+    "ctestId": "integration.native_functional.saturation",
+    "kind": "python-compat-adapter",
+    "commands": [
+      "check"
+    ],
+    "manifest": {
+      "name": "saturation",
+      "check": "checks/saturation.py"
+    }
+  },
+  {
+    "originalManifestName": "libm",
+    "ctestId": "integration.native_functional.libm",
+    "kind": "python-compat-adapter",
+    "commands": [
+      "check"
+    ],
+    "manifest": {
+      "name": "libm",
+      "check": "checks/libm.py"
+    }
+  },
+  {
+    "originalManifestName": "runtime_strings",
+    "ctestId": "integration.native_functional.runtime_strings",
+    "kind": "python-compat-adapter",
+    "commands": [
+      "check"
+    ],
+    "manifest": {
+      "name": "runtime_strings",
+      "check": "checks/runtime_strings.py"
+    }
+  },
+  {
+    "originalManifestName": "loops",
+    "ctestId": "integration.native_functional.loops",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "loops",
+      "calls": 16,
+      "bound": 8
+    }
+  },
+  {
+    "originalManifestName": "switch",
+    "ctestId": "integration.native_functional.switch",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "switch",
+      "calls": 29,
+      "bound": 11
+    }
+  },
+  {
+    "originalManifestName": "conditional",
+    "ctestId": "integration.native_functional.conditional",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "conditional",
+      "calls": 19,
+      "bound": 7
+    }
+  },
+  {
+    "originalManifestName": "compound",
+    "ctestId": "integration.native_functional.compound",
+    "kind": "native-vm-program",
+    "commands": [
+      "vm",
+      "native",
+      "compile",
+      "saved"
+    ],
+    "manifest": {
+      "name": "compound",
+      "calls": 12,
+      "bound": 5
+    }
+  }
+]
