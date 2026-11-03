@@ -247,3 +247,29 @@ Earlier GCC builtin-driver compilation hit the unchanged 120-second command
 limit intermittently. The successful rerun does not establish that this
 flakiness is fixed, and its deeper cause remains unknown. No original deadline,
 assertion, compiler flag, or cleanup check was relaxed to obtain the green gate.
+
+
+## Musl compiler resource diagnostics
+
+The first final-removal run again reached the unchanged 120-second builtin
+compiler limit on musl AArch64: the split helper case failed, while the later
+complete C manifest execution passed in the same job. To distinguish compiler
+CPU cost from scheduling, throttling, or memory pressure, the musl CI script
+runs a read-only C observer during the existing Debug and Release CTest
+selections. Every five seconds it records monotonic/wall timestamps, CPU and
+memory counters, pressure and cgroup limits/events, and compiler-process CPU,
+resident-memory, state, and context-switch counters. It does not inspect
+arguments or environment, attach to processes, or change compiler commands,
+priorities, test ordering, or deadlines. The observer is stopped and reaped
+after CTest and on script exit. Its failure can fail otherwise-successful CI,
+but never converts a failed test into success or replaces its failure status.
+
+Artifacts retain `compile-resources-debug.log` and
+`compile-resources-release.log` beside existing nested test diagnostics,
+including the exact generated `driver.c`. Missing proc/cgroup files are logged
+as unavailable. `/proc/stat` and pressure can reflect host-wide activity;
+cgroup counters describe the container's scope. Correlate CPU jiffies by PID
+and process starttime with the monotonic interval and CTest results. A process
+disappearing does not prove success, and five-second sampling cannot resolve
+exact compiler completion time. These samples are diagnostic evidence, not a
+workaround or a claim that the intermittent compiler delay has been fixed.
