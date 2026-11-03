@@ -165,6 +165,15 @@ static uint64_t median(const uint64_t samples[SAMPLES]) {
     return sorted[SAMPLES / 2];
 }
 
+/* The JSON speedup is parsed as binary64. On i686, x87 may keep the division in
+ * extended precision while printf and the parsed JSON round it to double.
+ * A volatile store makes the exact comparison use the same binary64 value;
+ * this is not a tolerance and does not change the integer speed threshold. */
+static double speedup_ratio(uint64_t vm, uint64_t native) {
+    volatile double result = (double)vm / (double)native;
+    return result;
+}
+
 static bool timings_ok(const char *bytes, size_t size) {
     yyjson_doc *doc = yyjson_read(bytes, size, 0);
     yyjson_val *root = yyjson_doc_get_root(doc), *samples = yyjson_obj_get(root, "samples_ns");
@@ -193,7 +202,7 @@ static bool timings_ok(const char *bytes, size_t size) {
     yyjson_val *passed = yyjson_obj_get(root, "passed"), *speedup = yyjson_obj_get(root, "speedup");
     ok = ok && medians[1] > 0 && yyjson_is_bool(passed)
          && yyjson_get_bool(passed) == (medians[1] < medians[0]) && yyjson_is_num(speedup)
-         && yyjson_get_num(speedup) == (double)medians[0] / (double)medians[1];
+         && yyjson_get_num(speedup) == speedup_ratio(medians[0], medians[1]);
     yyjson_doc_free(doc);
     return ok;
 }
@@ -228,8 +237,14 @@ static const char *timings(scenario_run_t *r, uint64_t times[2][SAMPLES]) {
            "  \"speedup\": %.17g, \"passed\": %s\n}\n",
            vm,
            native,
-           (double)vm / (double)native,
+           speedup_ratio(vm, native),
            native < vm ? "true" : "false");
+    language_write(r,
+                   language_join(r,
+                                 scenario_work_directory(scenario_run_context(r)),
+                                 "timings-candidate.json"),
+                   out,
+                   size);
     REQUIRE(timings_ok(out, size));
     return out;
 }
@@ -400,6 +415,13 @@ static void controls(scenario_run_t *r, void *user) {
             at[1] = 'X';
             REQUIRE(!timings_ok(corrupt, strlen(corrupt)));
         }
+        /* The adjacent binary64 value must still fail: no approximate equality. */
+        char *adjacent = language_owned(r, ALLOC(strlen(report) + 1));
+        strcpy(adjacent, report);
+        char *ratio = strstr(adjacent, "1.6666666666666667");
+        REQUIRE(ratio != NULL);
+        ratio[strlen("1.6666666666666667") - 1] = '9';
+        REQUIRE(!timings_ok(adjacent, strlen(adjacent)));
         /* Equal and slower native are correctly serialized as failed, not discarded. */
         memcpy(samples[1], samples[0], sizeof(samples[0]));
         report = timings(r, samples);
