@@ -13,8 +13,8 @@ host templates and the min/max zero-sign special cases. No Goat invocation was
 used to compute expected answers. An independent review replayed the original
 script and verified all 62 fixture byte streams. The committed directory contains
 only data and provenance, with no generator or Python runtime dependency. The
-original Python suite remains for Debug/Release Linux, Windows and musl parity
-gates. To audit provenance, verify the original script hash and the individual
+original Python suite was retained through the full Debug/Release Linux, Windows
+and musl parity gate, then retired. To audit provenance, verify the original script hash and the individual
 fixture hashes in `provenance.json`, then compare against the original generator's
 writes before platform newline translation.
 
@@ -98,4 +98,20 @@ parity gate also compares their generated source/host bytes to these frozen
 inputs. Independent review matched all 62 libm fixtures and both access sources
 against the original Python writes. Strict `-std=c11 -DNDEBUG -Wall -Wextra
 -Werror` compilation, repository formatting, and CMake registration checks pass.
-Full cross-platform original/C parity in CI is required before Python removal.
+Full cross-platform original/C parity in CI passed before Python removal.
+
+## Remote parity and retirement
+
+Exact head `9b19114b3e21a301e96bcfc7a9b00a27c1f55782` passed [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41578881805) and [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41578881774).
+All applicable Debug/Release Linux, Windows and musl runs executed both originals
+and all C cases. The two Python checkers and their temporary parity wrapper are
+removed together with the checklist mark in the final-removal commit; final CI
+must verify that commit separately. The original scripts remain available at
+that parity commit for provenance/reproduction. Existing manifest check names
+continue to route to C, and the unrelated Python compatibility consumers remain.
+
+The first parity attempt exposed a temporary CMake byte-comparison bug on Windows:
+text READ normalized CRLF. The corrected gate used raw HEX reads with exact Windows
+LF expansion; valid CRLF passed and missing-CR/extra-byte controls failed. A separate
+initial musl AArch64 saturation compiler timeout did not recur on the corrected full
+run; its underlying cause remains unproven and no timeout was increased.

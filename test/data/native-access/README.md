@@ -41,8 +41,8 @@ invocation (including `all`) has a shared 300-second aggregate deadline. A CTest
 outer timeout must allow additional time for process-tree cleanup. Universal
 newline decoding matches Python text=True; whitespace is not trimmed.
 
-Keep the original Python checker until full Debug and Release Linux, Windows and
-musl parity is green remotely. This executor may lack
+The original Python checker was retained unchanged through the full Debug/Release
+Linux, Windows and musl parity gate, and is now retired. This executor may lack
 `/proc/thread-self/children`; native compiler cleanup then reports cleanup=2.
 That failure is not skipped, retried away or treated as success.
 
@@ -55,7 +55,7 @@ retry-required, persisted and compiler-fallback stopped on the existing
 `cleanup=2` supervisor failure despite Goat exiting zero. The aggregate `all`
 invocation in each configuration likewise stopped at retry-auto with cleanup=2.
 No cleanup check was changed and these failures were not counted as parity passes.
-Full real-compiler C parity remains a remote CI requirement. The unchanged
+Full real-compiler C parity was therefore required from remote CI. The unchanged
 Python access and libm checkers passed separately in both Debug and Release,
 including byte comparison of generated sources and host drivers with frozen inputs.
 
@@ -64,3 +64,19 @@ with the repository's clang-format 18 configuration. Frozen source SHA-256:
 
 - blocked.goat: `120d763144df17b1ef414265a0e9965c43880e1f75bc1d1f07ea32bb37c5ac72`
 - retry.goat: `03de892f36437bf1148a5fef9d004d1acd790015dec1f9d5ec164c100aed22a2`
+
+## Remote parity and retirement
+
+Exact head `9b19114b3e21a301e96bcfc7a9b00a27c1f55782` passed [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41578881805) and [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41578881774).
+All applicable Debug/Release Linux, Windows and musl runs executed both originals
+and all C cases. The two Python checkers and their temporary parity wrapper are
+removed together with the checklist mark in the final-removal commit; final CI
+must verify that commit separately. The original scripts remain available at
+that parity commit for provenance/reproduction. Existing manifest check names
+continue to route to C, and the unrelated Python compatibility consumers remain.
+
+The first parity attempt exposed a temporary CMake byte-comparison bug on Windows:
+text READ normalized CRLF. The corrected gate used raw HEX reads with exact Windows
+LF expansion; valid CRLF passed and missing-CR/extra-byte controls failed. A separate
+initial musl AArch64 saturation compiler timeout did not recur on the corrected full
+run; its underlying cause remains unproven and no timeout was increased.

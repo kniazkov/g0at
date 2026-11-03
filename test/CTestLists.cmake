@@ -496,7 +496,7 @@ foreach(scenario native.for native.index)
     "$<TARGET_FILE:loop_index_testing>" "${scenario}" "$<TARGET_FILE:goat>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-# #384: original Python remains unchanged until full cross-platform parity.
+# #384: original Python retired after full Debug/Release cross-platform parity.
 foreach(native_access_case IN ITEMS denied-none denied-all denied-compile retry-off retry-auto retry-required persisted compiler-fallback control-output control-report control-fallback control-bytecode)
   goat_scenario(integration.native_access.${native_access_case} "native;native-access-libm-migration" TIMEOUT 330 COMMAND
     "$<TARGET_FILE:native_access_scenarios>" "integration.native_access.${native_access_case}"
@@ -515,12 +515,6 @@ foreach(native_libm_negative IN ITEMS output report host)
   goat_scenario(integration.native_libm.negative-${native_libm_negative} "native;native-access-libm-migration" TIMEOUT 330 COMMAND
     "$<TARGET_FILE:native_libm_scenarios>" "integration.native_libm.negative-${native_libm_negative}"
     "$<TARGET_FILE:goat>" "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
-endforeach()
-foreach(native_original IN ITEMS access libm)
-  goat_scenario(parity.native_${native_original}.original "native;native-access-libm-migration" TIMEOUT 330 COMMAND
-    "${CMAKE_COMMAND}" "-DPYTHON=${Python3_EXECUTABLE}" "-DGOAT=$<TARGET_FILE:goat>"
-    "-DREPOSITORY=${PROJECT_SOURCE_DIR}" "-DBUILD=${CMAKE_BINARY_DIR}"
-    "-DCHECK=${native_original}" -P "${CMAKE_CURRENT_SOURCE_DIR}/run_native_original.cmake")
 endforeach()
 # Derive stable IDs from the same read-only manifest consumed by the C runner.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/native/list.json")
