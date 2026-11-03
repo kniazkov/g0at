@@ -44,3 +44,7 @@ test/data/native-runner/*.json -text
 # Frozen native access/libm sources, generated host templates and provenance.
 test/data/native-access/** -text
 test/data/native-libm/** -text
+
+# Frozen native strings and method-error input bytes on all checkout hosts.
+test/data/native-runtime-strings/** -text
+test/data/native-string-methods/** -text

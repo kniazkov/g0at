@@ -1,0 +1,297 @@
+#include "goat/native_strings.h"
+#include <assert.h>
+#include <inttypes.h>
+#include <stdio.h>
+#define V(s) ((goat_native_string_view_v2_t){s, sizeof(s)/sizeof(gchar_t)-1})
+static void show(goat_native_string_buffer_v2_t value) {
+    printf("%zu:", value.length);
+    for(size_t i=0;i<value.length;++i) printf("%" PRIu32 ",", (uint32_t)value.data[i]);
+    puts("");
+    assert(value.length <= value.capacity);
+    assert(!value.data || value.data[value.length] == 0);
+}
+#include "checks.h"
+GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t *context) {
+printf("%" PRId64 "\n", goat_native_string_length(V(U"")));
+puts(goat_native_string_is_empty(V(U"")) ? "true" : "false");
+{ bool out = false; assert(goat_native_string_is_blank(context, V(U""), &out) == GOAT_NATIVE_OK); puts(out ? "true" : "false"); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_trim(context, V(U""), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_upper_case(context, V(U""), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_lower_case(context, V(U""), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+puts(goat_native_string_contains(V(U""), V(U"")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U""), V(U"")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U""), V(U"")));
+puts(goat_native_string_starts_with(V(U""), V(U"")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U""), V(U"")) ? "true" : "false");
+puts(goat_native_string_contains(V(U""), V(U"a")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U""), V(U"a")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U""), V(U"a")));
+puts(goat_native_string_starts_with(V(U""), V(U"a")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U""), V(U"a")) ? "true" : "false");
+puts(goat_native_string_contains(V(U""), V(U"b")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U""), V(U"b")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U""), V(U"b")));
+puts(goat_native_string_starts_with(V(U""), V(U"b")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U""), V(U"b")) ? "true" : "false");
+puts(goat_native_string_contains(V(U""), V(U"нет")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U""), V(U"нет")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U""), V(U"нет")));
+puts(goat_native_string_starts_with(V(U""), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U""), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_contains(V(U""), V(U"")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U""), V(U"")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U""), V(U"")));
+puts(goat_native_string_starts_with(V(U""), V(U"")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U""), V(U"")) ? "true" : "false");
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U""), 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U""), 1, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U""), 3, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_concat(context, V(U""), V(U"尾\0😀"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_substring(context, V(U""), 0, 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+printf("%" PRId64 "\n", goat_native_string_length(V(U"abc")));
+puts(goat_native_string_is_empty(V(U"abc")) ? "true" : "false");
+{ bool out = false; assert(goat_native_string_is_blank(context, V(U"abc"), &out) == GOAT_NATIVE_OK); puts(out ? "true" : "false"); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_trim(context, V(U"abc"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_upper_case(context, V(U"abc"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_lower_case(context, V(U"abc"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+puts(goat_native_string_contains(V(U"abc"), V(U"")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"abc"), V(U"")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"abc"), V(U"")));
+puts(goat_native_string_starts_with(V(U"abc"), V(U"")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"abc"), V(U"")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"abc"), V(U"a")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"abc"), V(U"a")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"abc"), V(U"a")));
+puts(goat_native_string_starts_with(V(U"abc"), V(U"a")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"abc"), V(U"a")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"abc"), V(U"b")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"abc"), V(U"b")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"abc"), V(U"b")));
+puts(goat_native_string_starts_with(V(U"abc"), V(U"b")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"abc"), V(U"b")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"abc"), V(U"нет")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"abc"), V(U"нет")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"abc"), V(U"нет")));
+puts(goat_native_string_starts_with(V(U"abc"), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"abc"), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"abc"), V(U"abc")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"abc"), V(U"abc")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"abc"), V(U"abc")));
+puts(goat_native_string_starts_with(V(U"abc"), V(U"abc")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"abc"), V(U"abc")) ? "true" : "false");
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"abc"), 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"abc"), 1, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"abc"), 3, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_concat(context, V(U"abc"), V(U"尾\0😀"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_substring(context, V(U"abc"), 0, 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+printf("%" PRId64 "\n", goat_native_string_length(V(U" \t\n")));
+puts(goat_native_string_is_empty(V(U" \t\n")) ? "true" : "false");
+{ bool out = false; assert(goat_native_string_is_blank(context, V(U" \t\n"), &out) == GOAT_NATIVE_OK); puts(out ? "true" : "false"); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_trim(context, V(U" \t\n"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_upper_case(context, V(U" \t\n"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_lower_case(context, V(U" \t\n"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+puts(goat_native_string_contains(V(U" \t\n"), V(U"")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U" \t\n"), V(U"")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U" \t\n"), V(U"")));
+puts(goat_native_string_starts_with(V(U" \t\n"), V(U"")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U" \t\n"), V(U"")) ? "true" : "false");
+puts(goat_native_string_contains(V(U" \t\n"), V(U"a")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U" \t\n"), V(U"a")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U" \t\n"), V(U"a")));
+puts(goat_native_string_starts_with(V(U" \t\n"), V(U"a")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U" \t\n"), V(U"a")) ? "true" : "false");
+puts(goat_native_string_contains(V(U" \t\n"), V(U"b")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U" \t\n"), V(U"b")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U" \t\n"), V(U"b")));
+puts(goat_native_string_starts_with(V(U" \t\n"), V(U"b")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U" \t\n"), V(U"b")) ? "true" : "false");
+puts(goat_native_string_contains(V(U" \t\n"), V(U"нет")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U" \t\n"), V(U"нет")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U" \t\n"), V(U"нет")));
+puts(goat_native_string_starts_with(V(U" \t\n"), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U" \t\n"), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_contains(V(U" \t\n"), V(U" \t\n")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U" \t\n"), V(U" \t\n")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U" \t\n"), V(U" \t\n")));
+puts(goat_native_string_starts_with(V(U" \t\n"), V(U" \t\n")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U" \t\n"), V(U" \t\n")) ? "true" : "false");
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U" \t\n"), 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U" \t\n"), 1, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U" \t\n"), 3, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_concat(context, V(U" \t\n"), V(U"尾\0😀"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_substring(context, V(U" \t\n"), 0, 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+printf("%" PRId64 "\n", goat_native_string_length(V(U"  Привет 😀  ")));
+puts(goat_native_string_is_empty(V(U"  Привет 😀  ")) ? "true" : "false");
+{ bool out = false; assert(goat_native_string_is_blank(context, V(U"  Привет 😀  "), &out) == GOAT_NATIVE_OK); puts(out ? "true" : "false"); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_trim(context, V(U"  Привет 😀  "), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_upper_case(context, V(U"  Привет 😀  "), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_lower_case(context, V(U"  Привет 😀  "), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+puts(goat_native_string_contains(V(U"  Привет 😀  "), V(U"")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  Привет 😀  "), V(U"")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  Привет 😀  "), V(U"")));
+puts(goat_native_string_starts_with(V(U"  Привет 😀  "), V(U"")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  Привет 😀  "), V(U"")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"  Привет 😀  "), V(U"a")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  Привет 😀  "), V(U"a")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  Привет 😀  "), V(U"a")));
+puts(goat_native_string_starts_with(V(U"  Привет 😀  "), V(U"a")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  Привет 😀  "), V(U"a")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"  Привет 😀  "), V(U"b")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  Привет 😀  "), V(U"b")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  Привет 😀  "), V(U"b")));
+puts(goat_native_string_starts_with(V(U"  Привет 😀  "), V(U"b")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  Привет 😀  "), V(U"b")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"  Привет 😀  "), V(U"нет")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  Привет 😀  "), V(U"нет")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  Привет 😀  "), V(U"нет")));
+puts(goat_native_string_starts_with(V(U"  Привет 😀  "), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  Привет 😀  "), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"  Привет 😀  "), V(U"  Привет 😀  ")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  Привет 😀  "), V(U"  Привет 😀  ")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  Привет 😀  "), V(U"  Привет 😀  ")));
+puts(goat_native_string_starts_with(V(U"  Привет 😀  "), V(U"  Привет 😀  ")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  Привет 😀  "), V(U"  Привет 😀  ")) ? "true" : "false");
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"  Привет 😀  "), 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"  Привет 😀  "), 1, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"  Привет 😀  "), 3, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_concat(context, V(U"  Привет 😀  "), V(U"尾\0😀"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_substring(context, V(U"  Привет 😀  "), 0, 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+printf("%" PRId64 "\n", goat_native_string_length(V(U"a\0b")));
+puts(goat_native_string_is_empty(V(U"a\0b")) ? "true" : "false");
+{ bool out = false; assert(goat_native_string_is_blank(context, V(U"a\0b"), &out) == GOAT_NATIVE_OK); puts(out ? "true" : "false"); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_trim(context, V(U"a\0b"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_upper_case(context, V(U"a\0b"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_lower_case(context, V(U"a\0b"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+puts(goat_native_string_contains(V(U"a\0b"), V(U"")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"a\0b"), V(U"")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"a\0b"), V(U"")));
+puts(goat_native_string_starts_with(V(U"a\0b"), V(U"")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"a\0b"), V(U"")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"a\0b"), V(U"a")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"a\0b"), V(U"a")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"a\0b"), V(U"a")));
+puts(goat_native_string_starts_with(V(U"a\0b"), V(U"a")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"a\0b"), V(U"a")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"a\0b"), V(U"b")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"a\0b"), V(U"b")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"a\0b"), V(U"b")));
+puts(goat_native_string_starts_with(V(U"a\0b"), V(U"b")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"a\0b"), V(U"b")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"a\0b"), V(U"нет")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"a\0b"), V(U"нет")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"a\0b"), V(U"нет")));
+puts(goat_native_string_starts_with(V(U"a\0b"), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"a\0b"), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"a\0b"), V(U"a\0b")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"a\0b"), V(U"a\0b")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"a\0b"), V(U"a\0b")));
+puts(goat_native_string_starts_with(V(U"a\0b"), V(U"a\0b")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"a\0b"), V(U"a\0b")) ? "true" : "false");
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"a\0b"), 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"a\0b"), 1, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"a\0b"), 3, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_concat(context, V(U"a\0b"), V(U"尾\0😀"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_substring(context, V(U"a\0b"), 0, 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+printf("%" PRId64 "\n", goat_native_string_length(V(U"ÄÖé Яя")));
+puts(goat_native_string_is_empty(V(U"ÄÖé Яя")) ? "true" : "false");
+{ bool out = false; assert(goat_native_string_is_blank(context, V(U"ÄÖé Яя"), &out) == GOAT_NATIVE_OK); puts(out ? "true" : "false"); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_trim(context, V(U"ÄÖé Яя"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_upper_case(context, V(U"ÄÖé Яя"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_lower_case(context, V(U"ÄÖé Яя"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+puts(goat_native_string_contains(V(U"ÄÖé Яя"), V(U"")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"ÄÖé Яя"), V(U"")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"ÄÖé Яя"), V(U"")));
+puts(goat_native_string_starts_with(V(U"ÄÖé Яя"), V(U"")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"ÄÖé Яя"), V(U"")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"ÄÖé Яя"), V(U"a")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"ÄÖé Яя"), V(U"a")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"ÄÖé Яя"), V(U"a")));
+puts(goat_native_string_starts_with(V(U"ÄÖé Яя"), V(U"a")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"ÄÖé Яя"), V(U"a")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"ÄÖé Яя"), V(U"b")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"ÄÖé Яя"), V(U"b")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"ÄÖé Яя"), V(U"b")));
+puts(goat_native_string_starts_with(V(U"ÄÖé Яя"), V(U"b")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"ÄÖé Яя"), V(U"b")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"ÄÖé Яя"), V(U"нет")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"ÄÖé Яя"), V(U"нет")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"ÄÖé Яя"), V(U"нет")));
+puts(goat_native_string_starts_with(V(U"ÄÖé Яя"), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"ÄÖé Яя"), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"ÄÖé Яя"), V(U"ÄÖé Яя")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"ÄÖé Яя"), V(U"ÄÖé Яя")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"ÄÖé Яя"), V(U"ÄÖé Яя")));
+puts(goat_native_string_starts_with(V(U"ÄÖé Яя"), V(U"ÄÖé Яя")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"ÄÖé Яя"), V(U"ÄÖé Яя")) ? "true" : "false");
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"ÄÖé Яя"), 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"ÄÖé Яя"), 1, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"ÄÖé Яя"), 3, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_concat(context, V(U"ÄÖé Яя"), V(U"尾\0😀"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_substring(context, V(U"ÄÖé Яя"), 0, 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+printf("%" PRId64 "\n", goat_native_string_length(V(U"  ")));
+puts(goat_native_string_is_empty(V(U"  ")) ? "true" : "false");
+{ bool out = false; assert(goat_native_string_is_blank(context, V(U"  "), &out) == GOAT_NATIVE_OK); puts(out ? "true" : "false"); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_trim(context, V(U"  "), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_upper_case(context, V(U"  "), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_to_lower_case(context, V(U"  "), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+puts(goat_native_string_contains(V(U"  "), V(U"")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  "), V(U"")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  "), V(U"")));
+puts(goat_native_string_starts_with(V(U"  "), V(U"")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  "), V(U"")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"  "), V(U"a")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  "), V(U"a")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  "), V(U"a")));
+puts(goat_native_string_starts_with(V(U"  "), V(U"a")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  "), V(U"a")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"  "), V(U"b")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  "), V(U"b")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  "), V(U"b")));
+puts(goat_native_string_starts_with(V(U"  "), V(U"b")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  "), V(U"b")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"  "), V(U"нет")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  "), V(U"нет")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  "), V(U"нет")));
+puts(goat_native_string_starts_with(V(U"  "), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  "), V(U"нет")) ? "true" : "false");
+puts(goat_native_string_contains(V(U"  "), V(U"  ")) ? "true" : "false");
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"  "), V(U"  ")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"  "), V(U"  ")));
+puts(goat_native_string_starts_with(V(U"  "), V(U"  ")) ? "true" : "false");
+puts(goat_native_string_ends_with(V(U"  "), V(U"  ")) ? "true" : "false");
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"  "), 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"  "), 1, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_repeat(context, V(U"  "), 3, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_concat(context, V(U"  "), V(U"尾\0😀"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_substring(context, V(U"  "), 0, 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+printf("%" PRId64 "\n", goat_native_string_index_of(V(U"ababa"), V(U"aba")));
+printf("%" PRId64 "\n", goat_native_string_last_index_of(V(U"ababa"), V(U"aba")));
+puts(goat_native_string_contains(V(U"ababa"), V(U"aba")) ? "true" : "false");
+{ uint32_t out = 0; assert(goat_native_string_char_at(V(U"abc"), 2, &out) == GOAT_NATIVE_OK); printf("%" PRIu32 "\n", out); }
+{ uint32_t out = 0; assert(goat_native_string_char_at(V(U"a\0b"), 1, &out) == GOAT_NATIVE_OK); printf("%" PRIu32 "\n", out); }
+{ uint32_t out = 0; assert(goat_native_string_char_at(V(U"😀"), 0, &out) == GOAT_NATIVE_OK); printf("%" PRIu32 "\n", out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_substring(context, V(U"abcde"), 1, 4, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_replace(context, V(U"aaaaa"), V(U"aa"), V(U"b"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_replace(context, V(U"ababa"), V(U"aba"), V(U"xyz"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_replace(context, V(U"abc"), V(U""), V(U"x"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_replace(context, V(U"abc"), V(U"longer"), V(U"x"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_replace(context, V(U"abcabc"), V(U"abc"), V(U""), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_replace(context, V(U"a\0a"), V(U"\0"), V(U"XY"), &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_format(context, V(U"%0-%1-%0"), (goat_native_string_view_v2_t[]){V(U"Я\0"),V(U"😀")}, 2, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_format(context, V(U"%%0 %01 %10 %2 %"), (goat_native_string_view_v2_t[]){V(U"Я\0"),V(U"😀")}, 2, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_format(context, V(U"%9999999999999999999999999999999999999"), (goat_native_string_view_v2_t[]){V(U"Я\0"),V(U"😀")}, 2, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_format(context, V(U"x\0%0"), (goat_native_string_view_v2_t[]){V(U"Я\0"),V(U"😀")}, 2, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_format(context, V(U"%0000000000000000000000000000000000000"), (goat_native_string_view_v2_t[]){V(U"Я\0"),V(U"😀")}, 2, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_format(context, V(U"%0 %1"), NULL, 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_string_format(context, V(U"%10/%0011/%0"), (goat_native_string_view_v2_t[]){V(U"0"),V(U"1"),V(U"2"),V(U"3"),V(U"4"),V(U"5"),V(U"6"),V(U"7"),V(U"8"),V(U"9"),V(U"10"),V(U"11")}, 12, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_str_i64(context, INT64_MAX, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_str_i64(context, -INT64_MAX, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_str_f64(context, 1.25, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_str_f64(context, -0.0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_str_f64(context, 1e-11, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_str_bool(context, true, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_str_bool(context, false, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_str_char(context, 0, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+{ goat_native_string_buffer_v2_t out = {0}; assert(goat_native_str_char(context, 128512, &out) == GOAT_NATIVE_OK); show(out); goat_native_string_release(context, &out); }
+boundaries(context);
+}
