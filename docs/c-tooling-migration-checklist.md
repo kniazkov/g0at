@@ -100,7 +100,7 @@
 - [x] 63. [#381 — Перенести на Си: Очистка native](https://github.com/kniazkov/g0at/issues/381) — test-only зависимость: раздельные close-stdin/wait-stderr raw-owner операции сохраняют исходные EOF deadlines; PR и CI — в задаче.
 - [x] 64. [#382 — Перенести на Си: Native exit и значения](https://github.com/kniazkov/g0at/issues/382) — [PR #460](https://github.com/kniazkov/g0at/pull/460), original/C parity: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/41438905339), [векторы](https://github.com/kniazkov/g0at/actions/runs/41438905517).
 - [x] 65. [#383 — Перенести на Си: Native runner и его самопроверки](https://github.com/kniazkov/g0at/issues/383) — [PR #461](https://github.com/kniazkov/g0at/pull/461), original/C parity: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/41495133812), [векторы](https://github.com/kniazkov/g0at/actions/runs/41495133951); compatibility helpers временно остаются для #385.
-- [ ] 66. [#384 — Перенести на Си: Native access и libm](https://github.com/kniazkov/g0at/issues/384)
+- [x] 66. [#384 — Перенести на Си: Native access и libm](https://github.com/kniazkov/g0at/issues/384) — [PR #462](https://github.com/kniazkov/g0at/pull/462), original/C parity: [сборка и тесты](https://github.com/kniazkov/g0at/actions/runs/41578881805), [векторы](https://github.com/kniazkov/g0at/actions/runs/41578881774); 64 frozen inputs и исходные deadlines сохранены, Python удалён после полного gate.
 - [ ] 67. [#385 — Перенести на Си: Native strings](https://github.com/kniazkov/g0at/issues/385)
 - [ ] 68. [#386 — Перенести на Си: Насыщающая арифметика](https://github.com/kniazkov/g0at/issues/386)
 - [ ] 69. [#387 — Перенести на Си: Производительность native](https://github.com/kniazkov/g0at/issues/387)

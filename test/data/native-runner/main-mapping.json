@@ -18,14 +18,16 @@
   {
     "originalManifestName": "access_guards",
     "ctestId": "integration.native_functional.access_guards",
-    "kind": "python-compat-adapter",
+    "kind": "c-check-adapter",
     "commands": [
       "check"
     ],
     "manifest": {
       "name": "access_guards",
       "check": "checks/access.py"
-    }
+    },
+    "target": "native_access_scenarios",
+    "migrationIssue": 384
   },
   {
     "originalManifestName": "runner",
@@ -317,14 +319,16 @@
   {
     "originalManifestName": "libm",
     "ctestId": "integration.native_functional.libm",
-    "kind": "python-compat-adapter",
+    "kind": "c-check-adapter",
     "commands": [
       "check"
     ],
     "manifest": {
       "name": "libm",
       "check": "checks/libm.py"
-    }
+    },
+    "target": "native_libm_scenarios",
+    "migrationIssue": 384
   },
   {
     "originalManifestName": "runtime_strings",

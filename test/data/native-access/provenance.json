@@ -1,0 +1,10 @@
+{
+  "original": "test/src/native/checks/access.py",
+  "baseCommit": "f2f6f072cf456f7354d5ace9324218f3701d6818",
+  "sha256": "3ef49452f28d9b51602e0f3e789730da8593e6a819efc17243b7671f1487953f",
+  "fixtures": {
+    "blocked.goat": "120d763144df17b1ef414265a0e9965c43880e1f75bc1d1f07ea32bb37c5ac72",
+    "retry.goat": "03de892f36437bf1148a5fef9d004d1acd790015dec1f9d5ec164c100aed22a2"
+  },
+  "method": "Exact original AST string literals; independently matched byte-for-byte; original Python execution checks generated source bytes in temporary parity gate."
+}

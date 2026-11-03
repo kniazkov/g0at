@@ -1,0 +1,1 @@
+const cosine=cos;const f=func(n){return cosine(n);};println(f(1));

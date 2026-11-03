@@ -1,0 +1,1 @@
+const f=func(n){return cos(n);};const change=func(){cos=func(n){return 88;};};change();println(f(1));

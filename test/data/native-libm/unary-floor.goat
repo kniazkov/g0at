@@ -1,0 +1,1 @@
+const f=func(n){return floor(n);};println(f(-2.5));println(f(-0.5));println(f(0));println(f(0.5));println(f(2.5));

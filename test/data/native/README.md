@@ -38,8 +38,11 @@ CTest использует настроенные пути; для прямог�
 `example` — пример из корня репозитория, который должен совпадать с тестом;
 `driver` — C-драйвер для проверки экспортированного адаптера с настоящим контекстом памяти.
 
-Записи `check` запускают специальные проверки из `test/src/native/checks/`: массовые сравнения
-арифметики и libm, проверку строковой библиотеки через внешний хост. Они используют
+Записи `check` запускают специальные проверки: массовые сравнения арифметики,
+доступа, libm и строковой библиотеки через внешний хост. Логические `checks/access.py`
+и `checks/libm.py` теперь вызывают C targets `native_access_scenarios` и
+`native_libm_scenarios`, стоящие рядом с policy selftest; Python нужен только трём
+оставшимся адаптерам. Они используют
 тот же список, но сохраняют свои проверки ошибок, ABI и границ. Низкоуровневые
 проверки загрузчика/компилятора и sanitizer-конфигурации остаются отдельными шагами CI.
 
@@ -67,6 +70,8 @@ preserve signature, generated-code, example consistency and adapter boundary che
 Specialized `check` entries run the differential arithmetic/libm/runtime suites
 from the same registry. Loader/compiler and sanitizer configurations remain separate
 CI infrastructure checks. The logical `checks/runner.py` entry invokes the C policy selftest,
-not a Python file. Every case retains diagnostics in a fresh
+not a Python file. The logical `checks/access.py` and `checks/libm.py` entries
+invoke the sibling C executables `native_access_scenarios` and `native_libm_scenarios`;
+only three compatibility adapters still require Python. Every case retains diagnostics in a fresh
 `BUILD/native-functional/scenario-*` directory (identified by `case.name`),
 continues after individual failures, and exits nonzero if any test fails.

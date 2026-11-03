@@ -1,0 +1,1 @@
+const f=func(n){return sinh(n);};println(f(-5));println(f(-1));println(f(0));println(f(1));println(f(5));

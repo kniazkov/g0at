@@ -1,0 +1,318 @@
+[
+  {
+    "id": "integration.native_libm.zero-min-none-off",
+    "kind": "zero",
+    "source": "zero-min.goat",
+    "optimize": "none",
+    "native": "off",
+    "expected": "-0\n-0\n-0\n0\n-0\n-0\n-0\n0\n"
+  },
+  {
+    "id": "integration.native_libm.zero-min-all-off",
+    "kind": "zero",
+    "source": "zero-min.goat",
+    "optimize": "all",
+    "native": "off",
+    "expected": "-0\n-0\n-0\n0\n-0\n-0\n-0\n0\n"
+  },
+  {
+    "id": "integration.native_libm.zero-min-all-required",
+    "kind": "zero",
+    "source": "zero-min.goat",
+    "optimize": "all",
+    "native": "required",
+    "expected": "-0\n-0\n-0\n0\n-0\n-0\n-0\n0\n"
+  },
+  {
+    "id": "integration.native_libm.zero-max-none-off",
+    "kind": "zero",
+    "source": "zero-max.goat",
+    "optimize": "none",
+    "native": "off",
+    "expected": "0\n0\n-0\n0\n0\n0\n-0\n0\n"
+  },
+  {
+    "id": "integration.native_libm.zero-max-all-off",
+    "kind": "zero",
+    "source": "zero-max.goat",
+    "optimize": "all",
+    "native": "off",
+    "expected": "0\n0\n-0\n0\n0\n0\n-0\n0\n"
+  },
+  {
+    "id": "integration.native_libm.zero-max-all-required",
+    "kind": "zero",
+    "source": "zero-max.goat",
+    "optimize": "all",
+    "native": "required",
+    "expected": "0\n0\n-0\n0\n0\n0\n-0\n0\n"
+  },
+  {
+    "id": "integration.native_libm.unary-abs",
+    "kind": "native",
+    "source": "unary-abs.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-acos",
+    "kind": "native",
+    "source": "unary-acos.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-asin",
+    "kind": "native",
+    "source": "unary-asin.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-atan",
+    "kind": "native",
+    "source": "unary-atan.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-cbrt",
+    "kind": "native",
+    "source": "unary-cbrt.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-ceil",
+    "kind": "native",
+    "source": "unary-ceil.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-cos",
+    "kind": "native",
+    "source": "unary-cos.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-cosh",
+    "kind": "native",
+    "source": "unary-cosh.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-exp",
+    "kind": "native",
+    "source": "unary-exp.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-exp2",
+    "kind": "native",
+    "source": "unary-exp2.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-expm1",
+    "kind": "native",
+    "source": "unary-expm1.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-floor",
+    "kind": "native",
+    "source": "unary-floor.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-int",
+    "kind": "native",
+    "source": "unary-int.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-log",
+    "kind": "native",
+    "source": "unary-log.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-log10",
+    "kind": "native",
+    "source": "unary-log10.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-log1p",
+    "kind": "native",
+    "source": "unary-log1p.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-log2",
+    "kind": "native",
+    "source": "unary-log2.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-round",
+    "kind": "native",
+    "source": "unary-round.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-sign",
+    "kind": "native",
+    "source": "unary-sign.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-sin",
+    "kind": "native",
+    "source": "unary-sin.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-sinh",
+    "kind": "native",
+    "source": "unary-sinh.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-sqrt",
+    "kind": "native",
+    "source": "unary-sqrt.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-tan",
+    "kind": "native",
+    "source": "unary-tan.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-tanh",
+    "kind": "native",
+    "source": "unary-tanh.goat"
+  },
+  {
+    "id": "integration.native_libm.unary-trunc",
+    "kind": "native",
+    "source": "unary-trunc.goat"
+  },
+  {
+    "id": "integration.native_libm.binary-max",
+    "kind": "native",
+    "source": "binary-max.goat"
+  },
+  {
+    "id": "integration.native_libm.binary-min",
+    "kind": "native",
+    "source": "binary-min.goat"
+  },
+  {
+    "id": "integration.native_libm.binary-pow",
+    "kind": "native",
+    "source": "binary-pow.goat"
+  },
+  {
+    "id": "integration.native_libm.binary-fmod",
+    "kind": "native",
+    "source": "binary-fmod.goat"
+  },
+  {
+    "id": "integration.native_libm.binary-hypot",
+    "kind": "native",
+    "source": "binary-hypot.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-extra_bool",
+    "kind": "native",
+    "source": "semantics-extra_bool.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-extra_effect",
+    "kind": "native",
+    "source": "semantics-extra_effect.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-alias",
+    "kind": "native",
+    "source": "semantics-alias.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-effects",
+    "kind": "native",
+    "source": "semantics-effects.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-effects_binary",
+    "kind": "native",
+    "source": "semantics-effects_binary.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-atan2",
+    "kind": "native",
+    "source": "semantics-atan2.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-atan_extra_arg",
+    "kind": "native",
+    "source": "semantics-atan_extra_arg.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-abs_extra_arg",
+    "kind": "native",
+    "source": "semantics-abs_extra_arg.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-replace",
+    "kind": "fallback",
+    "source": "semantics-replace.goat"
+  },
+  {
+    "id": "integration.native_libm.semantics-nested_shadow",
+    "kind": "fallback",
+    "source": "semantics-nested_shadow.goat"
+  },
+  {
+    "id": "integration.native_libm.reject-atan_invalid",
+    "kind": "reject",
+    "source": "reject-atan_invalid.goat"
+  },
+  {
+    "id": "integration.native_libm.reject-atan_missing",
+    "kind": "reject",
+    "source": "reject-atan_missing.goat"
+  },
+  {
+    "id": "integration.native_libm.reject-abs_invalid",
+    "kind": "reject",
+    "source": "reject-abs_invalid.goat"
+  },
+  {
+    "id": "integration.native_libm.reject-abs_missing",
+    "kind": "reject",
+    "source": "reject-abs_missing.goat"
+  },
+  {
+    "id": "integration.native_libm.adapters-cos",
+    "kind": "host",
+    "source": "edges-cos.goat",
+    "host": "host-cos.c.txt"
+  },
+  {
+    "id": "integration.native_libm.adapters-sqrt",
+    "kind": "host",
+    "source": "edges-sqrt.goat",
+    "host": "host-sqrt.c.txt"
+  },
+  {
+    "id": "integration.native_libm.adapters-pow",
+    "kind": "host",
+    "source": "edges-pow.goat",
+    "host": "host-pow.c.txt"
+  },
+  {
+    "id": "integration.native_libm.adapters-fmod",
+    "kind": "host",
+    "source": "edges-fmod.goat",
+    "host": "host-fmod.c.txt"
+  },
+  {
+    "id": "integration.native_libm.adapters-min",
+    "kind": "host",
+    "source": "edges-min.goat",
+    "host": "host-min.c.txt"
+  },
+  {
+    "id": "integration.native_libm.adapters-max",
+    "kind": "host",
+    "source": "edges-max.goat",
+    "host": "host-max.c.txt"
+  },
+  {
+    "id": "integration.native_libm.adapters-atan",
+    "kind": "host",
+    "source": "edges-atan.goat",
+    "host": "host-atan.c.txt"
+  },
+  {
+    "id": "integration.native_libm.adapters-abs",
+    "kind": "host",
+    "source": "edges-abs.goat",
+    "host": "host-abs.c.txt"
+  }
+]

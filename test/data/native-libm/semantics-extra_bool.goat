@@ -1,0 +1,1 @@
+const f=func(n){return cos(n,true)+sign(n,false)+pow(n,2,true)+atan(n,1,false);};println(f(1));

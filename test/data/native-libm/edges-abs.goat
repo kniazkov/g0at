@@ -1,0 +1,1 @@
+const f=func(n){return abs(n);};f(1);f(1.0);

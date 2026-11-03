@@ -1,0 +1,1 @@
+const f=func(a,b){return min(a,b);};println(min(-0.0,0.0));println(min(0.0,-0.0));println(min(-0.0,-0.0));println(min(0.0,0.0));println(f(-0.0,0.0));println(f(0.0,-0.0));println(f(-0.0,-0.0));println(f(0.0,0.0));
