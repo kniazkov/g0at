@@ -94,6 +94,7 @@ static const char *kinds[] = {"vm-none-off",
                               "control-input",
                               "control-oracle",
                               "control-host",
+                              "control-partition",
                               "control-invalid",
                               "control-execution",
                               "corpus",
@@ -443,12 +444,227 @@ static void export(scenario_run_t *r, config_t *c, corpus_t input) {
     succeeded(r, run(r, c, ARGS(c->goat, "--save-c", input.source), 120000));
 }
 
+#define SATURATION_BLOCKS 1196
+#define SATURATION_CHUNK_BLOCKS 64
+#define SATURATION_CHUNKS                                                                          \
+    ((SATURATION_BLOCKS + SATURATION_CHUNK_BLOCKS - 1) / SATURATION_CHUNK_BLOCKS)
+
+typedef struct {
+    size_t prefix, start[SATURATION_BLOCKS + 1];
+} driver_layout_t;
+
+typedef struct {
+    bytes_t original, files[SATURATION_CHUNKS + 1];
+    const char *names[SATURATION_CHUNKS + 1];
+    size_t body_offset[SATURATION_CHUNKS], body_size[SATURATION_CHUNKS], prefix;
+} partition_t;
+
+/* Validate the generated block structure, without changing any operand or assertion.
+ * The preamble can also contain the existing control-host macro overrides. */
+static bool driver_layout(bytes_t input, driver_layout_t *layout) {
+    const char *p = (const char *)input.data, *end = p + input.size;
+    const char *include = "#include \"saturation.c\"\n", *main = "int main(void) {\n",
+               *suffix = "return 0;\n}";
+    if (input.size < strlen(include) + strlen(main) + strlen(suffix) || memchr(p, 0, input.size)
+        || memcmp(p, include, strlen(include)))
+        return false;
+    const char *at = NULL;
+    for (const char *candidate = p; (size_t)(end - candidate) >= strlen(main); candidate++)
+        if (!memcmp(candidate, main, strlen(main))) {
+            at = candidate + strlen(main);
+            break;
+        }
+    if (!at)
+        return false;
+    layout->prefix = (size_t)(at - p);
+    const char *assertions[] = {"assert(g_i64_add(a,b)==",
+                                "assert(add_int64_saturating(a,b)==",
+                                "assert(g_i64_sub(a,b)==",
+                                "assert(subtract_int64_saturating(a,b)==",
+                                "assert(g_i64_mul(a,b)==",
+                                "assert(multiply_int64_saturating(a,b)=="};
+    for (size_t block = 0; block < SATURATION_BLOCKS; block++) {
+        layout->start[block] = (size_t)(at - p);
+        const char *opening = "{ volatile int64_t a=";
+        if ((size_t)(end - at) < strlen(opening) || memcmp(at, opening, strlen(opening)))
+            return false;
+        const char *line = memchr(at, '\n', (size_t)(end - at));
+        if (!line || line == at || line[-1] != ';')
+            return false;
+        bool second_operand = false;
+        for (const char *q = at; (size_t)(line - q) >= 3; q++)
+            if (!memcmp(q, ",b=", 3))
+                second_operand = true;
+        if (!second_operand)
+            return false;
+        at = line + 1;
+        for (size_t assertion = 0; assertion < COUNT(assertions); assertion++) {
+            size_t length = strlen(assertions[assertion]);
+            if ((size_t)(end - at) < length || memcmp(at, assertions[assertion], length))
+                return false;
+            line = memchr(at, '\n', (size_t)(end - at));
+            if (!line || (size_t)(line - at) < length + 3 || line[-2] != ')' || line[-1] != ';')
+                return false;
+            at = line + 1;
+        }
+        if (end - at < 2 || memcmp(at, "}\n", 2))
+            return false;
+        at += 2;
+    }
+    layout->start[SATURATION_BLOCKS] = (size_t)(at - p);
+    return (size_t)(end - at) == strlen(suffix) && !memcmp(at, suffix, strlen(suffix));
+}
+
+static bool partition_file(scenario_run_t *r, const char *name, bytes_t *out) {
+    void *data = NULL;
+    size_t size = 0;
+    fs_error_t error = {0};
+    bool ok = read_fs_regular_file(work_path(r, name), 1024 * 1024, &data, &size, &error);
+    clear_fs_error(&error);
+    if (!ok)
+        return false;
+    language_owned(r, data);
+    *out = text(r, (bytes_t){data, size});
+    return true;
+}
+
+/* Verify actual emitted files, including the ordered calls in main, after LF normalization.
+ * Reconstruct the original driver from those bytes, never from a second copy of the input. */
+static bool partition_matches(scenario_run_t *r, const partition_t *parts, bool save_proof) {
+    bytes_t actual[SATURATION_CHUNKS + 1];
+    for (size_t i = 0; i < COUNT(actual); i++)
+        if (!partition_file(r, parts->names[i], actual + i) || !equal(actual[i], parts->files[i]))
+            return false;
+    builder_t proof = builder(r, 1024 * 1024);
+    append(r, &proof, "%.*s", (int)parts->prefix, (const char *)parts->original.data);
+    for (size_t i = 0; i < SATURATION_CHUNKS; i++)
+        append(r,
+               &proof,
+               "%.*s",
+               (int)parts->body_size[i],
+               (const char *)actual[i + 1].data + parts->body_offset[i]);
+    append(r, &proof, "return 0;\n}");
+    if (!equal(literal(proof.data), parts->original))
+        return false;
+    if (save_proof)
+        write_text(r, work_path(r, "reconstructed-driver.c.txt"), literal(proof.data));
+    return true;
+}
+
+static partition_t *partition_driver(scenario_run_t *r, const char *driver) {
+    partition_t *parts = language_owned(r, CALLOC(sizeof(*parts)));
+    parts->original = text(r, read_bytes(r, driver));
+    driver_layout_t layout;
+    REQUIRE(driver_layout(parts->original, &layout));
+    parts->prefix = layout.prefix;
+    const char *bytes = (const char *)parts->original.data;
+    size_t include_size = strlen("#include \"saturation.c\"\n"),
+           main_size = strlen("int main(void) {\n"), preamble = layout.prefix - main_size;
+    builder_t main = builder(r, 16384);
+    append(r, &main, "%.*s", (int)preamble, bytes);
+    parts->names[0] = "saturation-main.c";
+    for (size_t chunk = 0; chunk < SATURATION_CHUNKS; chunk++) {
+        size_t first = chunk * SATURATION_CHUNK_BLOCKS, last = first + SATURATION_CHUNK_BLOCKS;
+        if (last > SATURATION_BLOCKS)
+            last = SATURATION_BLOCKS;
+        builder_t part = builder(r, 128 * 1024);
+        append(r,
+               &part,
+               "#include \"native_runtime.h\"\n%.*svoid goat_saturation_part_%zu(void) {\n",
+               (int)(preamble - include_size),
+               bytes + include_size,
+               chunk);
+        parts->body_offset[chunk] = part.size;
+        parts->body_size[chunk] = layout.start[last] - layout.start[first];
+        append(r, &part, "%.*s}\n", (int)parts->body_size[chunk], bytes + layout.start[first]);
+        parts->files[chunk + 1] = literal(part.data);
+        parts->names[chunk + 1] = string(r, "saturation-part-%03zu.c", chunk);
+        write_text(r, work_path(r, parts->names[chunk + 1]), parts->files[chunk + 1]);
+        append(r, &main, "void goat_saturation_part_%zu(void);\n", chunk);
+    }
+    append(r, &main, "int main(void) {\n");
+    for (size_t chunk = 0; chunk < SATURATION_CHUNKS; chunk++)
+        append(r, &main, "goat_saturation_part_%zu();\n", chunk);
+    append(r, &main, "return 0;\n}");
+    parts->files[0] = literal(main.data);
+    write_text(r, work_path(r, parts->names[0]), parts->files[0]);
+    REQUIRE(partition_matches(r, parts, true));
+    language_write(r,
+                   work_path(r, "partition-proof.txt"),
+                   "blocks=1196 assertions=7176 chunks=19 ordered_lf_bytes_equal=1\n",
+                   strlen("blocks=1196 assertions=7176 chunks=19 ordered_lf_bytes_equal=1\n"));
+    return parts;
+}
+
+/* Corruption checks use the same validator as every production compile. */
+static void control_partition(scenario_run_t *r, config_t *c) {
+    corpus_t input = corpus(r, c, false);
+    partition_t *parts = partition_driver(r, input.driver);
+    driver_layout_t layout;
+    REQUIRE(driver_layout(parts->original, &layout));
+    const size_t selected[] = {0, SATURATION_BLOCKS / 2, SATURATION_BLOCKS - 1};
+    char *copy = language_owned(r, ALLOC(parts->original.size + 1));
+    for (size_t i = 0; i < COUNT(selected); i++) {
+        size_t at = layout.start[selected[i]];
+        memcpy(copy, parts->original.data, parts->original.size);
+        copy[at + 2] = 'X'; /* volatile declaration */
+        REQUIRE(!driver_layout((bytes_t){(unsigned char *)copy, parts->original.size}, &layout));
+        REQUIRE(driver_layout(parts->original, &layout));
+        const char *assertion = strchr((const char *)parts->original.data + at, '\n') + 1;
+        size_t offset = (size_t)(assertion - (const char *)parts->original.data);
+        memcpy(copy, parts->original.data, parts->original.size);
+        copy[offset] = 'X';
+        REQUIRE(!driver_layout((bytes_t){(unsigned char *)copy, parts->original.size}, &layout));
+        REQUIRE(driver_layout(parts->original, &layout));
+    }
+    memcpy(copy, parts->original.data, parts->original.size);
+    copy[0] = 'X';
+    REQUIRE(!driver_layout((bytes_t){(unsigned char *)copy, parts->original.size}, &layout));
+    memcpy(copy, parts->original.data, parts->original.size);
+    copy[parts->original.size / 2] = 0;
+    REQUIRE(!driver_layout((bytes_t){(unsigned char *)copy, parts->original.size}, &layout));
+    REQUIRE(!driver_layout((bytes_t){parts->original.data, parts->original.size - 1}, &layout));
+    memcpy(copy, parts->original.data, parts->original.size);
+    copy[parts->original.size] = '\n';
+    REQUIRE(!driver_layout((bytes_t){(unsigned char *)copy, parts->original.size + 1}, &layout));
+
+    const size_t files[] = {0, 1, 1 + SATURATION_CHUNKS / 2, SATURATION_CHUNKS};
+    for (size_t i = 0; i < COUNT(files); i++) {
+        size_t index = files[i];
+        const char *path = work_path(r, parts->names[index]);
+        language_remove(r, path);
+        REQUIRE(!partition_matches(r, parts, false));
+        write_text(r, path, parts->files[index]);
+        REQUIRE(partition_matches(r, parts, false));
+        bytes_t original = parts->files[index];
+        char *changed = language_owned(r, ALLOC(original.size + 1));
+        memcpy(changed, original.data, original.size);
+        changed[original.size] = 0;
+        char *at = strstr(changed, index ? "assert(" : "goat_saturation_part_0();");
+        REQUIRE(at);
+        *at = 'X';
+        write_text(r, path, (bytes_t){(unsigned char *)changed, original.size});
+        REQUIRE(!partition_matches(r, parts, false));
+        memcpy(changed, original.data, original.size);
+        char *end = strchr(at, '\n');
+        REQUIRE(end);
+        memmove(at, end + 1, original.size - (size_t)(end + 1 - changed));
+        write_text(r,
+                   path,
+                   (bytes_t){(unsigned char *)changed, original.size - (size_t)(end + 1 - at)});
+        REQUIRE(!partition_matches(r, parts, false));
+        write_text(r, path, original);
+    }
+    REQUIRE(partition_matches(r, parts, true));
+}
+
 static const char *
 compile(scenario_run_t *r, config_t *c, const char *driver, bool portable, const char *name) {
     char *raw = fs_environment("CC", NULL);
     const char *cc = raw ? language_owned(r, raw) : "gcc";
     const char *exe = work_path(r, name);
-    const char *args[16];
+    partition_t *parts = partition_driver(r, driver);
+    const char *args[SATURATION_CHUNKS + 16];
     size_t n = 0;
     args[n++] = cc;
     args[n++] = "-std=c11";
@@ -460,12 +676,17 @@ compile(scenario_run_t *r, config_t *c, const char *driver, bool portable, const
         args[n++] = "-DGOAT_FORCE_PORTABLE_INTEGER_MATH";
     args[n++] = string(r, "-I%s", c->repo);
     args[n++] = string(r, "-iquote%s", language_join(r, c->repo, "lib/numbers"));
-    args[n++] = driver;
+    for (size_t i = 0; i < COUNT(parts->names); i++)
+        args[n++] = parts->names[i];
     args[n++] = "-lm";
     args[n++] = "-o";
     args[n++] = exe;
     args[n] = NULL;
-    succeeded(r, run(r, c, args, 120000));
+    /* Short relative source names keep the Windows command line bounded even
+     * for long checkout/build paths. The shared runner resolves CC before chdir. */
+    config_t compiler_config = *c;
+    compiler_config.repo = scenario_work_directory(scenario_run_context(r));
+    succeeded(r, run(r, &compiler_config, args, 120000));
     return exe;
 }
 
@@ -587,6 +808,10 @@ static int probe(const char *mode) {
 }
 
 static void control(scenario_run_t *r, config_t *c) {
+    if (!strcmp(c->kind, "control-partition")) {
+        control_partition(r, c);
+        return;
+    }
     if (!strcmp(c->kind, "control-execution")) {
         control_execution(r, c);
         return;
