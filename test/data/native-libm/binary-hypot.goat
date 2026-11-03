@@ -1,0 +1,1 @@
+const g=func(a,b){return hypot(a,b);};println(g(3,4));println(g(1,1));println(g(0,0));println(g(5,12));println(g(10000000000,10000000000));

@@ -1,0 +1,1 @@
+const g=func(a,b){return pow(a,b);};println(g(2,3));println(g(4,0.5));println(g(1,10));println(g(0.5,2));println(g(10,-1));

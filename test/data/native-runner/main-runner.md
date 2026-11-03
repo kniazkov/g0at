@@ -10,16 +10,20 @@ manifest object, stable ID, adapter kind and ordered command labels.
   string_identity, string_lifetime, string_nested, string_concat, string_chain,
   quadratic, string_conversions, quadratic_repeated, loops, switch, conditional,
   compound.
-- **Five explicit Python compatibility adapters:** access_guards,
-  string_method_errors, saturation, libm, runtime_strings. Their original scripts
+- **Three explicit Python compatibility adapters:** string_method_errors,
+  saturation, runtime_strings. Their original scripts
   still run under the supplied Python interpreter; a missing interpreter is a
   failure, not a skip.
+- **Two C check adapters (#384):** access_guards and libm route their unchanged
+  logical check paths to `native_access_scenarios all` and `native_libm_scenarios all`.
+  Both targets live beside the required policy selftest, keep the original outer
+  300-second deadline, and receive the same Goat/repository/data paths.
 - **One C selftest adapter:** runner. The legacy manifest key `checks/runner.py`
   maps to `native_runner_policy_testing all`; both existence validation and
   execution use that C executable, never the replaced Python selftest.
 
 ```
-cmake --build BUILD --target native_runner_testing native_runner_policy_testing
+cmake --build BUILD --target native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios
 ctest --test-dir BUILD -R '^integration.native_functional\.' --output-on-failure
 native_runner_testing all GOAT PYTHON SELFTEST REPOSITORY BUILD DATA --only access bool_char
 native_runner_testing integration.native_functional.access GOAT PYTHON SELFTEST REPOSITORY BUILD DATA [--keep-work]

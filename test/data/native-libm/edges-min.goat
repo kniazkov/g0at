@@ -1,0 +1,1 @@
+const g=func(a,b){return min(a,b);};g(1,1);g(1.0,1.0);

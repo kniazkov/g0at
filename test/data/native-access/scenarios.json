@@ -1,0 +1,41 @@
+[
+  {
+    "id": "integration.native_access.denied-none"
+  },
+  {
+    "id": "integration.native_access.denied-all"
+  },
+  {
+    "id": "integration.native_access.denied-compile"
+  },
+  {
+    "id": "integration.native_access.retry-off"
+  },
+  {
+    "id": "integration.native_access.retry-auto"
+  },
+  {
+    "id": "integration.native_access.retry-required"
+  },
+  {
+    "id": "integration.native_access.persisted"
+  },
+  {
+    "id": "integration.native_access.compiler-fallback"
+  },
+  {
+    "id": "integration.native_access.control-output"
+  },
+  {
+    "id": "integration.native_access.control-report"
+  },
+  {
+    "id": "integration.native_access.control-fallback"
+  },
+  {
+    "id": "integration.native_access.control-bytecode"
+  },
+  {
+    "id": "integration.native_access.all"
+  }
+]

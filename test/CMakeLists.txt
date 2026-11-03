@@ -479,3 +479,12 @@ target_link_libraries(native_runner_policy_testing PRIVATE goat_native_runner_po
 add_executable(native_runner_testing src/functional/native_runner_testing.c)
 target_link_libraries(native_runner_testing PRIVATE goat_native_runner_policy goat_language_execution_support)
 add_dependencies(native_runner_testing goat native_runner_policy_testing)
+
+# Access/libm retain independent frozen inputs and generated adapter hosts (#384).
+add_executable(native_access_scenarios src/functional/native_access_scenarios.c)
+target_link_libraries(native_access_scenarios PRIVATE goat_language_execution_support)
+add_dependencies(native_access_scenarios goat)
+add_executable(native_libm_scenarios src/functional/native_libm_scenarios.c)
+target_link_libraries(native_libm_scenarios PRIVATE goat_language_execution_support yyjson)
+add_dependencies(native_libm_scenarios goat)
+add_dependencies(native_runner_testing native_access_scenarios native_libm_scenarios)

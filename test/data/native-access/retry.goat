@@ -1,0 +1,1 @@
+public marker=0; const f=func(n){if(n<=0)return 0;return f(n-1)+1;}; var hits=199; var extras=0; println(f(++hits,++extras)); println(f(3)); println(hits); println(extras); var obj={private secret=42;public read=func(){return secret;};}; println(obj.read()); try obj.secret; catch(e) println(e); println(obj);

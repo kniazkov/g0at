@@ -16,7 +16,7 @@
 #define ARGS(...) ((const char *const[]){__VA_ARGS__, NULL})
 
 typedef struct {
-    const char *exe, *python, *selftest, *root, *suite, *checks, *build, *data;
+    const char *exe, *python, *selftest, *access, *libm, *root, *suite, *checks, *build, *data;
     bool keep;
     yyjson_val *record;
     unsigned command;
@@ -54,6 +54,8 @@ static bytes_t read(scenario_run_t *r, const char *path) {
 }
 
 static bool is_file(const char *path) {
+    if (!path)
+        return false;
     fs_info_t info;
     fs_error_t e = {0};
     bool ok = inspect_fs_path(path, true, &info, &e);
@@ -74,6 +76,10 @@ static bool validate_file(const char *relative, bool check, void *user) {
     config_t *c = user;
     if (check && !strcmp(relative, "checks/runner.py"))
         return is_file(c->selftest);
+    if (check && !strcmp(relative, "checks/access.py"))
+        return is_file(c->access);
+    if (check && !strcmp(relative, "checks/libm.py"))
+        return is_file(c->libm);
     char *path = join_fs_path(check ? c->checks : c->suite, relative, NULL);
     bool ok = path && is_file(path);
     FREE(path);
@@ -449,6 +455,18 @@ static void body(scenario_run_t *r, void *user) {
         const char *check = field(r, c->record, "check");
         if (!strcmp(check, "checks/runner.py"))
             execute(r, c, "check", ARGS(c->selftest, "all", work, c->data), NULL);
+        else if (!strcmp(check, "checks/access.py") || !strcmp(check, "checks/libm.py"))
+            execute(r,
+                    c,
+                    "check",
+                    ARGS(!strcmp(check, "checks/access.py") ? c->access : c->libm,
+                         "all",
+                         c->exe,
+                         c->root,
+                         work,
+                         c->data,
+                         "--keep-work"),
+                    NULL);
         else
             execute(r,
                     c,
@@ -490,6 +508,25 @@ static bool selected_noop(yyjson_val *record, void *user) {
 
 static char *joined(const char *root, const char *path) {
     return join_fs_path(root, path, NULL);
+}
+
+/* Adapters are built beside the required policy selftest. Keep the public
+ * manifest runner CLI and its unchanged logical legacy check paths stable. */
+static char *sibling(const char *selftest, const char *name) {
+    char *path = absolute_fs_path(selftest, NULL);
+    if (!path)
+        return NULL;
+    char *slash = strrchr(path, '/'), *backslash = strrchr(path, '\\');
+    if (backslash && (!slash || backslash > slash))
+        slash = backslash;
+    if (!slash) {
+        FREE(path);
+        return NULL;
+    }
+    slash[1] = 0;
+    char *result = joined(path, name);
+    FREE(path);
+    return result;
 }
 
 int main(int argc, char **argv) {
@@ -538,9 +575,20 @@ int main(int argc, char **argv) {
         yyjson_read_err parse = {0};
         yyjson_doc *doc = read ? yyjson_read_opts(raw, size, 0, NULL, &parse) : NULL;
         yyjson_val *cases = yyjson_doc_get_root(doc);
+#ifdef _WIN32
+        const char *suffix = ".exe";
+#else
+        const char *suffix = "";
+#endif
+        char access_name[64], libm_name[64];
+        snprintf(access_name, sizeof(access_name), "native_access_scenarios%s", suffix);
+        snprintf(libm_name, sizeof(libm_name), "native_libm_scenarios%s", suffix);
+        char *access = sibling(argv[4], access_name), *libm = sibling(argv[4], libm_name);
         config_t c = {.exe = exe,
                       .python = argv[3],
                       .selftest = argv[4],
+                      .access = access,
+                      .libm = libm,
                       .root = root,
                       .suite = suite,
                       .checks = checks,
@@ -606,6 +654,8 @@ int main(int argc, char **argv) {
         yyjson_doc_free(doc);
         FREE(raw);
         FREE(manifest);
+        FREE(access);
+        FREE(libm);
         FREE(build);
         FREE(checks);
         FREE(suite);

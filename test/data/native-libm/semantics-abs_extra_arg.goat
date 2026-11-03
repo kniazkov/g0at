@@ -1,0 +1,1 @@
+const f=func(n){var r=abs(n++,n++);return r*100+n;};println(f(-3));

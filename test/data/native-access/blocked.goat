@@ -1,0 +1,1 @@
+var obj={private x=42;}; const f=func(value){return value.x;}; try f(obj); catch(e) println(e);

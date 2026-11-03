@@ -40,3 +40,7 @@ test/data/native/**/program.goat -text
 test/data/native/**/expected_output.txt -text
 test/data/native-runner/*.bin -text
 test/data/native-runner/*.json -text
+
+# Frozen native access/libm sources, generated host templates and provenance.
+test/data/native-access/** -text
+test/data/native-libm/** -text

@@ -1,0 +1,1 @@
+const f=func(n){return int(n);};println(f(-9223372036854775808));println(f(-7));println(f(-3.5));println(f(0));println(f(5));

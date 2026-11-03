@@ -1,0 +1,1 @@
+const f=func(n){var x=n;var r=cos(n,x++>0);return r+x;};println(f(1));

@@ -1,0 +1,1 @@
+const f=func(n){return sqrt(n);};println(f(0));println(f(1));println(f(2));println(f(10));
