@@ -511,3 +511,8 @@ add_dependencies(native_performance_scenarios goat)
 find_package(Threads REQUIRED)
 add_executable(timed_execution_testing src/support/timed_execution_testing.c)
 target_link_libraries(timed_execution_testing PRIVATE goat_test_support goat_process_watch_support Threads::Threads)
+
+# Building the existing correctness-suite entry targets must build every runner
+# selected by their labels, even when callers use an explicit target list.
+add_dependencies(scenario_execution_testing timed_execution_testing)
+add_dependencies(native_runner_testing native_performance_scenarios timed_execution_testing)
