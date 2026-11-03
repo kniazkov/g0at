@@ -5,6 +5,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <dirent.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -30,21 +31,28 @@ static bool wanted_line(const char *line, const char *const *keys) {
     return false;
 }
 
-static void copy_fields(FILE *out, const char *path, const char *const *keys) {
+static int copy_fields(FILE *out, const char *path, const char *const *keys) {
     FILE *in = fopen(path, "rb");
     if (!in) {
-        fprintf(out, "file=%s errno=%d\n", path, errno);
-        return;
+        int error = errno;
+        fprintf(out, "file=%s errno=%d\n", path, error);
+        return error;
     }
     fprintf(out, "file=%s\n", path);
     char line[4096];
     while (fgets(line, sizeof(line), in))
         if (wanted_line(line, keys))
             fputs(line, out);
-    if (ferror(in))
-        fprintf(out, "read-error errno=%d\n", errno);
-    if (fclose(in))
-        fprintf(out, "close-error errno=%d\n", errno);
+    int error = ferror(in) ? (errno ? errno : EIO) : 0;
+    if (error)
+        fprintf(out, "read-error errno=%d\n", error);
+    if (fclose(in)) {
+        int close_error = errno ? errno : EIO;
+        fprintf(out, "close-error errno=%d\n", close_error);
+        if (!error || close_error == EACCES || close_error == EPERM)
+            error = close_error;
+    }
+    return error;
 }
 
 static bool compiler(const char *name) {
@@ -52,7 +60,84 @@ static bool compiler(const char *name) {
            || !strcmp(name, "ld") || !strcmp(name, "ld.bfd") || !strcmp(name, "ld.gold");
 }
 
-static void processes(FILE *out) {
+/* Maps identify ranges, not allocation call sites. Keep only an aggregate and
+ * a change fingerprint; do not publish raw addresses or mapped-file paths. */
+static int mapping_summary(FILE *out, const char *path) {
+    FILE *in = fopen(path, "rb");
+    if (!in) {
+        int error = errno;
+        fprintf(out, "mapping-summary=%s errno=%d\n", path, error);
+        return error;
+    }
+    size_t mappings = 0, anonymous = 0, malformed = 0;
+    uint64_t bytes = 0, anonymous_bytes = 0, fingerprint = UINT64_C(14695981039346656037);
+    char line[4096];
+    while (fgets(line, sizeof(line), in)) {
+        unsigned long long first, last, offset, inode;
+        unsigned major, minor;
+        char permissions[5];
+        int consumed = 0;
+        int fields = sscanf(line,
+                            "%llx-%llx %4s %llx %x:%x %llu %n",
+                            &first,
+                            &last,
+                            permissions,
+                            &offset,
+                            &major,
+                            &minor,
+                            &inode,
+                            &consumed);
+        if (fields != 7 || consumed <= 0 || last < first) {
+            ++malformed;
+        } else {
+            ++mappings;
+            bytes += (uint64_t)(last - first);
+            const char *name = line + consumed;
+            if (!*name || *name == '\n' || !strncmp(name, "[heap]", 6)
+                || !strncmp(name, "[anon:", 6)) {
+                ++anonymous;
+                anonymous_bytes += (uint64_t)(last - first);
+                /* Unsigned arithmetic is intentional. This is a change hint,
+                 * not a cryptographic identity or proof of no mapping churn. */
+                fingerprint = (fingerprint ^ (uint64_t)first) * UINT64_C(1099511628211);
+                fingerprint = (fingerprint ^ (uint64_t)last) * UINT64_C(1099511628211);
+                for (size_t i = 0; permissions[i]; ++i)
+                    fingerprint =
+                        (fingerprint ^ (unsigned char)permissions[i]) * UINT64_C(1099511628211);
+            }
+        }
+        /* A long mapped-file path is irrelevant to the prefix, but must not
+         * be counted as another mapping on the next iteration. */
+        if (!strchr(line, '\n')) {
+            int ch;
+            while ((ch = fgetc(in)) != '\n' && ch != EOF) {
+            }
+        }
+    }
+    int error = ferror(in) ? (errno ? errno : EIO) : 0;
+    fprintf(out,
+            "mapping-summary=%s count=%zu bytes=%" PRIu64 " anonymous-count=%zu "
+            "anonymous-bytes=%" PRIu64 " anonymous-fingerprint=%016" PRIx64 " malformed=%zu\n",
+            path,
+            mappings,
+            bytes,
+            anonymous,
+            anonymous_bytes,
+            fingerprint,
+            malformed);
+    if (error)
+        fprintf(out, "maps-read-error errno=%d\n", error);
+    if (fclose(in)) {
+        int close_error = errno ? errno : EIO;
+        fprintf(out, "maps-close-error errno=%d\n", close_error);
+        if (!error || close_error == EACCES || close_error == EPERM)
+            error = close_error;
+    }
+    return error;
+}
+
+static void processes(FILE *out, bool memory_detail, unsigned long sequence) {
+    static bool mapping_access = true;
     DIR *directory = opendir("/proc");
     if (!directory) {
         fprintf(out, "proc-open errno=%d\n", errno);
@@ -69,6 +154,39 @@ static void processes(FILE *out) {
                                        "voluntary_ctxt_switches:",
                                        "nonvoluntary_ctxt_switches:",
                                        NULL};
+    static const char *const memory_keys[] = {"Name:",
+                                              "State:",
+                                              "Pid:",
+                                              "PPid:",
+                                              "VmPeak:",
+                                              "VmSize:",
+                                              "VmHWM:",
+                                              "VmRSS:",
+                                              "RssAnon:",
+                                              "RssFile:",
+                                              "RssShmem:",
+                                              "VmData:",
+                                              "VmPTE:",
+                                              "VmSwap:",
+                                              "HugetlbPages:",
+                                              "THP_enabled:",
+                                              "Threads:",
+                                              "voluntary_ctxt_switches:",
+                                              "nonvoluntary_ctxt_switches:",
+                                              NULL};
+    static const char *const rollup_keys[] = {"Rss:",
+                                              "Pss:",
+                                              "Pss_Anon:",
+                                              "Pss_File:",
+                                              "Pss_Shmem:",
+                                              "Private_Clean:",
+                                              "Private_Dirty:",
+                                              "Anonymous:",
+                                              "LazyFree:",
+                                              "AnonHugePages:",
+                                              "Swap:",
+                                              "SwapPss:",
+                                              NULL};
     for (;;) {
         errno = 0;
         entry = readdir(directory);
@@ -100,15 +218,28 @@ static void processes(FILE *out) {
         snprintf(path, sizeof(path), "/proc/%s/stat", entry->d_name);
         copy_fields(out, path, NULL);
         snprintf(path, sizeof(path), "/proc/%s/status", entry->d_name);
-        copy_fields(out, path, keys);
+        copy_fields(out, path, memory_detail ? memory_keys : keys);
+        if (memory_detail && mapping_access && !strcmp(name, "cc1") && sequence % 6 == 0) {
+            snprintf(path, sizeof(path), "/proc/%s/maps", entry->d_name);
+            int error = mapping_summary(out, path);
+            if (error != EACCES && error != EPERM) {
+                snprintf(path, sizeof(path), "/proc/%s/smaps_rollup", entry->d_name);
+                error = copy_fields(out, path, rollup_keys);
+            }
+            if (error == EACCES || error == EPERM) {
+                mapping_access = false;
+                fputs("mapping detail denied; further maps/smaps reads disabled\n", out);
+            }
+        }
     }
     if (closedir(directory))
         fprintf(out, "proc-close errno=%d\n", errno);
 }
 
-static bool sample(FILE *out, unsigned long sequence) {
-    struct timespec wall, mono;
-    if (clock_gettime(CLOCK_REALTIME, &wall) || clock_gettime(CLOCK_MONOTONIC, &mono))
+static bool sample(FILE *out, unsigned long sequence, bool memory_detail) {
+    struct timespec wall, mono, cpu;
+    if (clock_gettime(CLOCK_REALTIME, &wall) || clock_gettime(CLOCK_MONOTONIC, &mono)
+        || clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cpu))
         return false;
     fprintf(out,
             "sample=%lu wall=%lld.%09ld monotonic=%lld.%09ld\n",
@@ -146,7 +277,33 @@ static bool sample(FILE *out, unsigned long sequence) {
                                         NULL};
     for (size_t i = 0; paths[i]; i++)
         copy_fields(out, paths[i], NULL);
-    processes(out);
+    if (memory_detail) {
+        static const char *const vm_keys[] = {"pgfault ",
+                                              "pgmajfault ",
+                                              "pgalloc_",
+                                              "pgfree ",
+                                              "pgactivate ",
+                                              "pgdeactivate ",
+                                              "pgscan_",
+                                              "pgsteal_",
+                                              "allocstall_",
+                                              "compact_",
+                                              "thp_",
+                                              "numa_",
+                                              "workingset_refault_",
+                                              "pswpin ",
+                                              "pswpout ",
+                                              NULL};
+        copy_fields(out, "/proc/vmstat", vm_keys);
+    }
+    processes(out, memory_detail, sequence);
+    struct timespec end, cpu_end;
+    if (clock_gettime(CLOCK_MONOTONIC, &end) || clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cpu_end))
+        return false;
+    fprintf(out,
+            "observer-sample-cost wall-ns=%lld cpu-ns=%lld\n",
+            (long long)(end.tv_sec - mono.tv_sec) * 1000000000 + end.tv_nsec - mono.tv_nsec,
+            (long long)(cpu_end.tv_sec - cpu.tv_sec) * 1000000000 + cpu_end.tv_nsec - cpu.tv_nsec);
     fputc('\n', out);
     return !ferror(out) && fflush(out) == 0;
 }
@@ -169,15 +326,20 @@ int main(int argc, char **argv) {
         return 1;
     }
     struct utsname system;
-    if (uname(&system) == 0)
+    bool memory_detail = false;
+    if (uname(&system) == 0) {
+        memory_detail = !strcmp(system.machine, "aarch64");
         fprintf(out,
-                "system=%s release=%s machine=%s CLK_TCK=%ld online_cpus=%ld\n",
+                "system=%s release=%s machine=%s CLK_TCK=%ld online_cpus=%ld PAGE_SIZE=%ld "
+                "memory-detail=%d\n",
                 system.sysname,
                 system.release,
                 system.machine,
                 sysconf(_SC_CLK_TCK),
-                sysconf(_SC_NPROCESSORS_ONLN));
-    else
+                sysconf(_SC_NPROCESSORS_ONLN),
+                sysconf(_SC_PAGESIZE),
+                (int)memory_detail);
+    } else
         fprintf(out, "uname errno=%d\n", errno);
     static const char *const cpu_keys[] = {"model name",
                                            "CPU implementer",
@@ -185,10 +347,15 @@ int main(int argc, char **argv) {
                                            "CPU part",
                                            NULL};
     copy_fields(out, "/proc/cpuinfo", cpu_keys);
+    if (memory_detail) {
+        copy_fields(out, "/sys/kernel/mm/transparent_hugepage/enabled", NULL);
+        copy_fields(out, "/sys/kernel/mm/transparent_hugepage/defrag", NULL);
+        copy_fields(out, "/sys/kernel/mm/transparent_hugepage/hpage_pmd_size", NULL);
+    }
     bool ok = true;
     unsigned long sequence = 0;
     while (!stopped) {
-        if (!sample(out, sequence++)) {
+        if (!sample(out, sequence++, memory_detail)) {
             ok = false;
             break;
         }

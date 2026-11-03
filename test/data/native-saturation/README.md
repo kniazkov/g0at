@@ -273,3 +273,47 @@ and process starttime with the monotonic interval and CTest results. A process
 disappearing does not prove success, and five-second sampling cannot resolve
 exact compiler completion time. These samples are diagnostic evidence, not a
 workaround or a claim that the intermittent compiler delay has been fixed.
+
+### AArch64 memory-detail observations
+
+The diagnostic final head `7380e1ecd6aa3367f9915a9fd801266494023683`
+passed [all 11 Build jobs](https://github.com/kniazkov/g0at/actions/runs/41654522348)
+and [all three vector jobs](https://github.com/kniazkov/g0at/actions/runs/41654522178).
+However, after merge, the exact master head
+`bb07744c4af16506a88fb6cf569196392b08a92b` again failed the AArch64 musl
+builtin compiler deadline in both the split and complete manifest cases
+([job and retained artifacts](https://github.com/kniazkov/g0at/actions/runs/41664411262/job/126015783384)).
+This is a remaining master-gate failure, not evidence that the flakiness was fixed.
+
+The failed `cc1` processes each consumed about 115 seconds of CPU in a
+115-second sampled span: about 35 user seconds and 80 system seconds, with
+45.8 million minor page faults and no major faults. Successful prior Debug
+compiles already had the same kernel-heavy pattern: about 30 user seconds,
+65 system seconds and 46.3 million minor faults over 95-second sampled spans.
+The failed spans showed no recorded cgroup throttling, OOM, memory-pressure,
+host steal or I/O-wait increase. These are sampled observations, not complete
+process lifetimes, and they do not identify the source of the minor faults.
+
+On AArch64 only, the existing observer now adds virtual-memory, anonymous/file
+RSS, page-table and swap fields, host `vmstat` fault/reclaim/THP/NUMA counters,
+and read-only transparent-huge-page configuration. Every sixth sample (roughly
+30 seconds), it summarizes each observed `cc1` memory map and reads selected
+`smaps_rollup` fields. Map summaries retain counts, sizes and a change
+fingerprint, not addresses or file paths. An access denial disables all further
+maps/smaps attempts for that observer; it does not request capabilities or
+change access settings. Missing files and normal process-exit races remain
+visible. Each sample records the observer's own wall and CPU cost so collection
+overhead is not assumed to be free. The artifact also records compiler/package
+identity, compiler and libc hashes, and page size without compiling another
+program.
+
+Growing mapping/RSS totals can distinguish growth from repeated page reuse;
+mapping changes and kernel reclaim/THP counters provide additional correlation.
+Stable mappings do not rule out reuse between samples or `MADV_DONTNEED` on
+existing ranges. Proc reads are not atomic, host counters include other work,
+and neither mapping fingerprints nor minor-fault counts identify a call site.
+In particular, [GCC 14.2's collector](https://github.com/gcc-mirror/gcc/blob/releases/gcc-14.2.0/gcc/ggc-page.cc)
+contains both unmapping and `MADV_DONTNEED` paths, while musl's allocator also
+uses mappings. These are investigation candidates, not an established cause.
+No tracing, preloading, new package, security change, additional test/compiler
+run, deadline extension, driver change or compiler-flag change is introduced.
