@@ -1,0 +1,104 @@
+{
+  "source": "test/src/native/checks/saturation.py",
+  "commit": "9823bd25fb28643af92ac1a6f766909209994867",
+  "source_sha256": "1f34258d5bbf2207f08674fd31fd227a94fd89e51c1a0996cf1fce9b0f43216a",
+  "method": "Unmodified original script executed using runpy with a return trace capturing independent Python expected text; all 31 original child commands passed in Debug. Generated file bytes copied after completion, LF baseline.",
+  "edge_pairs": 196,
+  "frozen_pairs": 1000,
+  "vm_output_lines": 658,
+  "driver_assertions_per_variant": 7176,
+  "files": {
+    "division.expected": {
+      "bytes": 8,
+      "sha256": "314ab9252752c5b91e994e8f3bf1ea2b08e949ebee43f17f5a236cc504af2f68"
+    },
+    "division.goat": {
+      "bytes": 83,
+      "sha256": "61f73ecf0c738944e23409ebe34cf939d3f0a66bf09113c82105ffdc8f7f7a53"
+    },
+    "double_negation.expected": {
+      "bytes": 20,
+      "sha256": "26d928ca7798882c482edb82cf892a2036308dff7482080e65ac947719112ef2"
+    },
+    "double_negation.goat": {
+      "bytes": 33,
+      "sha256": "7af58705aee1695ce9b2b81f236a9b4df8dbdfbb612a2416189abdcae9a058dc"
+    },
+    "driver.c.txt": {
+      "bytes": 540477,
+      "sha256": "81ec07d2f971027d96a2f7362c2ac7fee3352f5f04e06b8a654e39efd91964ef"
+    },
+    "expected.txt": {
+      "bytes": 9604,
+      "sha256": "bed9c58b3100a078f1a2dd7d927ffd6c75f3807e51f7d5d72ae118d8bcc494e8"
+    },
+    "invalid0.goat": {
+      "bytes": 29,
+      "sha256": "c07134136efb2d7608c985d34dcbeaf779679c1fe3a7ab3c69a461530162d2bd"
+    },
+    "invalid1.goat": {
+      "bytes": 30,
+      "sha256": "7970744733fc875a86a2001b18a56862e983d2221599926478ba3fdf09a54afa"
+    },
+    "invalid2.goat": {
+      "bytes": 30,
+      "sha256": "90f1539a110da7eec545429870ceb1a72d30765e381e80400050590e682fdc01"
+    },
+    "invalid3.goat": {
+      "bytes": 210,
+      "sha256": "bb2dd9cf25df05fc27035108a0a3aeb4442bc34fdf91b51b449adcb63947197f"
+    },
+    "invalid4.goat": {
+      "bytes": 30,
+      "sha256": "f19cc6e6f4a94881b8e94dcf8763ed458af8b43fb31ba3219b81c93ae41b4407"
+    },
+    "invalid5.goat": {
+      "bytes": 31,
+      "sha256": "942cc24e1ae23414da48162527cd242780740c1dfa979e72a61ca7db6824e1d9"
+    },
+    "invalid6.goat": {
+      "bytes": 32,
+      "sha256": "e8f4f8fd70a5c2af0455cf5dc82aeaaa8377d9b11bf67de25cdc3c916b45afaa"
+    },
+    "invalid7.goat": {
+      "bytes": 33,
+      "sha256": "c3abe8b3c2e6b0b25fe9495cd2eec66f1c139bdff60ef993810a5ad40284672a"
+    },
+    "minimum.expected": {
+      "bytes": 21,
+      "sha256": "6597fb5664deb37b5413ea87a2566ffb9da2fb1376d820e4a40dd30c05aa8b04"
+    },
+    "minimum.goat": {
+      "bytes": 30,
+      "sha256": "3e51ba92cf66988c89f96bb032749ee30c934c68a7ae972d6eff7c26677cd2f0"
+    },
+    "order.expected": {
+      "bytes": 40,
+      "sha256": "80688ba3ae2cd0efbd570644776a00726224b89014a150b315fd809814797bdb"
+    },
+    "order.goat": {
+      "bytes": 70,
+      "sha256": "2f9e3524d3becc62d7506121d13baf6f4ea7ebe9dec115414e908a97628e52d6"
+    },
+    "saturation.goat": {
+      "bytes": 25236,
+      "sha256": "38fe364c7296d1c18ea4dc5347017d3787f862dae5ebdd746ceaa104aa81b39d"
+    },
+    "spaced_minimum.expected": {
+      "bytes": 21,
+      "sha256": "6597fb5664deb37b5413ea87a2566ffb9da2fb1376d820e4a40dd30c05aa8b04"
+    },
+    "spaced_minimum.goat": {
+      "bytes": 31,
+      "sha256": "ea39c9471b2565aa9a409f93808422571c0dd35f7ea6173a29ed40c4426fef71"
+    },
+    "unchanged.expected": {
+      "bytes": 12,
+      "sha256": "006b2512065c5955da7bb3476d5f59da1750799529307df96f254cacf4cac139"
+    },
+    "unchanged.goat": {
+      "bytes": 79,
+      "sha256": "e20e66023427d43ba5e92adc67e9f92553be725de06753b7d8eda16c10c9520c"
+    }
+  }
+}

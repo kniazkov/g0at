@@ -533,6 +533,23 @@ if(NOT WIN32 AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data"
     -- -fsanitize=undefined -fno-sanitize-recover=all)
 endif()
+# #386: retain the original Python route until full cross-platform parity is green.
+if(Python3_Interpreter_FOUND)
+  goat_scenario(migration.native_saturation.original-parity "native;native-saturation-migration" TIMEOUT 660 COMMAND
+    "${CMAKE_COMMAND}" "-DPYTHON=${Python3_EXECUTABLE}" "-DGOAT=$<TARGET_FILE:goat>"
+    "-DRUNNER=$<TARGET_FILE:native_saturation_scenarios>"
+    "-DREPOSITORY=${PROJECT_SOURCE_DIR}" "-DBUILD=${CMAKE_BINARY_DIR}"
+    -P "${PROJECT_SOURCE_DIR}/test/run_native_saturation_original.cmake")
+endif()
+foreach(native_saturation_case IN ITEMS vm-none-off vm-all-off vm-all-auto vm-all-required persisted helpers-builtin helpers-portable valid-minimum valid-spaced_minimum valid-double_negation valid-division valid-order valid-unchanged invalid-0 invalid-1 invalid-2 invalid-3 invalid-4 invalid-5 invalid-6 invalid-7 control-output control-report control-input control-oracle control-host control-invalid control-execution corpus)
+  set(native_saturation_timeout 330)
+  if(native_saturation_case MATCHES "^(helpers-builtin|helpers-portable|control-host)$")
+    set(native_saturation_timeout 390)
+  endif()
+  goat_scenario(integration.native_saturation.${native_saturation_case} "native;native-saturation-migration" TIMEOUT ${native_saturation_timeout} COMMAND
+    "$<TARGET_FILE:native_saturation_scenarios>" "integration.native_saturation.${native_saturation_case}"
+    "$<TARGET_FILE:goat>" "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 # Derive stable IDs from the same read-only manifest consumed by the C runner.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/test/data/native/list.json")
 file(READ "${PROJECT_SOURCE_DIR}/test/data/native/list.json" native_runner_manifest)
@@ -640,9 +657,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1855 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1884 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (native string cases split in #385); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (native saturation cases split in #386); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
