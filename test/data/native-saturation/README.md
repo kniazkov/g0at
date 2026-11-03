@@ -322,7 +322,10 @@ run, deadline extension, driver change or compiler-flag change is introduced.
 
 The subsequent diagnostic replay is explicitly separate from the normal gate.
 After the normal musl job has finished or failed, AArch64 runs the existing
-`helpers-builtin` C scenario once in `/results/compiler-pass-replay`. Only this
+`helpers-builtin` C scenario once in a private container temporary directory.
+Its generated scenario is archived as
+`/results/compiler-pass-replay/scenario.tar.gz`, so private scenario directories
+do not prevent the host artifact uploader from reading the results. Only this
 additional invocation uses a compiler wrapper adding `-ftime-report`,
 `-ftime-report-details` and `-fmem-report`. The wrapper immediately executes the
 same `gcc`; `-O2`, the frozen 540,477-byte driver, all 7,176 assertions and the
@@ -331,9 +334,10 @@ the existing scenario process-tree cleanup, not a separate timeout mechanism.
 
 The replay retains GCC's report in its scenario `command-2.stderr`, with its
 command log, generated files, complete runner output and a separate resource
-observation. `status.log` records the replay and observer exit statuses. A
-reporting timeout is evidence of an incomplete report, never a successful
-compile. The original job exit status remains authoritative even if the
+observation outside the archive. `status.log` records the replay, observer and
+archive exit statuses independently; archive failure never masks the replay
+status. A reporting timeout is evidence of an incomplete report, never a
+successful compile. The original job exit status remains authoritative even if the
 additional replay passes. If the original build failed before producing the
 required executables, no replay is attempted.
 

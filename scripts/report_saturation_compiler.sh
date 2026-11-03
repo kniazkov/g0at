@@ -16,15 +16,19 @@ printf '#!/usr/bin/env bash\nexec %q -ftime-report -ftime-report-details -fmem-r
     "$compiler" > "$output/gcc-report"
 chmod +x "$output/gcc-report"
 observer_pid=""
+# Native scenarios create private 0700 directories. Keep them inside the
+# container and export an archive, not an unreadable bind-mounted directory.
+replay_work="$(mktemp -d "${TMPDIR:-/tmp}/goat-compiler-replay.XXXXXX")"
 finish_observer() {
-    local status=$? observer_status=0
+    local status=$? observer_status=0 archive_status=0
     trap - EXIT
     if [ -n "$observer_pid" ]; then
         kill -TERM "$observer_pid" 2>/dev/null || true
         wait "$observer_pid" || observer_status=$?
     fi
-    printf 'replay_status=%s observer_status=%s end_wall=%s\n' \
-        "$status" "$observer_status" "$(date +%s)" >> "$output/status.log"
+    tar -czf "$output/scenario.tar.gz" -C "$replay_work" . || archive_status=$?
+    printf 'replay_status=%s observer_status=%s archive_status=%s end_wall=%s\n' \
+        "$status" "$observer_status" "$archive_status" "$(date +%s)" >> "$output/status.log"
     exit "$status"
 }
 trap finish_observer EXIT
@@ -36,5 +40,5 @@ printf 'Original helper scenario, driver, assertions, -O2 and 120/300-second lim
 "$observer" "$output/resources.log" &
 observer_pid=$!
 CC="$output/gcc-report" "$runner" integration.native_saturation.helpers-builtin \
-    "$goat" "$repo" "$output" "$repo/test/data" --keep-work \
+    "$goat" "$repo" "$replay_work" "$repo/test/data" --keep-work \
     > "$output/runner.stdout" 2> "$output/runner.stderr"
