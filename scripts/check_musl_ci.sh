@@ -57,11 +57,11 @@ finish_native_diagnostics() {
     # Run once, only after all normal work has ended (or failed). Keep this
     # report separate from the gate: no replay result can erase its status.
     if [ "$(uname -m)" = aarch64 ] \
-        && [ -x /work/debug/goat ] && [ -x /work/debug/native_saturation_scenarios ] \
+        && [ -x /work/debug/goat ] && [ -f /work/debug/libcommon.a ] \
         && [ -x /work/musl_compile_observer ]; then
         local replay_status=0
         bash /work/source/scripts/report_saturation_compiler.sh \
-            /work/debug/goat /work/debug/native_saturation_scenarios /work/source \
+            /work/debug/goat /work/source \
             /results/compiler-pass-replay /work/musl_compile_observer || replay_status=$?
         printf 'Original musl job status=%s; isolated compiler-report replay status=%s\n' \
             "$status" "$replay_status"

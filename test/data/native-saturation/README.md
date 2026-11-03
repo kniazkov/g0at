@@ -318,34 +318,40 @@ uses mappings. These are investigation candidates, not an established cause.
 No tracing, preloading, new package, security change, additional test/compiler
 run, deadline extension, driver change or compiler-flag change is introduced.
 
-### Isolated AArch64 compiler-pass replay
+### Isolated AArch64 diagnostic compiler report
 
-The subsequent diagnostic replay is explicitly separate from the normal gate.
-After the normal musl job has finished or failed, AArch64 runs the existing
-`helpers-builtin` C scenario once in a private container temporary directory.
-Its generated scenario is archived as
-`/results/compiler-pass-replay/scenario.tar.gz`, so private scenario directories
-do not prevent the host artifact uploader from reading the results. Only this
-additional invocation uses a compiler wrapper adding `-ftime-report`,
-`-ftime-report-details` and `-fmem-report`. The wrapper immediately executes the
-same `gcc`; `-O2`, the frozen 540,477-byte driver, all 7,176 assertions and the
-existing 120-second command/300-second scenario limits are unchanged. It uses
-the existing scenario process-tree cleanup, not a separate timeout mechanism.
+After normal musl work has finished or failed, AArch64 performs one explicitly
+separate diagnostic compile. It copies the frozen 540,477-byte `driver.c.txt`
+byte-for-byte and verifies the copy, then exports `saturation.goat` with the
+same Goat executable. The export keeps its original 120-second limit.
 
-The replay retains GCC's report in its scenario `command-2.stderr`, with its
-command log, generated files, complete runner output and a separate resource
-observation outside the archive. `status.log` records the replay, observer and
-archive exit statuses independently; archive failure never masks the replay
-status. A reporting timeout is evidence of an incomplete report, never a
-successful compile. The original job exit status remains authoritative even if the
-additional replay passes. If the original build failed before producing the
-required executables, no replay is attempted.
+The additional GCC compile alone has a 300-second diagnostic deadline, allowing
+its final pass report to finish. The normal CTest commands, original 120-second
+compiler limit, 300-second scenario limit, frozen fixtures and assertions are
+unchanged. Diagnostic success never counts as a passing test and cannot replace
+a failed normal gate. The resulting binary is not executed.
 
-This adds at most one bounded helper scenario after the normal test workload,
-including a second compiler process. Reporting and resource collection have
-their own overhead; replay timing must not be presented as unchanged-gate
-timing or proof of stability. No other test runs concurrently with the replay
-in the container. Compiler pass totals can identify where time is accounted,
-but some AArch64 passes have no individual time variable, and GGC reports do
-not account for every ordinary heap allocation. No optimization is disabled
-and no allocator, kernel or security setting is changed.
+The command retains `-std=c11 -O2 -Wall -Wextra -Werror`, the repository include
+path, `lib/numbers` quote-include path and `-lm`. Only `-ftime-report`,
+`-ftime-report-details` and `-fmem-report` are added. No optimization, allocator,
+kernel or security setting changes. `compiler.command` retains the exact argv,
+and `driver.sha256` records the copied driver's hash.
+
+The small diagnostic command helper links the existing `libcommon.a` and uses
+its owned process-tree runner, monotonic deadline and full streaming output
+callbacks. Timeout or owner death triggers the existing descendant cleanup;
+`compiler.status` records child status, signal, system error and cleanup error.
+Cleanup errors fail the diagnostic rather than being treated as success.
+
+Generated files stay in private container temporary storage and are exported as
+`/results/compiler-pass-replay/scenario.tar.gz`, avoiding private directories in
+the host upload tree. The archive includes `compiler.stderr` (the GCC report),
+compiler/export status files, frozen driver, generated source and compiler output.
+Observer output and `status.log` stay outside the archive; diagnostic, observer
+and archive statuses are recorded independently. The original musl job exit
+status remains authoritative. A timeout means an incomplete report, not success.
+
+Reporting and resource collection add overhead; these timings must not be
+presented as unchanged-gate timings or proof of stability. No normal test runs
+concurrently with the diagnostic. Some AArch64 passes have no individual time
+variable, and GGC reports do not account for every ordinary heap allocation.
