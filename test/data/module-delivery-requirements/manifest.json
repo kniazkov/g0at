@@ -1,0 +1,11 @@
+{
+  "original": "scripts/check_module_delivery_requirements.py",
+  "base": "5602d440fbe306b01c73c516d07de5c50f92362c",
+  "originalSha256": "2706afa1bfbb0a45a2167949e06139ab75f8fe308a884818e848567155c0f368",
+  "files": {
+    "main.goat": "626e45b999d1c82e793495677aeb539063a78ce32d683a86e52d8950f05129c7",
+    "audit.gmod": "cf403411136e97251aa52182862f80d1a750b9aba5f88377df93c5941412f9bd",
+    "floor.gmod": "3abb853554ae7d6c4dc691d497e2fd2c6af6f7bcf79a7c65f0e90a40e780a133",
+    "runtime_floor.c.txt": "ad6fbe763049de1a0c08147236763bf564c96ff573cfee2d0f226027d9d0f79d"
+  }
+}

@@ -1,0 +1,15 @@
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+extern int floor_equal(const void *, const void *, size_t);
+__asm__(".symver floor_equal,__memcmpeq@GLIBC_2.35");
+__attribute__((constructor)) static void verify_floor_dependency(void) {
+    if (floor_equal("same", "same", 4) || !floor_equal("same", "else", 4))
+        _Exit(91);
+    const char *path = getenv("GOAT_FLOOR_MARKER");
+    if (path) {
+        FILE *file = fopen(path, "wb");
+        if (!file || fputs("memcmpeq-2.35\n", file) < 0 || fclose(file))
+            _Exit(92);
+    }
+}
