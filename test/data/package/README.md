@@ -1,20 +1,25 @@
 # Package relocation fixtures (#391)
 
 `sdk.c.txt` is the exact UTF-8 string literal passed to `probe_source.write_text` in
-`scripts/check_package.py` at base `f97e0388`. The temporary parity wrapper checks
-AST correspondence and SHA-256 before running either implementation.
-Both frozen inputs use `-text` in `.gitattributes` to preserve their exact LF
-bytes even when a Windows checkout enables `core.autocrlf`. Remove only the
-original script attribute when retiring that script; keep the SDK fixture attribute.
+`scripts/check_package.py` at base `f97e0388`. Before retirement, the temporary
+parity wrapper verified AST correspondence and raw SHA-256 for both inputs.
+The fixture keeps `-text` in `.gitattributes` to preserve exact bytes on Windows.
+The original and temporary wrapper remain available in Git at parity head
+`47293b59f31036b771530655dca153866b49924b`.
 
 SDK SHA-256: `a2ab9a59cbe81ec42a659d33a84906208699d01823833e71d4665ffd482b03ae`
 Original SHA-256: `2e0f1e3a69fe7b2722590044210d59e45d984f133d89c2a34f811e8151ad3243`
 
-Both implementations unpack the same produced archive independently, relocate it,
+During parity both implementations unpacked the same produced archive independently.
+The C runner continues to relocate it,
 exercise interpreter/bytecode/native/string/numeric/SDK checks, and run the full
 module-delivery end-to-end suite using relocated tools with its 300-second budget.
 Archive enumeration is sorted ZIP files followed by sorted tar.gz files.
-Temporary Python parity remains until the complete 14-check acceptance gate.
+Original Python and the wrapper were retired after [PR #472](https://github.com/kniazkov/g0at/pull/472)
+passed [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41857101812) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41857101772). All nine
+platform contexts passed actual Debug/Release parity, including three Windows
+ZIP contexts and both native musl architectures.
 
 ## Scenario correspondence
 
@@ -30,28 +35,21 @@ Temporary Python parity remains until the complete 14-check acceptance gate.
 | Full module-v1 delivery using relocated goat/inspect/merge | Nested `integration.module_delivery.end-to-end`, unchanged 300-second limit |
 | Corrupt archive/path and counter rejection | `integration.package.controls` |
 
-The temporary CTest `package.relocated` runs the Python/C parity wrapper; the
-explicit CI package step runs it against each produced release archive for both
-Debug and Release runners. An absent package directory disables only the optional
+CTest `package.relocated` directly selects `integration.package.end-to-end`.
+The explicit CI package step runs all produced release archives with both Debug
+and Release runners. An absent package directory disables only the optional
 CTest package invocation, not the explicit CI package step. Controls run without
-a release archive and do not depend on `assert` or `NDEBUG`.
+a release archive and do not depend on Python, `assert`, or `NDEBUG`.
 
-## Reproduction during parity
+## Reproduction
 
-Build `package_scenarios` and the release `package` target, then invoke:
-
-```sh
-python3 scripts/check_package_parity.py build/release/packages \
-  build/package_scenarios build/module_delivery_scenarios \
-  gcc "$PWD" "$(command -v cmake)"
-```
-
-Direct C invocation (also accepts one archive):
+Build `package_scenarios` and the release `package` target, then invoke (one
+archive or a directory is accepted):
 
 ```sh
 build/package_scenarios integration.package.end-to-end \
   build/release/packages build/module_delivery_scenarios \
-  gcc "$PWD" "$(command -v cmake)" --timeout-seconds 1800 --keep-work
+  "$(command -v gcc)" "$PWD" "$(command -v cmake)" --timeout-seconds 1800 --keep-work
 ```
 
 Extraction uses the explicitly supplied CMake executable and its archive support,

@@ -59,6 +59,5 @@ test/data/module-delivery-requirements/* -text
 # #390 frozen libc-delivery input bytes.
 test/data/module-musl/* -text
 
-# Frozen package oracle and SDK probe hashes require exact bytes on Windows.
-scripts/check_package.py -text
+# Frozen SDK probe hash requires exact bytes on Windows.
 test/data/package/sdk.c.txt -text

@@ -278,7 +278,7 @@ jobs:
       - name: Check relocated release package
         run: |
           for config in build/${{ matrix.compiler }} build/release-${{ matrix.compiler }}; do
-            python3 scripts/check_package_parity.py build/release-${{ matrix.compiler }}/packages "$config/package_scenarios" "$config/module_delivery_scenarios" "$CC" "$PWD" "$(command -v cmake)"
+            "$config/package_scenarios" integration.package.end-to-end build/release-${{ matrix.compiler }}/packages "$config/module_delivery_scenarios" "$(command -v "$CC")" "$PWD" "$(command -v cmake)" --timeout-seconds 1800
           done
         env:
           CC: ${{ matrix.compiler }}
@@ -513,11 +513,9 @@ jobs:
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_release_mingw.cmd'
       - name: Check relocated release package
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: |
           for config in build build/release; do
-            "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_package_parity.py build/release/packages "$(cygpath -w "$PWD/$config/package_scenarios.exe")" "$(cygpath -w "$PWD/$config/module_delivery_scenarios.exe")" "$(cygpath -w "$(command -v gcc)")" "$(cygpath -w "$PWD")" "$(cygpath -w "$(command -v cmake)")"
+            "$config/package_scenarios.exe" integration.package.end-to-end "$(cygpath -w "$PWD/build/release/packages")" "$(cygpath -w "$PWD/$config/module_delivery_scenarios.exe")" "$(cygpath -w "$(command -v gcc)")" "$(cygpath -w "$PWD")" "$(cygpath -w "$(command -v cmake)")" --timeout-seconds 1800
           done
       - name: Preserve release package
         uses: actions/upload-artifact@v4

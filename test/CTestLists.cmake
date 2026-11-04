@@ -608,12 +608,12 @@ else()
     goat_shell(native.c_generation_x87 "native;x87" check_c_generation.sh $<TARGET_FILE:unit_testing> "${CMAKE_BINARY_DIR}/ctest/c-x87" -mfpmath=387)
   endif()
 endif()
-# #391: keep original Python unchanged until full cross-platform parity.
-goat_python(package.relocated "package;package-migration" scripts/check_package_parity.py
-  "${CMAKE_BINARY_DIR}/packages" "$<TARGET_FILE:package_scenarios>"
-  "$<TARGET_FILE:module_delivery_scenarios>" "${CMAKE_C_COMPILER}"
-  "${PROJECT_SOURCE_DIR}" "${CMAKE_COMMAND}")
-set_tests_properties(package.relocated PROPERTIES TIMEOUT 7200)
+# #391: original/C parity passed on all nine platform contexts before retirement.
+goat_scenario(package.relocated "package;package-migration" TIMEOUT 1830 COMMAND
+  "$<TARGET_FILE:package_scenarios>" integration.package.end-to-end
+  "${CMAKE_BINARY_DIR}/packages" "$<TARGET_FILE:module_delivery_scenarios>"
+  "${CMAKE_C_COMPILER}" "${PROJECT_SOURCE_DIR}" "${CMAKE_COMMAND}"
+  --timeout-seconds 1800)
 goat_scenario(integration.package.controls "package-controls" TIMEOUT 150 COMMAND
   "$<TARGET_FILE:package_scenarios>" integration.package.controls
   "${CMAKE_BINARY_DIR}/packages" "$<TARGET_FILE:module_delivery_scenarios>"

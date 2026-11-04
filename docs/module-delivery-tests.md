@@ -8,7 +8,7 @@
 проверяет поставляемые архивы и запускает их после удаления исходников и исключения
 C-компилятора из окружения. Результат VM сравнивается с auto/required; счётчики
 `--save-native` подтверждают успешные нативные вызовы без fallback.
-Эта же программа вызывается `check_package.py` для **перемещённых release-пакетов**,
+Эта же программа вызывается `package_scenarios integration.package.end-to-end` для **перемещённых release-пакетов**,
 поэтому тестируется установленный executable, а не оставшийся executable сборки.
 
 Матрица существующего CI сохранена целиком: Linux x86-64 и AArch64 с GCC/Clang;
@@ -69,7 +69,7 @@ compiler PATH, native off/auto/required и положительных native-с�
 Два дополнительных задания `Native musl delivery` используют Alpine 3.22 в
 Docker на настоящих x86-64 и AArch64 runners, без эмуляции. Они сохраняют
 исходную матрицу glibc/Windows и выполняют Debug-сборку с основными тестами,
-существующие проверки поставки и книги, затем Release-упаковку и `check_package.py`.
+существующие проверки поставки и книги, затем Release-упаковку и `package_scenarios integration.package.end-to-end`.
 
 `scripts/check_module_musl.py produce GOAT SELECTOR FAMILY DEST` собирает одинаковый
 исходник настоящими glibc- и musl-toolchain в соответствующих средах; SELECTOR —
@@ -117,7 +117,7 @@ runtime не подменяются ручным редактированием 
 JSON inspection commands in separate processes. Delivered archives run after
 producer sources are removed and compiler discovery is disabled. VM results are
 compared with auto/required, and `--save-native` counters prove successful native
-calls rather than silent fallback. `check_package.py` also runs this suite using
+calls rather than silent fallback. `package_scenarios integration.package.end-to-end` also runs this suite using
 **relocated release tools**, not the build-tree executable.
 
 The complete existing matrix remains mandatory: Linux x86-64/AArch64 GCC/Clang
@@ -175,7 +175,7 @@ Until that environment is available, this is explicitly **not run**, never passe
 Two additional `Native musl delivery` jobs run Alpine 3.22 in Docker on native
 x86-64 and AArch64 runners, without emulation. They preserve the original
 glibc/Windows matrix, run Debug builds and core tests, the existing delivery and
-book suites, then Release packaging and `check_package.py`.
+book suites, then Release packaging and `package_scenarios integration.package.end-to-end`.
 
 `scripts/check_module_musl.py produce GOAT SELECTOR FAMILY DEST` builds identical
 sources using real glibc and musl toolchains in their respective environments.
