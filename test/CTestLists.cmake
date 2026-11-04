@@ -608,8 +608,17 @@ else()
     goat_shell(native.c_generation_x87 "native;x87" check_c_generation.sh $<TARGET_FILE:unit_testing> "${CMAKE_BINARY_DIR}/ctest/c-x87" -mfpmath=387)
   endif()
 endif()
-goat_python(package.relocated "package" scripts/check_package.py "${CMAKE_BINARY_DIR}/packages" "$<TARGET_FILE:module_delivery_scenarios>")
-# Packaging is an explicit prerequisite; ordinary builds do not create archives.
+# #391: original/C parity passed on all nine platform contexts before retirement.
+goat_scenario(package.relocated "package;package-migration" TIMEOUT 1830 COMMAND
+  "$<TARGET_FILE:package_scenarios>" integration.package.end-to-end
+  "${CMAKE_BINARY_DIR}/packages" "$<TARGET_FILE:module_delivery_scenarios>"
+  "${CMAKE_C_COMPILER}" "${PROJECT_SOURCE_DIR}" "${CMAKE_COMMAND}"
+  --timeout-seconds 1800)
+goat_scenario(integration.package.controls "package-controls" TIMEOUT 150 COMMAND
+  "$<TARGET_FILE:package_scenarios>" integration.package.controls
+  "${CMAKE_BINARY_DIR}/packages" "$<TARGET_FILE:module_delivery_scenarios>"
+  "${CMAKE_C_COMPILER}" "${PROJECT_SOURCE_DIR}" "${CMAKE_COMMAND}")
+# Packaging is explicit: avoid a package/runner dependency cycle.
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/packages")
   set_tests_properties(package.relocated PROPERTIES DISABLED TRUE)
   message(STATUS "CTest package.relocated unavailable: build the package target, then reconfigure")
@@ -705,9 +714,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1905 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1906 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (runtime requirements retained; three glibc/musl stable IDs added for #390); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (package controls added for #391); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
