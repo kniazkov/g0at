@@ -1,6 +1,6 @@
 # Package relocation fixtures (#391)
 
-`sdk.c` is the exact UTF-8 string literal passed to `probe_source.write_text` in
+`sdk.c.txt` is the exact UTF-8 string literal passed to `probe_source.write_text` in
 `scripts/check_package.py` at base `f97e0388`. The temporary parity wrapper checks
 AST correspondence and SHA-256 before running either implementation.
 

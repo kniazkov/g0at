@@ -13,7 +13,7 @@ import sys
 
 def validate(root):
     original = root / "scripts/check_package.py"
-    fixture = root / "test/data/package/sdk.c"
+    fixture = root / "test/data/package/sdk.c.txt"
     provenance = (fixture.parent / "README.md").read_text(encoding="utf-8")
     for path in (original, fixture):
         digest = hashlib.sha256(path.read_bytes()).hexdigest()

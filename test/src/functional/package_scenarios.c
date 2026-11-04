@@ -321,7 +321,7 @@ static void archive(scenario_run_t *r, config_t *c, const char *path, unsigned i
             env,
             90);
     const char *probe_source = join(r, work, "sdk.c"), *probe = join(r, work, "sdk.exe");
-    copy(r, join(r, c->source, "test/data/package/sdk.c"), probe_source);
+    copy(r, join(r, c->source, "test/data/package/sdk.c.txt"), probe_source);
     command(r,
             c->cc,
             ARGS("-std=c11",
