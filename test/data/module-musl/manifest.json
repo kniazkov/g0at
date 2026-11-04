@@ -1,0 +1,9 @@
+{
+  "source": "scripts/check_module_musl.py",
+  "revision": "eabab2df0d8ed2e067ae42abbcce296464410fbd",
+  "sourceSha256": "5a3de9f67a9677e80ebfb8c3e9283ccddc0900b3cbd30db104c873ce15b03d26",
+  "inputs": {
+    "main.goat": "5d5e3320c6b6342e07fbab667922224863c1ee30ac835fb7a9c94500386f8009",
+    "module.gmod": "c8c40e723ed018c777183096d49c896cd5ed7b6035ce9e41b04ee0048080b3d5"
+  }
+}

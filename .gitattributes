@@ -56,3 +56,6 @@ test/data/native-saturation/** -text
 test/data/module-delivery/** -text
 # #389 frozen runtime-requirements inputs must retain byte identity on Windows.
 test/data/module-delivery-requirements/* -text
+# #390 frozen libc-delivery input bytes and temporary parity harness.
+test/data/module-musl/* -text
+test/support/check_module_musl_parity.py text eol=lf
