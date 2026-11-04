@@ -1,12 +1,17 @@
 # Native performance migration (#387)
 
-The original `scripts/check_native_performance.py` remains unchanged during the
-original/C parity gate. Its C replacement is
-`test/src/functional/native_performance_scenarios.c`. Performance is a separate
-Release run, not part of the ordinary correctness or sanitizer test selection.
-No language behavior, `.gbin` format, production arithmetic, or expected result
-is changed by this migration. Checklist step 69 remains pending until full
-original/C CI parity, retirement of the original, and final CI are verified.
+The C runner is `test/src/functional/native_performance_scenarios.c`.
+The original Python checker and temporary parity wrapper were retired only after
+complete original/C CI parity on `37ce62bb55f0a9f68c35521d8349de5c9a892f5d`:
+[build/test matrix, 11/11](https://github.com/kniazkov/g0at/actions/runs/41742078675)
+and [module vectors, 3/3](https://github.com/kniazkov/g0at/actions/runs/41742078588),
+under [PR #468](https://github.com/kniazkov/g0at/pull/468).
+The separate final-retirement commit's CI is pending; the parity result does not
+claim that later commit has already passed.
+
+Performance remains a separate serial Release run, not part of ordinary
+correctness or sanitizer selection. No language behavior, `.gbin` format,
+production arithmetic or expected result is changed.
 
 ## Original-to-C scenario map
 
@@ -55,16 +60,28 @@ an existing child-cleanup `ENOENT`. That is a local validation blocker, not
 permission to suppress cleanup checks, weaken supervision or claim full parity.
 CI must establish the complete original/C result on its actual supported hosts.
 
-## Direct reproduction and temporary parity
+## Direct reproduction
 
-Configure and build the Release target, then use the stable scenario ID:
+Configure and build the Release target, then select the standalone CTest:
 
 ```sh
 CC=gcc cmake -S . -B build/native-performance -DCMAKE_BUILD_TYPE=Release
 cmake --build build/native-performance --target native_performance_scenarios
+ctest --test-dir build/native-performance --output-on-failure \
+  -R '^integration.native_performance.benchmark$'
+```
+
+CTest passes `--keep-work` and uses the existing spaced build directory
+`build/native-performance/ctest/native performance`; its unique `scenario-*`
+child contains `timings.json`, sources for diagnosis, binaries and dispatch
+reports. Non-Release CTest configurations explicitly disable only the benchmark.
+For direct CLI execution, use an existing build directory:
+
+```sh
 CC=gcc build/native-performance/native_performance_scenarios \
   integration.native_performance.benchmark \
-  build/native-performance/goat build/native-performance test/data --keep-work
+  build/native-performance/goat \
+  'build/native-performance/ctest/native performance' test/data --keep-work
 ```
 
 The CLI is `ID|--list GOAT BUILD DATA [--keep-work]`. Substitute `corpus`,
@@ -73,19 +90,15 @@ single independent correctness scenario. On Windows use the `.exe` paths and
 the shell's normal path conventions. Keep the benchmark serial and separate
 from correctness tests so their load does not contaminate measurements.
 
-Until the original/C gate is complete, run the temporary wrapper:
+## Completed original/C parity
 
-```sh
-CC=gcc python3 scripts/check_native_performance_parity.py \
-  build/native-performance/goat \
-  build/native-performance/native_performance_scenarios \
-  build/native-performance test/data
-```
+The historical [original](https://github.com/kniazkov/g0at/blob/37ce62bb55f0a9f68c35521d8349de5c9a892f5d/scripts/check_native_performance.py)
+and [parity wrapper](https://github.com/kniazkov/g0at/blob/37ce62bb55f0a9f68c35521d8349de5c9a892f5d/scripts/check_native_performance_parity.py)
+remain reproducible from the exact green parity commit linked above. They are
+not required or invoked by the current runner, CTest or CI.
 
-It first runs the unchanged original Python checker, then the complete C
-benchmark, each with its own workspace below a unique
-`native-performance-parity-*` root. Both must exit successfully. Both stdout
-and stderr logs and all generated work are retained. The wrapper requires:
+The full gate ran the unchanged original and complete C benchmark separately
+and retained their logs and workspaces. It checked:
 
 - Identical generated `call_tree.goat` bytes after CRLF-to-LF normalization.
 - Identical depth, tree/call counts and independently calculated expected result.
@@ -95,13 +108,9 @@ and stderr logs and all generated work are retained. The wrapper requires:
 - No original `vm.goat` or `native.goat`, and both compiled `.gbin` files present.
 - Matching required dispatch fields in all twelve warmup/sample reports.
 
-Elapsed values must **not** be numerically equal across executions. The
-benchmark compares native against VM within each run; the parity wrapper
-compares methodology, inputs and report invariants across runs. It does not
-invent tolerance for a failed speed comparison or reinterpret a failed runner
-as successful. The original and wrapper are removed only after the complete
-CI parity gate, followed by separate CI for the retirement change. Green CI
-links belong here and in the issue/checklist once those exact commits pass.
+Elapsed values were not required to match across executions. Each benchmark
+independently required native to be faster than VM; the wrapper compared inputs,
+methodology and report invariants, never reinterpreting a failed runner as a pass.
 
 ## Timing-support dependency and its controls
 
@@ -126,8 +135,12 @@ process-identity observer. They run as correctness checks in Debug/Release,
 including the existing musl correctness selections. The benchmark alone has
 `performance` labels and serial registration; it has a 2,520-second shared
 budget (14 commands at up to 180 seconds) and a 2,550-second CTest cleanup margin.
-The temporary `performance.native` original/C parity gate has a 5,100-second
-outer limit. CI and direct CTest benchmark paths retain spaces in directory names.
+CI and direct CTest benchmark paths retain spaces in directory names.
+The report speedup is rounded explicitly to binary64 before exact JSON validation
+on x87; an adjacent-binary64 corruption is rejected. `timings-candidate.json`
+is persisted before validation. Windows descendant tests wait boundedly on the
+pinned process handle before checking termination and removing the workspace;
+no observer kill or production cleanup change is used.
 
 The frozen `call_tree.goat` was extracted by invoking the unchanged original
 `program()` at base `e8950f2cc96e8990b05981c9c2d7816ad288f32a`. Its LF form is

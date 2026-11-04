@@ -287,7 +287,7 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
       - name: Compare precompiled VM and native performance
-        run: python3 scripts/check_native_performance_parity.py build/release-${{ matrix.compiler }}/goat build/release-${{ matrix.compiler }}/native_performance_scenarios "build/release-${{ matrix.compiler }}/native performance" test/data
+        run: ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure -R "^integration.native_performance.benchmark$"
         env:
           CC: ${{ matrix.compiler }}
       - name: Preserve native execution reports
@@ -297,7 +297,6 @@ jobs:
           name: native-execution-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: |
             build/${{ matrix.compiler }}/native functional
-            build/**/native-performance-parity-*/**
             build/**/scenario-*/**/timings.json
             build/**/scenario-*/**/vm.report
             build/**/scenario-*/**/native.report
@@ -516,9 +515,7 @@ jobs:
         run: bash scripts/check_binary_program.sh build/release/goat.exe build/functional_testing.exe "build/binary programs release"
       - name: Compare precompiled VM and native performance
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_performance_parity.py build/release/goat.exe build/release/native_performance_scenarios.exe "build/release/native performance" test/data'
+        run: ctest --test-dir build/release --output-on-failure -R "^integration.native_performance.benchmark$"
       - name: Preserve native execution reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -526,7 +523,6 @@ jobs:
           name: native-execution-Windows-${{ matrix.msystem }}
           path: |
             build/native functional
-            build/**/native-performance-parity-*/**
             build/**/scenario-*/**/timings.json
             build/**/scenario-*/**/vm.report
             build/**/scenario-*/**/native.report

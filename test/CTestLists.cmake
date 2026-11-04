@@ -574,12 +574,8 @@ goat_shell(native.binary_program "native" check_binary_program.sh $<TARGET_FILE:
 goat_shell(native.native_abi "native" check_native_abi.sh $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_abi")
 goat_shell(native.c_module "native" check_c_module.sh $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/c_module")
 goat_shell(native.c_generation "native" check_c_generation.sh $<TARGET_FILE:unit_testing> "${CMAKE_BINARY_DIR}/ctest/c_generation")
-# Temporary original/C gate: remove only after complete same-input CI parity.
+# Original/C parity passed on 37ce62bb; keep performance separate and serial.
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/ctest/native performance")
-goat_python(performance.native "performance" scripts/check_native_performance_parity.py
-  $<TARGET_FILE:goat> $<TARGET_FILE:native_performance_scenarios>
-  "${CMAKE_BINARY_DIR}/ctest/native performance" "${PROJECT_SOURCE_DIR}/test/data")
-set_tests_properties(performance.native PROPERTIES TIMEOUT 5100)
 goat_scenario(integration.native_performance.benchmark "performance" PERFORMANCE TIMEOUT 2550 COMMAND
   "$<TARGET_FILE:native_performance_scenarios>" integration.native_performance.benchmark
   "$<TARGET_FILE:goat>" "${CMAKE_BINARY_DIR}/ctest/native performance" "${PROJECT_SOURCE_DIR}/test/data" --keep-work)
@@ -623,8 +619,8 @@ foreach(pair "style;GOAT_TEST_FORMAT" "docs;GOAT_TEST_DOXYGEN" "graph;GOAT_TEST_
   endif()
 endforeach()
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-  set_tests_properties(performance.native PROPERTIES DISABLED TRUE)
-  message(STATUS "CTest performance.native unavailable: configure a Release build")
+  set_tests_properties(integration.native_performance.benchmark PROPERTIES DISABLED TRUE)
+  message(STATUS "CTest integration.native_performance.benchmark unavailable: configure a Release build")
 endif()
 find_program(GOAT_TEST_PYTHON3_COMMAND python3)
 if(NOT GOAT_TEST_PYTHON3_COMMAND)
