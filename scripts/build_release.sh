@@ -11,7 +11,7 @@ build_dir="$(cd "$build_dir" && pwd)"
 
 cmake -S "$repo_root" -B "$build_dir" \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="${CC:-gcc}"
-cmake --build "$build_dir" --target goat goat-inspect goat-merge module_delivery_scenarios package_scenarios module_delivery_requirements_scenarios module_musl_scenarios
+cmake --build "$build_dir" --target goat goat-inspect goat-merge module_delivery_scenarios package_scenarios module_book_scenarios module_delivery_requirements_scenarios module_musl_scenarios
 cmake --build "$build_dir" --target package --config Release
 cp "$build_dir/goat" "$repo_root/goat"
 printf '\nDone.\n'

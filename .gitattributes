@@ -61,3 +61,6 @@ test/data/module-musl/* -text
 
 # Frozen SDK probe hash requires exact bytes on Windows.
 test/data/package/sdk.c.txt -text
+
+# Temporary #392 original oracle must retain its verified bytes on Windows.
+scripts/check_module_book.py -text
