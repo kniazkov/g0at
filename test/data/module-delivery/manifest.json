@@ -1,0 +1,21 @@
+{
+  "original": "scripts/check_module_delivery.py",
+  "base": "3c6f1d95b94a5343c6a1db2e26a20be1ced3b918",
+  "originalSha256": "649f50cbbd4aaef2b3d6e12ec7cc67c33d7d66a1b2e96fe514e54501c4590186",
+  "mainHash": "06ab143298bb8cd0a951a60efd33587c0ea89c17e438d3b2113043d0703b713b",
+  "bytecodeSha256": "ba0a5dd1d608878e46e3d18c707bb2e3a1d21a53e6e62a93114485b051e83ccf",
+  "files": {
+    "alternate.goat": "70272f6ebf050eb65077b5bd38829b591fbe5ebf092f5ea0b9d762654697becc",
+    "delivery.goat": "edcde8c5982023a0fae91b5de102301e8699c961bad75109fd5c9f9d847dc86f",
+    "descriptors/delivery-opaque-release-auto/module.gmod": "99774f7a7e599d58eb985e72030975032ae444cd8f359de0aaf7451dcfd8a8b1",
+    "descriptors/delivery-opaque-release-off/module.gmod": "99774f7a7e599d58eb985e72030975032ae444cd8f359de0aaf7451dcfd8a8b1",
+    "descriptors/delivery-opaque-release-required/module.gmod": "99774f7a7e599d58eb985e72030975032ae444cd8f359de0aaf7451dcfd8a8b1",
+    "descriptors/leaf-1-required/module.gmod": "b3fac21174d2192318eb7b2f7c437c78a5b99cca5dc799a62102cf4ca858a053",
+    "descriptors/leaf-2-required/module.gmod": "fe0fb8ba2aa22d517016af5520776a38d89830c9e036d569884d64413505e705",
+    "descriptors/middle-release-required/module.gmod": "449ca93f968fab44c478d2a882b412f4590af6dbde7e718515d45d7cd34e1dc6",
+    "expected.txt": "7e5303bf0a2f7ab67a3ef12bc70138726d32301113c32ef3cc3759441b4b0721",
+    "leaf1.goat": "4babbc8c9610a01817bbc8461ff7fdbe34c662dfd03625eb994275dd8e10250c",
+    "leaf2.goat": "869b23f0ded8bf3332e6f721a9ed1ed68674dcedd4e8bed6f66c608353790f29",
+    "middle.goat": "8d914b0f28ac479fadf158b386e4f2e5a45f8576313910d62687036c4aa73bf4"
+  }
+}

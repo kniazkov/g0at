@@ -197,7 +197,12 @@ foreach(module_cli_case IN LISTS module_cli_cases)
     "$<TARGET_FILE:goat>" "$<TARGET_FILE:native_toolchain_testing>" "${CMAKE_C_COMPILER}"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-goat_python(integration.module_delivery "integration" scripts/check_module_delivery.py "$<TARGET_FILE:goat>" "$<TARGET_FILE:goat-inspect>" "${CMAKE_C_COMPILER}")
+foreach(module_delivery_case IN ITEMS producer execution unknown-abi windows-runtimes dependencies integrity-native-hash integrity-bytecode-hash integrity-json compression-stored compression-mixed controls end-to-end)
+  goat_scenario(integration.module_delivery.${module_delivery_case} "integration;module-delivery-migration" TIMEOUT 600 COMMAND
+    "$<TARGET_FILE:module_delivery_scenarios>" "integration.module_delivery.${module_delivery_case}"
+    "$<TARGET_FILE:goat>" "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:goat-merge>" "${CMAKE_C_COMPILER}"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1")
+endforeach()
 goat_python(integration.module_delivery_requirements "integration" scripts/check_module_delivery_requirements.py "audit" "$<TARGET_FILE:goat>" "$<TARGET_FILE:native_toolchain_testing>" "$<TARGET_FILE:module_native_testing>" "${CMAKE_C_COMPILER}")
 foreach(native_exit_case IN ITEMS exit-prefixes code-0 code-7 code-255 invalid-0 invalid-1 invalid-2 invalid-3 invalid-4 invalid-5 arity-0 arity-2 invalid-then-valid native-initializer native-no-finally exit-forged exit-ignored legacy-call-0 legacy-call-7 legacy-call-255 legacy-invalid legacy-initializer legacy-forged-257 legacy-forged-258 loop-vm loop-native block-vm block-native)
   goat_scenario(integration.native_exit.${native_exit_case} "integration;native-exit-values-migration" TIMEOUT 110 COMMAND
@@ -597,7 +602,7 @@ else()
     goat_shell(native.c_generation_x87 "native;x87" check_c_generation.sh $<TARGET_FILE:unit_testing> "${CMAKE_BINARY_DIR}/ctest/c-x87" -mfpmath=387)
   endif()
 endif()
-goat_python(package.relocated "package" scripts/check_package.py "${CMAKE_BINARY_DIR}/packages")
+goat_python(package.relocated "package" scripts/check_package.py "${CMAKE_BINARY_DIR}/packages" "$<TARGET_FILE:module_delivery_scenarios>")
 # Packaging is an explicit prerequisite; ordinary builds do not create archives.
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/packages")
   set_tests_properties(package.relocated PROPERTIES DISABLED TRUE)
@@ -658,9 +663,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1890 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1901 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (native performance cases split in #387); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (module delivery C scenarios retained after #388 parity); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

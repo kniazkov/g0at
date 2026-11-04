@@ -1,0 +1,1 @@
+external square=func(x){return x*x;}; println("leaf 2 init"); square(3);

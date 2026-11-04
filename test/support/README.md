@@ -85,7 +85,7 @@ The old-to-new scenario map and corpus provenance are in
 Remaining Python import consumers (including dynamic imports) are:
 `docs/module-format-v1/test_reference.py`,
 `check_module_canonical.py`,
-`check_module_container.py`, `check_module_delivery.py`,
+`check_module_container.py`,
 `check_module_hash.py`,
 `check_module_musl.py` and `check_module_search.py`. They retain their current
 API and data paths; their migration remains in the ordered checklist.
@@ -126,12 +126,11 @@ and tested by Linux x86-64/AArch64 GCC/Clang and Windows MinGW i686/x86-64/UCRT
 Debug/Release CI. Python helpers remain untouched until their last consumer is
 migrated and #394 removes the transitional layer.
 
-Remaining `module_execution_support` consumers:
-`scripts/check_module_delivery.py`.
+Remaining `module_execution_support` consumers: none after #388.
+The compatibility helper remains for the dedicated #394 cleanup.
 
 Remaining `inspect_report_test_support` consumers:
-`scripts/check_module_book.py`,
-and `check_module_delivery.py`.
+`scripts/check_module_book.py` (#392).
 These keep their existing IDs and entry points; this step does not migrate their
 scenario bodies or remove any Python test.
 

@@ -1,0 +1,1 @@
+const leaf=import "leaf"; println("middle init"); external answer=leaf.square(7); external inc=func(x){return x+1;}; inc(1);

@@ -11,6 +11,7 @@
 #ifdef _WIN32
 #    include <windows.h>
 #else
+#    include <unistd.h>
 extern char **environ;
 #endif
 static bool release(void *pointer) {
@@ -187,4 +188,110 @@ void language_check(scenario_run_t *run,
                            result.err,
                            result.err_size,
                            true);
+}
+
+/* Test-only equivalent of shutil.which(name) or name. Keep compiler lookup out
+ * of individual runners, and never change the parent process environment. */
+static const char *lookup_environment(scenario_run_t *run, const char *name, const char *fallback) {
+    fs_error_t error = {0};
+    char *value = fs_environment(name, &error);
+    bool absent = error.status == FS_NOT_FOUND;
+    clear_fs_error(&error);
+    if (value)
+        language_owned(run, value);
+    scenario_require(run, value != NULL || absent, "cannot read executable search environment");
+    return value ? value : fallback;
+}
+
+static const char *executable_candidate(scenario_run_t *run, const char *name) {
+    fs_error_t error = {0};
+    fs_info_t info;
+    bool found = inspect_fs_path(name, true, &info, &error) && info.kind == FS_FILE;
+    clear_fs_error(&error);
+#ifndef _WIN32
+    found = found && access(name, X_OK) == 0;
+#endif
+    if (!found)
+        return NULL;
+    char *absolute = absolute_fs_path(name, &error);
+    clear_fs_error(&error);
+    return language_owned(run, absolute);
+}
+
+static const char *
+executable_extensions(scenario_run_t *run, const char *name, const char *extensions) {
+    const char *found = NULL;
+    bool exact = !*extensions;
+#ifdef _WIN32
+    /* Prefer the supplied spelling when it already has a PATHEXT suffix. */
+    for (const char *part = extensions; part && *part;) {
+        const char *end = strchr(part, ';');
+        size_t n = end ? (size_t)(end - part) : strlen(part);
+        if (n && strlen(name) >= n && !_strnicmp(name + strlen(name) - n, part, n))
+            exact = true;
+        part = end ? end + 1 : NULL;
+    }
+#endif
+    if (exact) {
+        found = executable_candidate(run, name);
+        if (found)
+            return found;
+    }
+    for (const char *part = extensions; part && *part;) {
+        const char *end = strchr(part, ';');
+        size_t n = end ? (size_t)(end - part) : strlen(part);
+        if (n) {
+            char *candidate = language_owned(run, ALLOC(strlen(name) + n + 1));
+            strcpy(candidate, name);
+            memcpy(candidate + strlen(name), part, n);
+            candidate[strlen(name) + n] = 0;
+            found = executable_candidate(run, candidate);
+            if (found)
+                return found;
+        }
+        part = end ? end + 1 : NULL;
+    }
+    return NULL;
+}
+
+const char *language_find_executable(scenario_run_t *run, const char *name) {
+#ifdef _WIN32
+    const char separator = ';';
+    const char *extensions = lookup_environment(run, "PATHEXT", ".COM;.EXE;.BAT;.CMD");
+    if (!*extensions)
+        extensions = ".COM;.EXE;.BAT;.CMD";
+    bool direct = strchr(name, '/') || strchr(name, '\\') || strchr(name, ':');
+#else
+    const char separator = ':';
+    const char *extensions = "";
+    bool direct = strchr(name, '/') != NULL;
+#endif
+    const char *found = NULL;
+    if (direct)
+        found = executable_candidate(run, name);
+    else {
+#ifdef _WIN32
+        const char *path = lookup_environment(run, "PATH", ".;C:\\bin");
+        /* Windows shutil.which searches the current directory as well. */
+        found = executable_extensions(run, name, extensions);
+#else
+        const char *path = lookup_environment(run, "PATH", "/bin:/usr/bin");
+#endif
+        for (const char *part = path; !found && part && *path;) {
+            const char *end = strchr(part, separator);
+            size_t n = end ? (size_t)(end - part) : strlen(part);
+            char *candidate = language_owned(run, ALLOC(n + strlen(name) + 2));
+            memcpy(candidate, part, n);
+            if (n)
+                candidate[n++] = '/';
+            strcpy(candidate + n, name);
+            found = executable_extensions(run, candidate, extensions);
+            part = end ? end + 1 : NULL;
+        }
+    }
+    if (found)
+        return found;
+    char *fallback = language_owned(run, ALLOC(strlen(name) + 1));
+    strcpy(fallback, name);
+    return fallback;
 }

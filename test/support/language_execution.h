@@ -26,3 +26,8 @@ void language_check(scenario_run_t *run,
 
 const char *const *
 language_environment_override(scenario_run_t *run, const char *name, const char *replacement);
+
+/** @brief Resolve a compiler via PATH (PATHEXT on Windows), or retain its spelling.
+ * The scenario owns the returned string. Resolve before isolating child PATH.
+ */
+const char *language_find_executable(scenario_run_t *run, const char *name);

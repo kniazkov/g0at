@@ -4,7 +4,7 @@
 
 Проверки используют пользовательские `goat build`, `goat run` и
 `goat-inspect --json`, а не заменяют нативное исполнение проверкой строки target.
-`check_module_delivery.py GOAT INSPECT CC` собирает модули отдельными процессами,
+`module_delivery_scenarios integration.module_delivery.end-to-end GOAT INSPECT MERGE CC BUILD DATA FORMAT_ROOT` собирает модули отдельными процессами,
 проверяет поставляемые архивы и запускает их после удаления исходников и исключения
 C-компилятора из окружения. Результат VM сравнивается с auto/required; счётчики
 `--save-native` подтверждают успешные нативные вызовы без fallback.
@@ -111,7 +111,7 @@ runtime не подменяются ручным редактированием 
 
 ## English
 
-`check_module_delivery.py GOAT INSPECT CC` exercises the public build, run and
+`module_delivery_scenarios integration.module_delivery.end-to-end GOAT INSPECT MERGE CC BUILD DATA FORMAT_ROOT` exercises the public build, run and
 JSON inspection commands in separate processes. Delivered archives run after
 producer sources are removed and compiler discovery is disabled. VM results are
 compared with auto/required, and `--save-native` counters prove successful native

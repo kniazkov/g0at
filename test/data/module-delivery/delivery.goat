@@ -1,0 +1,1 @@
+const middle=import "middle@release"; println("app init"); external twice=func(x){return x*2;}; println(twice(middle.answer)); println(9223372036854775807); println(-9223372036854775807);
