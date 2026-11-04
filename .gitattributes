@@ -54,3 +54,6 @@ test/data/native-saturation/** -text
 
 # Frozen autonomous delivery fixtures preserve exact bytes across checkout hosts.
 test/data/module-delivery/** -text
+# #389 frozen runtime-requirements inputs must retain byte identity on Windows.
+test/data/module-delivery-requirements/* -text
+test/support/module_delivery_requirements_parity.py text eol=lf
