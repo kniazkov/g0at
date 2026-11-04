@@ -574,8 +574,16 @@ goat_shell(native.binary_program "native" check_binary_program.sh $<TARGET_FILE:
 goat_shell(native.native_abi "native" check_native_abi.sh $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/native_abi")
 goat_shell(native.c_module "native" check_c_module.sh $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/c_module")
 goat_shell(native.c_generation "native" check_c_generation.sh $<TARGET_FILE:unit_testing> "${CMAKE_BINARY_DIR}/ctest/c_generation")
-goat_python(performance.native "performance" scripts/check_native_performance.py $<TARGET_FILE:goat> "${CMAKE_BINARY_DIR}/ctest/performance")
-set_tests_properties(performance.native PROPERTIES TIMEOUT 1200)
+# Original/C parity passed on 37ce62bb; keep performance separate and serial.
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/ctest/native performance")
+goat_scenario(integration.native_performance.benchmark "performance" PERFORMANCE TIMEOUT 2550 COMMAND
+  "$<TARGET_FILE:native_performance_scenarios>" integration.native_performance.benchmark
+  "$<TARGET_FILE:goat>" "${CMAKE_BINARY_DIR}/ctest/native performance" "${PROJECT_SOURCE_DIR}/test/data" --keep-work)
+foreach(native_performance_case IN ITEMS control-output control-report control-timings corpus)
+  goat_scenario(integration.native_performance.${native_performance_case} "native;native-performance-controls" TIMEOUT 60 COMMAND
+    "$<TARGET_FILE:native_performance_scenarios>" integration.native_performance.${native_performance_case}
+    "$<TARGET_FILE:goat>" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
 
 # These variants match the existing dedicated CI steps, not replacement coverage.
 if(WIN32)
@@ -611,8 +619,8 @@ foreach(pair "style;GOAT_TEST_FORMAT" "docs;GOAT_TEST_DOXYGEN" "graph;GOAT_TEST_
   endif()
 endforeach()
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-  set_tests_properties(performance.native PROPERTIES DISABLED TRUE)
-  message(STATUS "CTest performance.native unavailable: configure a Release build")
+  set_tests_properties(integration.native_performance.benchmark PROPERTIES DISABLED TRUE)
+  message(STATUS "CTest integration.native_performance.benchmark unavailable: configure a Release build")
 endif()
 find_program(GOAT_TEST_PYTHON3_COMMAND python3)
 if(NOT GOAT_TEST_PYTHON3_COMMAND)
@@ -650,9 +658,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1885 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1890 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (native saturation cases split in #386); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (native performance cases split in #387); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
@@ -730,5 +738,11 @@ endforeach()
 foreach(scenario native.characters native.unicode native.interactive)
   goat_scenario(${scenario} "native;unicode-interactive" TIMEOUT 200 COMMAND
     "$<TARGET_FILE:unicode_interactive_testing>" "${scenario}" "$<TARGET_FILE:goat>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+
+foreach(timed_execution_case IN ITEMS clock success nonzero boundary duration truncate-out truncate-err timeout crash start-error null-clock cleanup-failure descendant-exit descendant-timeout)
+  goat_scenario(framework.timed-execution.${timed_execution_case} "scenario-execution;native-performance-controls" TIMEOUT 30 COMMAND
+    "$<TARGET_FILE:timed_execution_testing>" "${timed_execution_case}"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()

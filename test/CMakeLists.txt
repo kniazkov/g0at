@@ -67,7 +67,7 @@ if(UNIX AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     " -fsanitize=undefined -fno-sanitize-recover=all")
 endif()
 
-add_library(goat_test_support STATIC support/scenario.c support/execution.c support/registry.c)
+add_library(goat_test_support STATIC support/scenario.c support/execution.c support/registry.c support/monotonic.c)
 target_link_libraries(goat_test_support PUBLIC goat_common)
 add_executable(scenario_context_testing src/framework/scenario_context_testing.c)
 target_link_libraries(scenario_context_testing PRIVATE goat_test_support)
@@ -503,3 +503,16 @@ add_executable(native_saturation_scenarios src/functional/native_saturation_scen
 target_link_libraries(native_saturation_scenarios PRIVATE goat_language_execution_support goat_integer_oracle goat_native_runner_policy yyjson)
 add_dependencies(native_saturation_scenarios goat)
 add_dependencies(native_runner_testing native_saturation_scenarios)
+
+# #387: performance stays separate; controls are ordinary Debug/Release scenarios.
+add_executable(native_performance_scenarios src/functional/native_performance_scenarios.c)
+target_link_libraries(native_performance_scenarios PRIVATE goat_language_execution_support goat_native_runner_policy yyjson)
+add_dependencies(native_performance_scenarios goat)
+find_package(Threads REQUIRED)
+add_executable(timed_execution_testing src/support/timed_execution_testing.c)
+target_link_libraries(timed_execution_testing PRIVATE goat_test_support goat_process_watch_support Threads::Threads)
+
+# Building the existing correctness-suite entry targets must build every runner
+# selected by their labels, even when callers use an explicit target list.
+add_dependencies(scenario_execution_testing timed_execution_testing)
+add_dependencies(native_runner_testing native_performance_scenarios timed_execution_testing)

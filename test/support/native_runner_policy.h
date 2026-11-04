@@ -44,3 +44,6 @@ bool nr_run_selected(yyjson_val *cases,
                      size_t *failed,
                      char *error,
                      size_t error_size);
+
+/** Original performance checker policy: exact preparation/attempt/success/retry fields. */
+bool nr_check_performance_report(const void *bytes, size_t size, bool native, unsigned trees);

@@ -264,6 +264,33 @@ bool nr_check_saturation_report(const void *bytes, size_t n) {
            && equals(fields[5], "0");
 }
 
+bool nr_check_performance_report(const void *bytes, size_t n, bool native, unsigned trees) {
+    const unsigned char *p = bytes;
+    slice_t fields[6] = {{0}};
+    size_t i = 0, start = 0;
+    uint32_t c;
+    if (n && !p)
+        return false;
+    while (i < n) {
+        size_t pos = i;
+        if (!scalar(p, n, &i, &c))
+            return false;
+        if (linebreak(c)) {
+            if (!report_line(p + start, pos - start, fields))
+                return false;
+            if (c == 13 && i < n && p[i] == 10)
+                i++;
+            start = i;
+        }
+    }
+    if (start < n && !report_line(p + start, n - start, fields))
+        return false;
+    char calls[32];
+    snprintf(calls, sizeof(calls), "%u", native ? trees : 0);
+    return equals(fields[1], native ? "ready" : "disabled") && equals(fields[3], calls)
+           && equals(fields[4], calls) && equals(fields[5], "0");
+}
+
 static const char *name_of(yyjson_val *obj) {
     yyjson_val *v = nr_object_get(obj, "name");
     const char *s = yyjson_get_str(v);

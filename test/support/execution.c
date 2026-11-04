@@ -7,6 +7,7 @@
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
 #include "lib/process/process_channel.h"
+#include "test/support/monotonic.h"
 
 #include <inttypes.h>
 #include <setjmp.h>
@@ -230,7 +231,8 @@ static scenario_command_result_t command(scenario_run_t *run,
                                          void *user,
                                          bool handshake,
                                          unsigned char release_byte,
-                                         uint64_t hold_ms) {
+                                         uint64_t hold_ms,
+                                         uint64_t *elapsed_ns) {
     scenario_checkpoint(run);
     if (run->child)
         fail(run, "nested scenario commands are not supported");
@@ -240,9 +242,9 @@ static scenario_command_result_t command(scenario_run_t *run,
         fail(run, "unsupported or invalid scenario command options");
     child_options_t child = *options;
     child.deadline = run->deadline;
-    child.capture_output = false;
-    child.stdout_callback = output_sink;
-    child.stderr_callback = error_sink;
+    child.capture_output = elapsed_ns != NULL;
+    child.stdout_callback = elapsed_ns ? NULL : output_sink;
+    child.stderr_callback = elapsed_ns ? NULL : error_sink;
     child.callback_context = run;
     if (!child.working_directory)
         child.working_directory = scenario_work_directory(run->context);
@@ -282,6 +284,9 @@ static scenario_command_result_t command(scenario_run_t *run,
     run->err = artifact(run, name);
     if (!run->out || !run->err)
         fail(run, "cannot open command output artifacts");
+    uint64_t started = 0, ended = 0;
+    if (elapsed_ns && !test_monotonic_ns(&started))
+        fail(run, "cannot read monotonic nanosecond clock");
     run->child = start_child_process(&child);
     if (!run->child)
         fail(run, "cannot start scenario command");
@@ -312,6 +317,25 @@ static scenario_command_result_t command(scenario_run_t *run,
         run->barrier_released = true;
     }
     const child_result_t *result = wait_child_process(run->child);
+    bool clock_ok = !elapsed_ns || (test_monotonic_ns(&ended) && ended >= started);
+    bool capture_ok = true;
+    if (elapsed_ns) {
+        *elapsed_ns = clock_ok ? ended - started : 0;
+        /* Persist even failed/truncated captures, but never accept their prefix. */
+        capture_ok = result && !result->out.truncated && !result->err.truncated;
+        if (result) {
+            bool out_saved =
+                fwrite(result->out.data, 1, result->out.size, run->out) == result->out.size;
+            bool err_saved =
+                fwrite(result->err.data, 1, result->err.size, run->err) == result->err.size;
+            capture_ok = capture_ok && out_saved && err_saved;
+        }
+        fprintf(run->log,
+                "elapsed_ns=%" PRIu64 " clock_ok=%d capture_ok=%d\n",
+                *elapsed_ns,
+                clock_ok,
+                capture_ok);
+    }
     bool ok = result && result->status == CHILD_EXITED
               && (!check_exit || result->exit_code == expected_exit) && !result->cleanup_error;
     if (result)
@@ -328,6 +352,8 @@ static scenario_command_result_t command(scenario_run_t *run,
     bool out_ok = close_file(&run->out), err_ok = close_file(&run->err);
     if (!out_ok || !err_ok || ferror(run->log) || fflush(run->log))
         fail(run, "cannot persist command output or result");
+    if (!clock_ok || !capture_ok)
+        fail(run, "timed capture clock, truncation or persistence failure");
     if (!ok)
         fail(run, "command failed (see status and output artifacts)");
     scenario_checkpoint(run);
@@ -361,12 +387,20 @@ static scenario_command_result_t command(scenario_run_t *run,
 }
 
 void scenario_command(scenario_run_t *run, const child_options_t *options, int64_t expected_exit) {
-    (void)command(run, options, true, expected_exit, NULL, NULL, NULL, false, 'G', 0);
+    (void)command(run, options, true, expected_exit, NULL, NULL, NULL, false, 'G', 0, NULL);
 }
 
 scenario_command_result_t scenario_command_capture(scenario_run_t *run,
                                                    const child_options_t *options) {
-    return command(run, options, false, 0, NULL, NULL, NULL, false, 'G', 0);
+    return command(run, options, false, 0, NULL, NULL, NULL, false, 'G', 0, NULL);
+}
+
+scenario_command_result_t scenario_command_capture_timed(scenario_run_t *run,
+                                                         const child_options_t *options,
+                                                         uint64_t *elapsed_ns) {
+    if (!elapsed_ns)
+        fail(run, "missing timed capture output");
+    return command(run, options, false, 0, NULL, NULL, NULL, false, 'G', 0, elapsed_ns);
 }
 
 scenario_command_result_t scenario_command_barrier(scenario_run_t *run,
@@ -376,7 +410,7 @@ scenario_command_result_t scenario_command_barrier(scenario_run_t *run,
                                                    void *user) {
     if (!prefix || !*prefix || !action)
         fail(run, "invalid barrier command");
-    return command(run, options, false, 0, prefix, action, user, false, 'G', 0);
+    return command(run, options, false, 0, prefix, action, user, false, 'G', 0, NULL);
 }
 
 scenario_command_result_t scenario_command_handshake(scenario_run_t *run,
@@ -386,7 +420,7 @@ scenario_command_result_t scenario_command_handshake(scenario_run_t *run,
                                                      uint64_t hold_ms) {
     if (!prefix || !*prefix)
         fail(run, "invalid handshake command");
-    return command(run, options, false, 0, prefix, NULL, NULL, true, release_byte, hold_ms);
+    return command(run, options, false, 0, prefix, NULL, NULL, true, release_byte, hold_ms, NULL);
 }
 
 bool scenario_execute(const scenario_options_t *options,
