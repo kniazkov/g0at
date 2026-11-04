@@ -124,6 +124,6 @@ See `test/data/native/README.md` for the registry format and diagnostic files.
 
 ### Module-system acceptance
 
-`python3 scripts/check_module_book.py build/goat` executes the chapter 30 tutorial in `docs/book/examples/30-modules`, checks matching RU/EN page inventories and local file links, and compares the tagged CLI commands in both translations. It is integrated into the seven original Linux/Windows platform jobs and the two native Linux/musl jobs. This focused suite does **not** automatically execute every earlier book example or prove natural-language translation equivalence.
+`ctest --test-dir build --output-on-failure -L module-book-migration` executes the chapter 30 tutorial in `docs/book/examples/30-modules`, checks matching RU/EN page inventories and local file links, and compares the tagged CLI commands in both translations. It is integrated into the seven original Linux/Windows platform jobs and the two native Linux/musl jobs. This focused suite does **not** automatically execute every earlier book example or prove natural-language translation equivalence.
 
 The access suite exercises AC-01–AC-28 with actual files and modules. [Delivery tests](../../module-delivery-tests.md) cover VM/native counters, relocation, multiple targets and exact control-library glibc floors. The remaining ordinary glibc 2.14/2.17 and Windows 10 lower-bound execution plans are explicit; a newer green CI runner is not evidence for those environments.

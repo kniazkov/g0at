@@ -29,10 +29,10 @@ full JSON Schema or general regex implementation. Pattern checks retain Python
 counts that newline. Base64 padding bits/decoded byte limits are semantic checks
 outside the Python schema helper, not silently added here.
 
-Python helpers remain unchanged until their ordered consumer migrations:
-`check_module_book.py` (#392). Autonomous delivery migrated to
-`module_delivery_scenarios` in #388 after full original/C parity. Remaining
-compatibility helpers are removed only in #394.
+Autonomous delivery migrated to `module_delivery_scenarios` in #388 and book
+checks to `module_book_scenarios` in #392 after full original/C parity.
+`inspect_report_test_support.py` has no remaining runtime consumers, but remains
+unchanged until the dedicated #394 compatibility-helper cleanup.
 
 To independently reproduce every expected result against identical inputs:
 

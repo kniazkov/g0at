@@ -230,13 +230,14 @@ For standalone sources, `--print-source-code`, `--print-bytecode`, and `--print-
 
 The Debug scripts run strict module-JSON checks and three core suites; the full CI additionally runs component/integration suites for formats, module graphs, access, initialization, native ABI/build/loading, threads, exit, inspect/merge, delivery and the bilingual tutorial. The original seven platform jobs cover Linux/glibc GCC/Clang on x86-64 and AArch64, and Windows MINGW32/MINGW64/UCRT64. Two additional native Alpine jobs cover Linux/musl x86-64 and AArch64, including relocated Release packages and cross-libc module selection. Style, Doxygen and format vectors have separate checks. See the [testing chapter](docs/book/en/28-testing.md) and [workflow](.github/workflows/build_and_test.yml).
 
-For the focused book/README tutorial check after building (Python 3 required):
+For the focused book/README tutorial check after building:
 
 ```sh
-python3 scripts/check_module_book.py build/goat
+cmake --build build --target module_book_scenarios
+ctest --test-dir build --output-on-failure -L module-book-migration
 ```
 
-On Windows use `python scripts/check_module_book.py build/goat.exe`. This checks the documented examples and local links, not every possible program or the semantic equivalence of all prose. See [benchmarks](test/data/performance/README.md) for Release performance checks.
+The same commands work on Windows; this check does not require Python. This checks the documented examples and local links, not every possible program or the semantic equivalence of all prose. See [benchmarks](test/data/performance/README.md) for Release performance checks.
 
 Portability claims are bounded by evidence: current CI executes relocated native/VM programs, genuine mixed Windows CRT variants, control modules on glibc 2.35/2.36, and musl modules on their linked runtime version. The musl version floor is conservative; execution on an older musl is not claimed. Ordinary declared glibc 2.14/2.17 floors and actual Windows 10 execution are **not** yet demonstrated on those exact systems. The [delivery evidence and validation plan](docs/module-delivery-tests.md) separates these limits from implemented functionality. Native ELF/PE compatibility metadata is not a guarantee about every host or the interpreter executable itself.
 
