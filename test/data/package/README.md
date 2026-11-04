@@ -3,6 +3,9 @@
 `sdk.c.txt` is the exact UTF-8 string literal passed to `probe_source.write_text` in
 `scripts/check_package.py` at base `f97e0388`. The temporary parity wrapper checks
 AST correspondence and SHA-256 before running either implementation.
+Both frozen inputs use `-text` in `.gitattributes` to preserve their exact LF
+bytes even when a Windows checkout enables `core.autocrlf`. Remove only the
+original script attribute when retiring that script; keep the SDK fixture attribute.
 
 SDK SHA-256: `a2ab9a59cbe81ec42a659d33a84906208699d01823833e71d4665ffd482b03ae`
 Original SHA-256: `2e0f1e3a69fe7b2722590044210d59e45d984f133d89c2a34f811e8151ad3243`
