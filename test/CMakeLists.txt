@@ -419,6 +419,14 @@ add_executable(inspect_probe_scenarios src/functional/inspect_probe_scenarios.c 
 target_link_libraries(inspect_probe_scenarios PRIVATE goat_language_execution_support goat_format_oracle goat_inspect_report_support goat_process_watch_support yyjson)
 add_dependencies(inspect_probe_scenarios goat-inspect goat-merge inspect_probe_testing module_import_execution_testing)
 
+# Temporary owned-tree supervisor; remove only after original/C parity is green.
+add_executable(module_delivery_parity_host support/module_delivery_parity_host.c)
+target_link_libraries(module_delivery_parity_host PRIVATE goat_language_execution_support m)
+
+add_executable(module_delivery_scenarios src/functional/module_delivery_scenarios.c)
+target_link_libraries(module_delivery_scenarios PRIVATE goat_language_execution_support goat_format_oracle goat_inspect_report_support yyjson)
+add_dependencies(module_delivery_scenarios goat goat-inspect goat-merge module_delivery_parity_host)
+
 add_executable(module_merge_scenarios src/functional/module_merge_scenarios.c support/merge_terminal.c support/merge_constructor.c)
 target_link_libraries(module_merge_scenarios PRIVATE goat_language_execution_support goat_format_oracle goat_inspect_report_support yyjson)
 add_dependencies(module_merge_scenarios goat-merge goat-inspect)

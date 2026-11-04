@@ -1,0 +1,1 @@
+{"formatVersion": 1, "name": "middle", "version": "release", "main": "main.goat", "dependencies": {"leaf": "2"}}

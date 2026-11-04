@@ -11,8 +11,15 @@ import sys
 import tempfile
 
 
-def check(archive):
+def check(archive, delivery_runner=None):
     archive = Path(archive).resolve()
+    runner_name = "module_delivery_scenarios.exe" if os.name == "nt" else "module_delivery_scenarios"
+    delivery_runner = (Path(delivery_runner).resolve() if delivery_runner is not None
+                       else archive.parent.parent / runner_name)
+    if not delivery_runner.is_file():
+        sys.exit(f"Module delivery runner not found: {delivery_runner}. "
+                 "Build target module_delivery_scenarios, or pass its path as the second argument.")
+    source_root = Path(__file__).resolve().parents[1]
     with tempfile.TemporaryDirectory(prefix="goat package ") as temporary:
         workspace = Path(temporary)
         unpacked = workspace / "unpacked"
@@ -129,18 +136,25 @@ int main(void) {
         # Exercise module-v1 delivery with the relocated release tools too, not
         # only the legacy bytecode/library pair above. The shared suite removes
         # producer sources and compiler access before executing its delivered tree.
-        subprocess.run([sys.executable, str(Path(__file__).resolve().with_name(
-            "check_module_delivery.py")), str(exe), str(inspector), compiler],
-            cwd=work, env=environment, check=True, timeout=300)
+        merger = inspector.with_name("goat-merge.exe" if os.name == "nt" else "goat-merge")
+        assert merger.is_file(), merger
+        # Preserve the original package suite's 300-second budget for each
+        # parity phase. The combined allowance adds only comparison/cleanup time.
+        # Only the test runner is build-side; all tested tools remain relocated.
+        subprocess.run([sys.executable, str(source_root / "test/support/module_delivery_parity.py"),
+                        str(exe), str(inspector), str(merger), compiler, str(delivery_runner),
+                        str(delivery_runner.parent), str(source_root / "test/data"),
+                        str(source_root / "docs/module-format-v1"), "--phase-timeout", "300"],
+                       cwd=work, env=environment, check=True, timeout=660)
         print(f"Package OK: {archive.name}")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("Usage: check_package.py <archive-or-packages-directory>")
+    if len(sys.argv) not in (2, 3):
+        sys.exit("Usage: check_package.py <archive-or-packages-directory> [module-delivery-runner]")
     argument = Path(sys.argv[1])
     archives = sorted(argument.glob("*.zip")) + sorted(argument.glob("*.tar.gz")) if argument.is_dir() else [argument]
     if not archives:
         sys.exit("No release archives found")
     for archive in archives:
-        check(archive)
+        check(archive, sys.argv[2] if len(sys.argv) == 3 else None)

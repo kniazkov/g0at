@@ -51,3 +51,6 @@ test/data/native-string-methods/** -text
 
 # Independent Python saturation corpus preserves exact generated source bytes.
 test/data/native-saturation/** -text
+
+# Frozen autonomous delivery fixtures preserve exact bytes across checkout hosts.
+test/data/module-delivery/** -text
