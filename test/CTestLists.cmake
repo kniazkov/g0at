@@ -661,6 +661,42 @@ foreach(provenance_line IN LISTS provenance_ids)
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
 
+# Cross-libc acceptance requires externally produced real glibc/musl pairs.
+# Controls remain applicable on Linux and all Windows compiler profiles.
+set(GOAT_LIBC_DELIVERY_DIRECTORY "" CACHE PATH "Real glibc/musl pair for explicit acceptance")
+set(GOAT_LIBC_DELIVERY_FAMILY "glibc" CACHE STRING "Actual linked libc: glibc or musl")
+set(module_musl_cases controls)
+if(GOAT_LIBC_DELIVERY_DIRECTORY AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  list(APPEND module_musl_cases produce verify)
+endif()
+set(module_musl_destination_args)
+if(GOAT_LIBC_DELIVERY_DIRECTORY)
+  list(APPEND module_musl_destination_args --destination "${GOAT_LIBC_DELIVERY_DIRECTORY}")
+endif()
+foreach(musl_case IN LISTS module_musl_cases)
+  goat_scenario(integration.module_musl.${musl_case} "integration;module-musl-migration" TIMEOUT 960 COMMAND
+    "$<TARGET_FILE:module_musl_scenarios>" "integration.module_musl.${musl_case}"
+    "$<TARGET_FILE:goat>" "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:goat-merge>"
+    "$<TARGET_FILE:module_native_testing>" "${CMAKE_C_COMPILER}" "${GOAT_LIBC_DELIVERY_FAMILY}"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1"
+    ${module_musl_destination_args})
+endforeach()
+if(GOAT_LIBC_DELIVERY_DIRECTORY AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set_tests_properties(integration.module_musl.verify PROPERTIES DEPENDS integration.module_musl.produce)
+endif()
+if(NOT GOAT_LIBC_DELIVERY_DIRECTORY OR NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(module_musl_skip "SKIP: real paired libc artifacts are supplied by the native musl CI job")
+  else()
+    set(module_musl_skip "SKIP: Linux glibc/musl native execution is unsupported on this platform")
+  endif()
+  foreach(musl_phase IN ITEMS produce verify)
+    add_test(NAME integration.module_musl.${musl_phase} COMMAND "${CMAKE_COMMAND}" -E echo "${module_musl_skip}")
+    set_tests_properties(integration.module_musl.${musl_phase} PROPERTIES
+      LABELS "integration;module-musl-migration" SKIP_REGULAR_EXPRESSION "SKIP:" TIMEOUT 10)
+  endforeach()
+endif()
+
 # This count protects the transitional CI replacement against dropped registrations.
 get_property(goat_registered_suites DIRECTORY PROPERTY TESTS)
 set(goat_integration_count 0)
@@ -669,9 +705,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1902 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1905 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (runtime requirements C scenarios retained after #389 parity); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (runtime requirements retained; three glibc/musl stable IDs added for #390); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
