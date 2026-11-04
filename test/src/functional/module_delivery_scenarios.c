@@ -1059,8 +1059,30 @@ int main(int argc, char **argv) {
     }
 #endif
     int result = 1;
-    bool keep = argc == 10 && !strcmp(argv[9], "--keep-work");
-    if (argc == 9 || keep) {
+    bool keep = false, timeout_set = false, valid_options = argc >= 9;
+    unsigned timeout_seconds = 600;
+    for (int i = 9; valid_options && i < argc; i++) {
+        if (!strcmp(argv[i], "--keep-work") && !keep)
+            keep = true;
+        else if (!strcmp(argv[i], "--timeout-seconds") && !timeout_set && i + 1 < argc) {
+            timeout_set = true;
+            const char *number = argv[++i];
+            unsigned value = 0;
+            valid_options = *number != '\0';
+            for (; valid_options && *number; number++) {
+                if (*number < '0' || *number > '9' || value > 600 / 10)
+                    valid_options = false;
+                else {
+                    value = value * 10 + (unsigned)(*number - '0');
+                    valid_options = value <= 600;
+                }
+            }
+            valid_options = valid_options && value > 30;
+            timeout_seconds = value;
+        } else
+            valid_options = false;
+    }
+    if (valid_options) {
         char *paths[9] = {0};
         bool valid = true;
         for (int i = 2; i < 9; i++) {
@@ -1095,7 +1117,11 @@ int main(int argc, char **argv) {
             for (size_t i = 0; i < COUNT; i++) {
                 snprintf(ids[i], sizeof(ids[i]), "integration.module_delivery.%s", names[i]);
                 configs[i] = (config_t){paths[2], paths[3], paths[4], paths[5], paths[8], names[i]};
-                definitions[i] = (scenario_definition_t){ids[i], 570000, body, configs + i, NULL};
+                definitions[i] = (scenario_definition_t){ids[i],
+                                                         (timeout_seconds - 30) * 1000,
+                                                         body,
+                                                         configs + i,
+                                                         NULL};
                 if (!strcmp(names[i], "controls"))
                     definitions[i].body = controls;
 #ifndef _WIN32
@@ -1112,7 +1138,7 @@ int main(int argc, char **argv) {
             FREE(paths[i]);
     } else
         fputs("usage: module_delivery_scenarios ID GOAT INSPECT MERGE CC BUILD DATA FORMAT_ROOT "
-              "[--keep-work]\n",
+              "[--keep-work] [--timeout-seconds 31..600]\n",
               stderr);
 #ifdef _WIN32
     free_fs_arguments(argc, argv);

@@ -54,7 +54,7 @@ finish_native_diagnostics() {
         -type f \( -name '*.log' -o -name '*.stdout' -o -name '*.stderr' \
         -o -name '*.report' -o -name '*.command.json' -o -name 'case.name' \
         -o -name '*.goat' -o -name 'host-*.c' -o -name 'edges.c' -o -name 'driver.c' \
-        -o -path '*/scenario-module-delivery-parity-*/*' \) -print0 2>/dev/null)
+        \) -print0 2>/dev/null)
     exit "$status"
 }
 trap finish_native_diagnostics EXIT
@@ -83,9 +83,9 @@ run_observed_ctest debug ctest --test-dir /work/debug --output-on-failure -L "la
 # Includes real default-worker native calls and explicit small-stack fallback.
 bash scripts/check_native_pipeline.sh /work/debug/goat /work/debug/unit_testing /work/native-pipeline
 ctest --test-dir /work/debug --output-on-failure -R '^integration.module_native$'
-python3 test/support/module_delivery_parity.py /work/debug/goat /work/debug/goat-inspect \
-    /work/debug/goat-merge gcc /work/debug/module_delivery_scenarios /work/debug \
-    /work/source/test/data /work/source/docs/module-format-v1 --phase-timeout 600
+/work/debug/module_delivery_scenarios integration.module_delivery.end-to-end \
+    /work/debug/goat /work/debug/goat-inspect /work/debug/goat-merge gcc \
+    /work/debug /work/source/test/data /work/source/docs/module-format-v1
 python3 scripts/check_module_book.py /work/debug/goat
 python3 scripts/check_module_musl.py produce /work/debug/goat /work/debug/module_native_testing musl /results
 python3 scripts/check_module_musl.py verify /work/debug/goat /work/debug/module_native_testing musl /results

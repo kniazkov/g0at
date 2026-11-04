@@ -334,7 +334,6 @@ jobs:
           name: failures-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: |
             build/**/functional-fixtures-*/**/actual_*.txt
-            build/**/scenario-module-delivery-parity-*/**
             build/**/scenario-*/**/*.log
             build/**/scenario-*/**/*.stdout
             build/**/scenario-*/**/*.stderr
@@ -548,7 +547,6 @@ jobs:
           name: failures-Windows-GCC-${{ matrix.msystem }}
           path: |
             build/**/functional-fixtures-*/**/actual_*.txt
-            build/**/scenario-module-delivery-parity-*/**
             build/**/scenario-*/**/*.log
             build/**/scenario-*/**/*.stdout
             build/**/scenario-*/**/*.stderr

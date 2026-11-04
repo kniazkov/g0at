@@ -138,14 +138,14 @@ int main(void) {
         # producer sources and compiler access before executing its delivered tree.
         merger = inspector.with_name("goat-merge.exe" if os.name == "nt" else "goat-merge")
         assert merger.is_file(), merger
-        # Preserve the original package suite's 300-second budget for each
-        # parity phase. The combined allowance adds only comparison/cleanup time.
         # Only the test runner is build-side; all tested tools remain relocated.
-        subprocess.run([sys.executable, str(source_root / "test/support/module_delivery_parity.py"),
-                        str(exe), str(inspector), str(merger), compiler, str(delivery_runner),
+        # Keep the original 300-second package budget, reserving 30 seconds for
+        # owned process-tree cleanup after the runner's internal deadline.
+        subprocess.run([str(delivery_runner), "integration.module_delivery.end-to-end",
+                        str(exe), str(inspector), str(merger), compiler,
                         str(delivery_runner.parent), str(source_root / "test/data"),
-                        str(source_root / "docs/module-format-v1"), "--phase-timeout", "300"],
-                       cwd=work, env=environment, check=True, timeout=660)
+                        str(source_root / "docs/module-format-v1"), "--timeout-seconds", "300"],
+                       cwd=work, env=environment, check=True, timeout=300)
         print(f"Package OK: {archive.name}")
 
 

@@ -226,7 +226,7 @@ subsequent migrations still depend on them. Direct consumers at this step:
 - `docs/module-format-v1/test_reference.py`
 - `scripts/check_module_canonical.py`
 - `scripts/check_module_container.py`
-- `scripts/check_module_delivery.py`
+- `test/src/functional/module_delivery_scenarios.c` (#388; C oracle consumer)
 - `scripts/check_module_hash.py`
 - `test/support/module_loading_fixture.c` (#369)
 - `scripts/check_module_musl.py`

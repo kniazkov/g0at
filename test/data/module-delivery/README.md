@@ -1,9 +1,12 @@
 # Autonomous module delivery migration (#388)
 
 The C implementation is `test/src/functional/module_delivery_scenarios.c`.
-The unchanged original `scripts/check_module_delivery.py` remains in this initial
-parity stage. Its retirement is a separate change after the full original/C
-platform matrix is green. No claim of completed CI parity is made here.
+The original Python runner and temporary parity wrapper/host were retired only
+after complete original/C parity on `67edfd3582ca8d5f4aa65ab05fff2304e6ca7ea6`:
+[build/test 11/11](https://github.com/kniazkov/g0at/actions/runs/41766231298) and
+[format vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41766231321),
+tracked in [PR #469](https://github.com/kniazkov/g0at/pull/469).
+The final C-only CI is checked separately.
 
 ## Frozen inputs and independent oracles
 
@@ -79,7 +82,7 @@ build/delivery/module_delivery_scenarios \
   /usr/bin/cc build/delivery test/data docs/module-format-v1 --keep-work
 ```
 
-The CLI is `ID|--list GOAT INSPECT MERGE CC BUILD DATA FORMAT_ROOT [--keep-work]`.
+The CLI is `ID|--list GOAT INSPECT MERGE CC BUILD DATA FORMAT_ROOT [--keep-work] [--timeout-seconds SECONDS]`.
 Use the selected MinGW compiler and executable paths on Windows. The runner owns
 an isolated `scenario-*` directory under BUILD and a shared scenario deadline.
 Shared process/filesystem helpers retain diagnostics on failure; `--keep-work`
@@ -89,47 +92,24 @@ child itself exits zero. In particular, local sandbox absence of
 `/proc/thread-self/children` is not permission to bypass the existing cleanup
 contract or to claim the complete local run passed.
 
-## Temporary same-input parity gate
+## Completed same-input parity gate
 
-```sh
-python3 test/support/module_delivery_parity.py \
-  build/delivery/goat build/delivery/goat-inspect build/delivery/goat-merge \
-  /usr/bin/cc build/delivery/module_delivery_scenarios \
-  build/delivery test/data docs/module-format-v1 --phase-timeout 600
-```
+The retired wrapper ran the unchanged original and C end-to-end against the same
+frozen inputs and real tool paths in independent workspaces. It compared complete
+archive graphs, portable bytes, metadata, compression methods, native validation
+state, all dispatch counters and exact command counts (49 Linux, 71 Windows).
+The linked green gate covered Debug/Release, musl and relocated release packages.
+The provenance manifest retains the original script path and digest as historical
+evidence; normal C runs do not read the removed script or regenerate fixtures.
 
-The wrapper first checks the original script and every frozen input against
-`manifest.json`. It runs the unchanged original via `runpy` in a separate Python
-process, preserving every assertion and actual subprocess invocation. Two hooks
-retain the temporary directory and verify each original `put` source/descriptor
-against frozen inputs. They do not alter source, outputs, exit statuses, schema
-checks, native dispatch, compiler commands, or expected values. Exact expected
-source write counts also cover the additional Windows producers.
+The 12 CTest IDs above remain. The former aggregate Python ID
+`integration.module_delivery` and temporary `.parity` ID are removed; use
+`integration.module_delivery.end-to-end` for the complete C suite.
 
-The wrapper then executes C `end-to-end` against the same real tool paths and
-compiler, retaining its separate workspace. Both complete runners must pass.
-The comparison checks the complete final delivered `.gbin` tree, member names and
-compression methods, all portable bytes, full metadata except native library
-hashes, and the native hash-validation/corrupt-suffix state. Actual native bytes
-and their hashes may differ between independent builds because the temporary
-source paths and PE timestamps differ; no target/ABI/provenance field is dropped.
-Original command counts (49 on Linux, 71 on Windows) must match the complete
-sequential C execution log, including inspection commands. The multiset of
-complete dispatch-counter records must also match, so repeated
-Windows fake-environment executions and mode/fallback behavior are observable.
-Neither workspace may retain `.goat` or `.gmod` files.
-
-Artifacts and both phase stdout/stderr logs remain under
-`BUILD/scenario-module-delivery-parity-*`. Each phase has its own finite positive
-`--phase-timeout` (default 600 seconds). The original keeps its existing Python
-subprocess deadlines; the C runner uses the shared owned-process facilities.
-The temporary `module_delivery_parity_host` target wraps each complete phase
-using the same shared C supervision and deadline facilities, retaining its
-diagnostics. The wrapper never uses a Python timeout to kill the supervising
-host before owned process-tree cleanup finishes. No separate Python tree-cleanup
-implementation or relaxed cleanup check is introduced.
-Package parity uses 300 seconds per phase; its wrapper allowance is 660 seconds.
-CTest parity uses 600 per phase and a 1,260-second aggregate allowance. The extra
-60 seconds is for comparison and diagnostic/cleanup overhead, not a replacement
-for either phase's deadline. The exact initial parity and later retirement CI
-links must be recorded before marking checklist item #388 complete.
+Normal scenarios use a 570-second owned deadline within CTest's 600-second limit.
+The package caller selects `--timeout-seconds 300`, retaining its original
+300-second outer budget and allowing owned cleanup before it expires. Each child
+keeps the original 180-second limit, bounded by the remaining scenario budget.
+The optional total budget accepts whole seconds from 31 through 600, reserving
+30 seconds for cleanup before the outer deadline; it cannot extend
+the ordinary budget. `--keep-work` remains available with either budget.
