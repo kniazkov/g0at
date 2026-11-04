@@ -129,10 +129,9 @@ migrated and #394 removes the transitional layer.
 Remaining `module_execution_support` consumers: none after #388.
 The compatibility helper remains for the dedicated #394 cleanup.
 
-Remaining `inspect_report_test_support` consumers:
-`scripts/check_module_book.py` (#392).
-These keep their existing IDs and entry points; this step does not migrate their
-scenario bodies or remove any Python test.
+Remaining `inspect_report_test_support` consumers: none after #392.
+Book checks now use `module_book_scenarios` after full original/C parity.
+The compatibility helper remains for the dedicated #394 cleanup.
 
 ### Execution contract scenario map
 

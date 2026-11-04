@@ -354,7 +354,7 @@ Both run commands print `25`. Build commands do not execute initializers. The
 inspector emits a versioned JSON report, and the merge command copies the validated
 library into a new archive without executing its bytecode or native code.
 These commands and both translations are checked by
-`scripts/check_module_book.py` in the existing Linux/Windows CI matrix. Tests copy
+`integration.module_book` (CTest) in the existing Linux/Windows CI matrix. Tests copy
 the example into a temporary directory; the commands above write `modules/` and
 `merged.gbin` in the tutorial directory when run manually.
 

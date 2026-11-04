@@ -1,15 +1,15 @@
 # Book and local-link checks (#392)
 
-The independent reference is `scripts/check_module_book.py` from base
+The independent reference was `scripts/check_module_book.py` from base
 `8b2550a859b6db153e9e57d00256c1d8e9fbb103`.
-Its raw SHA-256 is
+Its raw SHA-256 was
 `2109f474f495ae6c8b997028296ce62cbf8cb76b9381d967d945f49867214ee0`.
-The temporary `scripts/check_module_book_parity.py` verifies those bytes before
-running the untouched original and the C runner independently against the same
-checkout and adjacent `goat`, `goat-inspect` and `goat-merge` executables. Each
-implementation owns its temporary copy; neither consumes the other's results.
-`.gitattributes` preserves the reference bytes on Windows. Python optimization
-is disabled for the reference because its assertions are the original checks.
+The original and temporary parity wrapper remain available in Git at parity head
+`17e6de35ce28531cf6b140835916147d9612748a`. The wrapper verified the original
+bytes and independently ran both implementations against the same real checkout
+and adjacent `goat`, `goat-inspect` and `goat-merge` executables. Neither
+implementation consumed the other's results. Original bytes were protected on
+Windows, and Python optimization was disabled to preserve its assertions.
 
 ## Runtime inputs, not duplicated snippets
 
@@ -42,10 +42,9 @@ URLs and anchor-only links are not fetched.
 
 All tool commands retain empty stdin, a cleared `GOAT_MODULE_PATH`, the original
 60-second per-command timeout, and original exit/stdout/stderr predicates.
-The temporary wrapper does not race either implementation with a separate
-direct-child kill timer; CTest bounds the pair at 1,920 seconds, including
-supervisor/cleanup margin. The C scenario budget is 900 seconds for all
-15 commands; its controls have a separate 60-second budget. CRLF
+The C scenario budget is 900 seconds for all 15 commands; CTest allows 960
+seconds including supervisor/cleanup margin. Its controls have a separate
+60-second scenario budget and 180-second CTest watchdog. CRLF
 normalization is applied where the Python checker normalizes stdout. Source and
 archive metadata checks use independent test-layer parsing, not production
 validation to assert itself. Workspaces contain spaces in their paths. Failures
@@ -85,29 +84,29 @@ external dependencies are also exercised by runtime commands 13–15 above.
 
 ## Parity gate and retirement
 
-`integration.module_book` retains its original CTest name. During migration it
-runs the temporary original/C wrapper, with a separate direct C negative-control
-registration. Existing Linux/Windows Debug integration execution and the explicit
-musl Debug invocation are retained (the explicit musl invocation now selects
-the same CTest so it also has the outer watchdog). The migration label also selects Debug and
-Release on both native musl architectures and Release on Linux/Windows: all nine
-platform contexts exercise the original and C runners. All 14 Build/vector CI
-contexts must pass before deleting the original and wrapper. The migration
-checklist remains unchecked until retirement and its final CI are complete.
+Original Python and the temporary wrapper were retired after [PR #473](https://github.com/kniazkov/g0at/pull/473)
+passed [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41915800670) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41915800547) on exact head
+`17e6de35ce28531cf6b140835916147d9612748a`. All nine platform jobs passed actual
+Debug/Release original/C parity and controls, including both native musl
+architectures and the additional explicit musl Debug invocation.
 
-Keep `scripts/inspect_report_test_support.py`: it is still the reference's schema
-helper, and helper retirement belongs to the later migration audit. Keep the
-scenario map and C controls after the temporary gate is retired. Record the parity
-commit and CI links before deleting the reference; its source remains recoverable
-from that commit. This change does not migrate #393.
+`integration.module_book` keeps its original CTest name and now directly selects
+the C runner. The separate negative-control registration, Linux/Windows Debug
+integration selection, Debug/Release migration labels, and explicit musl Debug
+CTest invocation are retained. The scenario map, controls and full failure-tree
+artifact preservation remain after retirement. The C runner source is unchanged
+from the parity gate (SHA-256
+`30a59d00f108221a6d43643cee0c60e0965a9859cfbb75b33a4e5e17db2880a8`).
+
+`scripts/inspect_report_test_support.py` has no remaining runtime consumers after
+this migration, but is retained for the dedicated #394 compatibility-helper audit.
+This change does not migrate #393.
 
 ## Reproduction
 
 ```sh
 cmake --build build --target module_book_scenarios
-python3 scripts/check_module_book_parity.py \
-  build/goat build/goat-inspect build/goat-merge \
-  build/module_book_scenarios build "$PWD"
 ctest --test-dir build --output-on-failure -L module-book-migration
 build/module_book_scenarios integration.module_book \
   build/goat build/goat-inspect build/goat-merge build "$PWD" --keep-work

@@ -79,13 +79,12 @@ goat_suite(core.functional "core;functional" "${CMAKE_COMMAND}"
   "-DGOAT=$<TARGET_FILE:goat>" "-DRUNNER=$<TARGET_FILE:functional_testing>"
   "-DSOURCE=${PROJECT_SOURCE_DIR}/test/data/functional" "-DWORK=${CMAKE_BINARY_DIR}/ctest-functional"
   -P "${CMAKE_CURRENT_SOURCE_DIR}/run_functional.cmake")
-# Temporary independent original/C gate; retire only after all 14 CI contexts pass.
-goat_python(integration.module_book "integration;module-book-migration"
-  scripts/check_module_book_parity.py "$<TARGET_FILE:goat>"
-  "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:goat-merge>"
-  "$<TARGET_FILE:module_book_scenarios>" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}")
-# Two original 15-command budgets plus supervisor/cleanup margin.
-set_tests_properties(integration.module_book PROPERTIES TIMEOUT 1920)
+# Direct C runner after the complete #392 original/C parity gate.
+# Preserve the 900-second scenario budget plus supervisor/cleanup margin.
+goat_scenario(integration.module_book "integration;module-book-migration" TIMEOUT 960 COMMAND
+  "$<TARGET_FILE:module_book_scenarios>" integration.module_book
+  "$<TARGET_FILE:goat>" "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:goat-merge>"
+  "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}")
 goat_scenario(integration.module_book.controls "integration;module-book-migration" TIMEOUT 180 COMMAND
   "$<TARGET_FILE:module_book_scenarios>" integration.module_book.controls
   "$<TARGET_FILE:goat>" "$<TARGET_FILE:goat-inspect>" "$<TARGET_FILE:goat-merge>"
