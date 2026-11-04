@@ -140,21 +140,20 @@ jobs:
         # Select a controlled userspace from the actual produced requirement.
         # Require exact equality with the module minimum, not just a newer libc.
         run: |
-          parity_args=(--runner build/${{ matrix.compiler }}/module_delivery_requirements_scenarios --goat build/${{ matrix.compiler }}/goat --wrapper build/${{ matrix.compiler }}/native_toolchain_testing --selector build/${{ matrix.compiler }}/module_native_testing --cc ${{ matrix.compiler }} --build build/${{ matrix.compiler }} --data test/data --format-root docs/module-format-v1 --destination build/runtime-floor)
-          python3 test/support/module_delivery_requirements_parity.py prepare-floor "${parity_args[@]}"
-          runtime_image=$(python3 test/support/module_delivery_requirements_parity.py floor-image "${parity_args[@]}")
+          requirements_args=(build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing build/${{ matrix.compiler }}/module_native_testing ${{ matrix.compiler }} build/${{ matrix.compiler }} test/data docs/module-format-v1 --destination build/runtime-floor)
+          build/${{ matrix.compiler }}/module_delivery_requirements_scenarios integration.module_delivery_requirements.prepare-floor "${requirements_args[@]}"
+          runtime_image=$(build/${{ matrix.compiler }}/module_delivery_requirements_scenarios integration.module_delivery_requirements.floor-image "${requirements_args[@]}")
           mkdir -p build/runtime-floor-evidence
           docker run --rm --network bridge \
             -v "$PWD:/source:ro" -v "$PWD/build/runtime-floor-evidence:/evidence" "$runtime_image" bash -euxo pipefail -c '
-              trap '"'"'status=$?; if [ "$status" -ne 0 ]; then shopt -s nullglob; for work in /tmp/goat-floor/scenario-* /tmp/goat-floor/requirements-parity-*; do cp -a "$work" /evidence/; done; fi; exit "$status"'"'"' EXIT
+              trap '"'"'status=$?; if [ "$status" -ne 0 ]; then shopt -s nullglob; for work in /tmp/goat-floor/scenario-*; do cp -a "$work" /evidence/; done; fi; exit "$status"'"'"' EXIT
               apt-get update
-              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc libc6-dev cmake make python3
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc libc6-dev cmake make
               cmake -S /source -B /tmp/goat-floor -DCMAKE_BUILD_TYPE=Release
               cmake --build /tmp/goat-floor --parallel 2 --target goat module_delivery_requirements_scenarios
-              python3 /source/test/support/module_delivery_requirements_parity.py verify-floor \
-                --runner /tmp/goat-floor/module_delivery_requirements_scenarios --goat /tmp/goat-floor/goat \
-                --wrapper /tmp/goat-floor/native_toolchain_testing --selector /tmp/goat-floor/module_native_testing \
-                --cc gcc --build /tmp/goat-floor --data /source/test/data --format-root /source/docs/module-format-v1 \
+              /tmp/goat-floor/module_delivery_requirements_scenarios integration.module_delivery_requirements.verify-floor \
+                /tmp/goat-floor/goat /tmp/goat-floor/native_toolchain_testing /tmp/goat-floor/module_native_testing \
+                gcc /tmp/goat-floor /source/test/data /source/docs/module-format-v1 \
                 --destination /source/build/runtime-floor
             '
       - name: Module loading allocation failures
@@ -340,8 +339,11 @@ jobs:
         with:
           name: failures-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: |
-            build/**/requirements-parity-*/**
             build/runtime-floor-evidence/**
+            build/runtime-floor/**
+            build/**/scenario-*/requirements work/**
+            build/**/scenario-*/**/*.actual
+            build/**/scenario-*/**/*.expected
             build/**/functional-fixtures-*/**/actual_*.txt
             build/**/scenario-*/**/*.log
             build/**/scenario-*/**/*.stdout
@@ -555,8 +557,11 @@ jobs:
         with:
           name: failures-Windows-GCC-${{ matrix.msystem }}
           path: |
-            build/**/requirements-parity-*/**
             build/runtime-floor-evidence/**
+            build/runtime-floor/**
+            build/**/scenario-*/requirements work/**
+            build/**/scenario-*/**/*.actual
+            build/**/scenario-*/**/*.expected
             build/**/functional-fixtures-*/**/actual_*.txt
             build/**/scenario-*/**/*.log
             build/**/scenario-*/**/*.stdout

@@ -583,7 +583,7 @@ static void select_one(suite_t *s, archive_t *a, jval_t *profile, int expected) 
     selected(s, a, profile, expected, &abi, 1);
 }
 
-/* Shared with the temporary original-artifact parity replay. */
+/* Exercise actual producer archives against every compatibility profile. */
 static unsigned selector_matrix(suite_t *s, archive_t *a) {
     scenario_run_t *r = s->r;
     jval_t *t = target(r, a), *arch = get(t, "architecture");
@@ -768,23 +768,6 @@ static void audit(suite_t *s) {
     printf("Delivery requirements: %u real-archive selection checks; effective compiler/runtime "
            "flags audited\n",
            checks);
-}
-
-/* Temporary #389 gate: no rebuilding, substituting, or patching producer bytes.
- * Remove this entry with the temporary Python parity gate after all remote checks pass. */
-static void replay_audit(suite_t *s) {
-    scenario_run_t *r = s->r;
-    REQUIRE(s->c->destination);
-    archive_t *a = contents(s, language_join(r, s->c->destination, "baseline.gbin"), false);
-    unsigned count = selector_matrix(s, a);
-    jval_t *t = target(r, a), *arch = get(t, "architecture");
-    if (eq(arch, "x86_64") || eq(arch, "aarch64")) {
-        archive_t *extended =
-            contents(s, language_join(r, s->c->destination, "extended.gbin"), false);
-        select_one(s, extended, t, 3);
-        count++;
-    }
-    printf("Original artifact replay: %u real-archive selection checks passed\n", count);
 }
 
 static void print_version(jval_t *v) {
@@ -1084,8 +1067,6 @@ static void body(scenario_run_t *r, void *user) {
         c->cc = language_find_executable(r, c->cc);
     if (!strcmp(c->id, "audit"))
         audit(&s);
-    else if (!strcmp(c->id, "replay-audit"))
-        replay_audit(&s);
     else if (!strcmp(c->id, "prepare-floor"))
         prepare(&s);
     else if (!strcmp(c->id, "verify-floor"))
@@ -1156,8 +1137,7 @@ int main(int argc, char **argv) {
                                    "prepare-floor",
                                    "floor-image",
                                    "verify-floor",
-                                   "controls",
-                                   "replay-audit"};
+                                   "controls"};
 
             enum { COUNT = sizeof(names) / sizeof(names[0]) };
 

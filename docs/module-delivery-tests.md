@@ -18,7 +18,7 @@ MINGW32 — настоящий 32-битный процесс. Обязател�
 
 ### Переносимость и нижние границы
 
-`check_module_delivery_requirements.py audit GOAT WRAPPER SELECTOR CC` проверяет
+`module_delivery_requirements_scenarios integration.module_delivery_requirements.audit GOAT WRAPPER SELECTOR CC BUILD DATA FORMAT_ROOT` проверяет
 фактические аргументы компилятора всей нативной сборки и требования полученного
 варианта. Уже существующие `integration.module_native` (CTest), `native_requirements_scenarios`
 и `native_toolchains_scenarios` проверяют независимость архитектуры, CPU, runtime,
@@ -32,7 +32,9 @@ MINGW32 — настоящий 32-битный процесс. Обязател�
 `+sha2` требует SHA1/SHA2; неподдерживаемый `+crypto` не маскирует требование
 PMULL отсутствующим полем метаданных.
 
-На Linux `prepare-floor GOAT WRAPPER CC DEST` сохраняет контрольный модуль, собранный
+Все фазы используют C-runner и общий CLI с `--destination DEST`, описанный
+в [карте сценариев](../test/data/module-delivery-requirements/README.md).
+На Linux фаза `integration.module_delivery_requirements.prepare-floor` сохраняет контрольный модуль, собранный
 на новом runner. Контрольный вариант содержит реальную дополнительную C-часть:
 конструктор вызывает `__memcmpeq@GLIBC_2.35`, проверяет результат и записывает
 маркер вызова ([добавление ABI в glibc](https://sourceware.org/pipermail/glibc-cvs/2021q4/075514.html)). Тестовая обёртка добавляет этот исходник в штатную компиляцию
@@ -42,9 +44,9 @@ version requirements ELF, установленный производителе�
 обычного требования и 2.35; более высокое требование зависимостей не теряется.
 В наблюдаемой матрице обычные варианты требовали 2.14 (x86-64 GCC), 2.17
 (AArch64) или 2.36 (x86-64 Clang); это результаты конкретных toolchain, не константы
-формата. `floor-image DEST` выбирает Ubuntu 22.04 для минимума 2.35 или Debian
-bookworm для 2.36. Затем CI собирает только исполняющий Goat в выбранной среде
-и вызывает `verify-floor GOAT DEST` с тем же архивом. Проверка требует **точного
+формата. `integration.module_delivery_requirements.floor-image` выбирает Ubuntu 22.04 для минимума 2.35 или Debian
+bookworm для 2.36. Затем CI собирает исполняющий Goat и C-runner в выбранной среде
+и вызывает `integration.module_delivery_requirements.verify-floor` с тем же архивом. Проверка требует **точного
 совпадения** реальной glibc с заявленным минимумом, а не просто большей версии,
 и подтверждает реальный native-вызов и маркер конструктора без исходников и
 компилятора. Запуск обычных вариантов непосредственно на glibc 2.14/2.17 этой
@@ -124,7 +126,7 @@ uses a real 32-bit process. No mandatory checks use skips or continue-on-error.
 
 ### Portability and lower bounds
 
-`check_module_delivery_requirements.py audit GOAT WRAPPER SELECTOR CC` audits
+`module_delivery_requirements_scenarios integration.module_delivery_requirements.audit GOAT WRAPPER SELECTOR CC BUILD DATA FORMAT_ROOT` audits
 actual compiler arguments for the complete native build and tests the resulting
 variant requirements. Existing native selector, requirements and toolchain suites
 retain independent CPU, architecture, OS, runtime and exact Goat ABI checks,
@@ -137,7 +139,9 @@ are audited using effective compiler macros and rejected by baseline-only CPU
 profiles. SHA1/SHA2 are modeled explicitly; unsupported +crypto does not hide an
 unmodeled PMULL requirement.
 
-Linux `prepare-floor GOAT WRAPPER CC DEST` preserves a native module produced on the
+All phases use the C runner and its common CLI with `--destination DEST`; see the
+[scenario map](../test/data/module-delivery-requirements/README.md).
+Linux phase `integration.module_delivery_requirements.prepare-floor` preserves a native module produced on the
 newer runner. Its real additional C component calls `__memcmpeq@GLIBC_2.35`
 from a constructor, checks the result and writes an execution marker
 ([glibc ABI introduction](https://sourceware.org/pipermail/glibc-cvs/2021q4/075514.html)). A test-only
@@ -146,10 +150,10 @@ is never rewritten. ELF version requirements, producer-derived minimum and the
 increase over the ordinary variant are checked: the control minimum is the
 maximum of the ordinary requirement and 2.35, never discarding a higher dependency
 requirement. Observed ordinary values were 2.14 (x86-64 GCC), 2.17 (AArch64) and
-2.36 (x86-64 Clang), not format constants. `floor-image DEST` selects Ubuntu 22.04
-for minimum 2.35 or Debian bookworm for 2.36. CI builds the consuming Goat in the
+2.36 (x86-64 Clang), not format constants. `integration.module_delivery_requirements.floor-image` selects Ubuntu 22.04
+for minimum 2.35 or Debian bookworm for 2.36. CI builds the consuming Goat and C runner in the
 selected userspace, then runs
-`verify-floor GOAT DEST` against that unchanged module. Verification demands
+`integration.module_delivery_requirements.verify-floor` against that unchanged module. Verification demands
 **exact equality** between actual glibc and the declared minimum, and proves
 native calls and the constructor marker without sources or compiler access.
 This does not claim execution of ordinary variants directly on glibc 2.14/2.17.

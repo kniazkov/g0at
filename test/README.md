@@ -178,9 +178,10 @@ The former Python loop/index runners are now `loop_index_testing`, registered as
 
 `module_delivery_requirements_scenarios` preserves real compiler/selector audits
 and exact declared glibc-floor delivery. Run CTest label
-`module-delivery-requirements-migration` in Debug and Release. The unchanged
-Python original and temporary original/C gate remain until all 14 remote checks
-pass; the controlled older-runtime container rebuilds both Goat and the C runner
-and verifies both produced artifacts with both implementations. See the
+`module-delivery-requirements-migration` in Debug and Release. The Python original
+and temporary original/C gate were removed after all 14 remote parity checks
+passed. The controlled older-runtime container rebuilds both Goat and the C runner
+and verifies the real producer artifact at its exact declared floor. No Python is
+needed by this runner. See the
 [fixture provenance, old/new map and direct commands](data/module-delivery-requirements/README.md).
 This does not migrate the separate glibc/musl delivery checks (#390).

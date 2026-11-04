@@ -1,7 +1,7 @@
 # Runtime requirement migration (#389)
 
-The source of truth is the unchanged `scripts/check_module_delivery_requirements.py`
-at merged master `5602d440`. `manifest.json` records its full revision and SHA-256
+The original source was `scripts/check_module_delivery_requirements.py`
+at merged master `5602d440`, retained through the completed parity gate below. `manifest.json` records its full revision and SHA-256
 and the SHA-256 of every frozen input. `main.goat`, both descriptors and the
 `runtime_floor.c.txt` control are exact UTF-8 bytes originally written by that
 script, including the original lack of a trailing newline where applicable.
@@ -34,18 +34,18 @@ module_delivery_requirements_scenarios ID GOAT WRAPPER SELECTOR CC BUILD DATA FO
 
 Use `test/data` as DATA and `docs/module-format-v1` as FORMAT_ROOT. Prepare and
 floor phases require `--destination DIR`; audit can use it to retain baseline
-and extended archives for parity. BUILD must be writable even when the source
+and extended archives for diagnosis. BUILD must be writable even when the source
 checkout is read-only. The three exact-floor phases remain external container
 orchestration, not default host CTest tests. No host-based approximation or
 successful skip is an acceptable replacement for an unavailable older runtime.
 
 For Debug and Release, configure and build the target, run both direct checks,
-then the temporary parity gate (the same gate runs through CTest on CI):
+then the registered C tests (the same checks run through CTest on CI):
 
 ```sh
 for mode in Debug Release; do
   build="build/requirements-$mode"
-  cmake -S . -B "$build" -DCMAKE_BUILD_TYPE="$mode" -DGOAT_TEST_REQUIRE_PYTHON=ON
+  cmake -S . -B "$build" -DCMAKE_BUILD_TYPE="$mode"
   cmake --build "$build" --parallel 2 --target module_delivery_requirements_scenarios
   for case in audit controls; do
     "$build/module_delivery_requirements_scenarios" "integration.module_delivery_requirements.$case" \
@@ -56,42 +56,38 @@ for mode in Debug Release; do
 done
 ```
 
-## Temporary parity gate and retirement
+## Completed parity gate and retirement
 
-`test/support/module_delivery_requirements_parity.py` imports the unchanged
-original and executes every assertion. Its only hooks retain original temporary
-workspaces and check original source/descriptor/control writes against the
-frozen inputs. No child result, compiler output or selector response is mocked.
-Both runners build real artifacts independently. On Linux every ZIP member must
-match byte-for-byte, including native-library bytes and metadata hashes; only
-outer ZIP timestamps/header choices are excluded. Two independently retained
-original runs reproduced complete ELF/member identity locally. Windows PE links
-carry producer timestamps, as already documented by the #388 parity gate:
-there each archive's complete native payload must match its recorded SHA-256,
-then all metadata except those individually validated native hashes, all portable
-bytes and member/compression lists must match. No ELF/PE byte is rewritten.
+[PR #470](https://github.com/kniazkov/g0at/pull/470) passed all 14 checks at exact
+head `c285eff24cdc21be70abe383f383a550c14f7546`:
+[Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41788518179) and
+[format-vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41788518149).
+All seven platform logs confirmed original/C Debug and Release audit parity.
+All four Linux variants confirmed preparation, image selection and both original
+and C verification of both independently produced artifacts inside the selected
+exact older runtime. These were real producer artifacts with actual ELF dependency
+and native execution, not relabeled metadata fixtures.
 
-The temporary `integration.module_delivery_requirements.replay-audit` C mode
-reads the untouched original `baseline.gbin` and `extended.gbin` artifacts via
-`--destination`. It uses the same factored selector matrix as the independent
-C audit. Thus the exact original bytes undergo both original and C selection,
-including on Windows; no build result is replaced or mocked. Both independent
-audits still execute all real compiler, flags and macro checks. The replay mode
-is temporary and retires with the parity wrapper after the remote gate.
-Any other difference is a failure to investigate, never permission to normalize
-executable bytes or weaken producer assertions.
+The removed parity wrapper executed every original assertion and checked its
+source/descriptor/control writes against these frozen inputs. Linux compared
+every archive member including native bytes. Windows independently validated each
+native payload hash and compared remaining metadata, portable bytes and member
+lists because independent PE links carry timestamps. The temporary C replay mode
+applied the same selector matrix to untouched original artifacts. No build output
+or selector result was mocked and no executable bytes were normalized.
 
-For floor preparation, both independently produced archives survive. The image
-selection is checked by both implementations on both artifacts. Inside the chosen
-older image CI rebuilds Goat **and the C scenario runner**, then runs original and
-C verification on **each** archive. The checkout stays read-only and the build and
-workspaces live in `/tmp/goat-floor`. On failure a separate writable `/evidence`
-mount retains scenario/parity diagnostics without changing the read-only checkout. Both consumers independently check that
-artifact bytes remain unchanged and that actual native functions execute.
+The original Python runner, temporary wrapper, original/parity registrations and
+temporary replay mode were removed only after that complete gate. A separate full
+final CI pass is required before merge; final retirement CI is pending.
 
-The original, this temporary parity wrapper and all registrations remain until
-all remote Build (11) and format-vectors (3) checks pass at one reviewed head.
-Checklist step 71 remains unchecked. Removal needs a separate final CI pass.
+The final workflow uses only the C runner for prepare-floor, floor-image and
+verify-floor. Inside the selected older image it rebuilds Goat **and the C runner**.
+The checkout remains read-only; build/workspaces use `/tmp/goat-floor`, and a
+separate writable `/evidence` mount retains failure diagnostics. Exact libc
+version equality, compiler-free VM/auto/required execution, real constructor
+markers and unchanged delivered bytes remain mandatory. This runner has no
+Python dependency; unrelated transitional tests retain their own dependencies.
+
 No format, language, golden-vector, package (#391), or glibc/musl delivery (#390)
 behavior is changed by this step.
 
