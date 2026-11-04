@@ -11,20 +11,29 @@ runtime labels, prebuilt native libraries, or substituted producer results.
 | verify | integration.module_musl.verify | Same untouched glibc/musl pair in both libc userspaces; equal portable identity/bytecode; own and merged native succeeded=1; foreign auto VM fallback and required rejection; off/auto/required, inspector and merger, absent compiler/source, unchanged archives |
 | fail-closed controls | integration.module_musl.controls | Migrated validation negatives; never a replacement for real runtime verification |
 
-## Temporary parity gate
+## Completed parity gate and retirement
 
-`python3 test/support/check_module_musl_parity.py produce BUILD FAMILY DESTINATION`
-independently invokes original Python and C producers. It compares their actual
-stdout and archive members (semantic module.json; exact bytecode and complete
-native ELF bytes), then seals each archive and host record with SHA-256.
+[PR #471](https://github.com/kniazkov/g0at/pull/471) passed 14/14 at exact head
+`7c037eff4d34b03b0d490677412b4fc48e820eab`:
+[Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41815980098) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41815980150).
+The temporary harness independently invoked Python and C producers, compared
+actual stdout and archive members (semantic metadata, exact bytecode and full
+native ELF), and sealed both pairs. Both consumers verified both unchanged
+pairs under Debug musl, Release musl, and glibc on native x86_64 and AArch64.
+The original and temporary harness were removed only after this gate; their
+source and evidence remain available at that revision. Final retirement CI is
+pending. The frozen manifest continues to identify the historical original.
 
-`python3 test/support/check_module_musl_parity.py verify BUILD FAMILY DESTINATION`
-runs BOTH consumers against BOTH independently produced pairs and compares
-actual stdout. It checks the producer seals before and after every consumer.
-No producer invocation happens during verify. Debug musl, Release musl, and
-host glibc all consume the same retained pairs. Both native x86_64 and AArch64
-jobs execute this protocol. Logs, command records, seals, and archives survive
-the Alpine container in the existing CI artifact upload, including failures.
+## C-only real-runtime execution
+
+The existing native-musl workflow now directly runs the C producer under glibc
+and Debug musl into one delivery directory. SHA-256 manifests seal archives
+and host records at production. Every consumer checks both manifests before
+and after verification. Release musl and the final glibc consumer reuse the
+same Debug-produced musl archive without recompilation. This suite has no Python dependency; the broader musl job still uses Python
+for the unchanged book/package checks. Intermediate scenario
+workspaces and command diagnostics survive failures in the existing artifacts.
 
 C direct interface:
 
@@ -37,8 +46,7 @@ real compiler in the actual libc userspace. Verification hides compilers and
 uses delivered archives only. A Windows control/unsupported skip must be explicit:
 Windows cannot prove Linux libc native calls. Real libc production/verification
 cannot successfully skip because a runtime/container/compiler is unavailable.
-Original Python remains unchanged pending full original/C 14-check gate. Step
-72 remains unchecked; no #391 work is included.
+No #391 work is included.
 
 ## CTest registration and applicability
 
@@ -53,5 +61,4 @@ runtime, compiler, artifact, or any failed assertion.
 To select real pair CTest execution on Linux, configure
 `-DGOAT_LIBC_DELIVERY_DIRECTORY=/absolute/pair -DGOAT_LIBC_DELIVERY_FAMILY=glibc`
 (or `musl` inside actual musl). Produce runs before verify; the other runtime's
-archive and host record must already exist. Use a separate destination from the
-sealed parity pairs, whose archives must never be overwritten during verify.
+archive and host record must already exist. Do not run produce against already sealed delivery archives during verification.

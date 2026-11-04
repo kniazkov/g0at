@@ -59,10 +59,12 @@ jobs:
         run: |
           test "$(uname -m)" = "${{ matrix.arch }}"
           sudo apt-get update
-          sudo apt-get install -y gcc cmake make python3
+          sudo apt-get install -y gcc cmake make
           cmake -S . -B build/libc-control -DCMAKE_BUILD_TYPE=Release
           cmake --build build/libc-control --parallel 2 --target goat goat-inspect goat-merge module_native_testing module_musl_scenarios
-          python3 test/support/check_module_musl_parity.py produce build/libc-control glibc build/libc-delivery
+          mkdir -p build/libc-delivery
+          build/libc-control/module_musl_scenarios integration.module_musl.produce build/libc-control/goat build/libc-control/goat-inspect build/libc-control/goat-merge build/libc-control/module_native_testing gcc glibc build/libc-control test/data docs/module-format-v1 --destination build/libc-delivery
+          (cd build/libc-delivery && sha256sum glibc.gbin glibc-host.json > glibc.sha256)
       - name: Build, package and execute under real musl
         run: |
           docker run --rm --network bridge \
@@ -72,13 +74,18 @@ jobs:
               bash /source/scripts/check_musl_ci.sh
             '
       - name: Verify actual musl artifact is foreign to glibc process
-        run: python3 test/support/check_module_musl_parity.py verify build/libc-control glibc build/libc-delivery
+        run: |
+          (cd build/libc-delivery && sha256sum -c glibc.sha256 musl.sha256)
+          build/libc-control/module_musl_scenarios integration.module_musl.verify build/libc-control/goat build/libc-control/goat-inspect build/libc-control/goat-merge build/libc-control/module_native_testing gcc glibc build/libc-control test/data docs/module-format-v1 --destination build/libc-delivery
+          (cd build/libc-delivery && sha256sum -c glibc.sha256 musl.sha256)
       - name: Preserve musl package and immutable cross-runtime artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: goat-musl-${{ matrix.arch }}
-          path: build/libc-delivery
+          path: |
+            build/libc-delivery
+            build/libc-control/scenario-*
           if-no-files-found: error
   linux:
     name: Build and test (Linux, ${{ matrix.arch }}, ${{ matrix.name }})
