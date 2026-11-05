@@ -110,7 +110,7 @@
 - [x] 73. [#391 — Перенести на Си: Проверка пакетов](https://github.com/kniazkov/g0at/issues/391) — [PR #472](https://github.com/kniazkov/g0at/pull/472), original/C parity на `47293b59f31036b771530655dca153866b49924b`: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41857101812), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41857101772). Все 9 платформ прошли Debug/Release parity на одинаковых архивах. Original Python и временный wrapper удалены после 14/14 gate; финальный `6e7b947`: [Build 11/11, attempt 2](https://github.com/kniazkov/g0at/actions/runs/41869484554/attempts/2), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41869484802). Merge `8b2550a`: [Build 11/11, attempt 2](https://github.com/kniazkov/g0at/actions/runs/41892752292/attempts/2), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41892752274). Final attempt 1: Windows workspace cleanup error 32; master attempt 1: UCRT deliberate-crash probe reported a 1-second timeout; both passed unchanged reruns, without weakened checks. Shared test-only dependency: CMake archive extraction and module-delivery runner; no package target dependency cycle. [Fixtures and provenance](../test/data/package/README.md). #392 excluded.
 - [x] 74. [#392 — Перенести на Си: Проверка книги и ссылок](https://github.com/kniazkov/g0at/issues/392) — [PR #473](https://github.com/kniazkov/g0at/pull/473), original/C parity на `17e6de35ce28531cf6b140835916147d9612748a`: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41915800670), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41915800547). Все 9 платформ прошли Debug/Release parity и controls на реальных README/book/examples; сохранён отдельный musl Debug запуск. Original Python и временный wrapper удалены после 14/14 gate; финальный `4c97cea2` и merge `f6b302d1` прошли 14/14 с первой попытки; master: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41937212817), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41937212719). Stable CTest ID, 15 commands, 60-second child limits, 900-second scenario budget и полные failure artifacts сохранены. Shared Python helper оставлен для #394. [Scenario map and retention](../test/data/module-book/README.md).
 - [x] 75. [#393 — Перенести на Си: Встроенная Python-проверка SVG](https://github.com/kniazkov/g0at/issues/393) — original/C parity на `c6771da92d1ccfe245c041b0cd576d244b1377a2`: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41948450047), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41948450046). Все 9 платформ прошли Debug/Release fixture parity и controls; реальная генерация SVG прошла в Linux GCC x86_64. Original heredoc и временный wrapper удалены после полного 14/14 gate; [PR #474](https://github.com/kniazkov/g0at/pull/474), финальный `27d0ebd7` и merged master `4a90f8c0` прошли 14/14 с первой попытки; master: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41963621541), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41963621484). Stable CTest IDs, исходные Goat launches, C validator/controls и fixture bytes сохранены. [Scenario map and retention](../test/data/graph/README.md).
-- [ ] 76. [#394 — Удалить оставшиеся Python helpers и переходные адаптеры](https://github.com/kniazkov/g0at/issues/394)
+- [x] 76. [#394 — Удалить оставшиеся Python helpers и переходные адаптеры](https://github.com/kniazkov/g0at/issues/394) — [PR #475](https://github.com/kniazkov/g0at/pull/475), полный original/C parity на `4272323b530f919cc21e817ba684aeed3974893f`: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41979993274), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41979993245). Семь неиспользуемых Python helpers и активные Python-вызовы удалены после полного gate; стабильные CTest IDs сохранены. Предыдущие проблемы маршрутизации parity, autocrlf и выбора интерпретатора описаны в PR; это не утверждение об успехе первой попытки. CI финального удаления ещё ожидается. Четыре неактивных reproduction-инструмента сохранены до #395; [покрытие и команды](../test/data/format-reference/README.md).
 - [ ] 77. [#395 — Доказать работу полного цикла без Python и завершить документацию](https://github.com/kniazkov/g0at/issues/395)
 
 ## Реестр исходных Python-файлов
@@ -227,10 +227,18 @@ Python-free gate [#395](https://github.com/kniazkov/g0at/issues/395), не ме�
 
 ### Зависимости финальной очистки (#394)
 
-Перед удалением reference.py сохраняются полный C --check/--write для 26 файлов
-векторов/opcodes/схем, точные проверки opcode map, archive hex и lossy source.
-Активная проверка frozen inputs переводится на независимый C manifest/SHA-256
-verifier с 220 materialized mutation digests и missing/corruption controls;
-исходные байты и исторические source hashes неизменны. Это read-only integrity
-gate, не повторное выполнение CPython RNG/zlib recipes. Четыре временных
-reproduction Python-инструмента сохраняются неактивными до #395.
+В #394 удалены `docs/module-format-v1/{reference.py,schema.py,test_reference.py}`
+и `scripts/{inspect_report_test_support.py,module_execution_support.py,module_interface_fixtures.py,process_test_support.py}`.
+Исторический реестр 89 путей выше сохраняется как карта происхождения, а не
+список существующих файлов. Общие C helpers и независимые oracles остаются.
+
+`format_vectors --check/--write --root` сохраняет полный контракт 26 файлов
+векторов/opcodes/схем, включая точные проверки opcode map, archive hex и lossy
+source. Стабильный `format.reference` теперь агрегирует независимые C-проверки
+всех 21 исторических unittest methods. Активные frozen-input gates используют
+`frozen_samples --check/--self-test`, независимую проверку manifest/SHA-256,
+220 materialized mutation digests и missing/corruption controls; исходные байты
+и исторические source hashes неизменны. Это read-only integrity gate, не
+повторное выполнение CPython RNG/zlib recipes. Четыре временных reproduction
+Python-инструмента выше сохраняются неактивными до #395. Полный Python-free gate
+и более широкий аудит документации остаются отдельным шагом #395.

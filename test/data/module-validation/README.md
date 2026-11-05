@@ -111,5 +111,6 @@ limitations are outside this migration. Exact-head GitHub workflows remain the
 cross-platform authority; PR/green-run links are recorded in the implementation PR.
 
 The retired script exported no imported helpers. `module_interface_fixtures.py`
-is retained pending #394 after its last runner migrated in #374;
-`reference.py` remains for its other consumers. Final cleanup is tracked by #394.
+and `reference.py` were subsequently removed in #394 after all runtime consumers
+migrated and full original/C parity passed. Their historical paths are provenance;
+the current runner uses the independent C helpers.

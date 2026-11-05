@@ -135,11 +135,16 @@ The Release scripts also create a relocatable archive in `<build directory>/pack
 (`.tar.gz` on Linux, `.zip` on Windows). It contains `bin/goat`, `bin/goat-inspect`, `bin/goat-merge` (with `.exe` on Windows), public native
 headers, static support library, examples, license and [usage instructions](docs/package/README.md).
 CI tests the extracted archive and publishes it as a `goat-*` artifact. To check
-an archive locally (Python 3 and a matching C compiler are needed for testing):
+an archive locally, build the package and C test runner, then reconfigure so
+CTest sees the archive (a matching C compiler and CMake are required):
 
 ```sh
-python3 scripts/check_package.py build/release/packages
+cmake --build build/release --target package package_scenarios
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+ctest --test-dir build/release -R '^package[.]relocated$' --output-on-failure
 ```
+
+See [package verification](test/data/package/README.md) for direct invocation.
 
 The test relocates the package outside the checkout, compiles using only its
 public headers, exports C, builds native modules, and runs saved VM/native
@@ -259,4 +264,4 @@ Goat is distributed under the [MIT license](LICENSE.txt).
 
 ## CTest suites
 
-Build all targets, then use `ctest --test-dir build --output-on-failure`. Use `ctest --test-dir build -N` for the inventory and `-L integration` to select the existing integration runners. Python and Bash remain transitional test dependencies. See [test prerequisites, labels and platform coverage](test/README.md).
+Build all targets, then use `ctest --test-dir build --output-on-failure`. Use `ctest --test-dir build -N` for the inventory and `-L integration` to select the existing integration runners. Bash remains required for shell-based suites; active test gates no longer require Python. See [test prerequisites, labels and platform coverage](test/README.md).

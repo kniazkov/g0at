@@ -3,8 +3,14 @@
 The 21 methods of `docs/module-format-v1/test_reference.py` at parent
 `4a90f8c0ca9ab96d9ee1a9a7887dc17ebda052ee` retain the following independent C
 coverage. This directory documents the mapping only; no vectors, schemas or
-frozen corpus bytes were changed. The Python methods remain enabled during the
-initial parity phase and are retired only after its complete CI matrix passes.
+frozen corpus bytes were changed. The Python methods were retired in
+[PR #475](https://github.com/kniazkov/g0at/pull/475) after full original/C parity
+at `4272323b530f919cc21e817ba684aeed3974893f`:
+[Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41979993274) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41979993245).
+Earlier parity-routing, autocrlf and interpreter-selection issues are documented
+in the PR; these results do not imply a first-attempt pass. Final removal CI is
+pending separately.
 
 | Original method | CTest coverage |
 | --- | --- |
@@ -49,19 +55,20 @@ counts, digest checks and fault isolation.
 
 ```sh
 cmake -S . -B build/format -DCMAKE_BUILD_TYPE=Debug
-cmake --build build/format --target format_oracle_testing format_binary_testing module_schema_generator_testing
-ctest --test-dir build/format -R '^format\.(oracle|binary|schema)(\.|$)' -E '\.ubsan$' --output-on-failure
+cmake --build build/format --target format_oracle_testing format_binary_testing module_schema_generator module_schema_generator_testing
+ctest --test-dir build/format -R '^format[.](oracle|binary|schema)([.]|$)' -E '[.]ubsan$' --output-on-failure
 ```
 
-During initial parity, also run the original 21 methods before retirement:
+The stable aggregate also runs all 21 methods' mapped C coverage:
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 docs/module-format-v1/test_reference.py
+ctest --test-dir build/format -R '^format[.]reference$' --output-on-failure
 ```
 
-This is the unittest mapping, not a replacement for the separate vector
-regeneration CLI or frozen-sample integrity checks. Those contracts must remain
-available through C tooling before the active Python entry points are removed.
+It invokes schema check/roundtrip/lossy-source rejection plus the full JSON and
+binary oracle modes. The removed Python unittest is historical provenance,
+available at the parity commit above, not a current command. Vector regeneration
+and frozen-sample integrity remain separate C tooling contracts below.
 
 ## Complete vector generator
 
@@ -87,5 +94,8 @@ format validator is used by the oracle/generator; filesystem services are shared
 
 The separate [frozen input gate](../../support/frozen_samples.md) preserves exact
 fixture/provenance bytes and damaged-input digests without invoking Python RNG
-or compressor reproduction during normal CI. Original Python checks remain
-active alongside both new gates until initial full CI parity is complete.
+or compressor reproduction during normal CI. `tool.python-frozen-samples` and
+`tool.python-frozen-samples-self-test` remain stable CTest aliases for the C gate;
+`tool.frozen-samples` and `tool.frozen-samples-self-test` select the same checks.
+The four inactive reproduction/audit scripts are retained until #395. There are
+no active Python commands in these CMake, CTest or CI gates after #394.

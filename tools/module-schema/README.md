@@ -4,8 +4,8 @@
 (step #332 of the [migration checklist](../../docs/c-tooling-migration-checklist.md)).
 Its only input is `docs/module-format-v1/schema-source.json`. It emits the four
 public `*.schema.json` files beside that source and
-`src/module/module_json_schema.h`. `schema.py` remains a transitional reader for
-`reference.py`; it is not used by this generator.
+`src/module/module_json_schema.h`. The transitional Python `schema.py` reader
+and `reference.py` were retired in #394; neither is required by this generator.
 
 ## Build and run
 
@@ -49,8 +49,9 @@ Ordinary builds continue to consume the committed artifacts.
 
 The pre-migration Python generator and `schema.py` public schema renderer were
 compared against the native results on the same JSON input. All five committed
-artifacts must remain byte-identical. The Python generator is removed only after
-that comparison; existing independent format-reference tests remain unchanged.
+artifacts remain byte-identical. The Python generator was removed after that
+comparison. The independent C `format.reference` aggregate now preserves the
+[retired unittest coverage](../../test/data/format-reference/README.md).
 
 | Old check / contract | Native CTest coverage |
 | --- | --- |

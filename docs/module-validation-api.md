@@ -6,7 +6,8 @@
 `src/vm/module_validation.h`. Компилятор, загрузчик, inspect и merge используют
 один и тот же `validate_module` (байты) или `validate_module_file` (UTF-8 путь).
 Будущие CLI-интеграции не вводят отдельного валидатора. Схемы и эталоны находятся
-в `docs/module-format-v1`: schema JSON, `reference.py` и `vectors`; эта библиотека
+в `docs/module-format-v1`: schema JSON и `vectors`; независимый C-инструмент
+`format_vectors` проверяет их вместо удалённого в #394 `reference.py`. Эта библиотека
 использует те же сгенерированные таблицы схем, нормализацию и хеширование.
 
 Успешный `validated_module_t` владеет нормализованными метаданными, полными

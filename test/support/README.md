@@ -77,18 +77,14 @@ substrate is yyjson; it has no dependency on `goat_module`, `goat_validation` or
 The new runner `format_oracle_testing` selects individual scenarios through
 `ctest --test-dir build -L format-oracle --output-on-failure`. It only reads frozen
 inputs and schemas; normal tests never regenerate vectors or source files.
-The existing Python reference remains unchanged for the binary migration (#336)
-and later consumers. `docs/module-format-v1/test_reference.py` still runs in CI.
+The original Python reference, schema reader and unittest were retired in #394
+after all runtime consumers migrated and the full original/C parity gate passed.
 The old-to-new scenario map and corpus provenance are in
-`test/data/format-oracle/README.md`.
-
-Remaining Python import consumers (including dynamic imports) are:
-`docs/module-format-v1/test_reference.py`,
-`check_module_canonical.py`,
-`check_module_container.py`,
-`check_module_hash.py`,
-`check_module_musl.py` and `check_module_search.py`. They retain their current
-API and data paths; their migration remains in the ordered checklist.
+`test/data/format-oracle/README.md`. The stable `format.reference` CTest aggregate
+runs the mapped independent C checks; [commands and retirement evidence](../data/format-reference/README.md)
+also describe the complete `format_vectors` generator. No live Python reference
+import is required. The four inactive frozen-sample reproduction/audit scripts
+remain until #395, separate from the [C integrity gate](frozen_samples.md).
 
 ## Independent binary and fixture oracle (#336)
 
@@ -100,7 +96,7 @@ expose inspection, extraction and bounded byte patching for negative fixtures.
 existing instruction indices. These are part of test-only `goat_format_oracle`;
 its extra dependency is the bundled zlib primitive library, not Goat wrappers.
 See `test/data/binary-oracle/README.md` for the old/new scenario map, provenance,
-corpus hashes, remaining Python fixture consumers and reproduction commands.
+corpus hashes, historical Python provenance and current C verification commands.
 The `format-binary` CTest label selects the new tests, also included in
 `format-oracle` for the full existing cross-platform CI matrix.
 
@@ -123,15 +119,13 @@ production inspector or a change to the JSON report contract.
 The `migration-helpers` CTest label selects the new independently selectable
 self-tests. Both runner targets are built by the existing shell/cmd entry points
 and tested by Linux x86-64/AArch64 GCC/Clang and Windows MinGW i686/x86-64/UCRT
-Debug/Release CI. Python helpers remain untouched until their last consumer is
-migrated and #394 removes the transitional layer.
+Debug/Release CI. The Python compatibility helpers were retired in #394 after
+their last consumers migrated and the full parity gate passed.
 
-Remaining `module_execution_support` consumers: none after #388.
-The compatibility helper remains for the dedicated #394 cleanup.
-
-Remaining `inspect_report_test_support` consumers: none after #392.
-Book checks now use `module_book_scenarios` after full original/C parity.
-The compatibility helper remains for the dedicated #394 cleanup.
+`module_execution_support` had no remaining consumers after #388;
+`inspect_report_test_support` had none after #392. Book checks use
+`module_book_scenarios` after full original/C parity. Historical Python names
+below identify the source contracts, not current dependencies.
 
 ### Execution contract scenario map
 
@@ -150,9 +144,10 @@ The negative cases check that the scenario fails and never reaches the statement
 after the rejected operation. A crashed/timed-out child is always an infrastructure
 failure under the shared scenario contract, not an expected language/compiler
 failure. Relative fixture paths reject traversal instead of writing outside the
-scenario. These intentional safety constraints do not alter existing Python
-consumers. `scenario_command_capture` extends the common process layer with
-complete scenario-owned byte spans, preserving its shared deadline and artifacts.
+scenario. These intentional safety constraints preserved the original Python
+consumers' contracts during migration. `scenario_command_capture` extends the
+common process layer with complete scenario-owned byte spans, preserving its
+shared deadline and artifacts.
 The inspection scenario map and 96-case frozen Python parity reproduction live
 in [`test/data/inspect-report/README.md`](../data/inspect-report/README.md).
 
@@ -164,7 +159,10 @@ cmake --build build/manual --target module_execution_testing inspect_report_test
 ctest --test-dir build/manual -L migration-helpers --output-on-failure --parallel 4
 ```
 
-The same real-project inputs were checked with the unchanged Python helpers:
+Historical parity recipe: the same real-project inputs were checked with the
+unchanged Python helpers before retirement. The snippet below requires a
+historical checkout such as `4a90f8c0ca9ab96d9ee1a9a7887dc17ebda052ee`, including
+its helper modules and built host. It is provenance, not a current test command:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
@@ -214,11 +212,9 @@ The former Python process-watch consumers have migrated:
 | `scripts/check_cleanup_service.py` | `integration.cleanup_service.*` | #376 |
 | `scripts/check_native_cleanup.py` | `integration.native_cleanup.*` | #381 |
 
-No Python consumers of `process_test_support.py` remain; the helper itself is
-retained for the separately scheduled final removal, not deleted by #381.
-
-Final removal remains #394. No existing consumer, scenario, sanitizer, fault test,
-or musl test is removed in this step. The new C runner is added to the existing
+No Python consumers of `process_test_support.py` remained after #381; the helper
+was subsequently retired in #394. The independent C observer and its scenarios,
+sanitizer/fault coverage and musl tests remain. The C runner is part of the existing
 Linux x86-64/AArch64 GCC/Clang and Windows MinGW i686/x86-64/UCRT Debug/Release
 matrix. It uses direct OS launch and synchronization, independently of production
 process/cleanup implementation, so a shared production bug cannot make it pass.
@@ -247,12 +243,14 @@ OS PID reuse; the identity guarantee comes from the pinned kernel object, with n
 PID-based signal path. Fixture cleanup can signal its own unreaped POSIX child
 (which cannot yet reuse its PID); this is not the observer implementation.
 
-### Python/C parity on identical live processes (Linux)
+### Historical Python/C parity on identical live processes (Linux)
 
-This temporary comparison loads the standalone C observer and unchanged Python
+This temporary comparison loaded the standalone C observer and unchanged Python
 helper against **the same process identity** in each case: graceful exit, C kill,
-and Python kill. Both reject a live-process deadline and agree on death before
-and after reaping. No Python dependency is added to the new CTest cases.
+and Python kill. Both rejected a live-process deadline and agreed on death before
+and after reaping. The recipe below requires a historical checkout such as
+`4a90f8c0ca9ab96d9ee1a9a7887dc17ebda052ee`; the Python helper was removed in #394.
+It is not a current CTest prerequisite or command.
 
 ```sh
 mkdir -p build/338-parity
@@ -314,15 +312,16 @@ Mappings, parity baselines and negative controls are in
 `test/data/module-import-execution/README.md` and `test/data/module-interface/README.md`.
 The independent archive/hash oracle verifies nonzero main indexes; the shared
 barrier checks frozen execution after deleting the entire project. The Python
-execution helper and format reference remain for the explicitly listed consumers.
+execution helper and format reference were subsequently retired in #394 after
+their remaining consumers migrated.
 
 Source diagnostic migration (#363): `module_source_diagnostics_scenarios` replaces
 `check_module_source_diagnostics.py` with ten independent IDs (the relocation
 pair remains one identity comparison). See
 [`../data/module-source-diagnostics/README.md`](../data/module-source-diagnostics/README.md)
 for mapping, Debug/Release/UBSan parity, negative controls and the explicit
-Windows escaped-filename skip. The remaining Python consumers above retain the
-shared compatibility helper until #394; no source-diagnostic consumer remains.
+Windows escaped-filename skip. No source-diagnostic consumer remained; #394
+subsequently retired the shared Python compatibility helper.
 
 Information fields/merge migration (#364): `module_information_scenarios` uses
 the shared execution, independent JSON/ZIP and significant-hash helpers for
@@ -333,18 +332,17 @@ no production validator computes expected projection or merge results.
 Dispatch/consistency migration (#365): `module_dispatch_consistency_scenarios`
 replaces both Python runners with 144 stable IDs and explicit independent
 bytecode inspection. See [mapping and validation](../data/module-dispatch-consistency/README.md).
-`module_interface_fixtures.py` remains pending final cleanup after its last runner
-consumer migrated in #374. The remaining execution helper consumers above are
-not migrated here. Cleanup is
-tracked by #394. The frozen consistency corpus already contains the original
-external declaration instructions and is not rebuilt by a production helper.
+`module_interface_fixtures.py` was retired in #394 after its last runner consumer
+migrated in #374, together with the remaining unused Python execution helpers.
+The frozen consistency corpus already contains the original external declaration
+instructions and is not rebuilt by a production helper.
 
 Validation migration (#366): `module_validation_scenarios` uses shared execution,
 independent JSON/hash/ZIP construction for real constructor libraries, and a frozen
 malformed corpus sent unchanged to the real host. There are 62 stable IDs; see
 [mapping and reproduction](../data/module-validation/README.md). The retired runner
-exported no imported helpers; `module_interface_fixtures.py` remains for inspect
-and merge until #394.
+exported no imported helpers; `module_interface_fixtures.py` was subsequently
+retired in #394 after inspect and merge also migrated.
 
 Writer migration (#367): `module_writer_scenarios` combines shared process/file
 helpers, independent ZIP/profile/hash checks, reference-derived normalized parts,

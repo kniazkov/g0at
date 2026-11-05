@@ -135,11 +135,16 @@ bash scripts/build_release.sh
 (`.tar.gz` на Linux, `.zip` на Windows). В нём находятся `bin/goat`, `bin/goat-inspect`, `bin/goat-merge` (с `.exe` на Windows), публичные
 нативные заголовки, статическая библиотека поддержки, примеры, лицензия и [инструкция](docs/package/README.md).
 CI проверяет распакованный архив и публикует его как артефакт `goat-*`.
-Для локальной проверки нужны Python 3 и C-компилятор подходящей архитектуры:
+Для локальной проверки нужны CMake и C-компилятор подходящей архитектуры.
+Соберите пакет и C-runner, затем повторите настройку, чтобы CTest увидел архив:
 
 ```sh
-python3 scripts/check_package.py build/release/packages
+cmake --build build/release --target package package_scenarios
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+ctest --test-dir build/release -R '^package[.]relocated$' --output-on-failure
 ```
+
+Прямой запуск описан в [инструкции проверки пакета](test/data/package/README.md).
 
 Проверка переносит пакет за пределы репозитория, компилирует C только с его
 публичными заголовками, проверяет экспорт C и сборку нативных модулей. Затем
@@ -260,4 +265,4 @@ Goat распространяется по [лицензии MIT](LICENSE.txt).
 
 ## Наборы CTest
 
-После сборки всех целей запускайте `ctest --test-dir build --output-on-failure`. Команда `ctest --test-dir build -N` показывает список, а `-L integration` выбирает существующие интеграционные наборы. Python и Bash пока остаются зависимостями тестирования. [Условия запуска, метки и платформенное покрытие](test/README.md).
+После сборки всех целей запускайте `ctest --test-dir build --output-on-failure`. Команда `ctest --test-dir build -N` показывает список, а `-L integration` выбирает существующие интеграционные наборы. Bash остаётся зависимостью shell-наборов; активные проверки больше не требуют Python. [Условия запуска, метки и платформенное покрытие](test/README.md).

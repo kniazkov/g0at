@@ -14,8 +14,9 @@ The data contains **82 independent projects**, **228 compile/VM operations**, an
 [`module_multifile_access_scenarios.c`](../../src/functional/module_multifile_access_scenarios.c).
 It uses the existing `test/support/module_execution` and scenario framework; it
 does not depend on the Python helpers. Those helpers had no other consumers and
-are removed together. `module_execution_support.py` remains only for unrelated
-pending migrations, listed in `test/support/README.md` (#394).
+were removed together. The shared `module_execution_support.py` was subsequently
+retired in #394 after its last consumers migrated; current tests use the shared
+C execution layer.
 
 ## Preserved observations
 
@@ -71,10 +72,11 @@ Verification before removing Python:
   diagnostics. The source fixture SHA-256 remains unchanged.
 
 The original runner can be reproduced by extracting the four replaced files
-from the provenance commit into `build/access-python/`, setting `PYTHONPATH` to
-the current `scripts/` directory for its unchanged shared execution helper, and
-running `python3 build/access-python/check_module_multifile_access.py HOST GOAT`.
-No Python extraction or generation is needed for normal CTest runs.
+from the provenance commit into a disposable historical checkout with that
+commit's shared execution and format helpers. The old command was
+`python3 scripts/check_module_multifile_access.py HOST GOAT`, run from that
+historical checkout. Its dependencies were retired from the current tree in
+#394. No Python extraction or generation is needed for normal CTest runs.
 
 ## Exact scenario map
 
