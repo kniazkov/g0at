@@ -24,6 +24,9 @@ target_link_libraries(goat_inspect_report_support PUBLIC goat_format_oracle goat
 add_executable(inspect_report_testing src/support/inspect_report_testing.c)
 target_link_libraries(inspect_report_testing PRIVATE goat_inspect_report_support goat_test_support)
 
+add_executable(frozen_samples src/support/frozen_samples_testing.c)
+target_link_libraries(frozen_samples PRIVATE goat_test_support yyjson)
+
 # Independent JSON format reference: yyjson is only the syntax/DOM substrate.
 # No production module validator or canonicalizer is linked into this oracle.
 add_library(goat_format_oracle STATIC support/format_json.c support/format_analysis.c
@@ -41,6 +44,10 @@ if(UNIX AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # Independent binary/ZIP reference uses zlib primitives, never Goat format wrappers.
+add_executable(format_vectors src/support/format_vectors.c)
+target_link_libraries(format_vectors PRIVATE goat_format_oracle goat_common)
+target_compile_definitions(format_vectors PRIVATE GOAT_FORMAT_ROOT="${PROJECT_SOURCE_DIR}")
+
 add_executable(format_binary_testing src/support/format_binary_testing.c)
 target_link_libraries(format_binary_testing PRIVATE goat_format_oracle goat_test_support)
 if(UNIX AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")

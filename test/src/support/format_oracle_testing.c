@@ -254,6 +254,82 @@ static bool release_doc(void *doc) {
     return true;
 }
 
+/* Remaining artifact assertions from the retired reference unittest. The opcode
+ * list is the independent format-v1 specification, not production enum values. */
+static void
+reference_artifacts(scenario_run_t *run, const test_options *options, yyjson_mut_val *source) {
+    static const char names[] =
+        "NOP ARG END JUMP JIF POP DUP NIL TRUE FALSE ILOAD32 ILOAD64 RLOAD SLOAD CLOAD "
+        "VLOAD VAR CONST STORE GETPROP SETPROP UPLUS UMINUS INC DEC LNOT BOOL BNOT LAND LOR "
+        "BAND BOR BXOR SHL SHR ADD SUB MUL DIVIDE MODULO POWER LESS LEQ GREATER GREQ EQUAL "
+        "DIFF FUNC CALL CALLM RET ENTER LEAVE RESTORE TRY THROW GETINDEX SETINDEX ARRAY "
+        "INHERIT LOOP_ENTER LOOP_JUMP DUPN ROTATE SNAPSHOT ITER_NEXT FINALLY_ENTER "
+        "FINALLY_LEAVE FINALLY_END DVAR DCONST BLOAD BSTORE INCLUDE IMPORT MAIN DIR "
+        "CHECKPROP CHECKINDEX CHECKVAR CHECKBOUND";
+    const char *slash = strrchr(options->schema, '/');
+    size_t prefix = slash ? (size_t)(slash - options->schema) : 0;
+    char path[4096];
+    scenario_require(run, prefix + 14 < sizeof(path), "opcode artifact path length");
+    snprintf(path, sizeof(path), "%.*s/opcodes.json", (int)prefix, options->schema);
+    yyjson_mut_doc *opcodes = read_json(path);
+    scenario_require(run, opcodes != NULL, "read independent opcode artifact");
+    scenario_defer(run, release_doc, opcodes);
+    yyjson_mut_val *root = yyjson_mut_doc_get_root(opcodes);
+    size_t count = 0;
+    for (const char *name = names; *name;) {
+        const char *end = strchr(name, ' ');
+        size_t size = end ? (size_t)(end - name) : strlen(name);
+        char key[32];
+        scenario_require(run, size < sizeof(key), "opcode name length");
+        memcpy(key, name, size);
+        key[size] = 0;
+        yyjson_mut_val *value = yyjson_mut_obj_get(root, key);
+        scenario_require(run,
+                         yyjson_mut_is_int(value) && yyjson_mut_get_uint(value) == count,
+                         "opcode name has exact independent index");
+        ++count;
+        name += size + (end != NULL);
+    }
+    scenario_require(run, yyjson_mut_obj_size(root) == count, "no additional opcode entries");
+    static const char *top_keys[] = {"DEFS", "ROOTS"};
+    static const char *root_keys[] = {"gmod", "module", "native", "target"};
+    yyjson_mut_val *roots = yyjson_mut_obj_get(source, "ROOTS");
+    yyjson_mut_val *objects[] = {source, roots};
+    for (size_t group = 0; group < 2; ++group) {
+        size_t index, max;
+        yyjson_mut_val *key, *value;
+        scenario_require(run,
+                         yyjson_mut_obj_size(objects[group]) == (group ? 4 : 2),
+                         "declarative schema object size");
+        yyjson_mut_obj_foreach(objects[group], index, max, key, value) {
+            (void)value;
+            scenario_require(
+                run,
+                !strcmp(yyjson_mut_get_str(key), group ? root_keys[index] : top_keys[index]),
+                "declarative schema insertion order");
+        }
+    }
+    yyjson_mut_val *defs = yyjson_mut_obj_get(source, "DEFS");
+    yyjson_mut_val *facts = yyjson_mut_obj_get(defs, "facts");
+    yyjson_mut_val *properties = yyjson_mut_obj_get(facts, "properties");
+    yyjson_mut_val *range = yyjson_mut_obj_get(properties, "range");
+    yyjson_mut_val *bounds = yyjson_mut_obj_get(range, "properties");
+    scenario_require(run, yyjson_mut_obj_size(bounds) == 2, "both integer range bounds exist");
+    size_t index, max;
+    yyjson_mut_val *key, *value;
+    yyjson_mut_obj_foreach(bounds, index, max, key, value) {
+        (void)key;
+        yyjson_mut_val *minimum = yyjson_mut_obj_get(value, "minimum");
+        yyjson_mut_val *maximum = yyjson_mut_obj_get(value, "maximum");
+        scenario_require(run,
+                         yyjson_mut_is_int(minimum) && yyjson_mut_is_int(maximum)
+                             && yyjson_mut_get_sint(minimum) == INT64_MIN
+                             && yyjson_mut_get_sint(maximum) == INT64_MAX,
+                         "schema keeps exact int64 bounds without floating conversion");
+    }
+    puts("reference-artifacts: opcode mapping, source ordering and int64 bounds passed");
+}
+
 static void run_group(scenario_run_t *run, void *user) {
     test_options *options = user;
     const char *data = scenario_data_directory(scenario_run_context(run));
@@ -268,6 +344,11 @@ static void run_group(scenario_run_t *run, void *user) {
     yyjson_mut_doc *schema = read_json(options->schema);
     scenario_require(run, schema != NULL, "Read schema-source.json");
     scenario_defer(run, release_doc, schema);
+    if (!strcmp(options->group, "reference-artifacts") || !strcmp(options->group, "all")) {
+        reference_artifacts(run, options, yyjson_mut_doc_get_root(schema));
+        if (!strcmp(options->group, "reference-artifacts"))
+            return;
+    }
     yyjson_mut_val *rows = yyjson_mut_doc_get_root(cases);
     size_t index, max, count = 0;
     yyjson_mut_val *row;

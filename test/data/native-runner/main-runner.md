@@ -2,34 +2,40 @@
 
 ## Mapping and direct use
 
-The 22 entries in the unchanged `test/data/native/list.json` map to
-`integration.native_functional.<name>`; `main-mapping.json` records each complete
-manifest object, stable ID, adapter kind and ordered command labels.
+The 22 entries in `test/data/native/list.json` map to
+`integration.native_functional.<name>`; `main-mapping.json` preserves the original
+manifest objects, stable IDs, adapter kinds and ordered command labels. In #394
+only the six active `check` values changed from legacy script paths to built-in
+IDs; names, program entries and command sequences are unchanged.
 
 - **16 native/VM programs:** access, bool_char, add_specializations, string_methods,
   string_identity, string_lifetime, string_nested, string_concat, string_chain,
   quadratic, string_conversions, quadratic_repeated, loops, switch, conditional,
   compound.
 - **Five C check adapters (#384/#385/#386):** access_guards, libm, runtime_strings,
-  string_method_errors and saturation route unchanged logical check paths to
+  string_method_errors and saturation route built-in check IDs to
   `native_access_scenarios all`, `native_libm_scenarios all`,
   `native_runtime_strings_scenarios all`, `native_string_method_scenarios all` and
   `native_saturation_scenarios all`.
   Targets live beside the required policy selftest, keep the original outer
   300-second deadline, and receive the same Goat/repository/data paths.
-- **One C selftest adapter:** runner. The legacy manifest key `checks/runner.py`
+- **One C selftest adapter:** runner. The built-in manifest check ID `runner`
   maps to `native_runner_policy_testing all`; both existence validation and
   execution use that C executable, never the replaced Python selftest.
 
 ```
 cmake --build BUILD --target native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios native_runtime_strings_scenarios native_string_method_scenarios native_saturation_scenarios
 ctest --test-dir BUILD -R '^integration.native_functional\.' --output-on-failure
-native_runner_testing all GOAT PYTHON SELFTEST REPOSITORY BUILD DATA --only access bool_char
-native_runner_testing integration.native_functional.access GOAT PYTHON SELFTEST REPOSITORY BUILD DATA [--keep-work]
+native_runner_testing all GOAT SELFTEST REPOSITORY BUILD DATA --only access bool_char
+native_runner_testing integration.native_functional.access GOAT SELFTEST REPOSITORY BUILD DATA [--keep-work]
 ```
 
 `DATA` is the repository's `test/data`. `--list` prints stable IDs. The whole
 manifest is validated before selection, including unselected files/fields.
+Only `runner`, `access`, `libm`, `runtime_strings`, `string_method_errors` and
+`saturation` are accepted as check IDs. Unknown IDs, executable/script paths and
+embedded NULs are rejected even if the requested file exists. No interpreter
+argument or fallback execution path remains.
 `--only` rejects unknown names before any case runs, preserves manifest order and
 deduplicates requested names. Every case has its own fail-fast scenario; a failed
 case does not prevent subsequent selected cases from running. JSON duplicate
@@ -77,8 +83,8 @@ streams under legacy labels even when timeout or process failure aborts the body
 
 ## Compatibility boundary and provenance
 
-Existing native sources, expected output, examples, drivers and manifest are
-consumed read-only; no oracle fixture is regenerated. `main-provenance.json`
+Existing native sources, expected output, examples and drivers are unchanged.
+The active manifest is consumed read-only at runtime; no oracle fixture is regenerated. `main-provenance.json`
 records original source/manifest hashes and coverage counts.
 
 Full remote parity passed with the original scripts unchanged. The Python
@@ -87,9 +93,9 @@ The temporary `scripts/check_native.py` execution/output helper remained for
 `string_method_errors.py`, then was removed with its final consumer after the
 complete #385 parity gate. Saturation followed after the complete #386 parity
 gate in [PR #464](https://github.com/kniazkov/g0at/pull/464). All check-program
-adapters now route to C scenario runners; the logical `checks/saturation.py`
-identifier does not require a Python runtime. The unchanged manifest and provenance continue
-to record original logical check names; those names are not live Python imports.
+adapters now route to C scenario runners. In #394 the active manifest uses
+built-in check IDs and rejects script paths. Frozen `main-mapping.json` and
+provenance retain the original logical check names as historical evidence.
 
 ## Local evidence and limitations
 
@@ -143,3 +149,35 @@ and 30-second invalid-command caps. See [saturation coverage and evidence](../na
 Final-removal CI must still validate the retirement commit. Earlier intermittent
 GCC builtin-driver compilation at the 120-second cap is not claimed fixed; its
 deeper cause remains unknown.
+
+### Final native Python adapter cleanup (#394)
+
+All six manifest check consumers had migrated to C before this cleanup. The
+unused Python argument and fallback were removed together with the legacy
+script-shaped IDs. `nr_check_kind` defines the fixed C check namespace and
+manifest validation rejects unknown checks before any selected case runs.
+All 22 functional and 28 pre-existing policy IDs remain. Two additional controls,
+`helpers.native_runner.manifest-builtins` and
+`helpers.native_runner.manifest-reject-check`, cover all six accepted IDs, missing
+executables, legacy paths, unknown IDs, absolute/relative paths, wrong types,
+embedded NUL and last-duplicate-key behavior.
+
+Reproduce the changed contract without Python discovery:
+
+```sh
+cmake -S . -B build/native-c-only -DCMAKE_BUILD_TYPE=Release -DCMAKE_DISABLE_FIND_PACKAGE_Python3=TRUE
+cmake --build build/native-c-only --target native_runner_testing
+ctest --test-dir build/native-c-only -R '^helpers.native_runner\.' --output-on-failure
+ctest --test-dir build/native-c-only -R '^integration.native_functional\.' --output-on-failure
+```
+
+Local Debug and Release policy coverage passes 30/30 each with Python discovery
+disabled. Old/new `--list` output matches for all 22 IDs; captured check commands
+match for all six routes after normalizing build/work paths. Four direct negative
+checks reject invalid unselected manifest entries before execution or workspace
+creation. The unchanged pre-cleanup runner
+and new runner both execute all six C check routes in manifest order. The
+selftest route passes in both. Five baseline and four new native routes report
+the existing intermittent local `cleanup=2` limitation after successful child
+exit; `runtime_strings` passes in the new run. This is not claimed as passing
+full native parity; supported remote CI remains required.

@@ -16,8 +16,8 @@
 #define ARGS(...) ((const char *const[]){__VA_ARGS__, NULL})
 
 typedef struct {
-    const char *exe, *python, *selftest, *access, *libm, *runtime_strings, *string_methods,
-        *saturation, *root, *suite, *checks, *build, *data;
+    const char *exe, *selftest, *access, *libm, *runtime_strings, *string_methods, *saturation,
+        *root, *suite, *checks, *build, *data;
     bool keep;
     yyjson_val *record;
     unsigned command;
@@ -73,21 +73,30 @@ static bool exists(scenario_run_t *r, const char *path) {
     return ok;
 }
 
+static const char *check_executable(config_t *c, const char *name) {
+    switch (nr_check_kind(name)) {
+        case NR_CHECK_RUNNER:
+            return c->selftest;
+        case NR_CHECK_ACCESS:
+            return c->access;
+        case NR_CHECK_LIBM:
+            return c->libm;
+        case NR_CHECK_RUNTIME_STRINGS:
+            return c->runtime_strings;
+        case NR_CHECK_STRING_METHOD_ERRORS:
+            return c->string_methods;
+        case NR_CHECK_SATURATION:
+            return c->saturation;
+        default:
+            return NULL;
+    }
+}
+
 static bool validate_file(const char *relative, bool check, void *user) {
     config_t *c = user;
-    if (check && !strcmp(relative, "checks/runner.py"))
-        return is_file(c->selftest);
-    if (check && !strcmp(relative, "checks/access.py"))
-        return is_file(c->access);
-    if (check && !strcmp(relative, "checks/libm.py"))
-        return is_file(c->libm);
-    if (check && !strcmp(relative, "checks/runtime_strings.py"))
-        return is_file(c->runtime_strings);
-    if (check && !strcmp(relative, "checks/string_method_errors.py"))
-        return is_file(c->string_methods);
-    if (check && !strcmp(relative, "checks/saturation.py"))
-        return is_file(c->saturation);
-    char *path = join_fs_path(check ? c->checks : c->suite, relative, NULL);
+    if (check)
+        return is_file(check_executable(c, relative));
+    char *path = join_fs_path(c->suite, relative, NULL);
     bool ok = path && is_file(path);
     FREE(path);
     return ok;
@@ -460,32 +469,15 @@ static void body(scenario_run_t *r, void *user) {
     language_write(r, language_join(r, work, "case.name"), name, strlen(name));
     if (nr_object_get(c->record, "check")) {
         const char *check = field(r, c->record, "check");
-        if (!strcmp(check, "checks/runner.py"))
-            execute(r, c, "check", ARGS(c->selftest, "all", work, c->data), NULL);
-        else if (!strcmp(check, "checks/access.py") || !strcmp(check, "checks/libm.py")
-                 || !strcmp(check, "checks/runtime_strings.py")
-                 || !strcmp(check, "checks/string_method_errors.py")
-                 || !strcmp(check, "checks/saturation.py"))
-            execute(r,
-                    c,
-                    "check",
-                    ARGS(!strcmp(check, "checks/access.py")                 ? c->access
-                         : !strcmp(check, "checks/libm.py")                 ? c->libm
-                         : !strcmp(check, "checks/runtime_strings.py")      ? c->runtime_strings
-                         : !strcmp(check, "checks/string_method_errors.py") ? c->string_methods
-                                                                            : c->saturation,
-                         "all",
-                         c->exe,
-                         c->root,
-                         work,
-                         c->data,
-                         "--keep-work"),
-                    NULL);
+        const char *executable = check_executable(c, check);
+        REQUIRE(executable);
+        if (nr_check_kind(check) == NR_CHECK_RUNNER)
+            execute(r, c, "check", ARGS(executable, "all", work, c->data), NULL);
         else
             execute(r,
                     c,
                     "check",
-                    ARGS(c->python, language_join(r, c->checks, check), c->exe, work),
+                    ARGS(executable, "all", c->exe, c->root, work, c->data, "--keep-work"),
                     NULL);
     } else
         program(r, c);
@@ -524,8 +516,7 @@ static char *joined(const char *root, const char *path) {
     return join_fs_path(root, path, NULL);
 }
 
-/* Adapters are built beside the required policy selftest. Keep the public
- * manifest runner CLI and its unchanged logical legacy check paths stable. */
+/* Built-in check executables are built beside the required policy selftest. */
 static char *sibling(const char *selftest, const char *name) {
     char *path = absolute_fs_path(selftest, NULL);
     if (!path)
@@ -549,7 +540,7 @@ int main(int argc, char **argv) {
         return 1;
 #endif
     int result = 1;
-    if (argc >= 8) {
+    if (argc >= 7) {
         const char **only = calloc((size_t)argc, sizeof(*only));
         size_t only_count = 0;
         bool valid = only != NULL, selection = false;
@@ -560,7 +551,7 @@ int main(int argc, char **argv) {
             else
                 only[only_count++] = argv[1] + sizeof(prefix) - 1;
         }
-        for (int i = 8; valid && i < argc; i++) {
+        for (int i = 7; valid && i < argc; i++) {
             if (!strcmp(argv[i], "--keep-work"))
                 selection = false;
             else if (!strcmp(argv[i], "--only")) {
@@ -574,14 +565,14 @@ int main(int argc, char **argv) {
                 valid = false;
         }
         fs_error_t e = {0};
-        char *root = absolute_fs_path(argv[5], &e);
+        char *root = absolute_fs_path(argv[4], &e);
         clear_fs_error(&e);
         char *exe = canonical_fs_path(argv[2], &e);
         clear_fs_error(&e);
         char *suite = root ? joined(root, "test/data/native") : NULL,
              *checks = root ? joined(root, "test/src/native") : NULL,
              *manifest = suite ? joined(suite, "list.json") : NULL,
-             *build = joined(argv[6], "native-functional");
+             *build = joined(argv[5], "native-functional");
         void *raw = NULL;
         size_t size = 0;
         bool read = manifest && read_fs_regular_file(manifest, 16 * 1024 * 1024, &raw, &size, &e);
@@ -598,7 +589,7 @@ int main(int argc, char **argv) {
             saturation_name[64];
         snprintf(access_name, sizeof(access_name), "native_access_scenarios%s", suffix);
         snprintf(libm_name, sizeof(libm_name), "native_libm_scenarios%s", suffix);
-        char *access = sibling(argv[4], access_name), *libm = sibling(argv[4], libm_name);
+        char *access = sibling(argv[3], access_name), *libm = sibling(argv[3], libm_name);
         snprintf(runtime_strings_name,
                  sizeof(runtime_strings_name),
                  "native_runtime_strings_scenarios%s",
@@ -608,12 +599,11 @@ int main(int argc, char **argv) {
                  "native_string_method_scenarios%s",
                  suffix);
         snprintf(saturation_name, sizeof(saturation_name), "native_saturation_scenarios%s", suffix);
-        char *saturation = sibling(argv[4], saturation_name);
-        char *runtime_strings = sibling(argv[4], runtime_strings_name),
-             *string_methods = sibling(argv[4], string_methods_name);
+        char *saturation = sibling(argv[3], saturation_name);
+        char *runtime_strings = sibling(argv[3], runtime_strings_name),
+             *string_methods = sibling(argv[3], string_methods_name);
         config_t c = {.exe = exe,
-                      .python = argv[3],
-                      .selftest = argv[4],
+                      .selftest = argv[3],
                       .access = access,
                       .libm = libm,
                       .runtime_strings = runtime_strings,
@@ -623,7 +613,7 @@ int main(int argc, char **argv) {
                       .suite = suite,
                       .checks = checks,
                       .build = build,
-                      .data = argv[7],
+                      .data = argv[6],
                       .keep = true};
         char error[512] = {0};
         if (valid && root && suite && checks && build && doc
@@ -696,7 +686,7 @@ int main(int argc, char **argv) {
         FREE(root);
         free(only);
     } else
-        fputs("usage: native_runner_testing all|ID GOAT PYTHON SELFTEST REPOSITORY BUILD DATA "
+        fputs("usage: native_runner_testing all|ID GOAT SELFTEST REPOSITORY BUILD DATA "
               "[--only NAME ...] [--keep-work]\n",
               stderr);
 #ifdef _WIN32

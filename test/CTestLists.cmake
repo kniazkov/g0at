@@ -494,7 +494,7 @@ goat_scenario(format.schema "format;module-schema" TIMEOUT 40 COMMAND
   "$<TARGET_FILE:module_schema_generator_testing>" check "$<TARGET_FILE:module_schema_generator>"
   "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
 foreach(scenario roundtrip stale missing reject-keyword reject-pattern reject-type reject-ref reject-float reject-duplicate
-    reject-array-items reject-ref-siblings reject-zero-items reject-zero-length reject-unique-nonstrings reject-ref-cycle)
+    reject-array-items reject-ref-siblings reject-zero-items reject-zero-length reject-unique-nonstrings reject-ref-cycle reject-lossy-source)
   goat_scenario(format.schema.${scenario} "format;module-schema" TIMEOUT 40 COMMAND
     "$<TARGET_FILE:module_schema_generator_testing>" "${scenario}" "$<TARGET_FILE:module_schema_generator>"
     "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
@@ -584,10 +584,10 @@ foreach(native_runner_index RANGE 0 ${native_runner_last})
   string(JSON native_runner_name GET "${native_runner_manifest}" ${native_runner_index} name)
   goat_scenario(integration.native_functional.${native_runner_name} "native;native-runner-migration" TIMEOUT 2430 COMMAND
     "$<TARGET_FILE:native_runner_testing>" "integration.native_functional.${native_runner_name}"
-    "$<TARGET_FILE:goat>" "${Python3_EXECUTABLE}" "$<TARGET_FILE:native_runner_policy_testing>"
+    "$<TARGET_FILE:goat>" "$<TARGET_FILE:native_runner_policy_testing>"
     "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-foreach(native_runner_policy_case IN ITEMS output-good output-missing-nul output-missing-newline output-space output-extra-line report-good report-mode report-preparation report-bound-zero report-bound-count report-zero-calls report-attempts report-succeeded report-retries report-missing-mode report-missing-preparation report-missing-bound report-missing-attempts report-missing-succeeded report-missing-retries report-vm-good report-vm-native continuation report-unicode report-duplicates manifest-validation selection-order selection-unknown)
+foreach(native_runner_policy_case IN ITEMS output-good output-missing-nul output-missing-newline output-space output-extra-line report-good report-mode report-preparation report-bound-zero report-bound-count report-zero-calls report-attempts report-succeeded report-retries report-missing-mode report-missing-preparation report-missing-bound report-missing-attempts report-missing-succeeded report-missing-retries report-vm-good report-vm-native continuation report-unicode report-duplicates manifest-validation manifest-builtins manifest-reject-check selection-order selection-unknown)
   goat_scenario(helpers.native_runner.${native_runner_policy_case} "native;native-runner-migration" TIMEOUT 45 COMMAND
     "$<TARGET_FILE:native_runner_policy_testing>" "helpers.native_runner.${native_runner_policy_case}"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
@@ -748,7 +748,7 @@ if(TARGET integer_oracle_ubsan_testing)
 endif()
 
 # #335: independent schema-driven JSON oracle; Python reference remains for consumers.
-foreach(scenario strict_json canonical_bytes shapes gmod constants facts_normalization summaries summary_consistency dependency_versions hash_projection target guard_intersections normalization_preserves_distinctions hash_excludes_native_but_validates_it native_envelope edge_cases vectors metadata_edges target_edges guard_edges)
+foreach(scenario strict_json canonical_bytes shapes gmod constants facts_normalization summaries summary_consistency dependency_versions hash_projection target guard_intersections normalization_preserves_distinctions hash_excludes_native_but_validates_it native_envelope edge_cases vectors metadata_edges target_edges guard_edges reference-artifacts)
   goat_scenario(format.oracle.${scenario} "format-oracle" TIMEOUT 40 COMMAND
     "$<TARGET_FILE:format_oracle_testing>" "${scenario}" "${CMAKE_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
@@ -815,3 +815,16 @@ foreach(timed_execution_case IN ITEMS clock success nonzero boundary duration tr
     "$<TARGET_FILE:timed_execution_testing>" "${timed_execution_case}"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
+
+# #394: independent C integrity gate runs alongside original reproduction first.
+goat_scenario(tool.frozen-samples "tool;frozen-samples-c;migration-cleanup" TIMEOUT 60 COMMAND
+  "$<TARGET_FILE:frozen_samples>" --check --data "${PROJECT_SOURCE_DIR}/test/data/python-samples")
+goat_scenario(tool.frozen-samples-self-test "tool;frozen-samples-c;migration-cleanup" TIMEOUT 180 COMMAND
+  "$<TARGET_FILE:frozen_samples>" --self-test --data "${PROJECT_SOURCE_DIR}/test/data/python-samples"
+  --build "${CMAKE_BINARY_DIR}")
+
+goat_scenario(format.vectors "format;format-vectors;migration-cleanup" TIMEOUT 60 COMMAND
+  "$<TARGET_FILE:format_vectors>" --check --root "${PROJECT_SOURCE_DIR}")
+goat_scenario(format.vectors.controls "format;format-vectors;migration-cleanup" TIMEOUT 180 COMMAND
+  "${CMAKE_COMMAND}" "-DGENERATOR=$<TARGET_FILE:format_vectors>" "-DROOT=${PROJECT_SOURCE_DIR}"
+  "-DWORK=${CMAKE_BINARY_DIR}" -P "${PROJECT_SOURCE_DIR}/test/support/format_vectors_controls.cmake")
