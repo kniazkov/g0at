@@ -7,7 +7,9 @@ The reference is the embedded Python in `scripts/check_graph.sh` at base
 `a601683f0e2479209d36f9660ca6514d9e1dfdc47c17014ec9658d34ce1108f9`.
 The exact heredoc, including its final newline, hashes to
 `2431003535c1426296b9443abb221269f7f63bce36623348b9909b667581cde7`.
-It remains unchanged until complete original/C CI parity passes.
+The original and temporary wrapper remain available in Git at parity head
+`c6771da92d1ccfe245c041b0cd576d244b1377a2`; both were retired only after complete
+original/C CI parity passed.
 
 The four frozen files are real output from the unchanged Goat commands, not
 handwritten approximations. They were generated with the preceding #392 retired
@@ -48,22 +50,30 @@ variations; unsupported constructs fail closed.
 
 ## Parity and platform applicability
 
-During parity, `scripts/check_graph_parity.py` extracts and verifies the exact
-original heredoc, runs it in an independent Python interpreter with optimization
-disabled, then runs C against the same copied fixture quartet. Neither checker
-reads the other's verdict. All nine existing platform jobs select this fixture
-parity and C controls in Debug and Release, including both native musl jobs.
+The unchanged original heredoc and C passed the full gate at exact head
+`c6771da92d1ccfe245c041b0cd576d244b1377a2`:
+[Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41948450047) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41948450046).
+Actual Debug/Release fixture parity and C controls were verified on all nine
+platform jobs, including both native musl jobs. The temporary wrapper verified
+the original heredoc SHA-256, ran its independent interpreter with optimization
+disabled, then ran C on the same copied quartet. Neither checker read the other's
+verdict. The initial CI run revealed missing explicit build-script target entries;
+the corrected parity head includes the runner in all four build entrypoints.
 
 Actual graph generation retains its original applicability: the Linux GCC
 x86_64 graph job installs Graphviz and runs the unchanged two Goat launches in
-`scripts/check_graph.sh`. Both original Python and C inspect the same generated
-files. Other platforms validate the frozen generated files and controls; they do
-not claim actual graph-generation coverage. Shell/CMake remain orchestration.
+`scripts/check_graph.sh`. Original Python and C inspected the same generated
+files at the parity gate. Other platforms validated frozen generated files and
+controls, not actual graph generation. Shell/CMake remain orchestration.
 
-The original `tool.graph` CTest ID stays optional on Bash, Graphviz and, during
-parity only, Python. The portable `graph-validation-migration` tests do not require
-Graphviz or Bash. Python is only the temporary original-reference dependency;
-C validation/controls can always be run directly.
+After that gate, the original heredoc and temporary wrapper were removed.
+`integration.graph` now invokes C directly; `integration.graph_controls` remains
+independently selectable. Their stable IDs, labels, timeouts, C implementation,
+frozen fixture bytes and Debug/Release platform selections are unchanged.
+The original `tool.graph` CTest ID retains its Bash/Graphviz applicability but
+no longer requires Python. Portable validation and controls need none of those
+optional tools. Final retirement CI is pending.
 
 ## Workspaces and reproduction
 
@@ -80,16 +90,12 @@ The C runner takes `ID BUILD DATA INPUT [--keep-work]`. DATA is the read-only
 fixture directory; INPUT contains the quartet to inspect. BUILD must exist and
 be disjoint from DATA. Every run owns a unique build workspace and copies the
 actual inputs before validation. Failures and `--keep-work` retain these files;
-successful ordinary runs clean them. The parity wrapper independently retains
-its copied quartet and exact original reference on failures or `--keep-work`.
-Both C scenarios have a 30-second internal budget. CTest watchdogs are 210
-seconds for parity and 180 seconds for controls; the
-wrapper bounds Python at 30 seconds and C at 180 seconds.
+successful ordinary runs clean them. Both C scenarios have a 30-second internal
+budget. CTest watchdogs are 210 seconds for validation and 180 seconds for controls.
 
-Linux/Windows failure artifacts retain SVG, stdout and parity inputs. The musl
-EXIT handler copies the same evidence before the container exits. The actual
+Linux/Windows failure artifacts retain the actual inspected SVG and stdout.
+The musl EXIT handler copies the same evidence before the container exits. The actual
 generation job uploads SVG and stdout even if validation fails. No fixture or
 source input is overwritten by either implementation.
 
-Retirement is pending the complete exact-head 14/14 parity gate. Do not remove
-the original heredoc, temporary wrapper or its dependency before that gate.
+The graph migration is complete; #394 compatibility-helper cleanup remains separate.

@@ -395,7 +395,7 @@ possibly reused numeric PID. See [the full map and validation](../data/child-pro
 attributes. It does not invoke the production graph writer as an oracle, nor
 require a new external XML library. `graph_scenarios` uses it for the original
 fibonacci/replacement assertions and independent malformed/mismatch controls.
-The original Python heredoc remains unchanged during the complete CI parity
-gate. Portable fixture validation and controls run without Graphviz; generation
+The original Python heredoc and temporary wrapper were retired after the complete
+14/14 CI parity gate. Portable fixture validation and controls run without Graphviz; generation
 remains in the existing shell script. See
 [the scenario map](../data/graph/README.md) for provenance and direct invocation.

@@ -359,7 +359,6 @@ jobs:
             build/**/scenario-*/graph*
             build/**/scenario-*/**/*.svg
             build/**/scenario-*/**/*-output.txt
-            build/**/graph-parity-*/**
             build/**/scenario-*/**/*.actual
             build/**/scenario-*/**/*.expected
             build/**/functional-fixtures-*/**/actual_*.txt
@@ -584,7 +583,6 @@ jobs:
             build/**/scenario-*/graph*
             build/**/scenario-*/**/*.svg
             build/**/scenario-*/**/*-output.txt
-            build/**/graph-parity-*/**
             build/**/scenario-*/**/*.actual
             build/**/scenario-*/**/*.expected
             build/**/functional-fixtures-*/**/actual_*.txt

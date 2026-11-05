@@ -77,9 +77,8 @@ finish_native_diagnostics() {
         /work/debug/ctest/native-original /work/release/ctest/native-original \
         /work/debug/native-original-* /work/release/native-original-* \
         /work/debug/scenario-* /work/release/scenario-* \
-        /work/debug/graph-parity-* /work/release/graph-parity-* \
         -type f \( -name '*.log' -o -name '*.stdout' -o -name '*.stderr' \
-        -o -name '*.svg' -o -name 'original.py' -o -name '*.report' -o -name '*.command.json' -o -name 'case.name' \
+        -o -name '*.svg' -o -name '*.report' -o -name '*.command.json' -o -name 'case.name' \
         -o -name '*.goat' -o -name '*.gbin' -o -name '*.gmod' -o -name '*.txt' -o -name 'host-*.c' -o -name 'edges.c' -o -name 'driver.c' \
         \) -print0 2>/dev/null)
     exit "$status"

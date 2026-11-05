@@ -189,13 +189,13 @@ This does not migrate the separate glibc/musl delivery checks (#390).
 ### Standalone SVG validation (#393)
 
 `integration.graph` checks frozen actual Graphviz output and stdout on every
-supported host. During parity it runs the original unchanged Python heredoc and
-then the C validator on identical copied files. `integration.graph_controls`
+supported host using the direct C validator after the complete original/C parity
+gate. `integration.graph_controls`
 selects the independent C controls. Both are included in the
 `graph-validation-migration` label in Debug and Release, including native musl.
 The portable C runner needs neither Graphviz nor Python. `tool.graph` preserves
 the original Bash generation commands and optional Graphviz applicability; its
-Python dependency remains until the full parity gate passes.
+SVG validation no longer depends on Python.
 
 Build `graph_scenarios`, then run:
 
