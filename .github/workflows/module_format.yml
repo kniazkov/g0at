@@ -19,7 +19,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $git = (Get-Command git -CommandType Application -ErrorAction Stop).Source
+          $git = (Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+          if ($git -isnot [string] -or [string]::IsNullOrWhiteSpace($git) -or -not (Test-Path -LiteralPath $git -PathType Leaf)) {
+            throw 'Checkout Git must resolve to one existing executable'
+          }
           "GOAT_CHECKOUT_GIT=$git" >> $env:GITHUB_ENV
           New-Item -ItemType Directory -Force build/python-free | Out-Null
           "Git: $git" | Tee-Object -FilePath build/python-free/checkout-git.log
