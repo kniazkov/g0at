@@ -15,13 +15,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Record native checkout Git
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $git = (Get-Command git -CommandType Application -ErrorAction Stop).Source
+          "GOAT_CHECKOUT_GIT=$git" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force build/python-free | Out-Null
+          "Git: $git" | Tee-Object -FilePath build/python-free/checkout-git.log
+          & $git --version | Tee-Object -Append -FilePath build/python-free/checkout-git.log
+          & $git config --show-origin --get-regexp '^core\.(autocrlf|eol|filemode)$' | Tee-Object -Append -FilePath build/python-free/checkout-git.log
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect checkout Git configuration' }
       - name: Prepare supported Windows C toolchain
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
           update: true
-          install: git mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+          install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
       - name: Locate native poison preparation compiler
         if: runner.os == 'Windows'
         shell: msys2 {0}
@@ -113,11 +124,19 @@ jobs:
           test ! -s build/python-free/checkout-status.log
       - name: Verify normal cycle leaves the checkout clean (Windows)
         if: runner.os == 'Windows'
-        shell: msys2 {0}
+        shell: pwsh
         run: |
-          source scripts/no_python.sh
-          git status --porcelain --untracked-files=all | tee build/python-free/checkout-status.log
-          test ! -s build/python-free/checkout-status.log
+          & ./scripts/no_python.ps1 {
+            $git = $env:GOAT_CHECKOUT_GIT
+            "Git: $git" | Tee-Object -FilePath build/python-free/checkout-git-final.log
+            & $git --version | Tee-Object -Append -FilePath build/python-free/checkout-git-final.log
+            & $git config --show-origin --get-regexp '^core\.(autocrlf|eol|filemode)$' | Tee-Object -Append -FilePath build/python-free/checkout-git-final.log
+            $status = @(& $git status --porcelain --untracked-files=all)
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect checkout status' }
+            [IO.File]::WriteAllLines("$PWD/build/python-free/checkout-status.log", [string[]]$status)
+            $status | Write-Host
+            if ($status.Count -ne 0) { throw 'Normal cycle changed the checkout' }
+          }
       - name: Preserve Python-free dependency proof
         if: always()
         uses: actions/upload-artifact@v4
