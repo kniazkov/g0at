@@ -90,7 +90,7 @@ IFS=: read -r -a _goat_no_python_paths <<< "$PATH"
 for _goat_dir in "${_goat_no_python_paths[@]}"; do
     [[ -d $_goat_dir ]] || continue
     while IFS= read -r -d '' _goat_file; do
-        _goat_name="$(basename "$_goat_file")"
+        _goat_name="${_goat_file##*/}"
         if [[ ${_goat_name,,} =~ ^(pythonw?|pypyw?)([0-9]+([.][0-9]+)*)?([.]exe)?$|^pyw?([.]exe)?$ ]]; then
             # Preserve POSIX case and the exact discovered spelling, including
             # unusual uppercase .EXE suffixes on a case-sensitive filesystem.
