@@ -61,30 +61,20 @@ CI orchestration, not default CTest commands; registering the ordinary requireme
 audit does not replace those jobs. Build scripts and `create_test.cmd` are tools,
 not tests, and are not invoked recursively from CTest.
 
-### Python-free project cycle (#395)
+### Tooling dependency policy
 
-Project CI steps source `scripts/no_python.sh` in Bash/MSYS2. It places native
-failing interpreter/launcher aliases before the existing PATH, records every
-attempt and fails the step at exit even if a child ignored the failure. It
-checks both the source orchestration and generated CTest commands/environment
-through `scripts/check_no_python.cmake`, including explicit interpreter paths.
-The standalone Windows generator steps use `scripts/no_python.ps1`, preserving
-their PowerShell/MSVC toolchain. Negative controls prove the poison commands,
-ignored-failure detection and source/CTest audit reject prohibited routes.
+Build scripts, generators, test runners and packaging must remain independent
+of Python. New tooling uses C, CMake or the existing shell/cmd/PowerShell entry
+points; this is a development and review rule.
 
-The disposable Alpine and exact-runtime glibc containers additionally run
-`scripts/check_python_absence.sh` to record their installed-package and
-filesystem interpreter inventory. This is actual conventional Python absence
-in those containers. Hosted Linux/Windows machines can still contain Python
-outside the project command routes; the step guard is a dependency proof, not
-a security sandbox or a claim that all host software has been uninstalled.
+The migration's temporary interpreter guards and dependency-audit controls were
+retired after #395 passed its full CI cycle. Normal CI runs the project commands
+directly, without altering PATH or auditing interpreters installed on the host.
+Frozen reference data and their provenance remain inputs to the existing C tests.
 
-Existing build/test selections, stable CTest IDs, platform applicability,
-deadlines, generators, book checks, Release performance and relocated-package
-checks remain unchanged. Evidence and failed workspaces survive CI failures.
-The final published-head CI result is recorded in the
-[migration checklist](../docs/c-tooling-migration-checklist.md) or its linked PR;
-a source audit by itself does not establish a full platform pass.
+CI still verifies that the normal cycle leaves the checkout clean. Checkout
+status and Windows Git diagnostics are stored under `build/ci`; failed scenario
+workspaces and the existing build/test artifacts retain their usual locations.
 
 ### Child environment and finite input
 
