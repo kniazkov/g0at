@@ -77,7 +77,7 @@ From another working directory, pass an absolute repository path to `-S` and an 
 
 ### Linux
 
-Install GCC or Clang, GNU Make, Bash, CMake 3.13 or newer, and the standard C development libraries, including pthread and libm. Linux native backends support glibc and musl on x86-64 and AArch64; build Goat and its native modules for the same runtime family. Installing a second libc does not change the runtime of an already-built Goat process. On Alpine, install `build-base`, `cmake`, `bash`, `python3` and `linux-headers` before using the same build commands. Ordinary glibc users do not need musl installed.
+Install GCC or Clang, GNU Make, Bash, CMake 3.13 or newer, and the standard C development libraries, including pthread and libm. Linux native backends support glibc and musl on x86-64 and AArch64; build Goat and its native modules for the same runtime family. Installing a second libc does not change the runtime of an already-built Goat process. On Alpine, install `build-base`, `cmake`, `bash` and `linux-headers` before using the same build commands. Ordinary glibc users do not need musl installed.
 
 ```bash
 bash scripts/build.sh
@@ -264,4 +264,4 @@ Goat is distributed under the [MIT license](LICENSE.txt).
 
 ## CTest suites
 
-Build all targets, then use `ctest --test-dir build --output-on-failure`. Use `ctest --test-dir build -N` for the inventory and `-L integration` to select the existing integration runners. Bash remains required for shell-based suites; active test gates no longer require Python. See [test prerequisites, labels and platform coverage](test/README.md).
+Build all targets, then use `ctest --test-dir build --output-on-failure`. Use `ctest --test-dir build -N` for the inventory and `-L integration` to select the existing integration runners. Bash remains required for shell-based suites; build, generators, tests and packaging do not require Python. See [test prerequisites, labels and platform coverage](test/README.md).

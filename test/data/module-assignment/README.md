@@ -14,8 +14,8 @@ The implementation is
 Source strings and expected observations are stored only in this read-only table;
 CMake derives IDs from the same table. The runner uses the existing
 `test/support/module_execution` helpers and common scenario framework. The old
-Python runner had no other importers and is removed after parity; the shared
-Python execution helper remains for its other consumers until #394.
+Python runner had no other importers and was removed after parity; the shared
+Python execution helper was retired in #394 after its last consumer migrated.
 
 ## Preserved coverage
 
@@ -74,13 +74,10 @@ Before Python deletion:
 - Source table SHA-256 unchanged by all runs; parallel execution and cleanup
   verified. Related access/provenance regression: 166/166.
 
-The original runner can be reproduced with:
-
-```sh
-mkdir -p build/assignment-python
-git show 89fffac30bb96b067eba3316292ed1b464896d90:scripts/check_module_assignment_access.py > build/assignment-python/check.py
-PYTHONPATH="$PWD/scripts" python3 build/assignment-python/check.py build/assignment-debug/module_import_execution_testing build/assignment-debug/goat
-```
+Historical parity is reproducible only in a separate checkout of
+[`89fffac30bb96b067eba3316292ed1b464896d90`](https://github.com/kniazkov/g0at/tree/89fffac30bb96b067eba3316292ed1b464896d90)
+with its original runner, shared Python helpers and matching hosts. No current-tree
+Python command or compatibility module remains.
 
 ## Exact legacy → CTest map
 

@@ -15,7 +15,7 @@ original canonical fixture is split into direct/alias and ordinary/frozen
 variants, with isolated equivalent setup. Reserved names have one ID per invalid
 form. Together with the 13 [provenance scenarios](../module-provenance/README.md),
 this completes the scope of #360. No other consumers import the two removed
-runners; the shared Python execution helper remains for later tasks (#394).
+runners; the shared Python execution helper was retired in #394.
 
 ## Preserved checks and infrastructure
 
@@ -83,10 +83,11 @@ specific absence assertions before VM execution, with all diagnostics retained.
 Provenance additionally rejects unexpected successful compilation and malformed
 JSON. No production API or cleanup check is weakened for the migration.
 
-To reproduce Python, extract the original runner from the provenance commit
-into a build directory, use the current `scripts/` as `PYTHONPATH`, and run
-`python3 check_module_context_constants.py HOST GOAT`. Ordinary CTest runs need
-neither Python nor fixture regeneration.
+Historical Python parity requires a separate checkout of provenance commit
+`d40c232fe471af61fdf39424c2d2b192319f6dbb`, including its original runner,
+shared helpers and matching hosts. The current `scripts/` directory supplies no
+Python compatibility helpers. Ordinary CTest runs need neither Python nor
+fixture regeneration.
 
 ## Exact scenario mapping
 

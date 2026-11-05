@@ -60,9 +60,9 @@ ID функций и внутренних имён файлов, отсутст�
 что документ, прошедший схему, пройдёт эти последующие проверки. Подключение к
 сборщику исходников и merge также относится к их задачам.
 
-Проверки: `module_json_testing` (C),
-`python scripts/check_module_json.py <путь-к-module_json_testing>` (реальный C API
-через stdin), `build/module_schema_generator --check`.
+Проверки: `ctest --test-dir build -R '^(core[.]json|native[.]module_json|format[.]schema)$' --output-on-failure`
+(реальный C API через stdin и независимые C-сценарии),
+`build/module_schema_generator --check`.
 В CI проверки выполняются на Linux x86_64/aarch64 с GCC/Clang и Windows
 MINGW32/MINGW64/UCRT64. Проверяются положительные эталоны, обязательность и типы,
 вложенные неизвестные поля, Unicode/NUL, точные границы чисел, значения по
@@ -127,7 +127,7 @@ implemented in [#180](module-canonical-json.md). Passing the
 schema does not imply passing those later validators. Source builder and merge
 integration likewise belongs to their implementation tasks.
 
-Run `module_json_testing`, `python scripts/check_module_json.py <executable>` and
+Run `ctest --test-dir build -R '^(core[.]json|native[.]module_json|format[.]schema)$' --output-on-failure` and
 `build/module_schema_generator --check`. CI runs the production
 reader on Linux x86_64/aarch64 GCC/Clang and Windows MINGW32/MINGW64/UCRT64. Tests
 cover valid vectors, required fields/types, nested unknown fields, Unicode/NUL,

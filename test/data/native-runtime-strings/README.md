@@ -129,7 +129,7 @@ crashes and supervisor cleanup errors always fail, even when the child exits zer
   original glob; removal restores the good baseline. Windows also checks
   case-insensitive matching, like `Path.glob` on that platform.
 
-## Local verification
+## Local verification before remote parity
 
 The unchanged Python checker passed with both Debug and Release interpreters.
 The focused C Debug pass completed 12 of 13 independent scenarios successfully,
@@ -143,7 +143,8 @@ all four runtime objects and both drivers. Its 2,589-byte native and VM output
 files each exactly matched the original Debug checker. Strict C11 compilation
 with `-DNDEBUG -Wall -Wextra -Werror -pedantic-errors` and clang-format 18 checking
 also pass. Integrated CMake/CTest and remote cross-platform parity results are
-reported separately; the originals remain present pending that gate.
+reported below; at this earlier local stage the originals were retained pending
+that gate, then removed after the complete remote pass.
 
 Integrated local gate (2026-11-03): CMake Debug and Release builds passed, and
 both configurations passed 25/30 `native-strings-migration` CTests. The five
@@ -152,8 +153,8 @@ three real method cases and the method original/C gate; every failure records
 child exit zero and supervisor `cleanup=2`. The runtime original/C aggregate
 and all 16 negative controls passed in this single integrated run. Both dedicated
 UBSan CTests passed, including unchanged-Python/C stdout and generated-byte parity.
-No failed case was retried just to obtain a local pass. Full remote parity remains
-required before deleting the original checkers.
+No failed case was retried just to obtain a local pass. The required remote
+parity gate was subsequently completed as recorded below.
 
 ## Remote parity and retirement
 

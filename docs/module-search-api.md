@@ -53,7 +53,7 @@ error pointers are supported. Release search objects with `free_module_search`
 and successful snapshots with `free_validated_module`. Allocation follows the
 existing fatal-OOM policy; recoverable loader OOM remains #236. Dependency-chain enrichment remains tracked in #190.
 
-`scripts/check_module_search.py build/module_search_testing` exercises directory
+`ctest --test-dir build -R '^integration[.]module_search$' --output-on-failure` exercises directory
 precedence, aliases, platform separators, real-root `.gmod`/`.goat`/`.gbin` behavior,
 fixed cwd/symlink roots, exact/nonrecursive lookup, first-candidate failure and
 snapshot ownership. Linux and MinGW CI run the same fixture suite.

@@ -88,8 +88,8 @@ runtime Python helper is introduced.
   only the dynamic legacy path. All 56 recorded hashes match the frozen bytes.
 - `clang-format` 18 dry-run and `git diff --check` passed.
 
-Full remote platform parity remains required before original Python deletion;
-local Linux results do not claim Windows or musl execution.
+Full remote platform parity was required before original Python deletion and
+is recorded below; these local Linux results do not claim Windows or musl execution.
 
 
 ## Remote parity gate and Python removal

@@ -2,11 +2,11 @@
 
 `python-results.tsv` certifies the independent C test oracle against Python's
 arbitrary-precision integer arithmetic. It is **not** used by production or to
-replace runtime expected-answer computation in future migrated saturation tests.
-The original saturation Python consumer remains unchanged until #386.
+replace runtime expected-answer computation in the migrated saturation tests.
+The original saturation Python consumer was retired in #386 after full parity.
 
 The 1,196 input pairs are, in order, the Cartesian product of the 14 boundary
-values in `test/src/native/checks/saturation.py`, then all 1,000 frozen pairs in
+values in the historical `test/src/native/checks/saturation.py`, then all 1,000 frozen pairs in
 `test/data/python-samples/saturation-pairs.json` (original seed 20261006).
 Every pair has seven records: add, subtract, multiply, negate, absolute value,
 increment, decrement. Unary operations ignore the second operand. There are
@@ -48,11 +48,14 @@ cmake --build build/oracle --target integer_oracle_ubsan_testing
 ctest --test-dir build/oracle -L integer-oracle --output-on-failure
 ```
 
-## Explicit Python reproduction
+## Historical Python reproduction
 
-Run this **only when intentionally reproducing the certification data**, from
-the repository root. Normal build and test runs do not execute Python or rewrite
-the fixture. Compare the resulting bytes/hash to the committed fixture:
+This recipe records the original independent certification. Reproduce it only
+in a separate historical checkout of
+[`cb86b8261bd3922a228cd0f5cd39cecd9dcb68d9`](https://github.com/kniazkov/g0at/tree/cb86b8261bd3922a228cd0f5cd39cecd9dcb68d9),
+not as a current build/test command or a way to refresh the frozen corpus.
+Normal checks use the C oracle above and never rewrite the fixture. Compare
+reproduced bytes/hash to the committed fixture:
 
 ```sh
 python3 - <<'PY'

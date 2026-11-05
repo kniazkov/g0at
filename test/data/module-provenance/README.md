@@ -51,11 +51,10 @@ file; no second list of scenario names is needed.
   Both failures retain scenario diagnostics. Malformed fixture JSON is rejected
   before dispatch. Positive `--keep-work` runs retain complete source trees.
 
-To reproduce the original baseline, extract the former Python runner from the
-provenance commit into a build directory, set `PYTHONPATH` to the repository's
-`scripts/` directory for its unchanged shared execution helper, and run it with
-the same `module_import_execution_testing` host. Normal CTest runs need no
-Python or fixture generation.
+To reproduce the original baseline, use a separate checkout of the provenance
+commit, including its former Python runner, shared execution helper and matching
+`module_import_execution_testing` host. The current `scripts/` directory supplies
+no Python compatibility helpers. Normal CTest runs need no Python or fixture generation.
 
 ## Complete scenario mapping
 

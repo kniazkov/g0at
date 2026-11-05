@@ -78,7 +78,7 @@ argv можно освобождать после возврата. Потреб
 ручное удаление. Ошибки сервиса не печатаются автоматически и не выбирают exit code
 программы. Требования к отмене/повторам и владению распространяются на все режимы.
 
-Проверки: `scripts/check_cleanup_service.py <cleanup_service_testing>` запускает
+Проверки: `ctest --test-dir build -L cleanup-service-migration --output-on-failure` запускает
 изолированные владельцы и напрямую проверяет сервис, без готовых потребителей.
 Используются READY/каналы/маркеры и устойчивые handles процессов, внешние watchdog;
 проверка повторов и границ 30 с использует управляемые часы. Linux/Windows CI
@@ -152,7 +152,7 @@ inspect will expose `temporaryDirectory`, omitting it when unknown. Timeout does
 not prove cleaner termination or make immediate manual deletion safe. The service
 prints no diagnostics and does not select user exit codes.
 
-Run `scripts/check_cleanup_service.py <cleanup_service_testing>` for direct,
+Run `ctest --test-dir build -L cleanup-service-migration --output-on-failure` for direct,
 isolated service tests. Readiness/markers and stable process handles synchronize
 the fixtures, with external watchdogs; retry-budget boundaries use an injected
 clock. Linux/Windows CI runs this suite and the existing #213 tests independently.

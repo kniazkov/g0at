@@ -31,13 +31,13 @@ The frozen base plus mutations defines each complete input byte-for-byte.
 
 Python's original ZIP fixture used the platform default `ZipInfo.create_system`:
 3 on Linux and 0 on Windows. Both base archives are preserved; Windows selects
-`zip-damage-base-windows.bin`, Linux the other base. The exporter explicitly sets
-both defaults, so its results do not depend on the exporting OS. The container
+`zip-damage-base-windows.bin`, Linux the other base. The historical exporter explicitly set
+both defaults, so its results did not depend on the exporting OS. The container
 builder already used 3 on every platform. These base archives were reproduced
 with CPython 3.12.14 / zlib 1.3.2; the historical cross-platform parity gate also
 checked reproduction with Python 3.13. Current CI validates pinned bytes and all
-materialized mutation hashes with C, without executing Python recipes. Optional
-recipe reproduction still rejects different compression output rather than
+materialized mutation hashes with C, without executing Python recipes. Historical
+recipe reproduction rejects different compression output rather than
 automatically refreshing fixtures.
 
 ## Current integrity verification
@@ -61,37 +61,34 @@ the historical `tool.python-frozen-samples` and
 `tool.python-frozen-samples-self-test` IDs remain C aliases, not Python commands.
 Module-format CI runs the C checks on Linux x86-64/AArch64 and Windows.
 
-## Optional historical recipe reproduction
+## Historical recipe reproduction
 
-The following four Python generation/audit helpers remain available but inactive
-in CMake, CTest and CI until #395. These explicit commands require a compatible
-Python/zlib installation; they are separate from ordinary integrity checks:
+The four inactive generation/audit helpers were removed in #395:
 
-```sh
-python test/support/freeze_python_samples.py --check
-python test/support/freeze_python_samples.py --self-test
-python test/support/verify_original_python_samples.py --baseline 89b8d80ba13dfa3cb5ca9d95b1448d45fec438f2
-# Explicit export into build, not the committed corpus:
-python test/support/freeze_python_samples.py --write --output build/reproduced-python-samples
-```
+- `test/support/freeze_python_samples.py`
+- `test/support/python_samples_binary.py`
+- `test/support/python_samples_structured.py`
+- `test/support/verify_original_python_samples.py`
 
-`--check` compares every byte with the preserved original recipes and checks the
-manifest, without writes. `--self-test` verifies corruption and missing-file
-rejection without repairs, in a unique temporary build directory. The optional
-Git-history audit executes selected original AST nodes (never production hosts
-or expected-result code), comparing the old streams element-for-element and
-byte-for-byte. It requires the baseline commit locally; the ordinary check does
-not require Git or network access. Use the separate `--output` directory for
-reproduction review; normal checks never replace the committed corpus.
+Their exact last sources are preserved in
+[`3c1b75bdbe7afa370e47e70c60c0c9a02ffdf57a`](https://github.com/kniazkov/g0at/tree/3c1b75bdbe7afa370e47e70c60c0c9a02ffdf57a/test/support).
+They are historical recipes, not runnable paths in the current tree. Optional
+reproduction requires a separate checkout of that revision with compatible
+CPython/zlib; it is not a current build or test prerequisite. The former
+`freeze_python_samples.py --check` regenerated all fixture and manifest bytes;
+its `--self-test` rejected corrupt/missing files without repairs. The former
+`verify_original_python_samples.py --baseline 89b8d80ba13dfa3cb5ca9d95b1448d45fec438f2`
+audited selected original AST nodes from that baseline, never production hosts
+or expected-result code. That audit also requires the baseline Git history.
 
-The four retained files are `test/support/freeze_python_samples.py`,
-`test/support/python_samples_binary.py`, `test/support/python_samples_structured.py`
-and `test/support/verify_original_python_samples.py`. They are inactive migration
-export/audit tools, not production or test dependencies; their removal remains
-tracked under #395. The current C consumers read the same unchanged inputs.
+For an intentional historical reproduction, use its explicit `--write --output`
+mode only in a separate build output directory and compare the results with the
+committed corpus. Never replace or repair these inputs during a normal test.
+Current verification uses only the C commands above, without Python, Git history
+or network access. The same eleven fixture files, manifest and original source
+digests are preserved byte-for-byte.
 
 The writer migration keeps these sample files and provenance manifests unchanged.
-Its exact input archives embed the original payload/permutation; see
-[writer scenario map](../module-writer/README.md). The optional original-recipe
-audit uses `git show --baseline` history, so retirement of the live Python runner
-does not require keeping an import shim.
+Its exact input archives embed the original payload/permutation; see the
+[writer scenario map](../module-writer/README.md). Historical source availability
+does not require an import shim or a runnable Python file in the current tree.

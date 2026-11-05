@@ -7,7 +7,11 @@ cases. The original Python script and temporary parity wrapper were removed
 only after the complete original/C parity gate passed at commit
 `38a029e15a4fab21942a3782dc14ef92b3d48892`; see the evidence below. The manifest's
 logical `checks/saturation.py` identifier now routes to the C aggregate and does
-not require a Python runtime. Final-removal CI is a separate pending gate.
+not require a Python runtime. Final removal `7380e1e` passed
+[Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41654522348) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41654522178), both on
+the first attempt. This does not erase the later merged-master ARM diagnosis
+and follow-up fixes recorded in PR #467.
 
 ## Exact original-to-C coverage
 

@@ -77,8 +77,10 @@ applied the same selector matrix to untouched original artifacts. No build outpu
 or selector result was mocked and no executable bytes were normalized.
 
 The original Python runner, temporary wrapper, original/parity registrations and
-temporary replay mode were removed only after that complete gate. A separate full
-final CI pass is required before merge; final retirement CI is pending.
+temporary replay mode were removed only after that complete gate. Final retirement
+`847a7811` passed [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41797598329)
+and [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41797598431);
+merged-master evidence is in the [migration checklist](../../../docs/c-tooling-migration-checklist.md).
 
 The final workflow uses only the C runner for prepare-floor, floor-image and
 verify-floor. Inside the selected older image it rebuilds Goat **and the C runner**.
@@ -86,7 +88,8 @@ The checkout remains read-only; build/workspaces use `/tmp/goat-floor`, and a
 separate writable `/evidence` mount retains failure diagnostics. Exact libc
 version equality, compiler-free VM/auto/required execution, real constructor
 markers and unchanged delivered bytes remain mandatory. This runner has no
-Python dependency; unrelated transitional tests retain their own dependencies.
+Python dependency. The remaining transitional Python consumers were subsequently
+retired in #390–#394.
 
 No format, language, golden-vector, package (#391), or glibc/musl delivery (#390)
 behavior is changed by this step.

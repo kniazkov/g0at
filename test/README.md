@@ -36,9 +36,10 @@ The active CMake, CTest and CI gates no longer require Python after #394.
 Bash remains required for shell-based suites; missing optional tools produce
 explicitly disabled tests and configure messages. On Windows use the MSYS2
 environment. CTest supplies the configured C compiler and absolute target paths.
-The four inactive frozen-input reproduction/audit scripts are retained until
-#395; they are not prerequisites for current tests. The full Python-free-cycle
-proof and broader documentation audit remain tracked by #395. See the
+The four inactive frozen-input reproduction/audit scripts were removed in #395.
+Their historical sources and reproduction environment remain documented without
+reintroducing a Python build dependency. See the
+[complete migration inventory and audit](../docs/c-tooling-migration-checklist.md), the
 [reference retirement map](data/format-reference/README.md) and
 [frozen-input integrity gate](support/frozen_samples.md).
 
@@ -59,6 +60,31 @@ userspaces, prerequisite artifacts and tool installation. They remain external
 CI orchestration, not default CTest commands; registering the ordinary requirement
 audit does not replace those jobs. Build scripts and `create_test.cmd` are tools,
 not tests, and are not invoked recursively from CTest.
+
+### Python-free project cycle (#395)
+
+Project CI steps source `scripts/no_python.sh` in Bash/MSYS2. It places native
+failing interpreter/launcher aliases before the existing PATH, records every
+attempt and fails the step at exit even if a child ignored the failure. It
+checks both the source orchestration and generated CTest commands/environment
+through `scripts/check_no_python.cmake`, including explicit interpreter paths.
+The standalone Windows generator steps use `scripts/no_python.ps1`, preserving
+their PowerShell/MSVC toolchain. Negative controls prove the poison commands,
+ignored-failure detection and source/CTest audit reject prohibited routes.
+
+The disposable Alpine and exact-runtime glibc containers additionally run
+`scripts/check_python_absence.sh` to record their installed-package and
+filesystem interpreter inventory. This is actual conventional Python absence
+in those containers. Hosted Linux/Windows machines can still contain Python
+outside the project command routes; the step guard is a dependency proof, not
+a security sandbox or a claim that all host software has been uninstalled.
+
+Existing build/test selections, stable CTest IDs, platform applicability,
+deadlines, generators, book checks, Release performance and relocated-package
+checks remain unchanged. Evidence and failed workspaces survive CI failures.
+The final published-head CI result is recorded in the
+[migration checklist](../docs/c-tooling-migration-checklist.md) or its linked PR;
+a source audit by itself does not establish a full platform pass.
 
 ### Child environment and finite input
 

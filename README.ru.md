@@ -77,7 +77,7 @@ cmake --build build/manual --parallel 2
 
 ### Linux
 
-Установите GCC или Clang, GNU Make, Bash, CMake версии 3.13 или новее и стандартные библиотеки для разработки на C, включая pthread и libm. Нативные Linux-backend поддерживают glibc и musl на x86-64 и AArch64; Goat и его нативные модули должны соответствовать одному семейству runtime. Установка второй libc не меняет runtime уже собранного процесса Goat. На Alpine перед теми же командами сборки установите `build-base`, `cmake`, `bash`, `python3` и `linux-headers`. Обычным пользователям glibc устанавливать musl не требуется.
+Установите GCC или Clang, GNU Make, Bash, CMake версии 3.13 или новее и стандартные библиотеки для разработки на C, включая pthread и libm. Нативные Linux-backend поддерживают glibc и musl на x86-64 и AArch64; Goat и его нативные модули должны соответствовать одному семейству runtime. Установка второй libc не меняет runtime уже собранного процесса Goat. На Alpine перед теми же командами сборки установите `build-base`, `cmake`, `bash` и `linux-headers`. Обычным пользователям glibc устанавливать musl не требуется.
 
 ```bash
 bash scripts/build.sh
@@ -265,4 +265,4 @@ Goat распространяется по [лицензии MIT](LICENSE.txt).
 
 ## Наборы CTest
 
-После сборки всех целей запускайте `ctest --test-dir build --output-on-failure`. Команда `ctest --test-dir build -N` показывает список, а `-L integration` выбирает существующие интеграционные наборы. Bash остаётся зависимостью shell-наборов; активные проверки больше не требуют Python. [Условия запуска, метки и платформенное покрытие](test/README.md).
+После сборки всех целей запускайте `ctest --test-dir build --output-on-failure`. Команда `ctest --test-dir build -N` показывает список, а `-L integration` выбирает существующие интеграционные наборы. Bash остаётся зависимостью shell-наборов; сборка, генераторы, тесты и упаковка не требуют Python. [Условия запуска, метки и платформенное покрытие](test/README.md).

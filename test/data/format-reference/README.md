@@ -9,8 +9,13 @@ at `4272323b530f919cc21e817ba684aeed3974893f`:
 [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41979993274) and
 [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41979993245).
 Earlier parity-routing, autocrlf and interpreter-selection issues are documented
-in the PR; these results do not imply a first-attempt pass. Final removal CI is
-pending separately.
+in the PR; these results do not imply a first-attempt parity pass. Final removal
+`ca6472fe` passed [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41989935132)
+and [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41989935130).
+Merged master `3c1b75bd` passed
+[Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41999099987) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41999100051).
+Both final-removal and merge gates passed all 14 jobs on their first attempts.
 
 | Original method | CTest coverage |
 | --- | --- |
@@ -97,5 +102,6 @@ fixture/provenance bytes and damaged-input digests without invoking Python RNG
 or compressor reproduction during normal CI. `tool.python-frozen-samples` and
 `tool.python-frozen-samples-self-test` remain stable CTest aliases for the C gate;
 `tool.frozen-samples` and `tool.frozen-samples-self-test` select the same checks.
-The four inactive reproduction/audit scripts are retained until #395. There are
-no active Python commands in these CMake, CTest or CI gates after #394.
+The four inactive reproduction/audit scripts were removed in #395; their sources
+remain at the pre-removal Git revision recorded in the corpus README. There are
+no active Python commands in these CMake, CTest or CI gates.

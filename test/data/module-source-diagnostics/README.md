@@ -61,12 +61,10 @@ not `assert`, so Release retains every check. For UBSan configure with
 The migration label is included in existing Release and musl CI selections;
 the ordinary Debug matrix includes all registered scenarios.
 
-To reproduce the old side of parity without restoring a retired runner in-tree:
-
-```sh
-git show 64247492bb900c31b49ca784736b126795eb6264:scripts/check_module_source_diagnostics.py > /tmp/source-diagnostics-baseline.py
-PYTHONPATH="$PWD/scripts" python3 /tmp/source-diagnostics-baseline.py build/Debug/module_import_execution_testing
-```
+Historical parity is reproducible only in a separate checkout of
+[`64247492bb900c31b49ca784736b126795eb6264`](https://github.com/kniazkov/g0at/tree/64247492bb900c31b49ca784736b126795eb6264)
+with its original runner, shared Python helpers and matching hosts. No current-tree
+Python command or compatibility module remains.
 
 During migration the original reported **25 host checks** per Debug/Release run;
 the C version passed **10/10 IDs with the same 25 host checks** in both builds,

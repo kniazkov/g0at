@@ -33,14 +33,16 @@ compares production with the independent C format oracle at runtime.
 
 ## Provenance and reproduction
 
-Original parity command (each succeeds against the same production executable):
+Historical parity commands, only in a separate checkout of parent
+`09302829bd05aec9d47a51415e7cdb42d865eea5` with its Python reference and
+matching production executable (not current-tree commands):
 
 ```sh
 python3 scripts/check_module_canonical.py build/common-debug/module_json_testing
 python3 scripts/check_module_hash.py build/common-debug/module_json_testing
 ```
 
-To reproduce the corpus, restore those scripts from the parent commit, temporarily
+To reproduce the corpus in that historical checkout, temporarily
 wrap `subprocess.run` to retain its actual result and record the exact `input`, mode,
 exit status and caller line, and execute each script using `runpy.run_path` with
 `run_name='__main__'`. For each successful request, compute and assert the independent

@@ -47,7 +47,7 @@ is supported. `max_imports` limits occurrences, including repeats; zero selects
 occurrence limit is checked. Allocation failures retain the compiler's fatal
 allocation policy. No archive metadata or build paths are serialized by this API.
 
-`scripts/check_module_imports.py build/module_imports_testing` exercises exact
+`ctest --test-dir build -R '^integration[.]module_imports$' --output-on-failure` exercises exact
 resolution, deduplication, canonical order, unused-default warnings, include
 coverage, unreachable imports, malformed operands/identities and occurrence bounds.
 The C harness checks argument validation, invalid in-memory descriptors, independent

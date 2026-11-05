@@ -71,10 +71,11 @@ Docker на настоящих x86-64 и AArch64 runners, без эмуляци�
 исходную матрицу glibc/Windows и выполняют Debug-сборку с основными тестами,
 существующие проверки поставки и книги, затем Release-упаковку и `package_scenarios integration.package.end-to-end`.
 
-`scripts/check_module_musl.py produce GOAT SELECTOR FAMILY DEST` собирает одинаковый
-исходник настоящими glibc- и musl-toolchain в соответствующих средах; SELECTOR —
-`module_native_testing`, FAMILY — `glibc` или `musl`. Команда `verify` с теми же
-аргументами проверяет сохранённые артефакты в каждой среде. Сравниваются переносимый
+C-runner `module_musl_scenarios` со сценарием `integration.module_musl.produce`
+собирает одинаковый исходник настоящими glibc- и musl-toolchain в соответствующих
+средах; `integration.module_musl.verify` проверяет сохранённые артефакты в каждой
+среде. Полный интерфейс, аргументы и условия запуска приведены в
+[карте C-сценариев](../test/data/module-musl/README.md). Сравниваются переносимый
 байткод и основной хеш; проверяются ABI 1, собственные хеши библиотек, базовые
 CPU-требования и runtime. Версия musl в требованиях равна консервативной границе
 по libc выбранного toolchain и подтверждается на исполняющем runtime этой версии.
@@ -91,14 +92,14 @@ runtime не подменяются ручным редактированием 
 
 ### Существующие проверки остаются обязательными
 
-- `check_module_hash.py`, `check_module_canonical.py`, CTest `integration.module_bytecode`,
+- CTest `native.module_hash`, `native.module_canonical`, `integration.module_bytecode`,
   `integration.module_writer.*` (CTest) и format-vectors проверяют одни и те же закреплённые
   байты/основные SHA-256 на всех платформах, включая 32-битный процесс.
   Хеши различных DLL/SO совпадать не обязаны.
 - `fault.module_memory.*` (CTest) использует управляемые ошибки выделения и ограничения
   размеров, в том числе в MINGW32, без гигабайтных выделений.
 - `integration.module_consistency.*` (CTest), `integration.module_validation.*` (CTest) и
-  `check_module_container.py` проверяют ссылки, сводки, дубликаты, целостность,
+  `integration.module_container` (CTest) проверяют ссылки, сводки, дубликаты, целостность,
   CRC/размеры/сжатие до исполнения пользовательского кода.
 - `integration.module_interface.*` (CTest) проверяет гарантии производителя и потребление
   сводок без исходников, сохраняя обязательную пользовательскую инициализацию.
@@ -177,10 +178,12 @@ x86-64 and AArch64 runners, without emulation. They preserve the original
 glibc/Windows matrix, run Debug builds and core tests, the existing delivery and
 book suites, then Release packaging and `package_scenarios integration.package.end-to-end`.
 
-`scripts/check_module_musl.py produce GOAT SELECTOR FAMILY DEST` builds identical
-sources using real glibc and musl toolchains in their respective environments.
-SELECTOR is `module_native_testing`; FAMILY is `glibc` or `musl`. The `verify`
-command with the same arguments checks the preserved artifacts in each environment.
+The C runner `module_musl_scenarios`, selected with
+`integration.module_musl.produce`, builds identical sources using real glibc and
+musl toolchains in their respective environments. `integration.module_musl.verify`
+checks the preserved artifacts in each environment. See the
+[C scenario map](../test/data/module-musl/README.md) for the complete invocation
+and real-runtime prerequisites.
 It compares portable bytecode and mainHash, checks ABI 1, per-library hashes,
 baseline CPU requirements and runtime. The musl requirement is a conservative
 floor taken from the selected toolchain's libc, verified on that executing runtime
