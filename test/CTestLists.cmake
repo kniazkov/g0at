@@ -79,6 +79,19 @@ goat_suite(core.functional "core;functional" "${CMAKE_COMMAND}"
   "-DGOAT=$<TARGET_FILE:goat>" "-DRUNNER=$<TARGET_FILE:functional_testing>"
   "-DSOURCE=${PROJECT_SOURCE_DIR}/test/data/functional" "-DWORK=${CMAKE_BINARY_DIR}/ctest-functional"
   -P "${CMAKE_CURRENT_SOURCE_DIR}/run_functional.cmake")
+# Portable fixture validation is independent of Bash and Graphviz. During #393
+# parity the unchanged Python heredoc and C inspect the same fixture bytes.
+goat_scenario(integration.graph "integration;graph-validation-migration" TIMEOUT 210 COMMAND
+  "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/scripts/check_graph_parity.py"
+  "$<TARGET_FILE:graph_scenarios>" "${CMAKE_BINARY_DIR}"
+  "${PROJECT_SOURCE_DIR}/test/data/graph" "${PROJECT_SOURCE_DIR}/scripts/check_graph.sh")
+if(NOT Python3_Interpreter_FOUND)
+  set_tests_properties(integration.graph PROPERTIES DISABLED TRUE)
+endif()
+goat_scenario(integration.graph_controls "integration;graph-validation-migration" TIMEOUT 180 COMMAND
+  "$<TARGET_FILE:graph_scenarios>" integration.graph_controls
+  "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data/graph"
+  "${PROJECT_SOURCE_DIR}/test/data/graph")
 # Direct C runner after the complete #392 original/C parity gate.
 # Preserve the 900-second scenario budget plus supervisor/cleanup margin.
 goat_scenario(integration.module_book "integration;module-book-migration" TIMEOUT 960 COMMAND
@@ -638,7 +651,7 @@ find_program(GOAT_TEST_DOT dot)
 goat_shell(tool.style "style" check_style.sh)
 goat_shell(tool.docs "docs" check_docs.sh)
 goat_shell(tool.graph "graph" check_graph.sh)
-set_tests_properties(tool.graph PROPERTIES ENVIRONMENT "CC=${CMAKE_C_COMPILER};PYTHONDONTWRITEBYTECODE=1;GOAT_BINARY=$<TARGET_FILE:goat>")
+set_tests_properties(tool.graph PROPERTIES ENVIRONMENT "CC=${CMAKE_C_COMPILER};PYTHONDONTWRITEBYTECODE=1;GOAT_BINARY=$<TARGET_FILE:goat>;GRAPH_SCENARIOS_BINARY=$<TARGET_FILE:graph_scenarios>;GRAPH_BUILD_ROOT=${CMAKE_BINARY_DIR}")
 foreach(pair "style;GOAT_TEST_FORMAT" "docs;GOAT_TEST_DOXYGEN" "graph;GOAT_TEST_DOT")
   list(GET pair 0 suite)
   list(GET pair 1 tool)
@@ -723,9 +736,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1907 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1909 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (book controls added for #392); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (SVG validation and controls added for #393); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)

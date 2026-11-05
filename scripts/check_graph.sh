@@ -10,6 +10,8 @@ rm -f build/fibonacci-analysis.svg build/replacements-analysis.svg
 goat_binary="${GOAT_BINARY:-./goat}"
 "$goat_binary" --save-graph build/fibonacci-analysis.svg example/fibonacci_analysis.goat > build/fibonacci-output.txt
 "$goat_binary" --save-graph build/replacements-analysis.svg example/replacements.goat > build/replacements-output.txt
+# The independent reference relies on assertions; never inherit optimization.
+unset PYTHONOPTIMIZE
 python3 - <<'PY'
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -27,3 +29,11 @@ assert 'expression replacement' in text and 'statement replacement' in text
 assert 'original' in text and 'replacement' in text and 'if-else' in text
 assert any(node.get('fill') == '#f5efff' and node.get('stroke') == 'purple' for node in root.iter())
 PY
+# Keep the Python reference above unchanged until the complete #393 parity gate.
+graph_runner="${GRAPH_SCENARIOS_BINARY:-$(dirname -- "$goat_binary")/graph_scenarios}"
+if [[ ! -x "$graph_runner" ]]; then
+    echo "Build graph_scenarios and set GRAPH_SCENARIOS_BINARY to its path" >&2
+    exit 1
+fi
+"$graph_runner" integration.graph "${GRAPH_BUILD_ROOT:-$repo_root/build}" \
+    "$repo_root/test/data/graph" "$repo_root/build" "$@"
