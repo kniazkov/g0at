@@ -265,3 +265,5 @@ Goat is distributed under the [MIT license](LICENSE.txt).
 ## CTest suites
 
 Build all targets, then use `ctest --test-dir build --output-on-failure`. Use `ctest --test-dir build -N` for the inventory and `-L integration` to select the existing integration runners. Bash remains required for shell-based suites; build, generators, tests and packaging do not require Python. See [test prerequisites, labels and platform coverage](test/README.md).
+
+Project policy: new build tooling, generators, tests and packaging must not introduce a Python dependency; enforce this during development and review.

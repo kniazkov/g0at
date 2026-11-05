@@ -111,7 +111,7 @@
 - [x] 74. [#392 — Перенести на Си: Проверка книги и ссылок](https://github.com/kniazkov/g0at/issues/392) — [PR #473](https://github.com/kniazkov/g0at/pull/473), original/C parity на `17e6de35ce28531cf6b140835916147d9612748a`: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41915800670), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41915800547). Все 9 платформ прошли Debug/Release parity и controls на реальных README/book/examples; сохранён отдельный musl Debug запуск. Original Python и временный wrapper удалены после 14/14 gate; финальный `4c97cea2` и merge `f6b302d1` прошли 14/14 с первой попытки; master: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41937212817), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41937212719). Stable CTest ID, 15 commands, 60-second child limits, 900-second scenario budget и полные failure artifacts сохранены. Shared Python helper был оставлен до #394 и затем удалён. [Scenario map and retention](../test/data/module-book/README.md).
 - [x] 75. [#393 — Перенести на Си: Встроенная Python-проверка SVG](https://github.com/kniazkov/g0at/issues/393) — original/C parity на `c6771da92d1ccfe245c041b0cd576d244b1377a2`: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41948450047), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41948450046). Все 9 платформ прошли Debug/Release fixture parity и controls; реальная генерация SVG прошла в Linux GCC x86_64. Original heredoc и временный wrapper удалены после полного 14/14 gate; [PR #474](https://github.com/kniazkov/g0at/pull/474), финальный `27d0ebd7` и merged master `4a90f8c0` прошли 14/14 с первой попытки; master: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41963621541), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41963621484). Stable CTest IDs, исходные Goat launches, C validator/controls и fixture bytes сохранены. [Scenario map and retention](../test/data/graph/README.md).
 - [x] 76. [#394 — Удалить оставшиеся Python helpers и переходные адаптеры](https://github.com/kniazkov/g0at/issues/394) — [PR #475](https://github.com/kniazkov/g0at/pull/475), полный original/C parity на `4272323b530f919cc21e817ba684aeed3974893f`: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41979993274), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41979993245). Семь неиспользуемых Python helpers и активные Python-вызовы удалены после полного gate; стабильные CTest IDs сохранены. Предыдущие проблемы маршрутизации parity, autocrlf и выбора интерпретатора описаны в PR; это не утверждение об успехе первой попытки. Финальный head `ca6472fe`: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41989935132), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41989935130); merged master `3c1b75bd`: [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41999099987), [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41999100051). Оба final/merge gate прошли все 14 jobs с первой попытки. Четыре неактивных reproduction-инструмента удаляются отдельным шагом #395; [покрытие и команды](../test/data/format-reference/README.md).
-- [x] 77. [#395 — Доказать работу полного цикла без Python и завершить документацию](https://github.com/kniazkov/g0at/issues/395) — [PR #476](https://github.com/kniazkov/g0at/pull/476), реализация финального Python-free gate и аудита завершена; CI окончательного head и post-merge master ещё ожидаются. Ссылки на подтверждённые прогоны добавляются в описание PR согласно правилу 5, без отдельного push ради чеклиста.
+- [x] 77. [#395 — Доказать работу полного цикла без Python и завершить документацию](https://github.com/kniazkov/g0at/issues/395) — [PR #476](https://github.com/kniazkov/g0at/pull/476), миграция завершена; зелёный финальный head: [Build](https://github.com/kniazkov/g0at/actions/runs/42019824871), [vectors](https://github.com/kniazkov/g0at/actions/runs/42019824753); post-merge `223f36bb`: [Build](https://github.com/kniazkov/g0at/actions/runs/42030577581), [vectors](https://github.com/kniazkov/g0at/actions/runs/42030577583). Временные guards удалены после завершения миграции; отсутствие новых зависимостей от Python проверяется при разработке и ревью.
 
 ## Реестр исходных Python-файлов
 
@@ -275,9 +275,9 @@ Python-free gate и аудит документации относятся к о
 
 Встроенный SVG heredoc из `scripts/check_graph.sh` удалён в #393 и заменён
 независимым C-validator. Текущие shell/cmd, CMake/CTest и workflows не запускают
-Python и не устанавливают его как зависимость проекта. Новые `.py` файлы,
-активные interpreter calls, shebangs, imports, `sys.executable` и heredoc
-проверяются отдельно от неизменяемых исторических данных.
+Python и не устанавливают его как зависимость проекта. После завершения миграции
+сборка, генераторы, тесты и упаковка должны оставаться независимыми от Python;
+это правило разработки и ревью, без отдельного постоянного CI-аудита интерпретаторов.
 
 Оставшиеся упоминания Python делятся на следующие категории:
 
@@ -297,21 +297,15 @@ Python и не устанавливают его как зависимость �
   сборки/проверки используют C targets и CTest. RU/EN README, API docs и test
   registry не требуют установки Python; Unix shell-наборы по-прежнему требуют Bash.
 
-Активные guard-файлы `scripts/no_python.sh`, `scripts/no_python.ps1`,
-`scripts/check_no_python.cmake`, `scripts/check_python_absence.sh` и
-`test/support/python_forbidden.c` также называют Python намеренно: они отвергают
-интерпретатор и проверяют отсутствие зависимости, а не запускают Python.
-Bash/MSYS2 и PowerShell guards сохраняют штатные toolchains и завершают шаг
-ошибкой даже при проигнорированном вызове. Disposable Alpine/glibc контейнеры
-дополнительно сохраняют package/filesystem inventory без Python. Это не sandbox
-для всего hosted runner: установленный вне команд проекта host Python может
-оставаться. [Границы доказательства](../test/README.md).
+Временные guards и проверки отсутствия Python выполнили свою задачу в #395
+и удалены после полного зелёного CI. Подготовка подставных интерпретаторов,
+изменение PATH, аудит команд и package/filesystem inventory больше не входят
+в постоянный CI. Сборка и все проверки проекта запускаются напрямую; контроль
+чистоты checkout и диагностика сценариев сохраняются. Неизменяемые эталоны,
+исторические пути и source digests остаются входными данными C-тестов.
 
-Формат языка, wire bytes, frozen fixtures, schema/vector bytes и historical
-source digests не изменены. Отметка реализации пункта 77
-добавляется в его PR по правилу 5. Успех полного шага #395 подтверждается только
-CI опубликованного окончательного коммита; ссылки добавляются в PR без отдельного
-push ради статуса.
+Формат языка, wire bytes, frozen fixtures и schema/vector bytes не изменены.
+Подтверждённые прогоны финального head и post-merge master приведены в пункте 77.
 
 #### English audit summary
 
@@ -322,4 +316,6 @@ CMake and the retained shell/cmd scripts. No Python source file remains in the
 current tree. Historical paths, hashes, generated-header attribution and stable
 C aliases are deliberately preserved as data. Historical reproduction requires
 a separate checkout of its recorded revision; it is not a current command.
-The final published-head CI result, not this source audit alone, closes #395.
+The final head and post-merge CI runs linked in item 77 completed #395. Its
+temporary interpreter guards and dependency-audit controls have been retired;
+keeping project tooling independent of Python is now a development and review rule.
