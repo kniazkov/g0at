@@ -61,8 +61,9 @@ Deflate, смешанные архивы, другие даты/права и б
 не запускает VM, не вызывает загрузчик ОС и не извлекает файлы на диск. #185
 использует этот слой в общем API; #183 отвечает за запись и атомарную публикацию.
 
-Проверка: `python scripts/check_module_container.py <module_container_testing>`.
-Архивы создаются независимым Python zipfile, затем целенаправленно повреждаются.
+Проверка: `ctest --test-dir build -R '^integration[.]module_container$' --output-on-failure`.
+Архивы создаются независимым C-эталоном ZIP и целенаправленно повреждаются;
+исходные frozen inputs и их provenance сохранены.
 Положительные случаи включают эталон empty.gbin, оба метода, оба descriptor,
 перестановки, extras/comments и чужие native-варианты. Отрицательные — пути,
 атрибуты, дубли, структуры, размеры, CRC, хеши и все усечения образца. C fixture
@@ -121,8 +122,8 @@ cross-checks remain subsequent stages. A matching hash never substitutes for
 those checks. No filesystem extraction, VM execution or OS library loading
 occurs. #185 integrates the public module API; #183 writes/publishes archives.
 
-Run `python scripts/check_module_container.py <module_container_testing>` for
-independent zipfile fixtures, frozen vectors, methods/descriptors, metadata,
+Run `ctest --test-dir build -R '^integration[.]module_container$' --output-on-failure` for
+independent C ZIP fixtures, frozen vectors, methods/descriptors, metadata,
 foreign variants and malformed inputs. The C fixture overwrites/frees the input
 before inspecting the owned result. Linux and Windows CI run this suite, and
 both build scripts explicitly build the fixture.

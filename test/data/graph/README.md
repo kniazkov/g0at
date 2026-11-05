@@ -73,7 +73,10 @@ independently selectable. Their stable IDs, labels, timeouts, C implementation,
 frozen fixture bytes and Debug/Release platform selections are unchanged.
 The original `tool.graph` CTest ID retains its Bash/Graphviz applicability but
 no longer requires Python. Portable validation and controls need none of those
-optional tools. Final retirement CI is pending.
+optional tools. Final retirement `27d0ebd7` and merge `4a90f8c0` passed 14/14
+on their first attempts; master [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41963621541)
+and [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41963621484)
+are recorded separately from the original/C parity gate.
 
 ## Workspaces and reproduction
 
@@ -98,4 +101,4 @@ The musl EXIT handler copies the same evidence before the container exits. The a
 generation job uploads SVG and stdout even if validation fails. No fixture or
 source input is overwritten by either implementation.
 
-The graph migration is complete; #394 compatibility-helper cleanup remains separate.
+The graph migration is complete; compatibility-helper cleanup was completed separately in #394.

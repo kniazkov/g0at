@@ -41,11 +41,12 @@ Total: **528** cases. Corpus SHA-256:
 `986091ddbed4968c29ff742b68a0bb43863390bcb10c83023783330a6953bcd0`.
 
 `test_native_envelope` maps only its JSON parsing/normalization and guard-index
-cases here; binary envelope assertions remain Python until #336. Likewise,
+cases here; binary envelope assertions migrated to C in #336. Likewise,
 `test_cross_part_validation`, `test_bytecode_layout`, and
-`test_archive_with_independent_reader` remain with #336. Schema snapshots and
-schema-source checks retain their existing Python and C generator tests from
-#331–#332; this change does not remove them.
+`test_archive_with_independent_reader` are covered by the independent binary C
+oracle. Schema snapshots and schema-source checks run in C; the historical
+Python unittest was retired in #394 after full parity. See the
+[complete retirement map](../format-reference/README.md).
 
 Supplemental cases cover malformed UTF-8, arbitrary-precision integer spelling,
 all control-character escapes, UTF-8 key ordering, frozen positive/negative JSON
@@ -226,5 +227,6 @@ paths in the scenario map and capture recipe remain provenance. Current C
 consumers use the independent JSON/binary/fixture support, not Python imports.
 The stable `format.reference` CTest aggregate preserves the full mapped unittest
 coverage; see [commands and parity evidence](../format-reference/README.md).
-Four inactive frozen-sample reproduction/audit tools remain until #395, separate
-from the current [C integrity gate](../../support/frozen_samples.md).
+Four inactive frozen-sample reproduction/audit tools were removed in #395. Their
+historical recipes remain in Git, separate from the current
+[C integrity gate](../../support/frozen_samples.md).

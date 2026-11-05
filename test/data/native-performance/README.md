@@ -6,8 +6,10 @@ complete original/C CI parity on `37ce62bb55f0a9f68c35521d8349de5c9a892f5d`:
 [build/test matrix, 11/11](https://github.com/kniazkov/g0at/actions/runs/41742078675)
 and [module vectors, 3/3](https://github.com/kniazkov/g0at/actions/runs/41742078588),
 under [PR #468](https://github.com/kniazkov/g0at/pull/468).
-The separate final-retirement commit's CI is pending; the parity result does not
-claim that later commit has already passed.
+The separate final-retirement head `2dfab4f8` passed
+[Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41749910955) and
+[vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41749910973), both on
+the first attempt. These are distinct from the earlier original/C parity runs.
 
 Performance remains a separate serial Release run, not part of ordinary
 correctness or sanitizer selection. No language behavior, `.gbin` format,

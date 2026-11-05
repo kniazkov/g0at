@@ -39,9 +39,9 @@ failed initialization retries keep the original trace, not a later caller's site
 The source/compiled-module component runner and the module CLI (#191) print this
 shared diagnostic. See [CLI commands and checks](module-cli-api.md).
 
-Verification: `check_source_include.py` covers producer names, nested/anonymous
-identities, empty locations, builder growth and relocation. The new
-`check_module_source_diagnostics.py` executes compiled archives with external
+Verification: CTest `integration.source_include.*` covers producer names, nested/anonymous
+identities, empty locations, builder growth and relocation.
+`integration.module_source_diagnostics.*` executes compiled archives with external
 includes, duplicate basenames, imported modules, Unicode and escaped labels,
 saved failures, GC/repeated initialization, and deleted archives/source trees.
 Existing native-call tests verify native callee/caller origin and ownership.

@@ -108,7 +108,7 @@ and all C cases. The two Python checkers and their temporary parity wrapper are
 removed together with the checklist mark in the final-removal commit; final CI
 must verify that commit separately. The original scripts remain available at
 that parity commit for provenance/reproduction. Existing manifest check names
-continue to route to C, and the unrelated Python compatibility consumers remain.
+continue to route to C; the remaining compatibility helpers were retired in #394.
 
 The first parity attempt exposed a temporary CMake byte-comparison bug on Windows:
 text READ normalized CRLF. The corrected gate used raw HEX reads with exact Windows

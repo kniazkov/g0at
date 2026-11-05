@@ -37,7 +37,7 @@ module imports and native module generation keep their separate checklist tasks
 (#191, #195, #211). This step uses conservative, non-optimizing source analysis;
 it does not introduce a second optimizer or a second initialization state machine.
 
-Run `python3 scripts/check_source_include.py build/source_include_testing`.
+Run `ctest --test-dir build -R '^integration[.]source_include[.]' --output-on-failure`.
 The suite checks nested/repeated/lazy inclusion, argument-stack preservation,
 function and cycle behavior, failure caching, file access boundaries, literal-only
 operands, descriptor input, canonical symlink bases, hardlink independence and
@@ -76,7 +76,7 @@ VM разрешает индекс в текущем экземпляре мод
 генерация остаются отдельными задачами #191, #195, #211. Здесь используется
 консервативный анализ без оптимизаций, а не отдельный оптимизатор.
 
-Набор `scripts/check_source_include.py` проверяет вложенность, повторение,
+Набор `ctest --test-dir build -R '^integration[.]source_include[.]' --output-on-failure` проверяет вложенность, повторение,
 ленивость, циклы, ошибки, изоляцию областей, литеральные пути, `.gmod`, символические
 и жёсткие ссылки и запуск архива без исходников. Проверки диапазонов индексов и
 точек входа остаются в общих валидаторах. На Windows допускается только явное

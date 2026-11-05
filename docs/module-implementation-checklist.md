@@ -298,12 +298,12 @@
 | Группа решений | Реализация и свидетельства |
 | --- | --- |
 | 132–144, 147: удержание снимка, потоки, инициализация | [Снимок](module-snapshot-api.md), [сериализация](module-serialization-api.md); `module_snapshot_scenarios`, `module_serialization_scenarios`, `module_threads_scenarios`, `module_thread_lifetime_testing` |
-| 145, 148–155, 159–162: required, exit, уборщик | [Загрузка](module-loading-api.md), [exit](module-exit-api.md), [сборка](module-build-api.md), [уборщик](cleanup-service-api.md); `integration.module_loading.*`, `check_process_exit.py`, `integration.native_exit.*`, `integration.native_cleanup.*`, `check_cleanup_service.py` |
+| 145, 148–155, 159–162: required, exit, уборщик | [Загрузка](module-loading-api.md), [exit](module-exit-api.md), [сборка](module-build-api.md), [уборщик](cleanup-service-api.md); `integration.module_loading.*`, `integration.process_exit.*`, `integration.native_exit.*`, `integration.native_cleanup.*`, `integration.cleanup_service.*` |
 | 146, 156–158: настоящие пути | [Исходники](module-sources-api.md), [CLI](module-cli-api.md); `integration.module_sources` (CTest), `integration.module_cli.*` (CTest), `module_context_scenarios` |
 | Платформы, CPU, runtime, ABI, переносимые хеши | [Сквозная поставка и границы](module-delivery-tests.md); `integration.module_native` (CTest), `native_requirements_scenarios`, `native_toolchains_scenarios`, `module_delivery_scenarios`, `module_delivery_requirements_scenarios`, format-vectors |
-| Информационные поля и cCompiler | [Информация](module-information-api.md), [объединение](module-merge-api.md); `check_module_information.py`, `integration.module_build.*` (CTest), `integration.module_inspect.*` (CTest), `integration.module_merge.*` (CTest) |
-| Deflate, атомарная публикация, права и входы merge | [Writer](module-writer-api.md), [merge](module-merge-api.md); `integration.module_writer.*` (CTest), `check_module_container.py`, `integration.module_merge.*` (CTest) и fault-проверки общего файлового API |
-| Проба inspect, дерево процессов и очистка | [Inspect](module-inspect-api.md), [уборщик](cleanup-service-api.md); `integration.inspect_probe.*` (CTest), `integration.child_process.*` (CTest), `check_cleanup_service.py` |
+| Информационные поля и cCompiler | [Информация](module-information-api.md), [объединение](module-merge-api.md); `integration.module_information.*`, `integration.module_build.*` (CTest), `integration.module_inspect.*` (CTest), `integration.module_merge.*` (CTest) |
+| Deflate, атомарная публикация, права и входы merge | [Writer](module-writer-api.md), [merge](module-merge-api.md); `integration.module_writer.*` (CTest), `integration.module_container`, `integration.module_merge.*` (CTest) и fault-проверки общего файлового API |
+| Проба inspect, дерево процессов и очистка | [Inspect](module-inspect-api.md), [уборщик](cleanup-service-api.md); `integration.inspect_probe.*` (CTest), `integration.child_process.*` (CTest), `integration.cleanup_service.*` |
 | AC-01–AC-28 | [Реальные многофайловые проверки](book/ru/access-control-examples.md#проверки-на-реальных-файлах-и-модулях-218); `module_multifile_access_scenarios` |
 
 Завершение v1 не означает поддержку всех сред или выполнение всех возможных

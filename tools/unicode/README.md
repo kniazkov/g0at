@@ -40,7 +40,7 @@ never execute the generator. Multi-configuration builds place the executable in
 
 ## Migration verification
 
-The old Python generator and C generator are run on the same vendored inputs.
+The old Python generator and C generator were run on the same vendored inputs.
 The table body and complete manifest must be byte-identical; only the generated
 header's first-line tool attribution changes. Simple upper/lower mappings come
 from UnicodeData; unconditional SpecialCasing overrides the full mappings.
@@ -60,4 +60,5 @@ Regression scenarios use the common scenario framework: unique build-tree
 workspaces, shared deadline, process diagnostics, cleanup on success, and retained
 failure evidence. Linux and Windows Debug/Release jobs run the labeled suite;
 the format-vector matrix checks the standalone host target as well. Existing
-Python Unicode behavior tests remain unchanged until #340.
+Unicode behavior tests migrated to the C `unicode_interactive_testing` runner
+in #340; use the `unicode-interactive` CTest label.

@@ -15,6 +15,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Record native checkout Git
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $git = (Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+          if ($git -isnot [string] -or [string]::IsNullOrWhiteSpace($git) -or -not (Test-Path -LiteralPath $git -PathType Leaf)) {
+            throw 'Checkout Git must resolve to one existing executable'
+          }
+          "GOAT_CHECKOUT_GIT=$git" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force build/python-free | Out-Null
+          "Git: $git" | Tee-Object -FilePath build/python-free/checkout-git.log
+          & $git --version | Tee-Object -Append -FilePath build/python-free/checkout-git.log
+          & $git config --show-origin --get-regexp '^core\.(autocrlf|eol|filemode)$' | Tee-Object -Append -FilePath build/python-free/checkout-git.log
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect checkout Git configuration' }
       - name: Prepare supported Windows C toolchain
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
@@ -22,37 +36,114 @@ jobs:
           msystem: UCRT64
           update: true
           install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+      - name: Locate native poison preparation compiler
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: echo "GOAT_NO_PYTHON_CC=$(cygpath -w /ucrt64/bin/gcc.exe)" >> "$GITHUB_ENV"
       - name: Build independent C format and frozen-input checks (Linux)
         if: runner.os != 'Windows'
         shell: bash
         run: |
+          source scripts/no_python.sh
           cmake -S . -B build/format-host -DCMAKE_BUILD_TYPE=Release
           cmake --build build/format-host --config Release --target format_vectors frozen_samples format_oracle_testing format_binary_testing module_schema_generator_testing
       - name: Build independent C format and frozen-input checks (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
+          source scripts/no_python.sh
           cmake -S . -B build/format-host -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build/format-host --config Release --target format_vectors frozen_samples format_oracle_testing format_binary_testing module_schema_generator_testing
       - name: Build independent C format sanitizer checks
         if: runner.os != 'Windows'
-        run: cmake --build build/format-host --config Release --target format_oracle_ubsan_testing format_binary_ubsan_testing
+        run: |
+          source scripts/no_python.sh
+          cmake --build build/format-host --config Release --target format_oracle_ubsan_testing format_binary_ubsan_testing
       - name: Check independent C format coverage and frozen-input corruption controls (Linux)
         if: runner.os != 'Windows'
         shell: bash
-        run: ctest --test-dir build/format-host -C Release --output-on-failure -R "^format[.]|^tool[.]frozen-samples"
+        run: |
+          source scripts/no_python.sh
+          ctest --test-dir build/format-host -C Release --output-on-failure -R "^format[.]|^tool[.]frozen-samples"
       - name: Check independent C format coverage and frozen-input corruption controls (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
-        run: ctest --test-dir build/format-host -C Release --output-on-failure -R "^format[.]|^tool[.]frozen-samples"
-      - name: Build standalone host schema generator without core
         run: |
+          source scripts/no_python.sh
+          ctest --test-dir build/format-host -C Release --output-on-failure -R "^format[.]|^tool[.]frozen-samples"
+      - name: Build standalone host schema generator without core (Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          source scripts/no_python.sh
           cmake -S tools/module-schema -B build/schema-host
           cmake --build build/schema-host --config Release
-      - name: Check public schemas and production tables without rewriting them
-        run: ctest --test-dir build/schema-host -C Release --output-on-failure
-      - name: Build and check standalone host Unicode generator without core
+
+      - name: Build standalone host schema generator without core (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
+          & ./scripts/no_python.ps1 {
+            cmake -S tools/module-schema -B build/schema-host
+            cmake --build build/schema-host --config Release
+
+          }
+      - name: Check public schemas and production tables without rewriting them (Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          source scripts/no_python.sh
+          ctest --test-dir build/schema-host -C Release --output-on-failure
+      - name: Check public schemas and production tables without rewriting them (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & ./scripts/no_python.ps1 {
+            ctest --test-dir build/schema-host -C Release --output-on-failure
+          }
+      - name: Build and check standalone host Unicode generator without core (Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          source scripts/no_python.sh
           cmake -S tools/unicode -B build/unicode-host
           cmake --build build/unicode-host --config Release
           ctest --test-dir build/unicode-host -C Release --output-on-failure
+      - name: Build and check standalone host Unicode generator without core (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & ./scripts/no_python.ps1 {
+            cmake -S tools/unicode -B build/unicode-host
+            cmake --build build/unicode-host --config Release
+            ctest --test-dir build/unicode-host -C Release --output-on-failure
+          }
+      - name: Verify normal cycle leaves the checkout clean (Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          source scripts/no_python.sh
+          git status --porcelain --untracked-files=all | tee build/python-free/checkout-status.log
+          test ! -s build/python-free/checkout-status.log
+      - name: Verify normal cycle leaves the checkout clean (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & ./scripts/no_python.ps1 {
+            $git = $env:GOAT_CHECKOUT_GIT
+            "Git: $git" | Tee-Object -FilePath build/python-free/checkout-git-final.log
+            & $git --version | Tee-Object -Append -FilePath build/python-free/checkout-git-final.log
+            & $git config --show-origin --get-regexp '^core\.(autocrlf|eol|filemode)$' | Tee-Object -Append -FilePath build/python-free/checkout-git-final.log
+            $status = @(& $git status --porcelain --untracked-files=all)
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect checkout status' }
+            [IO.File]::WriteAllLines("$PWD/build/python-free/checkout-status.log", [string[]]$status)
+            $status | Write-Host
+            if ($status.Count -ne 0) { throw 'Normal cycle changed the checkout' }
+          }
+      - name: Preserve Python-free dependency proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-free-format-${{ matrix.os }}
+          path: build/python-free
+          if-no-files-found: error

@@ -84,7 +84,8 @@ The old-to-new scenario map and corpus provenance are in
 runs the mapped independent C checks; [commands and retirement evidence](../data/format-reference/README.md)
 also describe the complete `format_vectors` generator. No live Python reference
 import is required. The four inactive frozen-sample reproduction/audit scripts
-remain until #395, separate from the [C integrity gate](frozen_samples.md).
+were removed in #395; their historical sources remain in Git, separate from
+the [C integrity gate](frozen_samples.md).
 
 ## Independent binary and fixture oracle (#336)
 

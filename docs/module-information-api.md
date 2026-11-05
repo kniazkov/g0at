@@ -28,7 +28,7 @@ CLI display (#212) and the merge policy below consume this projection.
 The projection itself makes no merge choice for the user.
 
 The existing `module_json_testing` harness exercises this API; no extra executable
-or alternate schema is introduced. `scripts/check_module_information.py` checks
+or alternate schema is introduced. The CTest `integration.module_information.*` scenarios check
 all fields/types, decoded escapes, UTF-8/NUL, whitespace and normalization, author
 identity/order, producer structure/order, exact textual distinctions, hash invariance,
 and full writer/repack round trips. It inspects the standalone production-linked
@@ -102,7 +102,7 @@ source/path checks, main-hash and variant compatibility, validated deterministic
 archive writing and atomic publication only after successful selection; #224 adds final autonomous-merge
 coverage. Existing destination files therefore cannot be changed by this API.
 The existing `module_json_testing` executable and
-`scripts/check_module_information_merge.py` exercise the production policy and
+the CTest `integration.module_information_merge.*` scenarios exercise the production policy and
 interactive adapter in Linux and Windows CI, without introducing another schema
 or executable.
 
@@ -147,5 +147,5 @@ API не читает архивы, не загружает библиотеки
 выбора реализованы в [CLI goat-merge](module-merge-api.md) (#215); итоговая
 автономность — к #224. Существующее назначение
 этот API изменить не может. Текущий `module_json_testing` и
-`scripts/check_module_information_merge.py` проверяют рабочую политику и адаптер
+CTest `integration.module_information_merge.*` проверяют рабочую политику и адаптер
 в Linux/Windows CI без отдельной схемы или исполняемого файла.

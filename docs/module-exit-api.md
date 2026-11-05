@@ -117,11 +117,10 @@ Goat и не разрешает удаление файлов из-под про
 
 ## Verification / Проверки
 
-- `check_module_exit.py` exercises strict arguments, direct source, `.gmod`, ZIP
+- CTest `integration.module_exit.*` exercises strict arguments, direct source, `.gmod`, ZIP
   `.gbin`, imported/ included files, indirect calls, callbacks, cached failures,
   catch/finally and top-level return through both runtime and public CLI paths.
-- `check_process_exit.py build/process_exit_testing build/process_exit_failure_testing
-  build/process_exit_delayed_testing` exercises the atomic winner, fast unbuffered
+- CTest `integration.process_exit.*` exercises the atomic winner, fast unbuffered
   and buffered termination, blocked output/stream locks, one common deadline,
   racing requests and unchanged codes after output failure.
 - `integration.native_exit.*` covers rejected calls across the ABI boundary and

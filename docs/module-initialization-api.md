@@ -182,9 +182,9 @@ finally заново; ошибка обычной функции готовог�
 исключение получает собственную. Трассировка не изменяет объект ошибки или
 байткод и освобождается после последней владеющей ссылки.
 
-`module_exception_propagation_testing` with
-`scripts/check_module_exception_propagation.py` exercises every rule 26–35 using
-real VM handlers/cleanup and synchronous nested initialization callbacks. These
+The CTest `integration.module_exception_propagation.*` scenarios use
+`module_exception_propagation_testing` to exercise every rule 26–35 with real VM
+handlers/cleanup and synchronous nested initialization callbacks. These
 are internal integration tests; source include/import dispatch remains #194/#195.
 
 The matrix has 120 independently encoded fixtures: rules 26–35 × two instruction
@@ -229,7 +229,7 @@ records remain valid at the same time.
 файла; несколько полученных записей могут существовать одновременно.
 
 `module_initialization_contract_testing` and
-`scripts/check_module_initialization_contract.py` use a framed stdin stream and
+the CTest `integration.module_initialization_contract.*` scenarios use a framed stdin stream and
 an explicit READY/release handshake inside the active executor. One fixture keeps
 blocking input pending beyond five seconds, then releases it; other cases have no
 artificial delay. The finite observation is a regression guard against the former

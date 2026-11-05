@@ -22,8 +22,11 @@ actual stdout and archive members (semantic metadata, exact bytecode and full
 native ELF), and sealed both pairs. Both consumers verified both unchanged
 pairs under Debug musl, Release musl, and glibc on native x86_64 and AArch64.
 The original and temporary harness were removed only after this gate; their
-source and evidence remain available at that revision. Final retirement CI is
-pending. The frozen manifest continues to identify the historical original.
+source and evidence remain available at that revision. Final retirement
+`508d0737` passed [Build 11/11](https://github.com/kniazkov/g0at/actions/runs/41824002764)
+and [vectors 3/3](https://github.com/kniazkov/g0at/actions/runs/41824002755);
+merged-master evidence is in the [migration checklist](../../../docs/c-tooling-migration-checklist.md).
+The frozen manifest continues to identify the historical original.
 
 ## C-only real-runtime execution
 
@@ -31,8 +34,9 @@ The existing native-musl workflow now directly runs the C producer under glibc
 and Debug musl into one delivery directory. SHA-256 manifests seal archives
 and host records at production. Every consumer checks both manifests before
 and after verification. Release musl and the final glibc consumer reuse the
-same Debug-produced musl archive without recompilation. This suite has no Python dependency; the broader musl job still uses Python
-for the unchanged book/package checks. Intermediate scenario
+same Debug-produced musl archive without recompilation. The suite and the broader
+musl job, including book/package checks migrated in #391–#392, have no Python
+dependency. Intermediate scenario
 workspaces and command diagnostics survive failures in the existing artifacts.
 
 C direct interface:

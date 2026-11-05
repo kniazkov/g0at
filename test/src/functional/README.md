@@ -45,15 +45,10 @@ Before removing the Python runners, both were run with the same newly built Goat
 and the unchanged `test/data/functional` tree. Python passed 30 loop fixtures plus
 three integration checks and 95 index fixtures (including the post-summary access
 checks). C runs are checked against those same exact input and expected files.
-The removed scripts can be reproduced from parent revision `924f2ea9`:
-
-```sh
-git show 924f2ea9:scripts/check_for.py > scripts/check_for.py
-git show 924f2ea9:scripts/check_index.py > scripts/check_index.py
-python3 scripts/check_for.py build/manual/goat build/python-for
-python3 scripts/check_index.py build/manual/goat build/python-index
-# Remove only these restored obsolete runners after comparison.
-```
+Historical Python sources and their helpers are preserved at
+[`924f2ea9`](https://github.com/kniazkov/g0at/tree/924f2ea9).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 To verify rejection without changing the originals, copy `test/data` to a separate
 read-only fixture root outside the build directory, change one selected
@@ -130,17 +125,10 @@ produces `cleanup_error=ENOENT`. This is a failed local verification, not a SKIP
 or a successful full parity result. No process cleanup or native requirement is
 weakened; full native parity must be established by the applicable repository CI jobs.
 
-The originals can be restored from the migration's parent for reproduction:
-
-```sh
-for name in characters unicode interactive; do
-  git show cbfdf31625a76313807c93ebc55258616e30454a:scripts/check_${name}.py > scripts/check_${name}.py
-done
-python3 scripts/check_characters.py build/manual/goat build/python-characters
-python3 scripts/check_unicode.py build/manual/goat build/python-unicode
-python3 scripts/check_interactive.py build/manual/goat
-# Remove only these restored obsolete runners after comparison.
-```
+Historical Python sources and their helpers are preserved at
+[`cbfdf31625a76313807c93ebc55258616e30454a`](https://github.com/kniazkov/g0at/tree/cbfdf31625a76313807c93ebc55258616e30454a).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 The integrated runner builds in Debug and Release; `native.interactive` passes
 in both. A Release run using a copied `unicode/scalars.gbin.hex` containing only
@@ -190,13 +178,10 @@ build/manual/bytecode_v1_testing --generate build/manual/scalars.hex
 cmp build/manual/scalars.hex test/data/binary-v1/scalars.hex
 ```
 
-For differential reproduction, restore only the original runner from the parent:
-
-```sh
-git show 735ded1b8211de0b42a7ef9e317488e90fbeeb66:scripts/check_bytecode_v1.py > scripts/check_bytecode_v1.py
-python3 scripts/check_bytecode_v1.py build/manual/goat build/manual/python-bytecode
-# Remove the restored obsolete runner after comparison.
-```
+Historical Python sources and their helpers are preserved at
+[`735ded1b8211de0b42a7ef9e317488e90fbeeb66`](https://github.com/kniazkov/g0at/tree/735ded1b8211de0b42a7ef9e317488e90fbeeb66).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 Before removal, the Python runner passed against both `build/339-debug/goat`
 and `build/339-release/goat`, including all 63 corruptions and both optimization
@@ -245,10 +230,12 @@ cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/manual --parallel 2 --target module_json_scenarios
 ctest --test-dir build/manual --output-on-failure -R '^native.module_json$'
 build/manual/module_json_scenarios native.module_json build/manual/module_json_testing build/manual test/data --keep-work
-# Differential reproduction before deleting the restored original:
-git show 5e56f72c57c5df34237dd330e9bd420d4d2131e7:scripts/check_module_json.py > scripts/check_module_json.py
-python3 scripts/check_module_json.py build/manual/module_json_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`5e56f72c57c5df34237dd330e9bd420d4d2131e7`](https://github.com/kniazkov/g0at/tree/5e56f72c57c5df34237dd330e9bd420d4d2131e7).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 Verification before removal: the unchanged Python runner and new C runner both
 passed all 440 requests against Debug and Release hosts. Every positive fixture
@@ -286,12 +273,12 @@ cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/manual --parallel 2 --target module_canonical_hash_scenarios
 ctest --test-dir build/manual --output-on-failure -R '^native.module_(canonical|hash)$'
 build/manual/module_canonical_hash_scenarios native.module_hash build/manual/module_json_testing build/manual test/data docs/module-format-v1/schema-source.json --keep-work
-# Recover old runners for differential reproduction, then remove restored files:
-git show 09302829bd05aec9d47a51415e7cdb42d865eea5:scripts/check_module_canonical.py > scripts/check_module_canonical.py
-git show 09302829bd05aec9d47a51415e7cdb42d865eea5:scripts/check_module_hash.py > scripts/check_module_hash.py
-python3 scripts/check_module_canonical.py build/manual/module_json_testing
-python3 scripts/check_module_hash.py build/manual/module_json_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`09302829bd05aec9d47a51415e7cdb42d865eea5`](https://github.com/kniazkov/g0at/tree/09302829bd05aec9d47a51415e7cdb42d865eea5).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 Verification before removal: both unchanged Python suites passed against Debug
 and Release hosts (422 canonical + 513 hash requests). The C scenarios passed
@@ -338,10 +325,12 @@ cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/manual --parallel 2 --target zip_scenarios
 ctest --test-dir build/manual --output-on-failure -R '^integration.zip$'
 build/manual/zip_scenarios integration.zip build/manual/zip_testing build/manual test/data docs/module-format-v1/vectors --keep-work
-# Restore the old runner for differential reproduction, then remove it:
-git show 2ceda9039f23d29d5c207247731c90cefd09086e:scripts/check_zip.py > scripts/check_zip.py
-python3 scripts/check_zip.py build/manual/zip_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`2ceda9039f23d29d5c207247731c90cefd09086e`](https://github.com/kniazkov/g0at/tree/2ceda9039f23d29d5c207247731c90cefd09086e).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 Verification before removal: unchanged Python passed 333 subprocess requests in
 both Debug and Release; C passed 329 including the direct host API invocation.
@@ -399,10 +388,12 @@ cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/manual --parallel 2 --target module_container_scenarios
 ctest --test-dir build/manual --output-on-failure -R '^integration.module_container$'
 build/manual/module_container_scenarios integration.module_container build/manual/module_container_testing build/manual test/data docs/module-format-v1/vectors --keep-work
-# Differential reproduction (restore only temporarily):
-git show 8d5479ba6499e7909c1b4e39582d37657fe67cb2:scripts/check_module_container.py > scripts/check_module_container.py
-python3 scripts/check_module_container.py build/manual/module_container_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`8d5479ba6499e7909c1b4e39582d37657fe67cb2`](https://github.com/kniazkov/g0at/tree/8d5479ba6499e7909c1b4e39582d37657fe67cb2).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 Verification before removal: unchanged Python and C each passed all 714
 validations in Debug and Release. Temporary request capture matched 701 C
@@ -449,18 +440,21 @@ Input vectors remain read-only. Checks, including host API assertions, remain
 active in Release. There are no platform-specific skip paths: the same suite
 runs on Linux x86-64/AArch64, MinGW i686/x86-64/UCRT and musl. Debug scripts and
 Release CI explicitly build the runner; Release selects `module-bytecode-migration`.
-The shared Python external-declaration helper remains for other suites listed in
-`test/data/binary-oracle/README.md`, pending #394; this runner exports no helpers.
+The shared Python external-declaration helper was retired in #394 after its last
+consumer migrated. The [binary oracle map](../../data/binary-oracle/README.md)
+records the independent C replacement; this runner exports no helpers.
 
 ```sh
 cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/manual --parallel 2 --target module_bytecode_scenarios
 ctest --test-dir build/manual --output-on-failure -R '^integration.module_bytecode$'
 build/manual/module_bytecode_scenarios integration.module_bytecode build/manual/module_bytecode_testing build/manual test/data docs/module-format-v1/vectors --keep-work
-# Differential reproduction (restore only temporarily):
-git show b30c7be31f4cea93377d4682e82dbada81803cf4:scripts/check_module_bytecode.py > scripts/check_module_bytecode.py
-python3 scripts/check_module_bytecode.py build/manual/module_bytecode_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`b30c7be31f4cea93377d4682e82dbada81803cf4`](https://github.com/kniazkov/g0at/tree/b30c7be31f4cea93377d4682e82dbada81803cf4).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 Before removal, unchanged Python and C each passed all 182 validations plus the
 host API invocation in Debug and Release. Temporary subprocess request capture
@@ -520,12 +514,12 @@ cmake --build build/manual --parallel 2 --target module_abi_scenarios module_nat
 ctest --test-dir build/manual --output-on-failure -L module-abi-native-migration
 build/manual/module_abi_scenarios integration.module_abi build/manual/module_abi_testing build/manual test/data docs/module-format-v1/vectors --keep-work
 build/manual/module_native_scenarios integration.module_native build/manual/module_native_testing build/manual test/data docs/module-format-v1/vectors --keep-work
-# Differential reproduction (restore only temporarily):
-git show a6e02fe8595ec09696d27e97800ae5ef1b92bd96:scripts/check_module_abi.py > scripts/check_module_abi.py
-git show a6e02fe8595ec09696d27e97800ae5ef1b92bd96:scripts/check_module_native.py > scripts/check_module_native.py
-python3 scripts/check_module_abi.py build/manual/module_abi_testing
-python3 scripts/check_module_native.py build/manual/module_native_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`a6e02fe8595ec09696d27e97800ae5ef1b92bd96`](https://github.com/kniazkov/g0at/tree/a6e02fe8595ec09696d27e97800ae5ef1b92bd96).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 Before removal, unchanged Python and C passed the same Debug and Release hosts:
 716 ABI checks (including 600 guard pairs) and 209 native-selection checks, plus
@@ -587,12 +581,12 @@ cmake --build build/manual --parallel 2 --target module_sources_scenarios module
 ctest --test-dir build/manual --output-on-failure -L module-sources-files-migration
 build/manual/module_sources_scenarios integration.module_sources build/manual/module_sources_testing build/manual test/data --keep-work
 build/manual/module_files_scenarios integration.module_files build/manual/module_files_testing build/manual test/data docs/module-format-v1/vectors --keep-work
-# Historical Python comparison, before removing the restored runners:
-git show 8558112d21b0f1e6e1db21261dfd798de92d86b0:scripts/check_module_sources.py > scripts/check_module_sources.py
-git show 8558112d21b0f1e6e1db21261dfd798de92d86b0:scripts/check_module_files.py > scripts/check_module_files.py
-python3 scripts/check_module_sources.py build/manual/module_sources_testing
-python3 scripts/check_module_files.py build/manual/module_files_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`8558112d21b0f1e6e1db21261dfd798de92d86b0`](https://github.com/kniazkov/g0at/tree/8558112d21b0f1e6e1db21261dfd798de92d86b0).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 The CTest IDs remain in full Debug integration; explicit Linux and MinGW Debug
 build lists and Release migration labels include both new runners. Alpine/musl
@@ -673,12 +667,12 @@ cmake --build build/manual --parallel 2 --target module_imports_scenarios source
 ctest --test-dir build/manual --output-on-failure -L imports-include-migration
 build/manual/module_imports_scenarios integration.module_imports build/manual/module_imports_testing build/manual test/data --keep-work
 build/manual/source_include_scenarios --list
-# Historical differential runs (remove the restored scripts afterwards):
-git show c63e677637ee04cc79390aa65152a0c834298586:scripts/check_module_imports.py > scripts/check_module_imports.py
-git show c63e677637ee04cc79390aa65152a0c834298586:scripts/check_source_include.py > scripts/check_source_include.py
-python3 scripts/check_module_imports.py build/manual/module_imports_testing
-python3 scripts/check_source_include.py build/manual/source_include_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`c63e677637ee04cc79390aa65152a0c834298586`](https://github.com/kniazkov/g0at/tree/c63e677637ee04cc79390aa65152a0c834298586).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 CI links and exact final-commit verification are recorded in the PR/issue,
 without an extra checklist-only push.
@@ -741,10 +735,12 @@ cmake --build build/manual --parallel 2 --target module_search_scenarios
 ctest --test-dir build/manual --output-on-failure -L module-search-migration
 build/manual/module_search_scenarios integration.module_search build/manual/module_search_testing build/manual test/data docs/module-format-v1/vectors --keep-work
 # Repeat in Release; use .exe on Windows.
-# Historical Python parity check (remove the restored script afterwards):
-git show 18fa47a266bcc79add896e04563d87991102142d:scripts/check_module_search.py > scripts/check_module_search.py
-python3 scripts/check_module_search.py build/manual/module_search_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`18fa47a266bcc79add896e04563d87991102142d`](https://github.com/kniazkov/g0at/tree/18fa47a266bcc79add896e04563d87991102142d).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 The checklist is marked in the implementation commit; final-commit CI links
 are recorded in the PR/issue without a second checklist-only push.
@@ -800,10 +796,12 @@ cmake --build build/manual --parallel 2 --target module_dependencies_scenarios
 ctest --test-dir build/manual --output-on-failure -L module-dependencies-migration
 build/manual/module_dependencies_scenarios integration.module_dependencies build/manual/module_dependencies_testing build/manual test/data docs/module-format-v1/vectors --keep-work
 # Repeat in Release; use .exe on Windows.
-# Historical Python parity check (remove the restored script afterwards):
-git show 1019296d0d7b1228e897044b52150ebeac4b5a0b:scripts/check_module_dependencies.py > scripts/check_module_dependencies.py
-python3 scripts/check_module_dependencies.py build/manual/module_dependencies_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`1019296d0d7b1228e897044b52150ebeac4b5a0b`](https://github.com/kniazkov/g0at/tree/1019296d0d7b1228e897044b52150ebeac4b5a0b).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 The checklist is marked in the implementation commit; exact final-commit CI
 results and links are recorded in the PR/issue, avoiding a checklist-only push.
@@ -855,10 +853,12 @@ cmake --build build/manual --parallel 2 --target module_graph_scenarios
 ctest --test-dir build/manual --output-on-failure -L module-graph-migration
 build/manual/module_graph_scenarios integration.module_graph build/manual/module_graph_testing build/manual test/data docs/module-format-v1/vectors --keep-work
 # Repeat in Release; use .exe on Windows.
-# Historical Python parity check (remove the restored script afterwards):
-git show a03a219e8a283cc836188062521b193236e28293:scripts/check_module_graph.py > scripts/check_module_graph.py
-python3 scripts/check_module_graph.py build/manual/module_graph_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`a03a219e8a283cc836188062521b193236e28293`](https://github.com/kniazkov/g0at/tree/a03a219e8a283cc836188062521b193236e28293).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 The checklist is marked in the implementation commit; final-commit CI links
 are recorded in the PR and issue without a checklist-only push.
@@ -915,10 +915,12 @@ cmake --build build/manual --parallel 2 --target module_snapshot_scenarios
 ctest --test-dir build/manual --output-on-failure -L module-snapshot-migration
 build/manual/module_snapshot_scenarios integration.module_snapshot.replace build/manual/module_snapshot_testing build/manual test/data docs/module-format-v1/vectors --keep-work
 # Repeat in Release; use .exe on Windows.
-# Historical Python parity check (remove restored runner afterwards):
-git show 08adc43c7a3e8b8ad52c72fe5a22769ed298de5b:scripts/check_module_snapshot.py > scripts/check_module_snapshot.py
-python3 scripts/check_module_snapshot.py build/manual/module_snapshot_testing
 ```
+
+Historical Python sources and their helpers are preserved at
+[`08adc43c7a3e8b8ad52c72fe5a22769ed298de5b`](https://github.com/kniazkov/g0at/tree/08adc43c7a3e8b8ad52c72fe5a22769ed298de5b).
+Reproduce only in a separate checkout of that revision with its matching hosts
+and helpers. These are not current-tree commands; use the C checks above.
 
 The `module-snapshot-migration` label is selected by Linux x86-64/AArch64,
 MinGW i686/x86-64/UCRT and Alpine/musl Debug/Release CI. The checklist mark is

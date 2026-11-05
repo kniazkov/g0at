@@ -77,10 +77,10 @@ NUL; при общем префиксе короткий ключ первый. 
 Исправлены два расхождения старого Python-эталона с задачами: лексикографический
 порядок эффектов и удаление пустого authors в `.gmod`. Уточнён последний критерий
 для равных ключей нативных вариантов. Существующие эталонные бинарные файлы и хеши
-не изменились. В `scripts/check_module_canonical.py` проверяются точные байты,
+не изменились. В CTest `native.module_canonical` проверяются точные байты,
 эквивалентные и различающиеся формы, идемпотентность, ошибки до нормализации,
-дубликаты после нормализации и проекция метаданных; запуск — с путём к
-`module_json_testing`. Проверки включены в Linux/Windows CI.
+дубликаты после нормализации и проекция метаданных; запуск —
+`ctest --test-dir build -R '^native[.]module_canonical$' --output-on-failure`. Проверки включены в Linux/Windows CI.
 
 ## English
 
@@ -149,6 +149,6 @@ with their later validators.
 The old Python reference's effect order and empty `.gmod` authors handling were
 corrected to match the accepted tasks. Equal variant keys now have a deterministic
 final tie-break. Existing binary/hash vectors are unchanged. Run
-`python scripts/check_module_canonical.py <module_json_testing>` for exact bytes,
+`ctest --test-dir build -R '^native[.]module_canonical$' --output-on-failure` for exact bytes,
 equivalence/difference, idempotence, pre-normalization errors, post-normalization
 duplicates and main-metadata projection. These tests run in Linux/Windows CI.

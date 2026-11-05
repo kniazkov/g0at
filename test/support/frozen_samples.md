@@ -51,10 +51,13 @@ the same compressed bytes. This is a deliberate separation of frozen-input
 integrity from optional recipe reproduction, not a claim that hashing reproduces
 Python's random stream.
 
-The four existing Python generation/audit helpers remain available but inactive
-in normal CMake, CTest and CI gates until #395. Their optional original-history
-audit and explicit reproduction commands remain documented in the corpus README.
-The C gate requires neither Python nor Git history/network access.
+The four inactive Python generation/audit helpers were removed in #395. Their
+original recipes remain in Git at the pre-removal revision
+`3c1b75bdbe7afa370e47e70c60c0c9a02ffdf57a`; the
+[corpus README](../data/python-samples/README.md) records that historical boundary.
+Reproduction requires a separate historical checkout, never restoration of
+Python helpers into the current tree. The C gate requires neither Python nor
+Git history/network access.
 
 ## Negative controls
 

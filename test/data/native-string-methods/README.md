@@ -111,8 +111,8 @@ The three real C cases and aggregate `all` each reached a successful VM phase,
 then stopped when the native compile child exited zero but shared supervision
 reported `cleanup=2`. This executor lacks `/proc/thread-self/children`; the cleanup
 failure is not bypassed, weakened or counted as a parity pass. Full real C parity
-therefore remains required from remote CI, including Linux, Windows and musl,
-before retiring either unchanged Python source.
+therefore required remote CI, including Linux, Windows and musl, before retiring
+either unchanged Python source. That gate is recorded below.
 
 After the final diagnostics/path edits, the integrated Debug and Release gates
 each passed all 12 method controls. All three real cases and the method
@@ -120,7 +120,7 @@ original/C gate failed with the unchanged child-exit-zero/supervisor-cleanup=2
 limitation. The total strings gate was 25/30 passing in each configuration;
 there is no claim of complete local parity. Independent differential testing of
 the actual C parser against Python covered 100,000 report inputs without a
-mismatch. Remote full parity is mandatory before Python removal.
+mismatch. The subsequent full remote parity gate preceded Python removal.
 
 ## Remote parity and retirement
 

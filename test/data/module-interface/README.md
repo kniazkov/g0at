@@ -46,9 +46,10 @@ Use the corresponding Release build for the same cases. Each scenario gets an
 isolated workspace and a 120-second deadline; `--keep-work` preserves failed
 inputs and outputs for diagnosis. Replacing the ID with `--list` lists IDs.
 
-Retrieve the original checker from baseline `913d87b8` to reproduce parity by running
-`python3 scripts/check_module_interface.py BUILD/module_import_execution_testing`
-and then all 13 C scenarios against that same host. Negative validation should
+Historical parity requires a separate checkout of baseline `913d87b8`,
+including the original checker, shared Python helpers and matching host,
+followed by all 13 C scenarios against that host. These are historical sources,
+not current-tree Python commands. Negative validation should
 alter a copied fixture's expected stdout (never the canonical fixture) or use a
 host that returns incorrect metadata/counters, and require the scenario to fail.
 
