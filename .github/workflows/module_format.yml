@@ -27,20 +27,28 @@ jobs:
           msystem: UCRT64
           update: true
           install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
-      - name: Build independent C format and frozen-input checks
-        shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash' }}
+      - name: Build independent C format and frozen-input checks (Linux)
+        if: runner.os != 'Windows'
+        shell: bash
         run: |
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            cmake -S . -B build/format-host -G Ninja -DCMAKE_BUILD_TYPE=Release
-          else
-            cmake -S . -B build/format-host -DCMAKE_BUILD_TYPE=Release
-          fi
+          cmake -S . -B build/format-host -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/format-host --config Release --target format_vectors frozen_samples format_oracle_testing format_binary_testing module_schema_generator_testing
+      - name: Build independent C format and frozen-input checks (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build/format-host -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build/format-host --config Release --target format_vectors frozen_samples format_oracle_testing format_binary_testing module_schema_generator_testing
       - name: Build independent C format sanitizer checks
         if: runner.os != 'Windows'
         run: cmake --build build/format-host --config Release --target format_oracle_ubsan_testing format_binary_ubsan_testing
-      - name: Check independent C format coverage and frozen-input corruption controls
-        shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash' }}
+      - name: Check independent C format coverage and frozen-input corruption controls (Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ctest --test-dir build/format-host -C Release --output-on-failure -L "format-oracle|format-binary|module-schema|frozen-samples-c|format-vectors"
+      - name: Check independent C format coverage and frozen-input corruption controls (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
         run: ctest --test-dir build/format-host -C Release --output-on-failure -L "format-oracle|format-binary|module-schema|frozen-samples-c|format-vectors"
       - name: Build standalone host schema generator without core
         run: |
