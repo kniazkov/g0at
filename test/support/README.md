@@ -388,3 +388,14 @@ observation, process-group termination and original zombie-sensitive PID
 existence checks. Only identities pinned at a live readiness barrier are eligible
 for deferred failure cleanup; late race output is not an authority to signal a
 possibly reused numeric PID. See [the full map and validation](../data/child-process/README.md).
+
+## Standalone SVG checks (#393)
+
+`format_svg.c` is a test-only limited XML reader for SVG semantic text and
+attributes. It does not invoke the production graph writer as an oracle, nor
+require a new external XML library. `graph_scenarios` uses it for the original
+fibonacci/replacement assertions and independent malformed/mismatch controls.
+The original Python heredoc and temporary wrapper were retired after the complete
+14/14 CI parity gate. Portable fixture validation and controls run without Graphviz; generation
+remains in the existing shell script. See
+[the scenario map](../data/graph/README.md) for provenance and direct invocation.

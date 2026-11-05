@@ -185,3 +185,26 @@ and verifies the real producer artifact at its exact declared floor. No Python i
 needed by this runner. See the
 [fixture provenance, old/new map and direct commands](data/module-delivery-requirements/README.md).
 This does not migrate the separate glibc/musl delivery checks (#390).
+
+### Standalone SVG validation (#393)
+
+`integration.graph` checks frozen actual Graphviz output and stdout on every
+supported host using the direct C validator after the complete original/C parity
+gate. `integration.graph_controls`
+selects the independent C controls. Both are included in the
+`graph-validation-migration` label in Debug and Release, including native musl.
+The portable C runner needs neither Graphviz nor Python. `tool.graph` preserves
+the original Bash generation commands and optional Graphviz applicability; its
+SVG validation no longer depends on Python.
+
+Build `graph_scenarios`, then run:
+
+```sh
+ctest --test-dir build --output-on-failure -L graph-validation-migration
+build/graph_scenarios integration.graph build test/data/graph test/data/graph --keep-work
+GOAT_BINARY="$PWD/build/goat" GRAPH_SCENARIOS_BINARY="$PWD/build/graph_scenarios" bash scripts/check_graph.sh --keep-work
+```
+
+Inputs remain read-only. The C runner copies each quartet into its unique build
+workspace; failures and `--keep-work` preserve the actual inspected files.
+See [fixture provenance and predicate map](data/graph/README.md).

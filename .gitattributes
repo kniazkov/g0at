@@ -61,3 +61,8 @@ test/data/module-musl/* -text
 
 # Frozen SDK probe hash requires exact bytes on Windows.
 test/data/package/sdk.c.txt -text
+
+# Stable graph shell line endings and frozen Graphviz fixture bytes on all hosts.
+scripts/check_graph.sh text eol=lf
+test/data/graph/*.svg -text
+test/data/graph/*-output.txt -text

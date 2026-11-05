@@ -79,6 +79,15 @@ goat_suite(core.functional "core;functional" "${CMAKE_COMMAND}"
   "-DGOAT=$<TARGET_FILE:goat>" "-DRUNNER=$<TARGET_FILE:functional_testing>"
   "-DSOURCE=${PROJECT_SOURCE_DIR}/test/data/functional" "-DWORK=${CMAKE_BINARY_DIR}/ctest-functional"
   -P "${CMAKE_CURRENT_SOURCE_DIR}/run_functional.cmake")
+# Portable direct C validation after the complete #393 original/C parity gate.
+# These fixtures and controls need neither Python, Bash nor Graphviz.
+goat_scenario(integration.graph "integration;graph-validation-migration" TIMEOUT 210 COMMAND
+  "$<TARGET_FILE:graph_scenarios>" integration.graph "${CMAKE_BINARY_DIR}"
+  "${PROJECT_SOURCE_DIR}/test/data/graph" "${PROJECT_SOURCE_DIR}/test/data/graph")
+goat_scenario(integration.graph_controls "integration;graph-validation-migration" TIMEOUT 180 COMMAND
+  "$<TARGET_FILE:graph_scenarios>" integration.graph_controls
+  "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data/graph"
+  "${PROJECT_SOURCE_DIR}/test/data/graph")
 # Direct C runner after the complete #392 original/C parity gate.
 # Preserve the 900-second scenario budget plus supervisor/cleanup margin.
 goat_scenario(integration.module_book "integration;module-book-migration" TIMEOUT 960 COMMAND
@@ -638,7 +647,7 @@ find_program(GOAT_TEST_DOT dot)
 goat_shell(tool.style "style" check_style.sh)
 goat_shell(tool.docs "docs" check_docs.sh)
 goat_shell(tool.graph "graph" check_graph.sh)
-set_tests_properties(tool.graph PROPERTIES ENVIRONMENT "CC=${CMAKE_C_COMPILER};PYTHONDONTWRITEBYTECODE=1;GOAT_BINARY=$<TARGET_FILE:goat>")
+set_tests_properties(tool.graph PROPERTIES ENVIRONMENT "CC=${CMAKE_C_COMPILER};GOAT_BINARY=$<TARGET_FILE:goat>;GRAPH_SCENARIOS_BINARY=$<TARGET_FILE:graph_scenarios>;GRAPH_BUILD_ROOT=${CMAKE_BINARY_DIR}")
 foreach(pair "style;GOAT_TEST_FORMAT" "docs;GOAT_TEST_DOXYGEN" "graph;GOAT_TEST_DOT")
   list(GET pair 0 suite)
   list(GET pair 1 tool)
@@ -650,11 +659,6 @@ endforeach()
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
   set_tests_properties(integration.native_performance.benchmark PROPERTIES DISABLED TRUE)
   message(STATUS "CTest integration.native_performance.benchmark unavailable: configure a Release build")
-endif()
-find_program(GOAT_TEST_PYTHON3_COMMAND python3)
-if(NOT GOAT_TEST_PYTHON3_COMMAND)
-  set_tests_properties(tool.graph PROPERTIES DISABLED TRUE)
-  message(STATUS "CTest tool.graph unavailable: existing shell runner requires python3 on PATH")
 endif()
 
 set(context_cases same-image file-origin reexport relocation unicode canonical-direct canonical-alias frozen-direct frozen-alias source-direct source-alias native-alias)
@@ -723,9 +727,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1907 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1909 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (book controls added for #392); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (SVG validation and controls added for #393); found ${goat_integration_count}")
 endif()
 # Read-only provenance/reproduction check; ordinary consumers never generate inputs.
 goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
