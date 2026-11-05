@@ -139,6 +139,7 @@ fi
 # Audit negative controls include absolute POSIX/Windows interpreter references
 # and generated CTest command/environment metadata. Do not execute real Python.
 for _goat_case in shell cmake environment c c-script pyw shebang; do
+    _goat_expected_rejection='Python interpreter route in'
     case $_goat_case in
         shell) printf '/usr/bin/python3 --version\n' > "$_goat_no_python_bin/control.sh"; _goat_input=control.sh ;;
         cmake) printf 'add_test(bad "C:/tools/python.exe" -V)\n' > "$_goat_no_python_bin/control.cmake"; _goat_input=control.cmake ;;
@@ -148,10 +149,22 @@ for _goat_case in shell cmake environment c c-script pyw shebang; do
         pyw) printf 'add_test(bad "C:/Windows/pyw.exe" -c ignored)\n' > "$_goat_no_python_bin/control.cmake"; _goat_input=control.cmake ;;
         shebang) printf '#!/usr/bin/python3\n' > "$_goat_no_python_bin/control.sh"; _goat_input=control.sh ;;
     esac
+    case $_goat_case in
+        environment) _goat_expected_rejection='Python execution/configuration route in' ;;
+        shebang) _goat_expected_rejection='Python shebang in' ;;
+    esac
     if cmake "-DINPUTS=$_goat_no_python_bin/$_goat_input" \
         -P "$_goat_no_python_root/scripts/check_no_python.cmake" \
         > "$_goat_no_python_evidence/audit-control-$_goat_case.log" 2>&1; then
         echo "Static audit negative control failed: $_goat_case" >&2
+        exit 1
+    fi
+    # A broken auditor (for example an unsupported regex) is not a successful
+    # forbidden-route control. Require the intended rejection diagnostic.
+    if ! grep -Fq "$_goat_expected_rejection" "$_goat_no_python_evidence/audit-control-$_goat_case.log" \
+        || grep -Fq 'RegularExpression::compile' "$_goat_no_python_evidence/audit-control-$_goat_case.log"; then
+        cat "$_goat_no_python_evidence/audit-control-$_goat_case.log" >&2
+        echo "Static audit negative control failed for unexpected reason: $_goat_case" >&2
         exit 1
     fi
 done

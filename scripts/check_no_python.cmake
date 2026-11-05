@@ -47,7 +47,13 @@ foreach(path IN LISTS INPUTS)
     string(REGEX REPLACE "//[^\r\n]*" "" content "${content}")
     string(TOLOWER "${content}" content)
     # Quoted executable/command strings, including absolute Windows/POSIX paths.
-    set(pattern "[\"']([^\"'\r\n]*[/\\\\])?(${interpreter})([.]exe)?([\"']|[ \t]+[-/])|[\"'][^\"'\r\n]*[/\\\\](${interpreter})([.]exe)?[ \t]")
+    # Keep these alternatives separate: older supported CMake regex engines
+    # permit at most nine capture groups in one expression (seven/five here).
+    set(pattern "[\"']([^\"'\r\n]*[/\\\\])?(${interpreter})([.]exe)?([\"']|[ \t]+[-/])")
+    set(absolute_command "[\"'][^\"'\r\n]*[/\\\\](${interpreter})([.]exe)?[ \t]")
+    if(content MATCHES "${absolute_command}")
+      message(FATAL_ERROR "Python interpreter route in ${path}: ${CMAKE_MATCH_0}")
+    endif()
   else()
     string(REGEX REPLACE "(^|\n)[ \t]*(#|::|[Rr][Ee][Mm] )[^\r\n]*" "\n" content "${content}")
     string(TOLOWER "${content}" content)
