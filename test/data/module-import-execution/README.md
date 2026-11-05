@@ -74,8 +74,10 @@ build/check/module_import_execution_scenarios integration.module_import_executio
 Repeat with `Release`; CI runs both configurations on Linux/glibc, Linux/musl,
 and Windows. The two original Python files can be obtained from parent
 `913d87b8` for parity reproduction. Before removal both Python configurations
-passed 95 import checks, and the C IDs passed the same inputs. The shared Python
-`module_execution_support.py` remains for unmigrated consumers (#363 and later).
+passed 95 import checks, and the C IDs passed the same inputs. For historical
+Python reproduction, also obtain its shared helpers from that parent checkout;
+`module_execution_support.py` was retired from the current tree in #394 after
+its last consumers migrated. Current tests use the shared C execution helpers.
 
 ## Negative runner checks
 

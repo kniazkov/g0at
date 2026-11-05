@@ -99,9 +99,9 @@ artifact preservation remain after retirement. The C runner source is unchanged
 from the parity gate (SHA-256
 `30a59d00f108221a6d43643cee0c60e0965a9859cfbb75b33a4e5e17db2880a8`).
 
-`scripts/inspect_report_test_support.py` has no remaining runtime consumers after
-this migration, but is retained for the dedicated #394 compatibility-helper audit.
-This change does not migrate #393.
+`scripts/inspect_report_test_support.py` had no remaining runtime consumers after
+this migration and was subsequently removed in #394. Its historical path is
+provenance, not a current dependency. This book migration did not include #393.
 
 ## Reproduction
 

@@ -70,7 +70,7 @@ jobs:
           docker run --rm --network bridge \
             -v "$PWD:/source:ro" -v "$PWD/build/libc-delivery:/results" \
             alpine:3.22 sh -euxc '
-              apk add --no-cache bash build-base cmake python3 linux-headers
+              apk add --no-cache bash build-base cmake linux-headers
               bash /source/scripts/check_musl_ci.sh
             '
       - name: Verify actual musl artifact is foreign to glibc process
@@ -119,7 +119,7 @@ jobs:
         run: |
           test "$(uname -m)" = "${{ matrix.arch }}"
           sudo apt-get update
-          sudo apt-get install -y gcc clang cmake make python3
+          sudo apt-get install -y gcc clang cmake make
       - name: Build and test from outside the checkout
         run: |
           repo_root="$PWD"
@@ -132,13 +132,14 @@ jobs:
           BUILD_DIR: build/${{ matrix.compiler }}
       - name: List registered test suites
         run: |
-          cmake -S . -B build/${{ matrix.compiler }} -DGOAT_TEST_REQUIRE_PYTHON=ON
+          cmake -S . -B build/${{ matrix.compiler }}
           ctest --test-dir build/${{ matrix.compiler }} -N
+          ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -R "^format[.]reference$|^tool[.]frozen-samples"
       - name: Run registered integration suites
         run: |
           cmake --build build/${{ matrix.compiler }} --target format_binary_ubsan_testing format_oracle_ubsan_testing integer_oracle_ubsan_testing
           ctest --test-dir build/${{ matrix.compiler }} --output-on-failure -L integration
-          ctest --test-dir build/${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch"
+          ctest --test-dir build/${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|frozen-samples-c|format-vectors|migration-helpers|process-watch"
         env:
           CC: ${{ matrix.compiler }}
       - name: Verify registered native runner
@@ -290,8 +291,9 @@ jobs:
           if-no-files-found: error
       - name: Check release multifile access
         run: |
-          cmake --build build/release-${{ matrix.compiler }} --target format_binary_ubsan_testing format_oracle_ubsan_testing integer_oracle_ubsan_testing module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing unicode_interactive_testing bytecode_v1_testing module_json_scenarios module_canonical_hash_scenarios zip_scenarios module_container_scenarios module_bytecode_scenarios module_abi_scenarios module_native_scenarios module_sources_scenarios module_files_scenarios module_imports_scenarios source_include_scenarios module_search_scenarios module_dependencies_scenarios module_graph_scenarios module_snapshot_scenarios module_identity_scenarios module_serialization_scenarios module_initialization_scenarios module_initialization_contract_scenarios module_exception_scenarios module_incomplete_scopes_scenarios module_failed_prototypes_scenarios module_access_scenarios module_multifile_access_scenarios module_context_scenarios module_function_provenance_scenarios module_assignment_scenarios module_import_execution_scenarios module_interface_scenarios module_source_diagnostics_scenarios module_information_scenarios module_dispatch_consistency_scenarios module_validation_scenarios module_writer_scenarios module_build_scenarios module_library_scenarios module_loading_scenarios module_cli_scenarios module_inspect_scenarios inspect_probe_scenarios module_merge_scenarios module_delivery_scenarios package_scenarios graph_scenarios module_book_scenarios module_delivery_requirements_scenarios module_musl_scenarios child_process_scenarios cleanup_service_scenarios process_exit_scenarios module_exit_scenarios module_threads_scenarios native_requirements_scenarios native_toolchains_scenarios native_artifact_scenarios native_integrity_scenarios native_cleanup_scenarios native_exit_scenarios module_native_values_scenarios native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios native_runtime_strings_scenarios native_string_method_scenarios native_saturation_scenarios native_performance_scenarios timed_execution_testing
-          ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch|language-roundtrip|unicode-interactive|standalone-bytecode|metadata-json|canonical-hash|zip-migration|container-migration|module-bytecode-migration|module-abi-native-migration|module-sources-files-migration|imports-include-migration|module-search-migration|module-dependencies-migration|module-graph-migration|module-snapshot-migration|module-identity-serialization-migration|module-initialization-migration|module-contract-exceptions-migration|module-scopes-prototypes-migration|module-access-migration|module-multifile-access-migration|module-context-provenance-migration|module-assignment-migration|module-execution-interface-migration|module-source-diagnostics-migration|module-information-migration|module-dispatch-consistency-migration|module-validation-migration|module-writer-migration|module-build-library-migration|module-loading-migration|module-cli-migration|module-inspect-migration|inspect-probe-migration|module-merge-migration|module-delivery-migration|package-controls|graph-validation-migration|module-book-migration|module-delivery-requirements-migration|module-musl-migration|child-process-migration|cleanup-service-migration|process-exit-migration|module-exit-migration|module-threads-migration|native-requirements-migration|native-toolchains-migration|native-artifact-migration|native-integrity-migration|native-cleanup-migration|native-exit-values-migration|native-runner-migration|native-access-libm-migration|native-strings-migration|native-saturation-migration|native-performance-controls"
+          cmake --build build/release-${{ matrix.compiler }} --target format_binary_ubsan_testing format_oracle_ubsan_testing integer_oracle_ubsan_testing module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing unicode_interactive_testing bytecode_v1_testing module_json_scenarios module_canonical_hash_scenarios zip_scenarios module_container_scenarios module_bytecode_scenarios module_abi_scenarios module_native_scenarios module_sources_scenarios module_files_scenarios module_imports_scenarios source_include_scenarios module_search_scenarios module_dependencies_scenarios module_graph_scenarios module_snapshot_scenarios module_identity_scenarios module_serialization_scenarios module_initialization_scenarios module_initialization_contract_scenarios module_exception_scenarios module_incomplete_scopes_scenarios module_failed_prototypes_scenarios module_access_scenarios module_multifile_access_scenarios module_context_scenarios module_function_provenance_scenarios module_assignment_scenarios module_import_execution_scenarios module_interface_scenarios module_source_diagnostics_scenarios module_information_scenarios module_dispatch_consistency_scenarios module_validation_scenarios module_writer_scenarios module_build_scenarios module_library_scenarios module_loading_scenarios module_cli_scenarios module_inspect_scenarios inspect_probe_scenarios module_merge_scenarios module_delivery_scenarios package_scenarios frozen_samples format_vectors graph_scenarios module_book_scenarios module_delivery_requirements_scenarios module_musl_scenarios child_process_scenarios cleanup_service_scenarios process_exit_scenarios module_exit_scenarios module_threads_scenarios native_requirements_scenarios native_toolchains_scenarios native_artifact_scenarios native_integrity_scenarios native_cleanup_scenarios native_exit_scenarios module_native_values_scenarios native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios native_runtime_strings_scenarios native_string_method_scenarios native_saturation_scenarios native_performance_scenarios timed_execution_testing
+          ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure -R "^format[.]reference$|^tool[.]frozen-samples"
+          ctest --test-dir build/release-${{ matrix.compiler }} --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|frozen-samples-c|format-vectors|migration-helpers|process-watch|language-roundtrip|unicode-interactive|standalone-bytecode|metadata-json|canonical-hash|zip-migration|container-migration|module-bytecode-migration|module-abi-native-migration|module-sources-files-migration|imports-include-migration|module-search-migration|module-dependencies-migration|module-graph-migration|module-snapshot-migration|module-identity-serialization-migration|module-initialization-migration|module-contract-exceptions-migration|module-scopes-prototypes-migration|module-access-migration|module-multifile-access-migration|module-context-provenance-migration|module-assignment-migration|module-execution-interface-migration|module-source-diagnostics-migration|module-information-migration|module-dispatch-consistency-migration|module-validation-migration|module-writer-migration|module-build-library-migration|module-loading-migration|module-cli-migration|module-inspect-migration|inspect-probe-migration|module-merge-migration|module-delivery-migration|package-controls|graph-validation-migration|module-book-migration|module-delivery-requirements-migration|module-musl-migration|child-process-migration|cleanup-service-migration|process-exit-migration|module-exit-migration|module-threads-migration|native-requirements-migration|native-toolchains-migration|native-artifact-migration|native-integrity-migration|native-cleanup-migration|native-exit-values-migration|native-runner-migration|native-access-libm-migration|native-strings-migration|native-saturation-migration|native-performance-controls"
       - name: Smoke test release
         run: ./goat example/hello_world.goat
       - name: Compare release native modes
@@ -389,10 +391,6 @@ jobs:
             prefix: mingw-w64-ucrt-x86_64
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        id: benchmark-python
-        with:
-          python-version: '3.12'
       - uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
@@ -410,21 +408,18 @@ jobs:
           echo "GOAT_DELIVERY_UCRT64_CC=$(cygpath -w /ucrt64/bin/gcc.exe)" >> "$GITHUB_ENV"
       - name: Build and test
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
       - name: List registered test suites
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: |
-          cmake -S . -B build -DPython3_EXECUTABLE="$BENCHMARK_PYTHON" -DGOAT_TEST_REQUIRE_PYTHON=ON
+          cmake -S . -B build
           ctest --test-dir build -N
+          ctest --test-dir build --output-on-failure -R "^format[.]reference$|^tool[.]frozen-samples"
       - name: Run registered integration suites
         shell: msys2 {0}
         run: |
           ctest --test-dir build --output-on-failure -L integration
-          ctest --test-dir build --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch"
+          ctest --test-dir build --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|frozen-samples-c|format-vectors|migration-helpers|process-watch"
       - name: Verify registered native runner
         shell: msys2 {0}
         run: ctest --test-dir build --output-on-failure -R "^native.c_module$"
@@ -457,31 +452,21 @@ jobs:
         run: bash scripts/check_native_modes.sh build/goat.exe build/functional_testing.exe "build/native modes"
       - name: Run native functional test list
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: ctest --test-dir build --output-on-failure -L "native-runner-migration|native-access-libm-migration|native-strings-migration|native-saturation-migration|native-performance-controls"
       - name: Check interactive sessions
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: ctest --test-dir build --output-on-failure -R "^native.interactive$"
       - name: Check character semantics
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: ctest --test-dir build --output-on-failure -R "^native.characters$"
       - name: Check portable bytecode v1
         shell: msys2 {0}
         run: ctest --test-dir build --output-on-failure -R "^native.bytecode_v1$"
       - name: Check portable Unicode strings
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: ctest --test-dir build --output-on-failure -R "^native.unicode$"
       - name: Check native artifact integrity
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: ctest --test-dir build --output-on-failure -L "native-integrity-migration"
       - name: Check for loops and source round trips
         shell: msys2 {0}
@@ -531,11 +516,11 @@ jobs:
           if-no-files-found: error
       - name: Check release multifile access
         shell: msys2 {0}
-        env:
-          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: |
-          cmake --build build/release --target module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing unicode_interactive_testing bytecode_v1_testing module_json_scenarios module_canonical_hash_scenarios zip_scenarios module_container_scenarios module_bytecode_scenarios module_abi_scenarios module_native_scenarios module_sources_scenarios module_files_scenarios module_imports_scenarios source_include_scenarios module_search_scenarios module_dependencies_scenarios module_graph_scenarios module_snapshot_scenarios module_identity_scenarios module_serialization_scenarios module_initialization_scenarios module_initialization_contract_scenarios module_exception_scenarios module_incomplete_scopes_scenarios module_failed_prototypes_scenarios module_access_scenarios module_multifile_access_scenarios module_context_scenarios module_function_provenance_scenarios module_assignment_scenarios module_import_execution_scenarios module_interface_scenarios module_source_diagnostics_scenarios module_information_scenarios module_dispatch_consistency_scenarios module_validation_scenarios module_writer_scenarios module_build_scenarios module_library_scenarios module_loading_scenarios module_cli_scenarios module_inspect_scenarios inspect_probe_scenarios module_merge_scenarios module_delivery_scenarios package_scenarios graph_scenarios module_book_scenarios module_delivery_requirements_scenarios module_musl_scenarios child_process_scenarios cleanup_service_scenarios process_exit_scenarios module_exit_scenarios module_threads_scenarios native_requirements_scenarios native_toolchains_scenarios native_artifact_scenarios native_integrity_scenarios native_cleanup_scenarios native_exit_scenarios module_native_values_scenarios native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios native_runtime_strings_scenarios native_string_method_scenarios native_saturation_scenarios native_performance_scenarios timed_execution_testing
-          ctest --test-dir build/release --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|migration-helpers|process-watch|language-roundtrip|unicode-interactive|standalone-bytecode|metadata-json|canonical-hash|zip-migration|container-migration|module-bytecode-migration|module-abi-native-migration|module-sources-files-migration|imports-include-migration|module-search-migration|module-dependencies-migration|module-graph-migration|module-snapshot-migration|module-identity-serialization-migration|module-initialization-migration|module-contract-exceptions-migration|module-scopes-prototypes-migration|module-access-migration|module-multifile-access-migration|module-context-provenance-migration|module-assignment-migration|module-execution-interface-migration|module-source-diagnostics-migration|module-information-migration|module-dispatch-consistency-migration|module-validation-migration|module-writer-migration|module-build-library-migration|module-loading-migration|module-cli-migration|module-inspect-migration|inspect-probe-migration|module-merge-migration|module-delivery-migration|package-controls|graph-validation-migration|module-book-migration|module-delivery-requirements-migration|module-musl-migration|child-process-migration|cleanup-service-migration|process-exit-migration|module-exit-migration|module-threads-migration|native-requirements-migration|native-toolchains-migration|native-artifact-migration|native-integrity-migration|native-cleanup-migration|native-exit-values-migration|native-runner-migration|native-access-libm-migration|native-strings-migration|native-saturation-migration|native-performance-controls"
+          cmake -S . -B build/release
+          cmake --build build/release --target module_import_execution_testing child_process_input_testing child_process_stream_testing scenario_context_testing scenario_execution_testing scenario_registry_testing module_schema_generator_testing unicode_generator_testing integer_oracle_testing format_oracle_testing format_binary_testing module_execution_testing inspect_report_testing process_watch_testing loop_index_testing unicode_interactive_testing bytecode_v1_testing module_json_scenarios module_canonical_hash_scenarios zip_scenarios module_container_scenarios module_bytecode_scenarios module_abi_scenarios module_native_scenarios module_sources_scenarios module_files_scenarios module_imports_scenarios source_include_scenarios module_search_scenarios module_dependencies_scenarios module_graph_scenarios module_snapshot_scenarios module_identity_scenarios module_serialization_scenarios module_initialization_scenarios module_initialization_contract_scenarios module_exception_scenarios module_incomplete_scopes_scenarios module_failed_prototypes_scenarios module_access_scenarios module_multifile_access_scenarios module_context_scenarios module_function_provenance_scenarios module_assignment_scenarios module_import_execution_scenarios module_interface_scenarios module_source_diagnostics_scenarios module_information_scenarios module_dispatch_consistency_scenarios module_validation_scenarios module_writer_scenarios module_build_scenarios module_library_scenarios module_loading_scenarios module_cli_scenarios module_inspect_scenarios inspect_probe_scenarios module_merge_scenarios module_delivery_scenarios package_scenarios frozen_samples format_vectors graph_scenarios module_book_scenarios module_delivery_requirements_scenarios module_musl_scenarios child_process_scenarios cleanup_service_scenarios process_exit_scenarios module_exit_scenarios module_threads_scenarios native_requirements_scenarios native_toolchains_scenarios native_artifact_scenarios native_integrity_scenarios native_cleanup_scenarios native_exit_scenarios module_native_values_scenarios native_runner_testing native_runner_policy_testing native_access_scenarios native_libm_scenarios native_runtime_strings_scenarios native_string_method_scenarios native_saturation_scenarios native_performance_scenarios timed_execution_testing
+          ctest --test-dir build/release --verbose --output-on-failure -R "^format[.]reference$|^tool[.]frozen-samples"
+          ctest --test-dir build/release --output-on-failure --parallel 4 -L "process-input|process-stream|scenario-context|scenario-execution|scenario-registry|module-schema|unicode-generator|integer-oracle|format-oracle|frozen-samples-c|format-vectors|migration-helpers|process-watch|language-roundtrip|unicode-interactive|standalone-bytecode|metadata-json|canonical-hash|zip-migration|container-migration|module-bytecode-migration|module-abi-native-migration|module-sources-files-migration|imports-include-migration|module-search-migration|module-dependencies-migration|module-graph-migration|module-snapshot-migration|module-identity-serialization-migration|module-initialization-migration|module-contract-exceptions-migration|module-scopes-prototypes-migration|module-access-migration|module-multifile-access-migration|module-context-provenance-migration|module-assignment-migration|module-execution-interface-migration|module-source-diagnostics-migration|module-information-migration|module-dispatch-consistency-migration|module-validation-migration|module-writer-migration|module-build-library-migration|module-loading-migration|module-cli-migration|module-inspect-migration|inspect-probe-migration|module-merge-migration|module-delivery-migration|package-controls|graph-validation-migration|module-book-migration|module-delivery-requirements-migration|module-musl-migration|child-process-migration|cleanup-service-migration|process-exit-migration|module-exit-migration|module-threads-migration|native-requirements-migration|native-toolchains-migration|native-artifact-migration|native-integrity-migration|native-cleanup-migration|native-exit-values-migration|native-runner-migration|native-access-libm-migration|native-strings-migration|native-saturation-migration|native-performance-controls"
       - name: Compare release native modes
         shell: msys2 {0}
         run: bash scripts/check_native_modes.sh build/release/goat.exe build/functional_testing.exe "build/native modes release"

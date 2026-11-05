@@ -135,10 +135,10 @@ static void body(scenario_run_t *r, void *user) {
         REQUIRE(manifest(r, "[{\"name\":\"good\",\"calls\":false,\"calls\":3}]", NULL));
         REQUIRE(!manifest(r, "[{\"name\":\"good\",\"calls\":3,\"calls\":false}]", NULL));
 
-        REQUIRE(manifest(
-            r,
-            "[{\"name\":\"first\",\"calls\":3},{\"name\":\"other\",\"check\":\"runner.py\"}]",
-            NULL));
+        REQUIRE(
+            manifest(r,
+                     "[{\"name\":\"first\",\"calls\":3},{\"name\":\"other\",\"check\":\"runner\"}]",
+                     NULL));
         REQUIRE(!manifest(r, "[]", NULL));
         REQUIRE(!manifest(r, "{}", NULL));
         REQUIRE(!manifest(r, "[{\"name\":\"bad\",\"calls\":true}]", NULL));
@@ -149,6 +149,41 @@ static void body(scenario_run_t *r, void *user) {
         REQUIRE(!manifest(r, "[{\"name\":\"Bad\",\"calls\":1}]", NULL));
         REQUIRE(!manifest(r, "[{\"name\":\"bad\",\"check\":\"missing.py\"}]", "missing.py"));
         REQUIRE(!manifest(r, "[{\"name\":\"bad\",\"calls\":1}]", "bad/program.goat"));
+        return;
+    }
+    if (!strcmp(kind, "manifest-builtins")) {
+        const char *checks[] =
+            {"runner", "access", "libm", "runtime_strings", "string_method_errors", "saturation"};
+        for (size_t i = 0; i < sizeof(checks) / sizeof(checks[0]); i++) {
+            char json[160];
+            snprintf(json, sizeof(json), "[{\"name\":\"check\",\"check\":\"%s\"}]", checks[i]);
+            REQUIRE(manifest(r, json, NULL));
+            REQUIRE(!manifest(r, json, checks[i]));
+        }
+        return;
+    }
+    if (!strcmp(kind, "manifest-reject-check")) {
+        const char *checks[] = {"checks/runner.py",
+                                "unknown",
+                                "",
+                                "../runner",
+                                "/runner",
+                                "runner.py",
+                                "runner.exe",
+                                "Runner",
+                                "runner\\u0000.py"};
+        for (size_t i = 0; i < sizeof(checks) / sizeof(checks[0]); i++) {
+            char json[160];
+            snprintf(json, sizeof(json), "[{\"name\":\"check\",\"check\":\"%s\"}]", checks[i]);
+            /* The existence callback accepts these values: rejection must be policy-owned. */
+            REQUIRE(!manifest(r, json, NULL));
+        }
+        REQUIRE(!manifest(r, "[{\"name\":\"check\",\"check\":null}]", NULL));
+        REQUIRE(!manifest(r, "[{\"name\":\"check\",\"check\":42}]", NULL));
+        REQUIRE(
+            manifest(r, "[{\"name\":\"check\",\"check\":\"old.py\",\"check\":\"runner\"}]", NULL));
+        REQUIRE(
+            !manifest(r, "[{\"name\":\"check\",\"check\":\"runner\",\"check\":\"old.py\"}]", NULL));
         return;
     }
     if (!strcmp(kind, "continuation") || !strcmp(kind, "selection-order")
@@ -240,6 +275,8 @@ static const char *kinds[] = {"output-good",
                               "report-unicode",
                               "report-duplicates",
                               "manifest-validation",
+                              "manifest-builtins",
+                              "manifest-reject-check",
                               "selection-order",
                               "selection-unknown"};
 

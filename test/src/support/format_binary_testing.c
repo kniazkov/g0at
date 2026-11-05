@@ -246,6 +246,13 @@ static bool vectors(const char *schema, yyjson_mut_val *source, const char *muta
     actual = format_binary_minimal(&n);
     expected = vector(schema, "empty.bytecode.bin", &m);
     CHECK(same(actual, n, expected, m));
+    /* Literal specification assertions retained from test_bytecode_layout. */
+    CHECK(n == 112 && !memcmp(actual, "GOATBC01", 8));
+    const unsigned char offsets[] = {64, 0, 0, 0, 72, 0, 0, 0, 72,  0, 0, 0,
+                                     88, 0, 0, 0, 88, 0, 0, 0, 112, 0, 0, 0};
+    const unsigned char end[] = {2, 0, 0, 0, 0, 0, 0, 0};
+    CHECK(!memcmp(actual + 40, offsets, sizeof(offsets)));
+    CHECK(!memcmp(actual + 64, end, sizeof(end)));
     if (mutant && !strcmp(mutant, "corrupt-output"))
         actual[0] ^= 1;
     hex = vector(schema, "empty.bytecode.hex", &hn);
@@ -328,6 +335,12 @@ static bool vectors(const char *schema, yyjson_mut_val *source, const char *muta
     CHECK(json && jn == length && !memcmp(json, native + 16, jn));
     archive = vector(schema, "empty.gbin", &an);
     CHECK(archive);
+    free(hex);
+    hex = vector(schema, "empty.gbin.hex", &hn);
+    CHECK(hex);
+    free(decoded);
+    decoded = unhex((char *)hex, &m);
+    CHECK(same(archive, an, decoded, m));
     format_binary_sha256(archive, an, hash);
     CHECK(!strcmp(hash, str(hash_values, "archiveSha256")));
     format_binary_sha256((const unsigned char *)"abc", 3, hash);
@@ -366,6 +379,8 @@ static bool zip_tests(const char *schema) {
     CHECK(same(archive, n, gold, gn));
     for (size_t i = 0; i < 2; i++) {
         CHECK(format_zip_inspect(archive, n, i, &info, error, sizeof(error)));
+        const char *name = i ? "bytecode.bin" : "module.json";
+        CHECK(info.name_size == strlen(name) && !memcmp(info.name, name, info.name_size));
         CHECK(info.count == 2 && info.method == 8 && info.flags == 0x800 && info.date == 33
               && info.time == 0 && info.external == (0100644u << 16));
         out = format_zip_extract(archive, n, i, 1024 * 1024, &on, error, sizeof(error));

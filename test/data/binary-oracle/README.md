@@ -22,7 +22,8 @@ It does not call Goat's bytecode, ZIP, hash, module validator or writer wrappers
 
 The schema snapshots are already checked by `module_schema_generator`; JSON,
 normalization, guards and projection scenarios remain in `format.oracle.*`
-(#335). Existing Python tests remain active, rather than losing any scenarios.
+(#335). The Python tests were retired only after full parity in #394; the
+[retirement map](../format-reference/README.md) preserves their scenario coverage.
 
 ## Frozen corpus construction
 
@@ -60,8 +61,6 @@ fba4bbcbaecfefb2d8a96010cf900aa2797c34326189fe71ca001be808529032  fixtures.json
 cmake -S . -B build/binary-oracle -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/binary-oracle --target format_binary_testing format_binary_ubsan_testing
 ctest --test-dir build/binary-oracle -L format-binary --output-on-failure
-python3 docs/module-format-v1/test_reference.py
-python3 docs/module-format-v1/reference.py
 ```
 
 Omit the UBSan target on Windows or musl without a sanitizer runtime. Normal
@@ -71,12 +70,14 @@ A normal invocation only reads corpora, schema and vectors. Diagnostics and
 failure files go through the shared scenario framework under the build tree.
 No update flag is offered by this test runner.
 
-## Retained Python consumers
+## Historical Python provenance
 
-`reference.py` and `test_reference.py` remain for their existing consumers (full
-list in `test/support/README.md`), pending the ordered suite migrations and #394.
-`scripts/module_interface_fixtures.py` has no remaining runner consumer after
-#374; its transitional removal is reserved for #394.
-Their API, paths and semantics are unchanged. The shared C replacements live in
+`reference.py`, `test_reference.py` and `scripts/module_interface_fixtures.py`
+were retired in #394 after the last runner consumers had migrated and the full
+parity gate passed. Their original paths above identify the corpus source, not
+current dependencies. Use `format_vectors --check --root .` for generated-file
+verification and the stable `format.reference` CTest aggregate for the complete
+mapped reference assertions; see [commands and parity](../format-reference/README.md).
+The shared C replacements live in
 `test/support/format_binary.{h,c}`, `format_zip.{h,c}` and
 `format_fixtures.{h,c}`, in test-only `goat_format_oracle`.

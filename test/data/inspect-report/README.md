@@ -31,10 +31,18 @@ outside the Python schema helper, not silently added here.
 
 Autonomous delivery migrated to `module_delivery_scenarios` in #388 and book
 checks to `module_book_scenarios` in #392 after full original/C parity.
-`inspect_report_test_support.py` has no remaining runtime consumers, but remains
-unchanged until the dedicated #394 compatibility-helper cleanup.
+`inspect_report_test_support.py` had no remaining runtime consumers and was
+retired in #394. Current verification uses the C runner:
 
-To independently reproduce every expected result against identical inputs:
+```sh
+cmake --build build --target inspect_report_testing
+ctest --test-dir build -R '^helpers[.]inspect[.]' --output-on-failure
+```
+
+The historical recipe below independently reproduced every expected result
+against identical inputs. It requires a pre-retirement checkout such as
+`4a90f8c0ca9ab96d9ee1a9a7887dc17ebda052ee` with the original helper; it is not a
+command for the current tree:
 
 ```sh
 python3 - <<'PY'
@@ -54,7 +62,6 @@ for case in cases:
     assert actual == case['valid'], case['name']
 print(len(cases), 'Python expected results verified')
 PY
-ctest --test-dir build -R helpers.inspect --output-on-failure
 ```
 
 The C runner can also be invoked directly:

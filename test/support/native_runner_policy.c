@@ -306,6 +306,16 @@ static bool valid_name(const char *s) {
     return true;
 }
 
+nr_check_kind_t nr_check_kind(const char *name) {
+    static const char *names[] =
+        {NULL, "runner", "access", "libm", "runtime_strings", "string_method_errors", "saturation"};
+    if (name)
+        for (size_t i = 1; i < sizeof(names) / sizeof(names[0]); i++)
+            if (!strcmp(name, names[i]))
+                return (nr_check_kind_t)i;
+    return NR_CHECK_UNKNOWN;
+}
+
 bool nr_manifest_validate(yyjson_val *cases,
                           nr_exists_fn exists,
                           void *user,
@@ -340,7 +350,10 @@ bool nr_manifest_validate(yyjson_val *cases,
         yyjson_val *check = nr_object_get(c, "check");
         if (check) {
             const char *path = yyjson_get_str(check);
-            if (!path || strlen(path) != yyjson_get_len(check) || !exists(path, true, user))
+            if (!path || strlen(path) != yyjson_get_len(check)
+                || nr_check_kind(path) == NR_CHECK_UNKNOWN)
+                return fail(error, error_size, "unknown built-in check");
+            if (!exists(path, true, user))
                 return fail(error, error_size, "missing check");
         } else {
             yyjson_val *calls = nr_object_get(c, "calls");

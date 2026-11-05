@@ -25,7 +25,20 @@ bool nr_check_report(const void *bytes,
 /** Original saturation.py's narrower policy: positive successes, equal attempts,
  * zero retries. Other report fields are deliberately unconstrained. */
 bool nr_check_saturation_report(const void *bytes, size_t size);
-/** relative is the check path, or name/program.goat. Validate before selection. */
+
+/** Manifest checks are fixed C entry points, never executable paths. */
+typedef enum {
+    NR_CHECK_UNKNOWN,
+    NR_CHECK_RUNNER,
+    NR_CHECK_ACCESS,
+    NR_CHECK_LIBM,
+    NR_CHECK_RUNTIME_STRINGS,
+    NR_CHECK_STRING_METHOD_ERRORS,
+    NR_CHECK_SATURATION
+} nr_check_kind_t;
+
+nr_check_kind_t nr_check_kind(const char *name);
+/** relative is the built-in check ID, or name/program.goat. Validate before selection. */
 typedef bool (*nr_exists_fn)(const char *relative, bool is_check, void *user);
 bool nr_manifest_validate(yyjson_val *cases,
                           nr_exists_fn exists,

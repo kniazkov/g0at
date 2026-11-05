@@ -32,10 +32,12 @@ uint64 little-endian, точные байты байткода. Без терм�
 структуру байткода, согласованность import и dependencies, граф зависимостей,
 ZIP или нативный ABI; эти проверки выполняют последующие этапы загрузчика.
 
-`python scripts/check_module_hash.py <module_json_testing>` сверяет C API
-с фиксированными векторами и независимым hashlib через reference.py,
-проверяет границы блоков, изменения данных, нормализацию и ошибки.
-Тест запускается в Linux/Windows CI и Linux-сборке с заполнением стека pattern.
+`ctest --test-dir build -L canonical-hash --output-on-failure` сверяет C API
+с фиксированными векторами и независимым C-эталоном, проверяет границы блоков,
+изменения данных, нормализацию и ошибки. Сначала соберите
+`module_canonical_hash_scenarios`. Прежние `check_module_hash.py` и `reference.py`
+сохранены только в истории Git как происхождение проверок. Сценарии запускаются
+в Linux/Windows CI, включая Linux-сборки с заполнением стека pattern.
 
 ## English
 
@@ -67,7 +69,10 @@ Successful verification establishes matching build identity. It does not
 validate bytecode structure, import/dependency consistency, dependency graphs,
 ZIP or native ABI; subsequent loader stages provide those checks.
 
-Run `python scripts/check_module_hash.py <module_json_testing>` for frozen
-vectors, independent hashlib/reference comparisons, SHA block boundaries,
-normalization, meaningful mutations and invalid input. CI runs it on Linux
-and Windows, including Linux builds with patterned automatic variables.
+Build `module_canonical_hash_scenarios`, then run
+`ctest --test-dir build -L canonical-hash --output-on-failure` for frozen vectors,
+independent C-oracle comparisons, SHA block boundaries, normalization, meaningful
+mutations and invalid input. The retired `check_module_hash.py` and `reference.py`
+are historical provenance, available in Git rather than current dependencies.
+CI runs the scenarios on Linux and Windows, including Linux builds with patterned
+automatic variables.

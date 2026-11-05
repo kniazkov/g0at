@@ -4,7 +4,7 @@
 setlocal
 pushd "%~dp0.." || exit /b 1
 cmake -S . -B build\release -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release || goto failed
-cmake --build build\release --target goat goat-inspect goat-merge module_delivery_scenarios package_scenarios graph_scenarios module_book_scenarios module_delivery_requirements_scenarios module_musl_scenarios || goto failed
+cmake --build build\release --target goat goat-inspect goat-merge module_delivery_scenarios package_scenarios frozen_samples format_vectors graph_scenarios module_book_scenarios module_delivery_requirements_scenarios module_musl_scenarios || goto failed
 cmake --build build\release --target package --config Release || goto failed
 copy /Y build\release\goat.exe goat.exe > NUL || goto failed
 echo.

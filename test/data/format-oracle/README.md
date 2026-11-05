@@ -82,29 +82,29 @@ From the repository root:
 ```sh
 cmake -S . -B build/format-oracle -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/format-oracle --target format_oracle_testing --parallel 2
-ctest --test-dir build/format-oracle -R '^format\.oracle\.' -E '\.ubsan$' --output-on-failure
-PYTHONDONTWRITEBYTECODE=1 python3 docs/module-format-v1/test_reference.py
+ctest --test-dir build/format-oracle -R '^format[.]oracle[.]' -E '[.]ubsan$' --output-on-failure
 ```
 
 On GNU/Clang Unix with the UBSan runtime available, also run:
 
 ```sh
 cmake --build build/format-oracle --target format_oracle_ubsan_testing --parallel 2
-ctest --test-dir build/format-oracle -R '^format\.oracle\.ubsan$' --output-on-failure
+ctest --test-dir build/format-oracle -R '^format[.]oracle[.]ubsan$' --output-on-failure
 ```
 
 The ordinary checks only read the corpus. Temporary work is owned by the common
 scenario framework below the selected build directory, and failures preserve
 that directory. Every scenario has its own deadline and CTest ID.
 
-## Explicit recapture (not part of ordinary tests)
+## Historical capture recipe (not a current test command)
 
-The following one-time capture recipe is retained as documentation rather than
-adding another runtime Python helper. Run it from the repository root **only
-when intentionally updating frozen expectations**, and review the resulting
-diff. It runs the original unittest assertions while intercepting their outer
-reference calls. This is not a replacement random-number generator: all
-supplemental choices below are explicit deterministic lists.
+The following one-time recipe documents the original capture at
+`7358333d0a49328d3612ff78040155e389718326`. It requires that historical checkout,
+including its Python reference and unittest, which were removed from the current
+tree in #394. It writes captured expectations and must only run in a disposable
+historical tree for deliberate provenance review, never as a normal test or an
+automatic fixture update. It intercepts the original unittest's outer reference
+calls. All supplemental choices below are explicit deterministic lists.
 
 ```python
 import sys, json, copy, unittest, struct, hashlib
@@ -218,19 +218,13 @@ path.write_text(json.dumps(records,ensure_ascii=True,indent=2)+'\n')
 print(counts); print(len(records),hashlib.sha256(path.read_bytes()).hexdigest())
 ```
 
-## Retained Python consumers
+## Reference retirement
 
-`reference.py`, `schema.py` and `test_reference.py` remain unchanged because
-subsequent migrations still depend on them. Direct consumers at this step:
-
-- `docs/module-format-v1/test_reference.py`
-- `scripts/check_module_canonical.py`
-- `scripts/check_module_container.py`
-- `test/src/functional/module_delivery_scenarios.c` (#388; C oracle consumer)
-- `scripts/check_module_hash.py`
-- `test/support/module_loading_fixture.c` (#369)
-- `scripts/check_module_musl.py`
-- `scripts/check_module_search.py`
-
-Frozen-sample tools also load the reference by `importlib`; they remain tracked
-by #330/#395. Consumer removal is deferred until each owning checklist task.
+`reference.py`, `schema.py` and `test_reference.py` were removed in #394 after
+all runtime consumers migrated and full original/C parity passed. The historical
+paths in the scenario map and capture recipe remain provenance. Current C
+consumers use the independent JSON/binary/fixture support, not Python imports.
+The stable `format.reference` CTest aggregate preserves the full mapped unittest
+coverage; see [commands and parity evidence](../format-reference/README.md).
+Four inactive frozen-sample reproduction/audit tools remain until #395, separate
+from the current [C integrity gate](../../support/frozen_samples.md).

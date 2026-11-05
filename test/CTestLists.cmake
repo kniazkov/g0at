@@ -1,31 +1,14 @@
 # Copyright 2026 Ivan Kniazkov
 # Distributed under the MIT license; see LICENSE.txt.
-# Transitional registrations: each existing runner remains one test.
-if(DEFINED ENV{BENCHMARK_PYTHON} AND NOT "$ENV{BENCHMARK_PYTHON}" STREQUAL "")
-  set(Python3_EXECUTABLE "$ENV{BENCHMARK_PYTHON}")
-endif()
-option(GOAT_TEST_REQUIRE_PYTHON "Fail configuration if transitional Python tests cannot run" OFF)
-if(GOAT_TEST_REQUIRE_PYTHON)
-  find_package(Python3 COMPONENTS Interpreter REQUIRED)
-else()
-  find_package(Python3 COMPONENTS Interpreter QUIET)
-endif()
+# C-only registrations after the complete #394 original/C parity gate.
 find_program(GOAT_TEST_BASH bash)
 function(goat_suite name labels)
   add_test(NAME ${name} COMMAND ${ARGN})
   set_tests_properties(${name} PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
     LABELS "${labels}" TIMEOUT 600 RUN_SERIAL TRUE
-    ENVIRONMENT "CC=${CMAKE_C_COMPILER};PYTHONDONTWRITEBYTECODE=1")
+    ENVIRONMENT "CC=${CMAKE_C_COMPILER}")
 endfunction()
 include("${CMAKE_CURRENT_SOURCE_DIR}/ScenarioRegistration.cmake")
-function(goat_python name labels script)
-  if(Python3_Interpreter_FOUND)
-    goat_suite(${name} "${labels}" "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/${script}" ${ARGN})
-  else()
-    goat_suite(${name} "${labels};unavailable" "${CMAKE_COMMAND}" -E echo "Unavailable: Python 3 is required")
-    set_tests_properties(${name} PROPERTIES DISABLED TRUE)
-  endif()
-endfunction()
 function(goat_shell name labels script)
   if(GOAT_TEST_BASH)
     goat_suite(${name} "${labels}" "${GOAT_TEST_BASH}" "${PROJECT_SOURCE_DIR}/scripts/${script}" ${ARGN})
@@ -489,12 +472,17 @@ foreach(cleanup_service_case IN LISTS cleanup_service_cases)
 endforeach()
 set_tests_properties(integration.cleanup_service.parallel-lifetime PROPERTIES TIMEOUT 360)
 
-goat_python(format.reference "format" docs/module-format-v1/test_reference.py)
+# Stable aggregate ID: all 21 historical methods map to these independent C checks.
+goat_suite(format.reference "format" "${CMAKE_COMMAND}"
+  "-DORACLE=$<TARGET_FILE:format_oracle_testing>" "-DBINARY=$<TARGET_FILE:format_binary_testing>"
+  "-DSCHEMA_TEST=$<TARGET_FILE:module_schema_generator_testing>"
+  "-DGENERATOR=$<TARGET_FILE:module_schema_generator>" "-DROOT=${PROJECT_SOURCE_DIR}"
+  "-DWORK=${CMAKE_BINARY_DIR}" -P "${CMAKE_CURRENT_SOURCE_DIR}/support/format_reference.cmake")
 goat_scenario(format.schema "format;module-schema" TIMEOUT 40 COMMAND
   "$<TARGET_FILE:module_schema_generator_testing>" check "$<TARGET_FILE:module_schema_generator>"
   "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
 foreach(scenario roundtrip stale missing reject-keyword reject-pattern reject-type reject-ref reject-float reject-duplicate
-    reject-array-items reject-ref-siblings reject-zero-items reject-zero-length reject-unique-nonstrings reject-ref-cycle)
+    reject-array-items reject-ref-siblings reject-zero-items reject-zero-length reject-unique-nonstrings reject-ref-cycle reject-lossy-source)
   goat_scenario(format.schema.${scenario} "format;module-schema" TIMEOUT 40 COMMAND
     "$<TARGET_FILE:module_schema_generator_testing>" "${scenario}" "$<TARGET_FILE:module_schema_generator>"
     "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
@@ -584,10 +572,10 @@ foreach(native_runner_index RANGE 0 ${native_runner_last})
   string(JSON native_runner_name GET "${native_runner_manifest}" ${native_runner_index} name)
   goat_scenario(integration.native_functional.${native_runner_name} "native;native-runner-migration" TIMEOUT 2430 COMMAND
     "$<TARGET_FILE:native_runner_testing>" "integration.native_functional.${native_runner_name}"
-    "$<TARGET_FILE:goat>" "${Python3_EXECUTABLE}" "$<TARGET_FILE:native_runner_policy_testing>"
+    "$<TARGET_FILE:goat>" "$<TARGET_FILE:native_runner_policy_testing>"
     "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
-foreach(native_runner_policy_case IN ITEMS output-good output-missing-nul output-missing-newline output-space output-extra-line report-good report-mode report-preparation report-bound-zero report-bound-count report-zero-calls report-attempts report-succeeded report-retries report-missing-mode report-missing-preparation report-missing-bound report-missing-attempts report-missing-succeeded report-missing-retries report-vm-good report-vm-native continuation report-unicode report-duplicates manifest-validation selection-order selection-unknown)
+foreach(native_runner_policy_case IN ITEMS output-good output-missing-nul output-missing-newline output-space output-extra-line report-good report-mode report-preparation report-bound-zero report-bound-count report-zero-calls report-attempts report-succeeded report-retries report-missing-mode report-missing-preparation report-missing-bound report-missing-attempts report-missing-succeeded report-missing-retries report-vm-good report-vm-native continuation report-unicode report-duplicates manifest-validation manifest-builtins manifest-reject-check selection-order selection-unknown)
   goat_scenario(helpers.native_runner.${native_runner_policy_case} "native;native-runner-migration" TIMEOUT 45 COMMAND
     "$<TARGET_FILE:native_runner_policy_testing>" "helpers.native_runner.${native_runner_policy_case}"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
@@ -731,9 +719,13 @@ math(EXPR goat_expected_integration_count "1909 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
   message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (SVG validation and controls added for #393); found ${goat_integration_count}")
 endif()
-# Read-only provenance/reproduction check; ordinary consumers never generate inputs.
-goat_python(tool.python-frozen-samples "tool;frozen-samples" "test/support/freeze_python_samples.py" --check)
-goat_python(tool.python-frozen-samples-self-test "tool;frozen-samples" "test/support/freeze_python_samples.py" --self-test)
+# Read-only frozen integrity check; ordinary consumers never generate inputs.
+# Historical IDs remain C aliases; recipe reproduction is an inactive #395 tool.
+goat_scenario(tool.python-frozen-samples "tool;frozen-samples" TIMEOUT 60 COMMAND
+  "$<TARGET_FILE:frozen_samples>" --check --data "${PROJECT_SOURCE_DIR}/test/data/python-samples")
+goat_scenario(tool.python-frozen-samples-self-test "tool;frozen-samples" TIMEOUT 180 COMMAND
+  "$<TARGET_FILE:frozen_samples>" --self-test --data "${PROJECT_SOURCE_DIR}/test/data/python-samples"
+  --build "${CMAKE_BINARY_DIR}")
 
 # #334: exact Python parity and deliberate corruptions of the independent oracle.
 foreach(scenario parity reject-value reject-sign reject-clamp)
@@ -747,8 +739,8 @@ if(TARGET integer_oracle_ubsan_testing)
     "${PROJECT_SOURCE_DIR}/test/data/integer-oracle/python-results.tsv")
 endif()
 
-# #335: independent schema-driven JSON oracle; Python reference remains for consumers.
-foreach(scenario strict_json canonical_bytes shapes gmod constants facts_normalization summaries summary_consistency dependency_versions hash_projection target guard_intersections normalization_preserves_distinctions hash_excludes_native_but_validates_it native_envelope edge_cases vectors metadata_edges target_edges guard_edges)
+# #335: independent schema-driven JSON oracle; historical Python reference retired in #394.
+foreach(scenario strict_json canonical_bytes shapes gmod constants facts_normalization summaries summary_consistency dependency_versions hash_projection target guard_intersections normalization_preserves_distinctions hash_excludes_native_but_validates_it native_envelope edge_cases vectors metadata_edges target_edges guard_edges reference-artifacts)
   goat_scenario(format.oracle.${scenario} "format-oracle" TIMEOUT 40 COMMAND
     "$<TARGET_FILE:format_oracle_testing>" "${scenario}" "${CMAKE_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
@@ -815,3 +807,16 @@ foreach(timed_execution_case IN ITEMS clock success nonzero boundary duration tr
     "$<TARGET_FILE:timed_execution_testing>" "${timed_execution_case}"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
+
+# #394: independent C integrity gate after full original/C parity.
+goat_scenario(tool.frozen-samples "tool;frozen-samples-c;migration-cleanup" TIMEOUT 60 COMMAND
+  "$<TARGET_FILE:frozen_samples>" --check --data "${PROJECT_SOURCE_DIR}/test/data/python-samples")
+goat_scenario(tool.frozen-samples-self-test "tool;frozen-samples-c;migration-cleanup" TIMEOUT 180 COMMAND
+  "$<TARGET_FILE:frozen_samples>" --self-test --data "${PROJECT_SOURCE_DIR}/test/data/python-samples"
+  --build "${CMAKE_BINARY_DIR}")
+
+goat_scenario(format.vectors "format;format-vectors;migration-cleanup" TIMEOUT 60 COMMAND
+  "$<TARGET_FILE:format_vectors>" --check --root "${PROJECT_SOURCE_DIR}")
+goat_scenario(format.vectors.controls "format;format-vectors;migration-cleanup" TIMEOUT 180 COMMAND
+  "${CMAKE_COMMAND}" "-DGENERATOR=$<TARGET_FILE:format_vectors>" "-DROOT=${PROJECT_SOURCE_DIR}"
+  "-DWORK=${CMAKE_BINARY_DIR}" -P "${PROJECT_SOURCE_DIR}/test/support/format_vectors_controls.cmake")

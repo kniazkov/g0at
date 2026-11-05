@@ -194,6 +194,34 @@ static void test(scenario_run_t *run, void *user) {
             command(run, settings, work, source, false, 0);
             compare_outputs(run, settings, work);
         }
+    } else if (!strcmp(settings->mode, "reject-lossy-source")) {
+        /* Exact inputs from test_schema_source_rejects_lossy_input. */
+        static const char *invalid[] = {"[]",
+                                        "null",
+                                        "{\"DEFS\":{},\"ROOTS\":[]}",
+                                        "{\"DEFS\":{},\"ROOTS\":{},\"extra\":{}}",
+                                        "{\"DEFS\":{},\"ROOTS\":{},\"DEFS\":{}}",
+                                        "{\"DEFS\":{\"a\":1,\"\\u0061\":2},\"ROOTS\":{}}",
+                                        "{\"DEFS\":{\"n\":1.0},\"ROOTS\":{}}",
+                                        "{\"DEFS\":{\"n\":1e0},\"ROOTS\":{}}",
+                                        "{\"DEFS\":{\"n\":NaN},\"ROOTS\":{}}",
+                                        "{\"DEFS\":{\"n\":Infinity},\"ROOTS\":{}}",
+                                        "{\"DEFS\":{\"n\":-Infinity},\"ROOTS\":{}}"};
+        char *bad_source = path(run, work, "invalid-source.json");
+        for (size_t row = 0; row < sizeof(invalid) / sizeof(*invalid); ++row) {
+            write_file(run, bad_source, invalid[row], strlen(invalid[row]));
+            snapshot_t bad_before = read_file(run, bad_source), before[OUTPUT_COUNT];
+            char *names[OUTPUT_COUNT];
+            for (size_t i = 0; i < OUTPUT_COUNT; ++i) {
+                names[i] = path(run, work, outputs[i]);
+                before[i] = read_file(run, names[i]);
+            }
+            command(run, settings, work, bad_source, true, 1);
+            command(run, settings, work, bad_source, false, 1);
+            unchanged(run, bad_source, &bad_before);
+            for (size_t i = 0; i < OUTPUT_COUNT; ++i)
+                unchanged(run, names[i], &before[i]);
+        }
     } else {
         const char *needle = "\"type\": \"object\"";
         const char *replacement = NULL;
@@ -274,7 +302,8 @@ int main(int argc, char **argv) {
                          "reject-zero-items",
                          "reject-zero-length",
                          "reject-unique-nonstrings",
-                         "reject-ref-cycle"};
+                         "reject-ref-cycle",
+                         "reject-lossy-source"};
     scenario_definition_t definitions[sizeof(ids) / sizeof(*ids)];
     for (size_t i = 0; i < sizeof(ids) / sizeof(*ids); ++i)
         definitions[i] = (scenario_definition_t){ids[i], 30000, test, &settings, NULL};

@@ -1,4 +1,4 @@
-# Running the transitional test suites
+# Running the test suites
 
 Configure from the repository root, build all targets, then run:
 
@@ -9,13 +9,12 @@ ctest --test-dir build -N
 ctest --test-dir build --output-on-failure
 ```
 
-CTest registration is in `test/CTestLists.cmake`. Existing runners and their
-command-line interfaces are unchanged. Every monolithic runner is one stable
-CTest test for now; later migration steps split it into individual scenarios.
-The 59 `integration.*` tests replace exactly the former Debug book, child-process,
-ZIP/module/native-metadata, JSON and cleanup commands on Linux and Windows.
-CI still runs its specialized native, sanitizer, fault, pattern-initialization,
-Release/package and controlled glibc/musl container checks unchanged.
+CTest registration is in `test/CTestLists.cmake`. Migrated C runners preserve
+stable suite IDs or the documented individual scenario mappings. The original
+59 integration registrations have expanded into independently selected C cases;
+use `ctest -N` for the current inventory. CI also retains its specialized native,
+sanitizer, fault, pattern-initialization, Release/package and controlled
+glibc/musl container checks.
 
 Labels select `core`, `integration`, `native`, `format`, `sanitizer`, `fault`,
 `package`, `performance`, `style`, `docs` and `graph`. For example:
@@ -33,12 +32,15 @@ and process-local state, and run with `--parallel 4` in Linux and Windows CI.
 Functional inputs are copied under the selected build directory; failed copies
 are retained with their path in the output. Inputs under `test/data` stay read-only.
 
-Python 3 and Bash are transitional test dependencies, not ordinary compiler build
-dependencies. Missing tools produce explicitly disabled tests and configure
-messages; CI uses `GOAT_TEST_REQUIRE_PYTHON=ON` to prohibit silently missing its
-integration coverage. On Windows use the MSYS2 environment and configure
-`Python3_EXECUTABLE` to the native Python interpreter, not an MSYS Python.
-CTest supplies the configured C compiler and absolute target paths.
+The active CMake, CTest and CI gates no longer require Python after #394.
+Bash remains required for shell-based suites; missing optional tools produce
+explicitly disabled tests and configure messages. On Windows use the MSYS2
+environment. CTest supplies the configured C compiler and absolute target paths.
+The four inactive frozen-input reproduction/audit scripts are retained until
+#395; they are not prerequisites for current tests. The full Python-free-cycle
+proof and broader documentation audit remain tracked by #395. See the
+[reference retirement map](data/format-reference/README.md) and
+[frozen-input integrity gate](support/frozen_samples.md).
 
 Platform variants are explicit: `native.windows_*` only on Windows;
 `native.native_library`, sanitizer variants and GCC x86-64 x87 variants only on
@@ -68,8 +70,8 @@ while the child fills both output pipes before consuming stdin. It also destroys
 the caller's input buffer after start to check snapshot ownership. Other cases
 check EOF, early stdin closure, the original deadline, isolated Unicode environment
 and arguments, full replacement versus inheritance, invalid options, and launch
-failure. These checks supplement rather than replace the existing Python process
-suite and its independent process-tree observer.
+failure. These checks supplement the migrated C process suites and their
+independent process-tree observer.
 
 ### Streaming process exchange
 
@@ -96,7 +98,7 @@ sinks. `dialog` and `dialog-poll` wait for READY before supplying a binary reply
 then deliver EOF. `timeout`, `stop`, `output-error`, `input-error`, `invalid-size`
 and `invalid-options` exercise failure and ownership boundaries. Callback/file
 errors must fail the child operation rather than silently discarding output.
-The existing Python process suite retains its independent tree-cleanup observer.
+The migrated C process suites retain independent tree-cleanup observation.
 
 ### Scenario contexts
 

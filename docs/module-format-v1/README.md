@@ -15,9 +15,12 @@ the language contract are mandatory in addition to JSON Schema shape checks.
 `target.schema.json` are generated from the reviewed `schema-source.json` by the native
 `tools/module-schema` generator. Every property
 appears there with its type, requiredness, range and closed nested object shape.
-Schema omission does not authorize new fields. `reference.py` fixes canonical
-bytes and generates the text/hex vectors under `vectors/`; `test_reference.py`
-checks independent expectations and malformed inputs. Hex files encode actual
+Schema omission does not authorize new fields. The independent C
+`format_vectors` tool generates the text/hex vectors under `vectors/`, the opcode
+map and the four public schemas. The stable CTest `format.reference` aggregate
+checks independent expectations and malformed inputs. The original Python
+reference and unittest were retired in #394 after full original/C parity; their
+[coverage and provenance](../../test/data/format-reference/README.md) are retained. Hex files encode actual
 binary files, not additional container entries: decode hex to obtain `.gbin` or
 `bytecode.bin`. All text files in this directory use UTF-8/LF.
 
@@ -31,9 +34,10 @@ confusion with old images even when their numeric version was 1.
 order (including nested properties), array order, integer tokens, references and
 patterns are part of the reproducible generator input: do not sort keys or pass
 integers through floating point. Duplicate decoded keys and non-integer numeric
-tokens are rejected. The reader resolves the source relative to its own file,
-not the working directory. The transitional `schema.py` reader retains the
-`reference.py` API until #335/#336. Normal C builds use the checked-in header.
+tokens are rejected. The native schema generator defaults to the source checkout
+recorded at configure time; `--root` and `--source` select explicit paths. The
+transitional Python reader was retired in #394. Normal C builds use the
+checked-in header.
 See [generator commands and coverage](../../tools/module-schema/README.md) for
 explicit regeneration and the read-only `--check` contract.
 
@@ -401,7 +405,8 @@ version-needed=20, made-by=0x0314, flags=0x0800, method=8, internal attributes=0
 external attributes=0100644 shifted left 16. No extra fields, data descriptors,
 comments, prefix or trailing data; single disk. CRC32 and sizes are present in
 both local and central headers; offsets are exact. Fail rather than use ZIP64.
-`reference.zip_bytes` fixes every envelope byte and produces the golden archive.
+The historical `reference.zip_bytes` fixed every envelope byte of the golden
+archive. The independent C `format_vectors` generator preserves those bytes.
 
 The reader also accepts stored entries and valid Deflate/data-descriptor ZIPs,
 different timestamps/attributes that still denote regular files/directories,
@@ -416,11 +421,22 @@ or graph checks. No author trust is implied by CRC/SHA-256.
 
 ## Verification and implementation handoff
 
-Run `python docs/module-format-v1/reference.py` with zlib 1.3.2 to compare all
-generated files; `--write` intentionally regenerates them for review. Run
-`python docs/module-format-v1/test_reference.py` for portable parser/schema/hash
-and binary-vector checks. These are format tests, not proof that the existing
-VM executes the new image. #219 must run the actual new reader/VM/native path on
+From the repository root, build and run the independent C tooling:
+
+```sh
+cmake -S . -B build/format -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/format --target format_vectors format_oracle_testing format_binary_testing module_schema_generator module_schema_generator_testing
+build/format/format_vectors --check --root .
+ctest --test-dir build/format -R '^format[.]reference$' --output-on-failure
+```
+
+`format_vectors --check` compares all 26 generated files without writes. Explicit
+`build/format/format_vectors --write --root .` regenerates them for review; use a
+separate destination and `--source docs/module-format-v1/schema-source.json` to
+review output outside the checkout. On Windows executables have the `.exe`
+suffix; multi-configuration generators place them in the selected configuration
+subdirectory and require the matching CTest `-C` option. These are format tests,
+not proof that the existing VM executes the new image. #219 must run the actual new reader/VM/native path on
 Linux x86_64/aarch64 and Windows MINGW32/MINGW64/UCRT64 after implementation.
 
 #178/#186 use gmod.schema.json; #180/#181 canonicalization/projection and hash
@@ -428,7 +444,7 @@ vectors; #182/#183/#247 ZIP profile and archive vector; #184/#251 bytecode table
 #185 combines local checks; #189 adds graph resolution; #205/#231 analysis and
 externals; #208 target fields; #209/#232 descriptor, ABI and guards; #233 verifies
 cross-part references; #221 informational fields; #250 strings/Unicode. The
-reference does not execute libraries, resolve imports, prove analysis facts or
+format tooling does not execute libraries, resolve imports, prove analysis facts or
 constitute the future complete bytecode verifier.
 
 ## Standalone program envelope v1 (#251)

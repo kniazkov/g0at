@@ -66,3 +66,12 @@ test/data/package/sdk.c.txt -text
 scripts/check_graph.sh text eol=lf
 test/data/graph/*.svg -text
 test/data/graph/*-output.txt -text
+
+# Format-v1's 26 generated artifacts are canonical bytes, checked without newline
+# normalization. Keep their reviewed Git bytes even with core.autocrlf on Windows.
+docs/module-format-v1/vectors/* -text
+docs/module-format-v1/opcodes.json -text
+docs/module-format-v1/gmod.schema.json -text
+docs/module-format-v1/module.schema.json -text
+docs/module-format-v1/target.schema.json -text
+docs/module-format-v1/native.schema.json -text
