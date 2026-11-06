@@ -67,6 +67,13 @@ CI orchestration, not default CTest commands; registering the ordinary requireme
 audit does not replace those jobs. Build scripts and `create_test.cmd` are tools,
 not tests, and are not invoked recursively from CTest.
 
+Inside the native Alpine musl jobs, the observed Debug and Release CTest batches
+use `--parallel 2`. This bounds the number of concurrent scenarios while the
+existing build limit remains two compiler jobs. CTest honors `RUN_SERIAL` for
+timing-sensitive scenarios; the resource observer covers the whole batch.
+Debug and Release phases, package checks, and cross-libc artifact production and
+verification still run sequentially, including the immutable-artifact checksums.
+
 ### Tooling dependency policy
 
 Build scripts, generators, test runners and packaging must remain independent
