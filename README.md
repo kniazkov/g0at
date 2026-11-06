@@ -11,6 +11,9 @@ Created by Ivan Kniazkov, the project explores language implementation and provi
 
 ## Documentation
 
+[Implementation reading guides](docs/internals/en/index.md): current source-level
+walkthroughs with Doxygen links and examples taken from the analysis tests.
+
 **[Goat Internals — English](docs/book/en/index.md)** · **[Goat изнутри — русский](docs/book/ru/index.md)**
 
 The book describes the implemented system in both languages, with the same structure and content. It covers scanning and parsing, bytecode, the runtime, static analysis, native code generation, testing, and performance measurement. Examples accompany the explanations; source references identify the implementation revision described.

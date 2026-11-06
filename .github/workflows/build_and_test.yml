@@ -59,6 +59,13 @@ jobs:
           name: doxygen-diagnostics
           path: build/ci/doxygen.log
           if-no-files-found: ignore
+      - name: Preserve browsable documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: doxygen-html
+          path: build/doxygen-check/html
+          if-no-files-found: error
+          retention-days: 7
       - name: Verify normal cycle leaves the checkout clean
         shell: bash
         run: |

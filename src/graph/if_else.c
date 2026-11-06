@@ -99,7 +99,16 @@ static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     }
 }
 
-/** @brief Implements @ref node_vtbl_t::execute. */
+/**
+ * @brief Models the branch's effect on values during abstract interpretation.
+ *
+ * This execute method updates state and collects joins; the separate
+ * analyze_reachability method below attaches immediate dead-code proofs to the
+ * AST. Both evaluate the condition before choosing or cloning branch states.
+ * With an unknown condition, the absent else is an unchanged continuation.
+ * The merged contents replace *state in place because this interface receives
+ * a state pointer, not the replaceable pointer slot used by reachability.
+ */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     const if_else_t *stmt = (const if_else_t *)node;
     if (state->control_flow != FLOW_NORMAL)
@@ -193,7 +202,16 @@ static bool is_literal_condition(const node_t *node) {
     }
 }
 
-/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
+/**
+ * @brief Emits only proven reachable branches while preserving condition effects.
+ *
+ * A known truth value is not proof that evaluating the condition is dispensable:
+ * assignments and calls must still run. Only literal conditions can be skipped
+ * here; other conditions are evaluated and their unused result is popped.
+ * ABSTRACT_NEVER keeps the condition's code but emits neither branch because
+ * evaluation does not reach a normal boolean decision. An unknown condition
+ * retains the ordinary conditional jump and both possible continuations.
+ */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const if_else_t *stmt = (const if_else_t *)node;
     instr_index_t first = get_next_instruction_index(code);
@@ -226,7 +244,20 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
-/** @brief Proves branches using immediate execution only. */
+/**
+ * @brief Marks impossible branches using the state at this exact execution point.
+ *
+ * Visiting the condition first preserves assignments, calls and early returns.
+ * If it ends normal control flow, neither branch can start. A known true/false
+ * value visits only the selected branch and marks the other subtree dead.
+ *
+ * Otherwise each branch receives a clone of the post-condition state. Without
+ * an else, the false clone stays unchanged. Joining keeps current values from
+ * continuing paths; a returning branch cannot constrain the next statement.
+ * The join owns a new state, so this method destroys both clones and the old
+ * incoming state, then replaces the caller's slot. The result is TOP because
+ * the if statement communicates its effects through state, not an expression value.
+ */
 static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     const lattice_element_t *condition =
@@ -283,7 +314,14 @@ static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
     return true;
 }
 
-/** @brief Implements node_vtbl_t::simplify when the condition can be discarded. */
+/**
+ * @brief Replaces an if with its selected branch only when its condition is disposable.
+ *
+ * Reachability alone cannot justify deleting side effects. can_discard_expression()
+ * must first approve removing the condition; then a pointwise truth proof selects
+ * the replacement. A proven false if without an else becomes an empty statement.
+ * Unknown or non-continuing conditions leave this node intact.
+ */
 static node_t *simplify(node_t *node, arena_t *arena) {
     if_else_t *stmt = (if_else_t *)node;
     if (!can_discard_expression((node_t *)stmt->condition))

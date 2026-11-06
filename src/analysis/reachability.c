@@ -9,7 +9,15 @@
 #include "graph/statement.h"
 #include "simplification.h"
 
-/** @brief Marks a dead subtree, or resets proofs before a fresh traversal. */
+/**
+ * @brief Invalidates cached proofs recursively, including deferred descendants.
+ *
+ * Resetting visits the whole tree even though the later execution walk does not
+ * enter function bodies merely because they are declared. Otherwise a previous
+ * traversal could leave flags or pointwise values attached to unvisited nodes.
+ * Marking a dead subtree preserves unrelated flags; a fresh pass clears those
+ * dependent on reachability so that later property classification can rebuild them.
+ */
 static void set_subtree_flag(node_t *node, bool unreachable) {
     if (is_expression(node->vtbl->type))
         ((expression_t *)node)->immediate_value = NULL;

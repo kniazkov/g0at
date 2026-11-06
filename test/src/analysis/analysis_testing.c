@@ -221,6 +221,19 @@ static size_t declaration_row(const declarator_t *decl) {
     return node ? node->position->begin->row : 0;
 }
 
+/**
+ * @brief Checks hand-written expectations against observed analysis decisions.
+ *
+ * Each line selects events by kind and source location, then checks their count
+ * and, where applicable, their abstract value. "one" requires exactly one match;
+ * "none" forbids matches; "last" checks the latest of one or more matches.
+ * A zero source row is a wildcard. Unreachable events identify skipped subtree
+ * roots, not every descendant, and have no declarator or value payload.
+ *
+ * Expectations are an independent specification of the intended decision, not
+ * a snapshot regenerated from the analyzer under test. A nonempty set of checks
+ * is required; failures print the selector and observed event count.
+ */
 static bool
 check_expectations(FILE *file, const analysis_collector_t *collector, const char *name) {
     char line[512];
@@ -338,6 +351,14 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
     return passed && checks > 0 && !FERROR(file);
 }
 
+/**
+ * @brief Parses a Goat fixture and verifies analysis events without running its bytecode.
+ *
+ * The paired .expect file checks facts produced by analyze(), so a documentation
+ * example can test a dead-branch proof rather than merely its runtime output.
+ * Source, AST and collector stay alive until expectations and failure diagnostics
+ * have been read. The per-case allocation check also catches leaked test state.
+ */
 static bool run_case(const char *directory, const char *name) {
     char source_path[1024], expected_path[1024];
     if (snprintf(source_path, sizeof(source_path), "%s/%s.goat", directory, name)
