@@ -314,7 +314,7 @@ static int probe(int argc, char **argv, const char *mode) {
             save = argv[++i];
     }
     if (compile) {
-        fputs("Access checks require VM execution\n", stderr);
+        fputs("native required needs an own specialization\n", stderr);
         if (!strcmp(mode, "bytecode")) {
             char *path = ALLOC(strlen(argv[argc - 1]) + 1);
             strcpy(path, argv[argc - 1]);

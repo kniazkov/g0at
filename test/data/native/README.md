@@ -75,3 +75,15 @@ C executables beside the policy selftest. Script paths and unknown IDs are rejec
 before scenario selection; Python is not required. Every case retains diagnostics in a fresh
 `BUILD/native-functional/scenario-*` directory (identified by `case.name`),
 continues after individual failures, and exits nonzero if any test fails.
+
+## Unified module execution (#316)
+
+The `calls` and `bound` fields describe module ABI v1 execution; generated-C
+checks and standalone drivers still exercise the internal C lowering directly.
+ABI v1 accepts Unicode scalars, while Goat characters can contain any uint32.
+For `bool_char`, five calls with non-scalar character arguments stay in the VM,
+and `loop` has an unproven `chr` construction: 60 native calls, 20 bound functions.
+For `string_conversions`, the two calls to `values(n)` stay in the VM because
+`chr(n)` is not proven scalar: 14 native calls. Outputs remain unchanged and are
+compared with the VM and frozen expected output. `string_methods` still requires
+all 19 calls: its `chr(65)` argument is a proven scalar and must remain native.

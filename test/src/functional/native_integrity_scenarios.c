@@ -306,8 +306,10 @@ static void body(scenario_run_t *r, void *user) {
                               &zip_size);
     put(r, binary, (bytes_t){zip, zip_size});
     result = command(r, ARGS(c->goat, "--run", "--native", "required", binary), env, 30000);
-    /* Matching SHA alone does not authorize loading a legacy ABI library. */
-    REQUIRE(result.exit_code != 0 && !exists(r, marker));
+    /* A correctly hashed payload reaches the OS loader (and its constructors),
+       then fails module ABI validation. SHA-256 is integrity, not a sandbox. */
+    REQUIRE(result.exit_code != 0 && exists(r, marker));
+    language_remove(r, marker);
     const char *loader = language_join(r, root, "loader.c");
     const char loader_code[] =
         "#ifdef _WIN32\n#include <windows.h>\n"

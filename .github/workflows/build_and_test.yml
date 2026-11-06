@@ -434,13 +434,14 @@ jobs:
             build/**/native performance/**
           if-no-files-found: ignore
       - name: Render analysis graphs
+        id: analysis_graphs
         if: matrix.compiler == 'gcc' && matrix.arch == 'x86_64'
         run: |
           sudo apt-get update
           sudo apt-get install -y graphviz
           GRAPH_SCENARIOS_BINARY="$PWD/build/${{ matrix.compiler }}/graph_scenarios" GRAPH_BUILD_ROOT="$PWD/build/${{ matrix.compiler }}" bash scripts/check_graph.sh
       - name: Preserve analysis graphs
-        if: always() && matrix.compiler == 'gcc' && matrix.arch == 'x86_64'
+        if: always() && steps.analysis_graphs.outcome != 'skipped' && matrix.compiler == 'gcc' && matrix.arch == 'x86_64'
         uses: actions/upload-artifact@v4
         with:
           name: analysis-graphs

@@ -50,6 +50,17 @@ static bool scalar_constructions(const function_summary_t *summary, const node_t
             if (proof->node == node && proof->constant
                 && proof->constant->type == LATTICE_CHAR_CONSTANT)
                 proven = scalar(((const char_constant_element_t *)proof->constant)->value);
+        /* chr has no constant result proof in every analysis path. A proven
+           integer argument still determines its full uint32 result exactly. */
+        if (get_node_child_count(node) == 2) {
+            const node_t *argument = replacement_original(get_node_child(node, 1));
+            for (const c_expression_proof_t *proof = summary->c_expressions; proof;
+                 proof = proof->next)
+                if (proof->node == argument && proof->constant
+                    && proof->constant->type == LATTICE_INTEGER_CONSTANT)
+                    proven = scalar(
+                        (uint32_t)((const integer_constant_element_t *)proof->constant)->value);
+        }
         if (!proven)
             return false;
     }

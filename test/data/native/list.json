@@ -14,8 +14,8 @@
   },
   {
     "name": "bool_char",
-    "calls": 66,
-    "bound": 21,
+    "calls": 60,
+    "bound": 20,
     "driver": "driver.c",
     "generated": {
       "GOAT_NATIVE_BOOL": 1,
@@ -124,7 +124,7 @@
   },
   {
     "name": "string_conversions",
-    "calls": 16,
+    "calls": 14,
     "output_contains": [
       "2,3,3,4\n"
     ]
