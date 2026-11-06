@@ -347,11 +347,17 @@ generate_c_module_v1(arena_t *arena, const node_t *const *roots, size_t count) {
             builder,
             1,
             U"const goat_module_value_v1 *arguments, goat_module_value_v1 *result) {");
-        add_source(
-            builder,
-            1,
-            U"return g_v1_invoke(g_adapter_%zu, version, context, count, arguments, result);",
-            entry->id);
+        add_source(builder,
+                   1,
+                   U"uint32_t status = g_v1_invoke(g_adapter_%zu, version, context, count, "
+                   U"arguments, result);",
+                   entry->id);
+        if (!entry->summary->effects)
+            add_static_source(
+                builder,
+                1,
+                U"if (status == GOAT_MODULE_RESOURCE_LIMIT) return GOAT_MODULE_PURE_RETRY;");
+        add_static_source(builder, 1, U"return status;");
         add_static_source(builder, 0, U"}");
     }
     output.specializations = yyjson_mut_doc_imut_copy(doc, NULL);

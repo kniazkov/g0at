@@ -22,15 +22,14 @@ goat --list-native-targets --cc gcc --native-probe-timeout 10
 Goat-инициализаторы и не загружая DLL/SO. Прямой запуск `.gmod` и `run .gmod`
 собирают снимок в памяти и исполняют его без публикации постоянного архива.
 Прямой запуск `.gbin` и `run .gbin` исполняют готовый образ без C-компилятора.
-Сохраняются отдельные исходники `.goat`, прежние `--compile`/`--run` и чтение
-прежнего отдельного бинарного образа. `--run` остаётся режимом бинарного входа;
-команда `run` также принимает исходник или описание. `build` требует `.gmod`.
+Все `.goat` компилируются как модули; каждый `.gbin` является ZIP. Прежние
+оболочки и сырой байткод отклоняются. `--run` принимает готовый бинарный вход;
+`run` также принимает исходник или описание. `build` требует `.gmod`.
 
-Модульный компилятор сохраняет консервативный конвейер без агрессивного
-переписывания AST при обоих значениях `--optimize`: обязательный анализ интерфейса
-исполняется и при none. Параметр не обещает отдельной all-оптимизации модулей.
-Экспорт C, исходного текста, анализа и графа для модульного входа пока отклоняется
-явной диагностикой; существующие возможности одиночного исходника сохраняются.
+Компилятор учитывает `--optimize`, сохраняя наблюдаемые объявления уровня файла.
+Обязательный анализ интерфейса выполняется и при none. Экспорт одиночного C,
+исходного текста, анализа и графа использует тот же анализированный граф;
+неподдерживаемые многофайловые сочетания отклоняются с диагностикой.
 
 Опции можно указывать и после входного имени. `--` завершает разбор опций:
 последующие значения передаются программе буквально; если вход ещё не задан,
@@ -63,11 +62,11 @@ Goat-инициализаторы и не загружая DLL/SO. Прямой 
 старую копию корня. Writer публикует результат атомарно; неуспешная сборка
 не заменяет прежний архив. Отсутствующие выходные каталоги создаются.
 
-Исходник с include/import проходит тот же многофайловый конвейер; отдельному
-`.goat` не нужны имя и версия распространяемого модуля, но каждый import обязан
-содержать точную версию. `--compile` такого многофайлового исходника сохраняет
-соседний ZIP `.gbin`; прежний одиночный конвейер сохраняет отдельный бинарный
-образ. Это не заменяет `.gmod` для публикации именованной библиотеки.
+Все исходники проходят общий конвейер. Имя модуля совпадает с именем файла
+без расширения, версия равна `0`. Недопустимое имя требует переименования или
+явного описания `.gmod`. Каждый import указывает точную версию. `--compile`
+сохраняет соседний ZIP `.gbin` со встроенными нативными вариантами. Прямой запуск
+передаёт проверенные части в памяти без промежуточной упаковки ZIP.
 Снимки, области, native и диагностические сведения живут
 до завершения всех потоков. Ошибки графа и исключения выводятся общими форматтерами,
 без повторного чтения исходников или архивов.
@@ -123,16 +122,14 @@ goat --list-native-targets --cc gcc --native-probe-timeout 10
 `build` and `--compile` with `.gmod` build and publish only: no Goat initializer
 runs and no DLL/SO is loaded. Direct `.gmod` and `run .gmod` compile an in-memory
 snapshot and execute it without publishing a persistent archive. Direct `.gbin`
-and `run .gbin` execute a ready image without a C compiler. Standalone `.goat`,
-legacy `--compile`/`--run` and the existing standalone binary image remain
-supported. `--run` is still binary-input mode; the `run` command also accepts
-sources and descriptions. `build` requires `.gmod`.
+and `run .gbin` execute a ready image without a C compiler. Every `.goat` is compiled as a module. All `.gbin` inputs are ZIP modules;
+legacy wrappers and raw bytecode are rejected. `--run` accepts binary input;
+`run` also accepts sources and descriptions. `build` requires `.gmod`.
 
-The module compiler keeps its conservative pipeline without aggressive AST rewriting
-for either `--optimize` value: mandatory interface analysis runs even with none.
-The option does not promise a separate all-optimization pass for modules. C/source,
-analysis and graph exports for module input are currently rejected with an explicit
-diagnostic; existing standalone-source exports are preserved.
+The module compiler respects optimization options while retaining observable
+file bindings. Mandatory module interface analysis also runs with `none`.
+Single-file C/source/analysis/graph exports use the same analyzed source graph;
+unsupported multifile export combinations produce a diagnostic.
 
 Options may follow the input name. `--` ends option parsing: later values are
 literal program arguments, or the first becomes the input name when none has
@@ -163,11 +160,12 @@ replacement, validate the final named archive using the same search set, includi
 back-edges through an already installed old root. Publication is atomic; failure
 preserves the old archive. Missing output directories are created.
 
-Sources containing include/import use the same multifile pipeline. A standalone
-`.goat` needs no distributable module identity, but every import specifies its exact
-version. `--compile` for such a multifile source saves an adjacent ZIP `.gbin`,
-while the legacy standalone pipeline keeps its existing binary image. This does
-not replace `.gmod` for publishing a named library. Snapshots, scopes, native
+All sources use the same multifile pipeline. The basename without extension is
+the module name and its version is `0`; invalid names require renaming the source
+or an explicit `.gmod` description. Every import specifies its exact version.
+`--compile` saves an adjacent ZIP `.gbin` with native variants embedded inside.
+Direct execution passes validated parts in memory without a ZIP round trip.
+Snapshots, scopes, native
 resources and diagnostic metadata survive all
 program threads. Shared formatters report graph failures and exception origins
 without reopening source files or archives.
@@ -201,3 +199,13 @@ binary, toolchain, native and cleanup checks remain. Actual test outcomes are
 established by each change's CI, not by the existence of this document. Bounded
 exit is implemented in #230 ([API](module-exit-api.md)); the [inspector](module-inspect-api.md)
 and [merger](module-merge-api.md) are also implemented.
+
+Native preparation failure before execution does not create an execution report.
+An unavailable compiler in auto mode may proceed with bytecode and report an
+empty inventory. Once a compiler has been selected, malformed output or a failed
+build aborts before user code. Source input honors `CC`; explicit `--cc` wins.
+
+Ошибка нативной подготовки до исполнения не создаёт отчёт исполнения. При
+недоступном компиляторе auto может продолжить на байткоде с пустым нативным
+набором. Ошибка выбранного компилятора или повреждённый артефакт запрещают запуск.
+Для исходника учитывается `CC`; явный `--cc` имеет приоритет.

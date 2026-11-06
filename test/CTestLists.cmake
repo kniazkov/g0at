@@ -715,9 +715,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1909 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1913 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (SVG validation and controls added for #393); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (including four safe native retry cases for #316); found ${goat_integration_count}")
 endif()
 # Read-only frozen integrity check; ordinary consumers never generate inputs.
 # Historical IDs remain C aliases; recipe reproduction is an inactive #395 tool.

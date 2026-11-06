@@ -190,16 +190,11 @@ removed-function gaps. Source positions and function ownership are recorded per
 instruction and compressed into runs. Generated positions use line/column zero.
 No source text or absolute path is stored in this image.
 
-A standalone `.gbin` wraps exactly those bytes in `GOATPG01` v1 with a checksum,
-optional native library SHA-256 and external binding records. It does not use a
-second bytecode codec. The loader also accepts a bare image for tools and module
-integration. Named modules use ZIP packaging with the same bytecode image and full JSON/table
-cross-validation. INCLUDE/IMPORT execute through the validated snapshot loader. Native machine code remains specific to its target.
-
-The loader rejects previous `GOATST01`, `GOATSC01`, `GOATBI11`, `goat v.1` and
-other old images with a request to recompile. There is no migration reader.
-Bytecode, standalone envelope and native ABI use independent version counters;
-each is currently 1. Incompatible changes must increment the affected version.
+Every `.gbin` uses ZIP packaging with that same bytecode image and complete
+JSON/table cross-validation. Raw bytecode and `GOATPG01` wrappers are rejected.
+INCLUDE/IMPORT execute through the validated snapshot loader. Native code remains
+target-specific and is embedded in the ZIP. There is no legacy migration reader;
+rebuild old artifacts. Bytecode, container and native ABI have independent versions.
 
 Instructions, tables and strings remain immutable through validation, VM execution
 and native attachment. Runtime identities, caches and native addresses live outside

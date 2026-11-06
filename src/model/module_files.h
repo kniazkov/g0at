@@ -6,6 +6,7 @@
 
 #include "context.h"
 #include "exception.h"
+#include "goat/module_abi.h"
 #include "lib/strings/string_ext.h"
 #include "vm/module_bytecode.h"
 
@@ -167,3 +168,9 @@ module_initialize_status_t initialize_module_file_direct(module_file_t *file,
                                                          exception_t *failure);
 /** @brief Whether this OS execution thread has an active file diagnostic chain. */
 bool module_initialization_active(process_t *process);
+
+/** A summary covering these argument types proves no effects; missing facts are false. */
+bool module_function_is_pure(const module_files_t *files,
+                             uint32_t function_id,
+                             size_t count,
+                             const goat_module_value_v1 *arguments);

@@ -98,6 +98,7 @@ FIXED_ADAPTER(bad_char, GOAT_MODULE_CHARACTER, 0, 0xd800, GOAT_MODULE_SUCCESS)
 FIXED_ADAPTER(bad_string, GOAT_MODULE_STRING, 0, 8, GOAT_MODULE_SUCCESS)
 FIXED_ADAPTER(status_mismatch, GOAT_MODULE_INTEGER, 0, 7, GOAT_MODULE_TYPE_MISMATCH)
 FIXED_ADAPTER(status_resource, GOAT_MODULE_INTEGER, 0, 7, GOAT_MODULE_RESOURCE_LIMIT)
+FIXED_ADAPTER(status_pure_retry, GOAT_MODULE_INTEGER, 0, 7, GOAT_MODULE_PURE_RETRY)
 FIXED_ADAPTER(status_unknown, GOAT_MODULE_INTEGER, 0, 7, UINT32_MAX)
 
 static uint32_t GOAT_MODULE_CALL allocated_string(uint32_t abi,
@@ -240,6 +241,7 @@ static goat_module_adapter_v1 lookup(const char *action) {
                    {"bad-string", bad_string},
                    {"status-mismatch", status_mismatch},
                    {"status-resource", status_resource},
+                   {"status-pure-retry", status_pure_retry},
                    {"status-unknown", status_unknown},
                    {"string", allocated_string},
                    {"exit", native_exit},

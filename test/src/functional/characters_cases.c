@@ -48,26 +48,15 @@ void characters_cases(scenario_run_t *run, const char *exe) {
     language_write(run, native, code, strlen(code));
     CHECK(RUN("--optimize", "none", native), expected);
     const char *report = language_join(run, work, "native.report");
-    CHECK(RUN("--native", "required", "--save-native", report, native), expected);
-    size_t size;
-    const char *fields = language_read(run, report, &size);
-    /* Report reader returns binary data; do not assume a terminating NUL. */
-    bool succeeded = false, retries = false;
-    for (size_t i = 0; i < size; ++i) {
-        if (i && fields[i - 1] != '\n')
-            continue;
-        if (size - i >= 12 && !memcmp(fields + i, "succeeded=9\n", 12))
-            succeeded = true;
-        if (size - i >= 10 && !memcmp(fields + i, "retries=0\n", 10))
-            retries = true;
-        if (size - i >= 13 && !memcmp(fields + i, "succeeded=9\r\n", 13))
-            succeeded = true;
-        if (size - i >= 11 && !memcmp(fields + i, "retries=0\r\n", 11))
-            retries = true;
-    }
-    scenario_require(run, succeeded && retries, "character native execution/report mismatch");
-    CHECK(RUN("--compile", "--native", "required", native), "");
-    CHECK(RUN("--run", "--native", "required", language_join(run, work, "native.gbin")), expected);
+    /* An unconstrained chr result is not a Unicode scalar ABI value. The
+       module backend must leave this body in the VM, including non-scalars. */
+    CHECK(RUN("--native", "auto", "--save-native", report, native), expected);
+    scenario_command_result_t required = RUN("--native", "required", native);
+    scenario_require(run,
+                     required.exit_code != 0 && required.err_size,
+                     "non-scalar constructor unexpectedly has a native specialization");
+    CHECK(RUN("--compile", "--native", "auto", native), "");
+    CHECK(RUN("--run", "--native", "auto", language_join(run, work, "native.gbin")), expected);
     CHECK(RUN("--save-c", native), "");
     const char *host = language_join(run, work, "host.c");
     code =

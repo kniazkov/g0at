@@ -35,6 +35,7 @@
 void clear_module_compilation_error(module_compilation_error_t *error) {
     if (error) {
         FREE(error->message);
+        FREE_STRING(error->diagnostics);
         *error = (module_compilation_error_t){0};
     }
 }
@@ -49,6 +50,7 @@ void free_module_compilation(module_compilation_t *result) {
     for (size_t i = 0; i < result->warning_count; ++i)
         FREE(result->warnings[i].message);
     FREE(result->warnings);
+    FREE_STRING(result->diagnostics);
     FREE(result);
 }
 
@@ -60,6 +62,7 @@ static void fail(module_compilation_error_t *error,
         return;
     error->file = file;
     if (diagnostic) {
+        error->diagnostics = format_compilation_errors(diagnostic);
         error->severity = diagnostic->severity;
         error->message = encode_utf8_view(diagnostic->message, NULL);
         if (diagnostic->position) {
@@ -811,6 +814,15 @@ bool compile_module_sources_configured(const module_sources_t *sources,
             fail(error, i, diagnostic, NULL);
             goto done;
         }
+        if (diagnostic) {
+            string_value_t text = format_compilation_errors(diagnostic);
+            string_builder_t builder = {0};
+            append_string_value(&builder, result->diagnostics);
+            string_value_t combined = append_string_value(&builder, text);
+            FREE_STRING(result->diagnostics);
+            FREE_STRING(text);
+            result->diagnostics = combined;
+        }
         roots[i] = root;
         if (observer && !observer(root, memory, collector, observer_context)) {
             fail(error, i, NULL, "source export failed");
@@ -833,14 +845,18 @@ bool compile_module_sources_configured(const module_sources_t *sources,
             result->warnings = warnings;
             collect_call_warnings(root, i, result);
         }
-        function_call_graph_t *calls = build_function_call_graph(root, memory->graph, 1024);
-        analyze_function_return_types(root);
-        solve_function_recursion(calls, 64);
-        analyze_function_direct_effects(root);
-        analyze_function_c_expressions(root);
-        propagate_function_effects(calls, 64);
-        analyze_function_c_contracts(root);
-        analyze_function_c_bodies(calls, 64);
+        /* Optimized analysis already owns complete body proofs. Re-analyzing
+           rewritten nodes would discard proofs attached to their original AST. */
+        if (options.optimization_level == OPTIMIZATION_NONE) {
+            function_call_graph_t *calls = build_function_call_graph(root, memory->graph, 1024);
+            analyze_function_return_types(root);
+            solve_function_recursion(calls, 64);
+            analyze_function_direct_effects(root);
+            analyze_function_c_expressions(root);
+            propagate_function_effects(calls, 64);
+            analyze_function_c_contracts(root);
+            analyze_function_c_bodies(calls, 64);
+        }
         if (cb->size > UINT32_MAX) {
             fail(error, i, NULL, "module instruction limit exceeded");
             goto done;

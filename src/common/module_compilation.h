@@ -29,6 +29,7 @@ typedef struct {
     size_t count;
     module_compilation_warning_t *warnings;
     size_t warning_count;
+    string_value_t diagnostics;
 } module_compilation_t;
 
 /** Initialize with {0}; clear after use. Owns its UTF-8 diagnostic message. */
@@ -36,6 +37,7 @@ typedef struct {
     size_t file, row, column;
     char *message;
     compilation_error_severity_t severity;
+    string_value_t diagnostics;
 } module_compilation_error_t;
 
 /** @brief Release the saved diagnostic; accepts NULL. */

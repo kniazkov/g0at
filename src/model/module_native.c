@@ -405,6 +405,13 @@ module_native_call_status_t call_module_native(module_files_t *files,
     }
     if (memory.host_exception)
         error = GOAT_ABI_CALL_FAILED;
+    if (!memory.host_exception && !thread->process->exit_requested
+        && !thread->process->native_failed && error == GOAT_ABI_CALL_FAILED
+        && native_status == GOAT_MODULE_PURE_RETRY
+        && module_function_is_pure(files, function->id, formal_count, arguments)) {
+        outcome = MODULE_NATIVE_RETRY;
+        goto done;
+    }
     if (error != GOAT_ABI_OK) {
         outcome = failure(files,
                           function,

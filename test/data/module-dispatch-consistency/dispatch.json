@@ -853,7 +853,7 @@
     "mode": "auto",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-tag.auto",
     "configuration": {
@@ -887,7 +887,7 @@
     "mode": "auto",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-reserved.auto",
     "configuration": {
@@ -921,7 +921,7 @@
     "mode": "auto",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-bool.auto",
     "configuration": {
@@ -955,7 +955,7 @@
     "mode": "auto",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-char.auto",
     "configuration": {
@@ -989,7 +989,7 @@
     "mode": "auto",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-string.auto",
     "configuration": {
@@ -1023,7 +1023,7 @@
     "mode": "auto",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.status-mismatch.auto",
     "configuration": {
@@ -1057,7 +1057,7 @@
     "mode": "auto",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.status-resource.auto",
     "configuration": {
@@ -1091,7 +1091,7 @@
     "mode": "auto",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.status-unknown.auto",
     "configuration": {
@@ -1169,7 +1169,7 @@
     "files": {
       "bad.goat": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f();"
     },
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.initializer-terminal.auto",
     "configuration": {
@@ -1203,7 +1203,7 @@
     "mode": "auto",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.worker-terminal.auto",
     "configuration": {
@@ -2119,7 +2119,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-tag.required",
     "configuration": {
@@ -2153,7 +2153,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-reserved.required",
     "configuration": {
@@ -2187,7 +2187,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-bool.required",
     "configuration": {
@@ -2221,7 +2221,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-char.required",
     "configuration": {
@@ -2255,7 +2255,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.bad-string.required",
     "configuration": {
@@ -2289,7 +2289,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.status-mismatch.required",
     "configuration": {
@@ -2323,7 +2323,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.status-resource.required",
     "configuration": {
@@ -2357,7 +2357,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.status-unknown.required",
     "configuration": {
@@ -2435,7 +2435,7 @@
     "files": {
       "bad.goat": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f();"
     },
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.initializer-terminal.required",
     "configuration": {
@@ -2469,7 +2469,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: native",
+    "diagnostic": "Module main@0, function 1: native",
     "resolutions": null,
     "id": "integration.module_dispatch.worker-terminal.required",
     "configuration": {
@@ -2773,7 +2773,7 @@
     "mode": "required",
     "fail": true,
     "files": {},
-    "diagnostic": "Module source@0.0.0, function 1: selected native library or ABI",
+    "diagnostic": "Module main@0, function 1: selected native library or ABI",
     "resolutions": 1,
     "id": "integration.module_dispatch.load-failure-required.required",
     "configuration": {
@@ -2844,5 +2844,151 @@
       "resolverFailure": true,
       "bindingFailure": false
     }
+  },
+  {
+    "name": "pure-retry-effects",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "auto",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module main@0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.pure-retry-effects.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "status-pure-retry"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "pure-retry-once",
+    "source": "const f = func(n) { return n + 1; }; var count = 0; const arg = func() { count += 1; return 41; }; println(f(arg())); println(count);",
+    "expected": "42\n1\n",
+    "calls": 1,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.pure-retry-once.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "status-pure-retry"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    },
+    "retries": 1
+  },
+  {
+    "name": "pure-retry-effects",
+    "source": "const f = func() { println(\"VM_REPLAY\"); return 7; }; f(); println(\"AFTER\");",
+    "expected": "",
+    "calls": 1,
+    "mode": "required",
+    "fail": true,
+    "files": {},
+    "diagnostic": "Module main@0, function 1: native",
+    "resolutions": null,
+    "id": "integration.module_dispatch.pure-retry-effects.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": []
+          }
+        }
+      ],
+      "actions": [
+        "status-pure-retry"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "pure-retry-once",
+    "source": "const f = func(n) { return n + 1; }; var count = 0; const arg = func() { count += 1; return 41; }; println(f(arg())); println(count);",
+    "expected": "42\n1\n",
+    "calls": 1,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": null,
+    "id": "integration.module_dispatch.pure-retry-once.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "status-pure-retry"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    },
+    "retries": 1
   }
 ]

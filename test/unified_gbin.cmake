@@ -64,3 +64,10 @@ foreach(input legacy.gbin parts/bytecode.bin)
   endif()
 endforeach()
 message(STATUS "Unified ZIP compilation/loading contract passed")
+# Warnings from the shared compiler must survive source observer/export lifetime.
+file(WRITE "${WORK}/warning.goat" "switch(1) { case 1: print(1); case 1: print(2); }\n")
+execute_process(COMMAND "${GOAT}" --lang en --enable-warnings --compile "${WORK}/warning.goat"
+  RESULT_VARIABLE status OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT status EQUAL 0 OR NOT err MATCHES "[Ww]arning" OR NOT out STREQUAL "")
+  message(FATAL_ERROR "Compiler warning was lost: ${status} ${out} ${err}")
+endif()

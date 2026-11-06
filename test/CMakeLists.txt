@@ -9,8 +9,9 @@ add_executable(process_watch_testing src/support/process_watch_testing.c)
 target_link_libraries(process_watch_testing PRIVATE goat_process_watch_support)
 
 # Shared Python-to-C execution/report helpers remain test-only.
-add_library(goat_language_execution_support STATIC support/language_execution.c)
-target_link_libraries(goat_language_execution_support PUBLIC goat_test_support)
+add_library(goat_language_execution_support STATIC support/language_execution.c support/module_artifact.c)
+target_link_libraries(goat_language_execution_support PUBLIC goat_test_support goat_format_oracle)
+target_compile_definitions(goat_language_execution_support PRIVATE GOAT_TEST_SCHEMA="${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
 add_executable(loop_index_testing src/functional/loop_index_testing.c)
 target_link_libraries(loop_index_testing PRIVATE goat_language_execution_support)
 add_dependencies(loop_index_testing goat)

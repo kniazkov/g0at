@@ -1,1 +1,3 @@
 Uncaught exception: 123
+  at program@0: program.goat:1:16, f
+  at program@0: program.goat:1:30, <top-level>

@@ -52,6 +52,7 @@ void destroy_module_native_binding(module_native_binding_t *binding);
 /** Internal dispatch result. FALLBACK never consumes/re-evaluates arguments. */
 typedef enum {
     MODULE_NATIVE_FALLBACK,
+    MODULE_NATIVE_RETRY, /**< Pure resource failure: replay this call with native disabled. */
     MODULE_NATIVE_COMPLETE,
     MODULE_NATIVE_ERROR
 } module_native_call_status_t;

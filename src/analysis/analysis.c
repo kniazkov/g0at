@@ -553,7 +553,7 @@ compilation_error_t *analyze(node_t *root_node,
     propagate_function_effects(calls, 64);
     analyze_function_c_contracts(root_node);
     analyze_function_c_bodies(calls, 64);
-    if (options->module_source || requires_access_safe_optimization(root_node)
+    if (requires_access_safe_optimization(root_node)
         || requires_concurrency_safe_optimization(root_node)) {
         /* Scope identities and mutable flat captures are observable. Do not prune or fold
            bindings from abstract samples; only closed scalar expressions can be replaced. */
@@ -566,6 +566,9 @@ compilation_error_t *analyze(node_t *root_node,
     classify_node_properties(root_node, collector);
     add_call_graph_events(collector, calls);
     simplify_graph(root_node, memory->graph);
-    eliminate_unused_bindings(root_node, memory->graph);
+    if (options->module_source)
+        eliminate_unused_module_bindings(root_node, memory->graph);
+    else
+        eliminate_unused_bindings(root_node, memory->graph);
     return errors;
 }

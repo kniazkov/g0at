@@ -267,7 +267,9 @@ static void body(scenario_run_t *r, void *user) {
                             NULL,
                             false);
             check(r, result, false, "");
-            REQUIRE(contains(result.err, result.err_size, "Access checks require VM execution"));
+            REQUIRE(contains(result.err,
+                             result.err_size,
+                             "native required needs an own specialization"));
             verify(r, !exists(r, gbin), "access rejected bytecode absent");
         } else {
             result = invoke(r,

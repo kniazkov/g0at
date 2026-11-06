@@ -6,6 +6,7 @@
 #include "lib/memory/allocate.h"
 #include "test/support/format_binary.h"
 #include "test/support/language_execution.h"
+#include "test/support/module_artifact.h"
 #include "test/support/registry.h"
 
 #include <string.h>
@@ -181,42 +182,33 @@ static void digest(bytes_t bytes, unsigned char hash[32]) {
                                   + (strchr(digits, hex[2 * i + 1]) - digits));
 }
 
-/* Independent FNV-1a: the checksum slot is cleared before iterating every byte.
- * Never call the production binary serializer or hash implementation. */
-static void pair(scenario_run_t *r, unsigned char *artifact, size_t size, bytes_t library) {
-    REQUIRE(size >= 96);
-    digest(library, artifact + 64);
-    memset(artifact + 56, 0, 8);
-    uint64_t hash = UINT64_C(14695981039346656037);
-    for (size_t i = 0; i < size; i++)
-        hash = (hash ^ artifact[i]) * UINT64_C(1099511628211);
-    for (unsigned i = 0; i < 8; i++)
-        artifact[56 + i] = (unsigned char)(hash >> (8 * i));
-}
-
 static void body(scenario_run_t *r, void *user) {
     config_t *c = user;
     const char *root = scenario_work_directory(scenario_run_context(r));
     const char *source = language_join(r, root, "original.goat");
     const char *binary = language_join(r, root, "original.gbin");
-    const char *library = language_join(r, root, "original" EXT);
+    const char *member = "native/variant-1" EXT;
     const char *other = language_join(r, root, "other.goat");
     const char *const *env = language_environment_override(r, "GOAT_LANGUAGE", "en");
     write_text(r, source, read_text(r, language_join(r, c->fixtures, "original.goat")));
     scenario_command_result_t result =
         command(r, ARGS(c->goat, "--compile", "--native", "required", source), env, 30000);
     REQUIRE(result.exit_code == 0);
-    bytes_t artifact = read(r, binary), original = read(r, library);
-    REQUIRE(artifact.size >= 96 && !memcmp(artifact.data, "GOATPG01", 8));
-    unsigned char expected[32];
-    digest(original, expected);
-    scenario_require_bytes(r,
-                           "SHA-256 binding at offset 64",
-                           expected,
-                           32,
-                           artifact.data + 64,
-                           32,
-                           false);
+    bytes_t artifact = read(r, binary);
+    size_t native_size;
+    const void *native_bytes =
+        test_module_member(r, artifact.data, artifact.size, member, &native_size);
+    bytes_t original = {native_bytes, native_size};
+    size_t metadata_size;
+    const char *metadata = (const char *)
+        test_module_member(r, artifact.data, artifact.size, "module.json", &metadata_size);
+    char expected[65];
+    format_binary_sha256(original.data, original.size, expected);
+    bool hash_found = false;
+    for (size_t i = 0; i + 64 <= metadata_size; ++i)
+        if (!memcmp(metadata + i, expected, 64))
+            hash_found = true;
+    REQUIRE(hash_found);
     output(r,
            command(r, ARGS(c->goat, "--run", "--native", "required", binary), env, 30000),
            "42\n");
@@ -226,19 +218,33 @@ static void body(scenario_run_t *r, void *user) {
     result = command(r, ARGS(c->goat, "--compile", "--native", "required", other), env, 30000);
     REQUIRE(result.exit_code == 0);
     if (!strcmp(c->kind, "substitution") || !strcmp(c->kind, "append-corruption")) {
-        if (!strcmp(c->kind, "substitution"))
-            put(r, library, read(r, language_join(r, root, "other" EXT)));
-        else {
-            unsigned char *changed = language_owned(r, ALLOC(original.size + 7));
-            memcpy(changed, original.data, original.size);
-            memcpy(changed + original.size, "changed", 7);
-            put(r, library, (bytes_t){changed, original.size + 7});
+        bytes_t changed;
+        if (!strcmp(c->kind, "substitution")) {
+            bytes_t other_zip = read(r, language_join(r, root, "other.gbin"));
+            changed.data =
+                test_module_member(r, other_zip.data, other_zip.size, member, &changed.size);
+        } else {
+            unsigned char *bytes = language_owned(r, ALLOC(original.size + 7));
+            memcpy(bytes, original.data, original.size);
+            memcpy(bytes + original.size, "changed", 7);
+            changed = (bytes_t){bytes, original.size + 7};
         }
+        size_t size;
+        const void *zip = test_module_replace(r,
+                                              artifact.data,
+                                              artifact.size,
+                                              member,
+                                              changed.data,
+                                              changed.size,
+                                              false,
+                                              &size);
+        put(r, binary, (bytes_t){zip, size});
         result = command(r, ARGS(c->goat, "--run", "--native", "required", binary), env, 30000);
         REQUIRE(result.exit_code != 0 && result.out_size == 0);
         result = command(r, ARGS(c->goat, "--run", "--native", "auto", binary), env, 30000);
-        REQUIRE(result.exit_code == 0);
-        output(r, result, "42\n");
+        REQUIRE(result.exit_code != 0 && result.out_size == 0);
+        result = command(r, ARGS(c->goat, "--run", "--native", "off", binary), env, 30000);
+        REQUIRE(result.exit_code != 0 && result.out_size == 0);
         return;
     }
     REQUIRE(!strcmp(c->kind, "preload-constructor"));
@@ -278,17 +284,52 @@ static void body(scenario_run_t *r, void *user) {
         language_remove(r, marker);
     env = marker_environment(r, env, marker);
     bytes_t poisoned = read(r, poison);
-    put(r, library, poisoned);
+    size_t zip_size;
+    const void *zip = test_module_replace(r,
+                                          artifact.data,
+                                          artifact.size,
+                                          member,
+                                          poisoned.data,
+                                          poisoned.size,
+                                          false,
+                                          &zip_size);
+    put(r, binary, (bytes_t){zip, zip_size});
     result = command(r, ARGS(c->goat, "--run", "--native", "required", binary), env, 30000);
-    REQUIRE(result.exit_code != 0);
-    REQUIRE(!exists(r, marker));
-    unsigned char *paired = language_owned(r, ALLOC(artifact.size));
-    memcpy(paired, artifact.data, artifact.size);
-    pair(r, paired, artifact.size, poisoned);
-    put(r, binary, (bytes_t){paired, artifact.size});
+    REQUIRE(result.exit_code != 0 && !exists(r, marker));
+    zip = test_module_replace(r,
+                              artifact.data,
+                              artifact.size,
+                              member,
+                              poisoned.data,
+                              poisoned.size,
+                              true,
+                              &zip_size);
+    put(r, binary, (bytes_t){zip, zip_size});
     result = command(r, ARGS(c->goat, "--run", "--native", "required", binary), env, 30000);
+    /* Matching SHA alone does not authorize loading a legacy ABI library. */
+    REQUIRE(result.exit_code != 0 && !exists(r, marker));
+    const char *loader = language_join(r, root, "loader.c");
+    const char loader_code[] =
+        "#ifdef _WIN32\n#include <windows.h>\n"
+        "int main(int n,char **v){return n!=2||!LoadLibraryA(v[1]);}\n#else\n"
+        "#include <dlfcn.h>\nint main(int n,char **v){return "
+        "n!=2||!dlopen(v[1],RTLD_NOW);}\n#endif\n";
+    put(r, loader, (bytes_t){loader_code, sizeof(loader_code) - 1});
+    const char *loader_exe = language_join(r, root, "loader.exe");
+    result = command(r,
+                     ARGS(cc,
+                          loader,
+                          "-o",
+                          loader_exe,
+#ifndef _WIN32
+                          "-ldl",
+#endif
+                          "-std=c11"),
+                     NULL,
+                     60000);
     REQUIRE(result.exit_code == 0);
-    output(r, result, "43\n");
+    result = command(r, ARGS(loader_exe, poison), env, 30000);
+    REQUIRE(result.exit_code == 0 && exists(r, marker));
     bytes_t marked = read_text(r, marker);
     scenario_require_bytes(r,
                            "constructor positive control",
@@ -297,7 +338,6 @@ static void body(scenario_run_t *r, void *user) {
                            marked.data,
                            marked.size,
                            true);
-    put(r, library, original);
     put(r, binary, artifact);
     output(r,
            command(r, ARGS(c->goat, "--run", "--native", "required", binary), env, 30000),

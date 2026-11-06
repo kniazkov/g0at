@@ -16,7 +16,9 @@
 #include "model/thread.h"
 #include "module/module_native.h"
 #include "native_execution.h"
+#include "parser/parser.h"
 #include "resources/messages.h"
+#include "scanner/scanner.h"
 #include "vm/module_graph_diagnostics.h"
 #include "vm/module_loading.h"
 #include "vm/vm.h"
@@ -227,7 +229,8 @@ static int execute_snapshot(const options_t *options,
     }
     native_execution_report_t report = {.preparation = native_mode == NATIVE_OFF ? "disabled"
                                                        : native_disabled         ? "unavailable"
-                                                                                 : "ready",
+                                                       : bound                   ? "ready"
+                                                                                 : "empty",
                                         .bound_functions = bound};
     options_t effective = *options;
     effective.native_execution = native_mode;
@@ -269,6 +272,35 @@ static bool source_output(node_t *root,
     return true;
 }
 
+/* Discovery rejects lexical errors before a source graph can be constructed.
+ * Reuse the compiler scanner for its detailed, localized diagnostics. */
+static bool print_source_syntax(const char *path) {
+    string_value_t source = read_utf8_file(path);
+    if (!source.data)
+        return false;
+    parser_memory_t memory = {create_arena(64),
+                              create_arena(64),
+                              create_arena(128),
+                              create_arena(8)};
+    token_groups_t groups = {0};
+    const char *name = strrchr(path, '/');
+    scanner_t *scanner = create_scanner(name ? name + 1 : path, source, &memory, &groups);
+    token_list_t tokens;
+    compilation_error_t *error = process_brackets(&memory, scanner, &tokens, &groups);
+    bool reported = error != NULL;
+    if (error) {
+        string_value_t text = format_compilation_errors(error);
+        fprintf_utf8(stderr, U"%s", text.data);
+        FREE_STRING(text);
+    }
+    destroy_arena(memory.positions);
+    destroy_arena(memory.tokens);
+    destroy_arena(memory.graph);
+    destroy_arena(memory.errors);
+    FREE_STRING(source);
+    return reported;
+}
+
 int try_module_program(const options_t *options, bool *handled) {
     *handled = false;
     bool descriptor = extension(options, "gmod");
@@ -291,8 +323,12 @@ int try_module_program(const options_t *options, bool *handled) {
     module_snapshot_t *snapshot = NULL;
     native_build_context_t *context = NULL;
     char *output = NULL;
+    char *compiler_environment = !descriptor && !binary ? fs_environment("CC", NULL) : NULL;
     if (!binary) {
         if (module_sources_read(options->launch_path, descriptor, NULL, &sources, &source_error)) {
+            if (source_error.status == MODULE_SOURCES_SYNTAX && source_error.path
+                && print_source_syntax(source_error.path))
+                goto done;
             *handled = true;
             FPRINTF(stderr,
                     "%s:%zu:%zu: %s (%s)\n",
@@ -370,42 +406,31 @@ int try_module_program(const options_t *options, bool *handled) {
             FREE(message);
             goto done;
         }
-        module_build_options_t build_options = {.source_options = options,
-                                                .observer = source_output,
-                                                .observer_context = (void *)options,
-                                                .override_mode = true,
-                                                .mode = export_c ? NATIVE_OFF : native_mode,
-                                                .target = options->native_target,
-                                                .compiler = options->native_compiler,
-                                                .probe_timeout_seconds =
-                                                    options->native_probe_timeout,
-                                                .context = context};
+        module_build_options_t build_options = {
+            .source_options = options,
+            .observer = source_output,
+            .observer_context = (void *)options,
+            .override_mode = true,
+            .mode = export_c ? NATIVE_OFF : native_mode,
+            .target = options->native_target,
+            .compiler = options->native_compiler                        ? options->native_compiler
+                        : compiler_environment && *compiler_environment ? compiler_environment
+                                                                        : NULL,
+            .probe_timeout_seconds = options->native_probe_timeout,
+            .context = context};
         if (!build_module(sources,
                           dependencies,
                           source_graph,
                           &build_options,
                           &build,
                           &compile_error)) {
-            if (compile_error.row && sources && compile_error.file < sources->count) {
-                string_value_t file = decode_utf8(sources->files[compile_error.file].name);
-                string_value_t message = decode_utf8(compile_error.message);
-                fprintf_utf8(stderr,
-                             compile_error.severity == CRITICAL
-                                 ? get_messages()->critical_compilation_error
-                                 : get_messages()->compilation_error,
-                             file.data,
-                             compile_error.row,
-                             compile_error.column,
-                             message.data);
-                FPRINTF(stderr, "\n");
-                FREE_STRING(file);
-                FREE_STRING(message);
-            } else {
+            if (compile_error.diagnostics.data)
+                fprintf_utf8(stderr, U"%s", compile_error.diagnostics.data);
+            else
                 FPRINTF(stderr,
                         "%s\n",
                         compile_error.message ? compile_error.message
                                               : "Module compilation failed.");
-            }
             goto done;
         }
         if (export_c) {
@@ -419,6 +444,8 @@ int try_module_program(const options_t *options, bool *handled) {
                 && startup != CLEANUP_OK)
                 native_disabled = true; /* One startup diagnostic for build and execution. */
         }
+        if (options->enable_warnings && build->compilation->diagnostics.data)
+            fprintf_utf8(stderr, U"%s", build->compilation->diagnostics.data);
         for (size_t i = 0; i < build->compilation->warning_count; ++i) {
             const module_compilation_warning_t *warning = build->compilation->warnings + i;
             if (options->enable_warnings)
@@ -502,6 +529,7 @@ int try_module_program(const options_t *options, bool *handled) {
     }
     result = execute_snapshot(options, snapshot, native_mode, context, native_disabled);
 done:
+    FREE(compiler_environment);
     FREE(output);
     free_module_snapshot(snapshot);
     free_module_graph(graph);

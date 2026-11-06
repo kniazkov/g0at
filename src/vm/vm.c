@@ -1640,6 +1640,11 @@ int run_module_file(process_t *proc, module_file_t *file) {
     exception_t failure = {0};
     module_files_t *launch = find_module_files(proc, proc->launch_module);
     bool direct = launch && module_files_get(launch, proc->launch_file) == file;
+    if (direct) {
+        program.entry_scope = module_file_scope(file);
+        program.entry_file = module_file_id(file);
+        INCREF(program.entry_scope);
+    }
     module_initialize_status_t status =
         (direct ? initialize_module_file_direct : initialize_module_file)(file,
                                                                           thread->context,

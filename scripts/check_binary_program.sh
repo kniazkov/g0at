@@ -27,11 +27,10 @@ for name in replacement recursive caught uncaught unmatched effects edges; do
     cp "$repo/test/data/functional/native_modes/$name.goat" "$output/$name.goat"
     "$interpreter" --lang en --compile --native required "$output/$name.goat" > "$output/compile.out" 2> "$output/compile.err"
     [[ ! -s "$output/compile.out" && ! -s "$output/compile.err" ]]
-    [[ -s "$output/$name.gbin" && -s "$output/$name.$ext" ]]
+    [[ -s "$output/$name.gbin" && ! -e "$output/$name.$ext" ]]
     ok
     current="relocate and execute $name without source or compiler"
     mv "$output/$name.gbin" "$output/moved/$name.gbin"
-    mv "$output/$name.$ext" "$output/moved/$name.$ext"
     rm "$output/$name.goat"
     status=0
     CC=goat-no-such-compiler "$interpreter" --lang en --run --native required --save-native "$output/$name.report" "$output/moved/$name.gbin" > "$output/$name.out" 2> "$output/$name.err" || status=$?
@@ -57,24 +56,10 @@ rm "$output/input.goat"
 printf 'hello\n' | CC=goat-no-such-compiler "$interpreter" --run "$output/input.gbin" > "$output/input.out"
 [[ $(cat "$output/input.out") == hello ]]
 ok
-current='missing library: explicit off, automatic fallback, required rejection'
-mv "$output/moved/replacement.$ext" "$output/replacement.saved"
-for mode in off auto required; do
-    status=0
-    CC=goat-no-such-compiler "$interpreter" --run --native "$mode" "$output/moved/replacement.gbin" > "$output/missing-$mode.out" 2> "$output/missing-$mode.err" || status=$?
-    if [[ $mode == required ]]; then
-        [[ $status != 0 && ! -s "$output/missing-$mode.out" && -s "$output/missing-$mode.err" ]]
-    else
-        [[ $status == 0 ]]
-        same "$repo/test/data/functional/native_modes/replacement.out" "$output/missing-$mode.out"
-    fi
-done
-ok
-current='wrong companion library is rejected before execution'
-cp "$output/moved/edges.$ext" "$output/moved/replacement.$ext"
-if "$interpreter" --run --native required "$output/moved/replacement.gbin" > "$output/wrong.out" 2> "$output/wrong.err"; then false; fi
-[[ ! -s "$output/wrong.out" && -s "$output/wrong.err" ]]
-mv "$output/replacement.saved" "$output/moved/replacement.$ext"
+current='unrelated adjacent library is never loaded'
+printf 'not a native library' > "$output/moved/replacement.$ext"
+CC=goat-no-such-compiler "$interpreter" --run --native required "$output/moved/replacement.gbin" > "$output/adjacent.out"
+same "$repo/test/data/functional/native_modes/replacement.out" "$output/adjacent.out"
 ok
 current='failed recompilation preserves existing artifacts'
 cp "$repo/test/data/functional/native_modes/replacement.goat" "$output/moved/replacement.goat"
