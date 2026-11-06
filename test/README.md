@@ -32,6 +32,9 @@ and process-local state, and run with `--parallel 4` in Linux and Windows CI.
 The Debug integration step also uses four CTest workers on Linux and Windows.
 CTest still honors `RUN_SERIAL` for legacy suites and timing-sensitive process-exit
 scenarios; the dedicated Release performance step remains exclusive.
+Release builds in Linux and Windows CI also use four compiler jobs: the release
+script steps set `CMAKE_BUILD_PARALLEL_LEVEL=4`, and the subsequent test-target
+builds pass `cmake --build ... --parallel 4`. Each build finishes before tests start.
 Functional inputs are copied under the selected build directory; failed copies
 are retained with their path in the output. Inputs under `test/data` stay read-only.
 
