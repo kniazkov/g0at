@@ -2,6 +2,11 @@
  * @file arena.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Definitions of structures and function prototypes for a memory arena.
+ *
+ * Compilation phases have different release points, so parser_memory_t separates
+ * tokens, graph, positions and diagnostics. Individual arena objects are not freed;
+ * any borrowed pointer becomes invalid when its arena is destroyed. Moving data
+ * into a later phase requires copying it or retaining the appropriate owner.
  */
 
 #pragma once

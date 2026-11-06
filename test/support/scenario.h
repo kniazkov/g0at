@@ -1,6 +1,11 @@
 /** @file scenario.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Test-only scenario lifetime and owned working directory.
+ *
+ * A test body can satisfy every functional assertion and still fail its lifecycle
+ * contract. Finishing verifies removal of the owned workspace; failure preserves
+ * that workspace and diagnostics rather than reporting a misleading success.
+ * @see scenario_finish
  */
 #pragma once
 

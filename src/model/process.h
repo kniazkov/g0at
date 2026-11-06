@@ -2,6 +2,12 @@
  * @file process.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines the structure for processes in the Goat programming language.
+ *
+ * This is a Goat runtime owner, distinct from an OS child-process handle. It ties
+ * threads, roots, module file state and object pools to one execution lifetime.
+ * Module snapshots must destroy this runtime before releasing immutable images
+ * borrowed by its objects.
+ * @see free_module_snapshot
  */
 
 #pragma once
@@ -28,7 +34,8 @@ struct process_t {
     size_t initialization_waiters;
     struct vm_execution_t *execution; /**< Borrowed while the VM owns execution. */
 
-    /** @brief Owned identity of the single program module until module loading is added. */
+    /** @brief Owned default program identity; loaded module file sets retain their own identities.
+     */
     module_t *module;
     /** @brief Owned per-module file scopes/images, destroyed after managed objects. */
     struct module_files_t *module_files;

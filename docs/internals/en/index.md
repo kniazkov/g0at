@@ -2,20 +2,26 @@
 
 [Русский](../ru/index.md)
 
-These guides are for a C programmer who is new to Goat's implementation and
-need not already know compiler theory. Start with the purpose of a pass, then
-follow the links to its data structures, decisions and tests.
+These guides explain the current implementation to a C programmer who need not
+already know compiler theory. Start with the system boundaries, then follow the
+proofs, ownership rules and tests relevant to your change.
 
-This first documentation sample covers one complete route:
-
-1. [Conditional branches and unreachable code](static-analysis.md): how a proof
-   is obtained, where it is stored and why it does not always permit deletion.
-2. [Testing the analysis decisions](testing.md): how source fixtures and explicit
-   expectations check those proofs, and how to investigate a failed check.
-
-The wider [implementation book](https://github.com/kniazkov/g0at/blob/master/docs/book/en/index.md) describes the VM, modules
-and other subsystems. Further internal guides will follow after this sample is
-reviewed; this is not yet a complete map of every subsystem.
+1. [Implementation map and lifetimes](architecture.md): entry points, directory
+   responsibilities and which owner keeps each kind of data alive.
+2. [Characters, tokens and bound nodes](front-end.md): reduction order, scopes and
+   the difference between a structural walk and execution.
+3. [Abstract values and state](abstract-values.md): domains, joins, widening and
+   conservative behavior when a fact is unknown.
+4. [Function proofs](functions.md): signatures, recursion, effects and C support.
+5. [Branches and unreachable code](static-analysis.md): a detailed worked route
+   from a condition to a proof and an effect-preserving rewrite.
+6. [Execution](execution.md): immutable bytecode, objects, exceptions, threads and GC.
+7. [Native generation](native.md): eligibility, emission, ABI and loaded-code lifetime.
+8. [Modules](modules.md): construction, layered validation, snapshots and initialization.
+9. [Portable support](platform.md): strings, memory, files, processes and cleanup.
+10. [Tools](tools.md): diagnostics, inspect/merge and reproducible generators.
+11. [Testing](testing.md): independent oracles, scenarios, local checks and CI.
+12. [Maintenance](maintenance.md): where explanations belong and how to update them.
 
 ## Reading and generating the pages
 

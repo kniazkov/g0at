@@ -25,7 +25,7 @@ bool scenario_registry_validate(const scenario_definition_t *definitions,
                                 size_t count,
                                 FILE *diagnostics);
 /** @brief Dispatch exactly one ID, or print IDs with --list.
- * argv excludes the executable name: <id> [--keep-work] or --list.
+ * argv excludes the executable name: `id` [--keep-work] or --list.
  * Returns 0 for success, 1 for failure/invalid selection, and 77 for an explicit skip.
  * Every invocation is independent: failure never changes the registry or later calls.
  * base_options supplies existing build/data paths and diagnostics; its name is ignored.

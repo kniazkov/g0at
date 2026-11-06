@@ -2,6 +2,12 @@
  * @file analysis.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Declarations for static code analysis functions.
+ *
+ * This is the orchestration boundary, not just an expression evaluator. Binding and
+ * access/iteration checks run even with optimization disabled. Optimized analysis
+ * then separates value observations, generic function proofs, reachability and
+ * rewrites; callers must inspect diagnostic severity before generating code.
+ * @see interpret, build_function_call_graph, simplify_graph
  */
 
 #pragma once

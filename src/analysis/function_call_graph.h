@@ -1,6 +1,12 @@
 /** @file function_call_graph.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Arena-owned may-call graph of type specializations; no recursive solving.
+ *
+ * Vertices represent normalized type specializations, not individual invocations.
+ * Strongly connected components organize recursive solving; they do not prove
+ * termination. Explicit unknown/limit edges preserve missing knowledge instead of
+ * silently treating an incomplete call graph as a pure function.
+ * @see solve_function_recursion, propagate_function_effects
  */
 #pragma once
 

@@ -2,6 +2,11 @@
  * @file collector.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Arena-backed observations of abstract interpretation.
+ *
+ * Observations are evidence for diagnostics and tests, not runtime execution.
+ * Tests select events by source/declaration identity and compare a reviewed oracle;
+ * a program producing the right output would not prove that these facts exist.
+ * The collector and its arena must remain alive through formatting/assertions.
  */
 #pragma once
 

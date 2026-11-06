@@ -334,8 +334,8 @@ const lattice_element_t *make_string_element();
 /**
  * @brief Creates a string constant lattice element.
  *
- * The pointed data must outlive the element, because apparently memory ownership still exists to
- * punish optimism.
+ * The view is borrowed, not copied. Its backing storage must outlive the element;
+ * allocating the element in an arena does not extend the string storage lifetime.
  */
 const lattice_element_t *make_string_constant_element(arena_t *arena, string_view_t value);
 
@@ -348,8 +348,9 @@ const lattice_element_t *make_char_constant_element(arena_t *arena, uint32_t val
 /**
  * @brief Extracts a string view from a string or character constant element.
  *
- * A character constant is converted to a wide-character string (one or two units for
- * supplementary code points) stored in the given arena.
+ * A character constant becomes one 32-bit gchar_t unit plus a terminator in the
+ * given arena, including supplementary code points. A string constant returns
+ * its existing borrowed view without copying; failure leaves the output untouched.
  * @return true if the element is a string or character constant, false otherwise.
  */
 bool get_string_view_from_constant(arena_t *arena,

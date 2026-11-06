@@ -1,6 +1,12 @@
 /** @file module_loading.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Run-owned lazy native loading from a fully validated module snapshot.
+ *
+ * Preparation checks selection and installs lazy bindings without extracting or
+ * loading payloads. Actual demand uses the retained snapshot and run-owned cleanup
+ * context. Validation success is not evidence that a constructor or initializer has
+ * already executed.
+ * @see prepare_module_snapshot_native
  */
 #pragma once
 #include "cli/options.h"

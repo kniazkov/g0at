@@ -3,6 +3,12 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Function prototypes and structure definitions for launching the compiler and virtual
  * machine.
+ *
+ * The launcher owns compilation lifetimes and chooses source, module, binary or
+ * interactive handling. Native preparation must finish before graph storage is
+ * released; runtime wrappers must no longer borrow AST nodes. Errors are rendered
+ * while their position/message arenas are still alive.
+ * @see analyze, run
  */
 
 #pragma once

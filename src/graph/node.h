@@ -2,6 +2,13 @@
  * @file node.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Definitions for the basic node structure of the abstract syntax tree (AST).
+ *
+ * Structural children describe syntax; related nodes expose links such as binding
+ * and replacement history. These relations are not extra executable children.
+ * Virtual callbacks let each language construct preserve its own evaluation order
+ * across analysis, rewriting and generation. In particular, creating a function
+ * object is separate from executing its deferred body.
+ * @see analyze, generate_bytecode_from_node
  */
 
 #pragma once

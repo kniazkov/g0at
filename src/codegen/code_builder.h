@@ -3,6 +3,11 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines structures and functions for building and managing a list of bytecode
  * instructions.
+ *
+ * This mutable build-time sequence may be patched as deferred function bodies
+ * are emitted. Linking creates the separate image used by the VM; later runtime
+ * bindings must not patch that immutable wire image.
+ * @see link_code_and_data
  */
 
 #pragma once

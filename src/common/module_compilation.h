@@ -1,6 +1,11 @@
 /** @file module_compilation.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Compile an already resolved source graph without reopening its files.
+ *
+ * Compilation proves properties of source snapshots without running dependencies.
+ * It produces an owned result transactionally; archive publication and runtime
+ * initialization belong to later layers. Optional backends may inspect live graphs
+ * only within their callback and must not export borrowed AST pointers.
  */
 #pragma once
 #include "graph/node.h"

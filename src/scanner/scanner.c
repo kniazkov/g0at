@@ -24,9 +24,10 @@
 #define TABULATION_SIZE 4
 
 /**
- * @brief Removes all comments from the given source code string.
- *
- * The function modifies the input string directly and does not allocate additional memory.
+ * @brief Blanks comments and carriage returns in the scanner-owned source copy.
+ * Preserving newlines keeps diagnostic rows aligned with the original source.
+ * Quotes and escapes protect comment markers inside literals; scanning is bounded
+ * by length rather than a zero terminator. No extra storage is allocated.
  */
 static void remove_comments_and_carriage_returns(gchar_t *code, size_t length) {
     size_t i = 0;

@@ -1,6 +1,11 @@
 /** @file c_generation.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Whole-function C emission and specialization-scoped lowering state.
+ *
+ * Analyzer eligibility and successful emission are distinct outcomes. A generation
+ * context belongs to one specialization; local names and temporary statements must
+ * preserve declaration identity and operand evaluation order. A failed lowering
+ * must not expose a partially generated function as usable output.
  */
 #pragma once
 #include "analysis/c_expression.h"

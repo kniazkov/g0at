@@ -1,6 +1,12 @@
 /** @file function_effects.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Direct body effects and lexical captures.
+ *
+ * Direct effects intentionally cover syntactic branches, even when another pass
+ * marks them unreachable. Propagation combines may-effects from callees; unknown
+ * coverage blocks purity. A pure result still says nothing about termination or
+ * exceptions, so it alone cannot authorize deletion of an expression.
+ * @see function_summary_is_pure, can_discard_expression
  */
 #pragma once
 

@@ -2,6 +2,12 @@
  * @file object.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines the base structure for all objects in the Goat programming language.
+ *
+ * Object operations return owned values or exceptions according to their contracts;
+ * Goat null is an object, not a missing C pointer. Concrete types implement reference
+ * counting, pooling and tracing through virtual methods. Retaining an object and
+ * keeping it reachable from the collector are related but distinct obligations.
+ * @see operation_result_t, collect_garbage
  */
 
 #pragma once
