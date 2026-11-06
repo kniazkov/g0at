@@ -20,7 +20,7 @@ Labels select `core`, `integration`, `native`, `format`, `sanitizer`, `fault`,
 `package`, `performance`, `style`, `docs` and `graph`. For example:
 
 ```sh
-ctest --test-dir build --output-on-failure -L integration
+ctest --test-dir build --output-on-failure --parallel 4 -L integration
 ctest --test-dir build --output-on-failure -LE performance
 ctest --test-dir build --output-on-failure -L performance
 ```
@@ -29,6 +29,9 @@ Legacy runners share some resources, so registrations use `RUN_SERIAL` and a
 bounded timeout. Performance is run separately in CI and must not compete with
 other jobs on the same machine. The individually registered C framework/process scenarios use owned workspaces
 and process-local state, and run with `--parallel 4` in Linux and Windows CI.
+The Debug integration step also uses four CTest workers on Linux and Windows.
+CTest still honors `RUN_SERIAL` for legacy suites and timing-sensitive process-exit
+scenarios; the dedicated Release performance step remains exclusive.
 Functional inputs are copied under the selected build directory; failed copies
 are retained with their path in the output. Inputs under `test/data` stay read-only.
 
