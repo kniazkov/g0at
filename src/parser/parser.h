@@ -2,6 +2,12 @@
  * @file parser.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines structures and function prototypes for the parser.
+ *
+ * The ordered reduction passes encode precedence and associativity. Token groups
+ * provide role-based traversal alongside source-order lists; collapsing a range
+ * unlinks arena-owned tokens rather than freeing them. The resulting graph must
+ * not depend on token storage after the caller releases that arena.
+ * @see process_brackets, apply_reduction_rules, process_root_token_list
  */
 
 #pragma once

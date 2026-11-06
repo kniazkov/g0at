@@ -3,6 +3,11 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Contains the declaration of the data builder structure and functions for managing static
  * data in the Goat virtual machine.
+ *
+ * Constants and declaration descriptors are collected before linking. Descriptor
+ * indexes, not builder addresses, cross into the image. Builder storage can then
+ * be released independently of the resulting bytecode.
+ * @see link_code_and_data
  */
 
 #pragma once

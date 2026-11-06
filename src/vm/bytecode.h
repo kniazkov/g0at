@@ -2,6 +2,12 @@
  * @file bytecode.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines the structure and operations for bytecode in the Goat virtual machine.
+ *
+ * The immutable wire buffer is distinct from its mutable runtime wrapper. Native
+ * function bindings and declaration identities belong outside the image. Borrowing
+ * an image does not extend its lifetime; its owner must outlive wrappers and every
+ * runtime object that points into its data.
+ * @see decode_bytecode_image, borrow_bytecode_image, free_bytecode
  */
 #pragma once
 

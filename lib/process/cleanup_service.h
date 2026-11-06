@@ -1,6 +1,11 @@
 /** @file cleanup_service.h
  * @copyright 2026 Ivan Kniazkov
  * @brief One lazy independent cleaner per run; all temporary process launches go through it.
+ *
+ * Client destruction and owner-process death are different events. The cleaner may
+ * still own live children or files after a timeout or a destroyed client context.
+ * Consumers must release loaded resources before requesting final cleanup, and
+ * report cleanup separately from the child command result.
  */
 #pragma once
 #include "lib/files/file_system.h"

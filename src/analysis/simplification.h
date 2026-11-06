@@ -1,6 +1,12 @@
 /** @file simplification.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Post-analysis rewrites with visible history.
+ *
+ * Rewriting consumes completed proofs rather than discovering them while mutating
+ * the tree. Replacement nodes preserve original syntax for repeat analysis and
+ * visualization. A constant result is insufficient if evaluating it has observable
+ * effects or may throw; callers must use the appropriate discardability proof.
+ * @see restore_graph, can_discard_expression
  */
 #pragma once
 #include "graph/node.h"

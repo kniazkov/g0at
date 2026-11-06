@@ -1,6 +1,12 @@
 /** @file module_snapshot.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Process-lifetime, fully preflighted in-memory module graph.
+ *
+ * Validation, runtime allocation and execution are separate phases. A successful
+ * snapshot freezes the reachable dependency graph so execution does not reopen
+ * archives or resolve different versions. Runtime state is destroyed before the
+ * immutable storage on which it depends.
+ * @see load_module_snapshot, free_module_snapshot
  */
 #pragma once
 #include "model/module_files.h"

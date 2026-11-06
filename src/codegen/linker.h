@@ -13,8 +13,10 @@
 
 /**
  * @brief Links code and data into a single bytecode structure.
- * @note The function dynamically allocates memory for the binary file. It is the caller's
- * responsibility to free this memory once it is no longer needed.
+ * The builders remain caller-owned and may be destroyed after linking. The
+ * returned image owns its copied instructions/data; release it with free_bytecode().
+ * This standalone wrapper aborts if linking cannot produce a valid-sized image;
+ * the module variant instead reports invalid arguments/size by returning NULL.
  */
 bytecode_t *link_code_and_data(code_builder_t *code_builder, data_builder_t *data_builder);
 

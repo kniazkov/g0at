@@ -2,6 +2,11 @@
  * @file vm.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines the virtual machine for the Goat programming language.
+ *
+ * The VM consumes prepared bytecode and model objects, not AST nodes. Host entry,
+ * ordinary language calls and module initialization are different boundaries;
+ * run_module_file is not permission to reenter an active VM. Language exit is
+ * process termination, whereas host cancellation is a returning run result.
  */
 
 #pragma once

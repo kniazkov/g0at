@@ -1,6 +1,12 @@
 /** @file execution.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Fail-fast test execution, binary artifacts and a shared monotonic deadline.
+ *
+ * One deadline covers the scenario, including child operations; substeps cannot
+ * renew the total budget. Required assertion failures unwind registered resources.
+ * This cooperative harness is not a substitute for OS supervision of a process
+ * that may crash or hang.
+ * @see scenario_execute, scenario_with_timeout
  */
 #pragma once
 #include "lib/process/child_process.h"

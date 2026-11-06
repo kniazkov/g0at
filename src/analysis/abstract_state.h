@@ -2,6 +2,12 @@
  * @file abstract_state.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Abstract interpreter state: current facts and declaration summaries.
+ *
+ * A current value describes one program point; a declaration summary accumulates
+ * observations across points. Only normally continuing paths supply current values
+ * to a join, while terminated paths still contribute history. Confusing those two
+ * roles can turn a valid observation into an invalid constant-folding proof.
+ * @see join_abstract_states, flush_abstract_state, widen_loop_state
  */
 
 #pragma once

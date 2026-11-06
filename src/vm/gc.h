@@ -2,6 +2,12 @@
  * @file gc.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Garbage Collection for the Goat Virtual Machine.
+ *
+ * Reference counting handles ordinary ownership, while tracing reclaims cycles.
+ * Roots include process/module state and every thread context/stack, not arbitrary
+ * local C variables. External host references must use the explicit root API when
+ * they need protection from collection.
+ * @see add_gc_root, remove_gc_root
  */
 
 #pragma once

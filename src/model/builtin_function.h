@@ -1,6 +1,11 @@
 /** @file builtin_function.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Shared runtime and analysis metadata for native functions.
+ *
+ * Runtime execution, abstract interpretation and effects describe the same callable.
+ * An incorrect effect declaration can invalidate optimization even if execute is
+ * correct. Receiver-aware methods must keep runtime and abstract argument domains
+ * consistent; the descriptor itself has static lifetime.
  */
 #pragma once
 

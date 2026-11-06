@@ -1,6 +1,11 @@
 /** @file native_pipeline.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Transactional compilation, loading and binding before analysis storage is released.
+ *
+ * The AST is still borrowed here because code emission needs its proof records.
+ * The installed descriptors have independent runtime ownership. Compilation success
+ * alone is insufficient: loading, metadata checks and binding must also succeed,
+ * and cleanup failure remains an independently reportable outcome.
  */
 #pragma once
 #include "graph/node.h"

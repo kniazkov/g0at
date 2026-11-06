@@ -44,8 +44,10 @@ struct scanner_t {
 
 /**
  * @brief Creates a new scanner for lexical analysis.
- * `groups`: A pointer to the `token_groups_t` structure, which organizes tokens by type or
- * role. The scanner populates these groups during lexical analysis.
+ * Copies the length-delimited source into the token arena, then blanks comments
+ * while retaining line positions. The input string remains caller-owned. The
+ * filename and memory/groups objects are borrowed for scanning and diagnostics;
+ * groups is reset on creation. Embedded zero characters are not end-of-source.
  */
 scanner_t *create_scanner(const char *file_name,
                           string_value_t code,
