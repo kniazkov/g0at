@@ -62,6 +62,24 @@ Goat supports dynamically typed values, lexical scopes, functions and recursion,
 
 ## Build and run
 
+For an extended local CI run (Debug + Release):
+
+```sh
+bash scripts/build.sh --full-check 4
+```
+
+On Windows, with MinGW and MSYS2 Bash in PATH:
+
+```bat
+scripts\build_mingw.cmd --full-check 4
+```
+
+This includes integration/native tests, a Release package, allocation-failure builds
+and standalone generators. It uses the current compiler/architecture, not the entire
+GitHub matrix. See [scope, prerequisites and reports](test/full-check.md).
+The existing quick mode remains the default.
+
+
 Clone the repository and enter its directory:
 
 ```sh

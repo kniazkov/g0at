@@ -1,0 +1,76 @@
+# Copyright 2026 Ivan Kniazkov
+# Distributed under the MIT license; see LICENSE.txt.
+# Release-safe labels from build_and_test.yml; keep aligned when CI coverage changes.
+set(release_labels
+  process-input
+  process-stream
+  scenario-context
+  scenario-execution
+  scenario-registry
+  module-schema
+  unicode-generator
+  integer-oracle
+  format-oracle
+  frozen-samples-c
+  format-vectors
+  migration-helpers
+  process-watch
+  language-roundtrip
+  unicode-interactive
+  standalone-bytecode
+  metadata-json
+  canonical-hash
+  zip-migration
+  container-migration
+  module-bytecode-migration
+  module-abi-native-migration
+  module-sources-files-migration
+  imports-include-migration
+  module-search-migration
+  module-dependencies-migration
+  module-graph-migration
+  module-snapshot-migration
+  module-identity-serialization-migration
+  module-initialization-migration
+  module-contract-exceptions-migration
+  module-scopes-prototypes-migration
+  module-access-migration
+  module-multifile-access-migration
+  module-context-provenance-migration
+  module-assignment-migration
+  module-execution-interface-migration
+  module-source-diagnostics-migration
+  module-information-migration
+  module-dispatch-consistency-migration
+  module-validation-migration
+  module-writer-migration
+  module-build-library-migration
+  module-loading-migration
+  module-cli-migration
+  module-inspect-migration
+  inspect-probe-migration
+  module-merge-migration
+  module-delivery-migration
+  package-controls
+  graph-validation-migration
+  module-book-migration
+  module-delivery-requirements-migration
+  module-musl-migration
+  child-process-migration
+  cleanup-service-migration
+  process-exit-migration
+  module-exit-migration
+  module-threads-migration
+  native-requirements-migration
+  native-toolchains-migration
+  native-artifact-migration
+  native-integrity-migration
+  native-cleanup-migration
+  native-exit-values-migration
+  native-runner-migration
+  native-access-libm-migration
+  native-strings-migration
+  native-saturation-migration
+  native-performance-controls
+)
+list(JOIN release_labels "|" release_labels)
