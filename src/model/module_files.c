@@ -49,14 +49,21 @@ static module_files_t *create_files(process_t *process, const yyjson_doc *doc, b
     bool valid = goat_json_integer(yyjson_obj_get(root, "main"), &main);
     assert(valid && main >= 0 && (uint64_t)main < code->file_count);
     (void)valid;
+    /* Preserve the process on recoverable JSON allocation failures: no identity
+       or scope may be published until both metadata copies have succeeded. */
+    yyjson_mut_doc *copy = yyjson_doc_mut_copy(doc, NULL);
+    yyjson_doc *analysis_metadata = copy ? yyjson_mut_doc_imut_copy(copy, NULL) : NULL;
+    yyjson_mut_doc_free(copy);
+    if (!analysis_metadata) {
+        free_bytecode(code);
+        return NULL;
+    }
     module_files_t *set = CALLOC(sizeof(*set));
+    set->analysis_metadata = analysis_metadata;
     set->process = process;
     set->identity = create_module_identity();
     set->code = code;
     set->main = (uint32_t)main;
-    yyjson_mut_doc *copy = yyjson_doc_mut_copy(doc, NULL);
-    set->analysis_metadata = yyjson_mut_doc_imut_copy(copy, NULL);
-    yyjson_mut_doc_free(copy);
     yyjson_val *name = yyjson_obj_get(root, "name");
     yyjson_val *version = yyjson_obj_get(root, "version");
     set->name = decode_utf8_n(yyjson_get_str(name), yyjson_get_len(name));
@@ -128,6 +135,12 @@ module_bytecode_status_t create_module_files(process_t *process,
     }
     *out = create_files(process, doc, code);
     yyjson_doc_free(doc);
+    if (!*out) {
+        if (error)
+            *error =
+                (module_bytecode_error_t){MODULE_BYTECODE_JSON, SIZE_MAX, GOAT_MODULE_JSON_MEMORY};
+        return MODULE_BYTECODE_JSON;
+    }
     return MODULE_BYTECODE_OK;
 }
 
@@ -142,7 +155,7 @@ bool create_module_files_from_snapshot(process_t *process,
             || code->data_descriptor_count > SIZE_MAX / sizeof(void *)))
         return false;
     *out = create_files(process, metadata, borrow_bytecode_image(code));
-    return true;
+    return *out != NULL;
 }
 
 size_t module_files_count(const module_files_t *files) {

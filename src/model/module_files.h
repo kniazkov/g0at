@@ -33,7 +33,8 @@ module_bytecode_status_t create_module_files(process_t *process,
  * The process owns fresh scopes and a runtime wrapper with independent bindings.
  * The caller must retain the source image until AFTER destroy_process, including
  * all image-backed objects and wrappers. Metadata is borrowed only for this call.
- * Invalid NULL arguments or unrepresentable file storage clear out and return false.
+ * Invalid NULL arguments, unrepresentable file storage or metadata copy allocation
+ * failure clear out and return false without changing the process.
  * This API neither executes files nor grants partial graphs permission to run.
  */
 bool create_module_files_from_snapshot(process_t *process,
