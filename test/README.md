@@ -16,6 +16,21 @@ use `ctest -N` for the current inventory. CI also retains its specialized native
 sanitizer, fault, pattern-initialization, Release/package and controlled
 glibc/musl container checks.
 
+Linux and Windows CI expose Debug compilation, core tests, format references,
+integration suites and framework suites as separate steps. Release compilation
+and packaging, test-runner compilation, format references and the combined
+framework/module/native batch also have separate step timings. The native
+correctness batch includes performance controls; the Release benchmark remains
+its own step. This separation preserves the existing test commands, selections,
+order and parallelism. Specialized fault-injection and container checks retain
+their configure/build/run sequences.
+
+The Debug build scripts accept `--build-only` or `--test-only` before the optional
+job count. CI uses these modes to time the same core runners separately; the
+default still builds and tests. Test-only mode requires the preceding Debug build
+(including the root `goat.exe` copy on Windows). Linux CI exercises both modes
+from outside the checkout with the same `BUILD_DIR`.
+
 Labels select `core`, `integration`, `native`, `format`, `sanitizer`, `fault`,
 `package`, `performance`, `style`, `docs` and `graph`. For example:
 

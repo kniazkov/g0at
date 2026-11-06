@@ -94,6 +94,8 @@ bash scripts/build.sh 8
 
 Both Debug scripts also accept `CMAKE_BUILD_PARALLEL_LEVEL` as the default job count; an explicit argument takes precedence. Tests still run sequentially. Use `--help` for usage.
 
+To measure compilation and tests separately, run `bash scripts/build.sh --build-only 8`, then `bash scripts/build.sh --test-only`. Keep the same `BUILD_DIR` for both commands. The test-only mode uses the existing Debug binaries without rebuilding; omitting the mode still builds and tests in one command.
+
 To use Clang in a separate build directory:
 
 ```bash
@@ -122,6 +124,8 @@ The Debug script builds the interpreter, both module tools and component-test ex
 ```powershell
 .\scripts\build_mingw.cmd 8
 ```
+
+The same phase options are available on Windows: `.\scripts\build_mingw.cmd --build-only 8`, then `.\scripts\build_mingw.cmd --test-only`.
 
 Without an argument it uses `CMAKE_BUILD_PARALLEL_LEVEL`, then `%NUMBER_OF_PROCESSORS%`. For a Release build without tests:
 
