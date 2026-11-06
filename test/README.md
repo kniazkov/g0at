@@ -1,5 +1,14 @@
 # Running the test suites
 
+## Extended local run
+
+Use `bash scripts/build.sh --full-check 4` or
+`scripts\build_mingw.cmd --full-check 4` for Debug/Release checks close to one
+platform's CI. See [coverage and prerequisites](full-check.md) /
+[описание на русском](full-check.ru.md). The quick build remains unchanged.
+
+## Direct CTest invocation
+
 Configure from the repository root, build all targets, then run:
 
 ```sh

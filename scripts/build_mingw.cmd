@@ -6,7 +6,11 @@
 @echo off
 setlocal
 set "build_mode=all"
-if "%~1"=="--build-only" (
+if "%~1"=="--full-check" (
+    set "build_mode=full"
+    shift /1
+)
+if "%build_mode%"=="all" if "%~1"=="--build-only" (
     set "build_mode=build"
     shift /1
 )
@@ -22,6 +26,7 @@ if not defined build_jobs set "build_jobs=%CMAKE_BUILD_PARALLEL_LEVEL%"
 if not defined build_jobs set "build_jobs=%NUMBER_OF_PROCESSORS%"
 if not defined build_jobs set "build_jobs=1"
 set build_jobs | findstr /i /r /x "build_jobs=[1-9][0-9]*" > NUL || goto usage
+if "%build_mode%"=="full" goto full_check
 pushd "%~dp0.." || exit /b 1
 if "%build_mode%"=="test" goto tests
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug || goto failed
@@ -55,12 +60,17 @@ exit /b 0
 popd
 exit /b 1
 
+:full_check
+cmake "-DGOAT_FULL_JOBS=%build_jobs%" -P "%~dp0full_check.cmake"
+exit /b %errorlevel%
+
 :usage
 call :help
 exit /b 1
 
 :help
-echo Usage: %~nx0 [--build-only^|--test-only] [jobs]
+echo Usage: %~nx0 [--build-only^|--test-only^|--full-check] [jobs]
 echo jobs: positive integer; default: CMAKE_BUILD_PARALLEL_LEVEL or logical CPU count.
+echo --full-check: local Debug/Release CI checks; MSYS2 Bash and CMake 3.21+ required.
 echo Default: build and test. --test-only requires an existing Debug build.
 exit /b 0
