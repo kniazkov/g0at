@@ -29,7 +29,7 @@ For the experiments, copy the source to a working directory. Run the following c
 ```sh
 mkdir -p build/book
 cp docs/book/examples/03-pipeline.goat build/book/pipeline.goat
-./goat --native off --save-analysis build/book/analysis.txt build/book/pipeline.goat
+./target/goat --native off --save-analysis build/book/analysis.txt build/book/pipeline.goat
 ```
 
 In Windows PowerShell:
@@ -37,7 +37,7 @@ In Windows PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force .\build\book | Out-Null
 Copy-Item .\docs\book\examples\03-pipeline.goat .\build\book\pipeline.goat
-.\goat.exe --native off --save-analysis .\build\book\analysis.txt .\build\book\pipeline.goat
+.\target\goat.exe --native off --save-analysis .\build\book\analysis.txt .\build\book\pipeline.goat
 ```
 
 The result appears on the screen, and the analyzer's information goes into `analysis.txt`. Subsequent generated files will also reside in `build/book`.
@@ -93,13 +93,13 @@ Function bodies are generated later: the surrounding program's code is created f
 Inspect the bytecode without optional transformations. On Linux:
 
 ```sh
-./goat --optimize none --native off --print-bytecode build/book/pipeline.goat
+./target/goat --optimize none --native off --print-bytecode build/book/pipeline.goat
 ```
 
 In Windows PowerShell:
 
 ```powershell
-.\goat.exe --optimize none --native off --print-bytecode .\build\book\pipeline.goat
+.\target\goat.exe --optimize none --native off --print-bytecode .\build\book\pipeline.goat
 ```
 
 The command prints a listing (a textual representation of instructions) and then runs the program. It contains the following sequence; only the instructions evaluating `println(step(4))` are shown here, without numeric string-data indices:
@@ -126,15 +126,15 @@ For a supported specialization, the same analyzed tree can produce C. This is an
 On Linux:
 
 ```sh
-./goat --save-c build/book/pipeline.goat
-./goat --native required --save-native build/book/native.txt build/book/pipeline.goat
+./target/goat --save-c build/book/pipeline.goat
+./target/goat --native required --save-native build/book/native.txt build/book/pipeline.goat
 ```
 
 In Windows PowerShell:
 
 ```powershell
-.\goat.exe --save-c .\build\book\pipeline.goat
-.\goat.exe --native required --save-native .\build\book\native.txt .\build\book\pipeline.goat
+.\target\goat.exe --save-c .\build\book\pipeline.goat
+.\target\goat.exe --native required --save-native .\build\book\native.txt .\build\book\pipeline.goat
 ```
 
 The first command saves `pipeline.c` without executing the program. The second performs its own preparation; it does not require C to have been saved beforehand. It needs an external C compiler: `cc` on Linux and `gcc` on Windows by default, with the choice configurable through the `CC` environment variable.
@@ -165,19 +165,19 @@ Every run so far has begun with source code. Separate compilation (saving a prep
 On Linux:
 
 ```sh
-./goat --compile --native off build/book/pipeline.goat
-./goat --run --native off build/book/pipeline.gbin
-./goat --compile --native required build/book/pipeline.goat
-./goat --run --native required --save-native build/book/saved-native.txt build/book/pipeline.gbin
+./target/goat --compile --native off build/book/pipeline.goat
+./target/goat --run --native off build/book/pipeline.gbin
+./target/goat --compile --native required build/book/pipeline.goat
+./target/goat --run --native required --save-native build/book/saved-native.txt build/book/pipeline.gbin
 ```
 
 In Windows PowerShell:
 
 ```powershell
-.\goat.exe --compile --native off .\build\book\pipeline.goat
-.\goat.exe --run --native off .\build\book\pipeline.gbin
-.\goat.exe --compile --native required .\build\book\pipeline.goat
-.\goat.exe --run --native required --save-native .\build\book\saved-native.txt .\build\book\pipeline.gbin
+.\target\goat.exe --compile --native off .\build\book\pipeline.goat
+.\target\goat.exe --run --native off .\build\book\pipeline.gbin
+.\target\goat.exe --compile --native required .\build\book\pipeline.goat
+.\target\goat.exe --run --native required --save-native .\build\book\saved-native.txt .\build\book\pipeline.gbin
 ```
 
 The first command saves bytecode in `pipeline.gbin`; the second executes it and prints `5`. The third saves `pipeline.gbin` again, now with an association to a native library: `pipeline.so` on Linux or `pipeline.dll` on Windows appears alongside it. The fourth loads this pair and also prints `5`. Commands with `--compile` do not execute the user program.

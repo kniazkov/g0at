@@ -104,7 +104,7 @@ println(sum(10));
 println(sum(5000));
 ```
 
-`./goat --native required --print-native docs/book/examples/22-native-for.goat` выводит `45` и `12497500`. При достаточном запасе стека отчёт содержит два успешных нативных входа без повторов. Число итераций обоих циклов не ограничено. В PowerShell вместо `./goat` используется `.\goat.exe`.
+`./target/goat --native required --print-native docs/book/examples/22-native-for.goat` выводит `45` и `12497500`. При достаточном запасе стека отчёт содержит два успешных нативных входа без повторов. Число итераций обоих циклов не ограничено. В PowerShell вместо `./target/goat` используется `.\target\goat.exe`.
 
 ### Встроенный модуль числа
 
@@ -157,12 +157,12 @@ println(calculate(1.5));
 4.0
 ```
 
-Из корня репозитория, где доступен `./goat`, подготовим рабочую копию:
+Из корня репозитория, где доступен `./target/goat`, подготовим рабочую копию:
 
 ```sh
 mkdir -p build/book-native
 cp docs/book/examples/22-native-module.goat build/book-native/module.goat
-./goat --save-c build/book-native/module.goat
+./target/goat --save-c build/book-native/module.goat
 ```
 
 Рядом появится `module.c`. В нём следует искать специализации обеих функций для целых и вещественных аргументов, временные переменные, предварительные объявления и адаптеры. Вызов `calculate` обращается к типизированной C-функции `twice` непосредственно; упаковка ABI между этими двумя функциями не нужна.

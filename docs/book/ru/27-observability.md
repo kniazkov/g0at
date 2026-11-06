@@ -28,9 +28,9 @@ println(twice(value));
 Его результат — `4`. Ветвь с `100` недостижима, а для `twice` можно получить целочисленную специализацию. Из корня репозитория:
 
 ```sh
-./goat --optimize none --print-source-code docs/book/examples/27-observability.goat
-./goat --print-source-code docs/book/examples/27-observability.goat
-./goat --optimize none --print-bytecode docs/book/examples/27-observability.goat
+./target/goat --optimize none --print-source-code docs/book/examples/27-observability.goat
+./target/goat --print-source-code docs/book/examples/27-observability.goat
+./target/goat --optimize none --print-bytecode docs/book/examples/27-observability.goat
 ```
 
 Восстановленный текст строится из AST: комментарии и исходные пробелы не восстанавливаются. При `none` сохраняется исходная структура вычислений; при `all` видны выбранные замены и удалённые недостижимые действия. Это способ проверить преобразование дерева, но не доказательство эквивалентности двух программ для всех входов.
@@ -42,7 +42,7 @@ println(twice(value));
 ## 27.3. Журнал: наблюдения и доказательства
 
 ```sh
-./goat --print-analysis docs/book/examples/27-observability.goat
+./target/goat --print-analysis docs/book/examples/27-observability.goat
 ```
 
 Среди строк журнала находятся:
@@ -67,7 +67,7 @@ println(twice(value));
 
 ```sh
 mkdir -p build/book-observe
-./goat --save-graph build/book-observe/program.svg docs/book/examples/27-observability.goat
+./target/goat --save-graph build/book-observe/program.svg docs/book/examples/27-observability.goat
 ```
 
 [visualization.c](https://github.com/kniazkov/g0at/blob/b1f72ad8ccd273427f256243ad4d1625ced37a77/src/graph/visualization.c) строит DOT и вызывает Graphviz, затем удаляет промежуточный `.dot`. Допустимы `.svg` и `.png`.
@@ -93,7 +93,7 @@ mkdir -p build/book-observe
 ## 27.5. Подтверждение реального нативного входа
 
 ```sh
-./goat --native required --print-native docs/book/examples/27-observability.goat
+./target/goat --native required --print-native docs/book/examples/27-observability.goat
 ```
 
 При обычном достаточном запасе стека после `4` выводится:
@@ -113,7 +113,7 @@ retries=0
 Чтобы не смешивать журнал с результатом программы, используем файлы:
 
 ```sh
-./goat --save-analysis build/book-observe/analysis.txt --native required --save-native build/book-observe/native.txt docs/book/examples/27-observability.goat
+./target/goat --save-analysis build/book-observe/analysis.txt --native required --save-native build/book-observe/native.txt docs/book/examples/27-observability.goat
 ```
 
 На stdout останется результат программы. Сообщения об ошибках по-прежнему идут в stderr. Параметры и запрещённые сочетания собраны в [приложении Д](appendix-e-launch-interfaces.md); проверка цветов и выбранного представления — в [check_graph.sh](https://github.com/kniazkov/g0at/blob/b1f72ad8ccd273427f256243ad4d1625ced37a77/scripts/check_graph.sh).

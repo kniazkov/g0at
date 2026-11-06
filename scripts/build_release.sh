@@ -13,5 +13,5 @@ cmake -S "$repo_root" -B "$build_dir" \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="${CC:-gcc}"
 cmake --build "$build_dir" --target goat goat-inspect goat-merge module_delivery_scenarios package_scenarios frozen_samples format_vectors graph_scenarios module_book_scenarios module_delivery_requirements_scenarios module_musl_scenarios
 cmake --build "$build_dir" --target package --config Release
-cp "$build_dir/goat" "$repo_root/goat"
+cmake "-DGOAT_BUILD_DIR=$build_dir" -P "$repo_root/scripts/publish_tools.cmake"
 printf '\nDone.\n'

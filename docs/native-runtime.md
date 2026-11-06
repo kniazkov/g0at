@@ -30,7 +30,7 @@ DLL/SO; отдельная динамическая библиотека Goat п
 старые файлы SDK. Ручная сборка экспортированного модуля на Linux:
 
 ```sh
-./goat --save-c program.goat
+./target/goat --save-c program.goat
 cc -std=c11 -O2 -fPIC -shared -fno-fast-math -ffp-contract=off program.c libgoat_native.a -lm -o program.so
 ```
 

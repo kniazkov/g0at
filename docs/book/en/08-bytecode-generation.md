@@ -96,11 +96,11 @@ println(choose(3));
 From the repository root:
 
 ```sh
-./goat --optimize none --print-bytecode docs/book/examples/08-bytecode.goat
+./target/goat --optimize none --print-bytecode docs/book/examples/08-bytecode.goat
 ```
 
 ```powershell
-.\goat.exe --optimize none --print-bytecode .\docs\book\examples\08-bytecode.goat
+.\target\goat.exe --optimize none --print-bytecode .\docs\book\examples\08-bytecode.goat
 ```
 
 Below is the same listing in compact notation: every index is explicit, and names aid reading. Descriptor numbers belong to this particular example.

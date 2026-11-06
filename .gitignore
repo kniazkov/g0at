@@ -1,11 +1,16 @@
-.vscode
-.idea
-build
-build-mingw32
+/.vscode/
+/.idea/
+/build/
+/build-mingw32/
+/build-mingw64/
+/target/
+# Outputs left by older build scripts.
 /goat
-goat.exe
-functional_testing.exe
-doxygen
+/goat.exe
+/functional_testing.exe
+/doxygen/
 
+# Compiled programs next to user sources; checked-in format fixtures remain visible.
 *.gbin
-build-mingw64
+!/test/data/**/*.gbin
+!/docs/module-format-v1/vectors/*.gbin

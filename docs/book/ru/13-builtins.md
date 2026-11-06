@@ -99,11 +99,11 @@ println(int(text, -1) + 1);
 Если ввести строку `41` и нажать Enter, программа напечатает `42`. Из корня репозитория тот же пример можно запустить с перенаправлением:
 
 ```sh
-printf '41\n' | ./goat docs/book/examples/13-input.goat
+printf '41\n' | ./target/goat docs/book/examples/13-input.goat
 ```
 
 ```powershell
-'41' | .\goat.exe .\docs\book\examples\13-input.goat
+'41' | .\target\goat.exe .\docs\book\examples\13-input.goat
 ```
 
 > [!CAUTION]

@@ -104,7 +104,7 @@ println(count(100));
 При обычном достаточном запасе стека команда:
 
 ```sh
-./goat --native required --print-native docs/book/examples/25-fallback.goat
+./target/goat --native required --print-native docs/book/examples/25-fallback.goat
 ```
 
 даёт:

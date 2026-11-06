@@ -122,13 +122,13 @@ println(missing);
 It prints `null`, then `5`, each on a new line: the first `println` reads a name that is not declared yet and gets `null`, `missing = 5` then declares a constant with the value `5`, and the last call prints `5`. To see the inserted declaration on Linux:
 
 ```sh
-./goat --optimize none --enable-warnings --print-source-code docs/book/examples/07-implicit.goat
+./target/goat --optimize none --enable-warnings --print-source-code docs/book/examples/07-implicit.goat
 ```
 
 In Windows PowerShell:
 
 ```powershell
-.\goat.exe --optimize none --enable-warnings --print-source-code .\docs\book\examples\07-implicit.goat
+.\target\goat.exe --optimize none --enable-warnings --print-source-code .\docs\book\examples\07-implicit.goat
 ```
 
 In the reconstructed source, the second statement is replaced by `const missing = 5;`. A warning identifies the read of `missing` before declaration; the program then executes. The warning and program output go to different streams, so their relative on-screen ordering may depend on the environment.

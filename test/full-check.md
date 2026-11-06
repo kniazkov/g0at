@@ -11,7 +11,10 @@ small value such as 4 when running alongside other applications.
 
 The existing default, `--build-only` and `--test-only` modes remain unchanged.
 `--full-check` is a separate mode: it always configures, builds and tests both
-configurations. It does not overwrite the quick build or the root `goat` executable.
+configurations. It does not overwrite the quick build directory. After all checks
+succeed, it publishes the Release `goat`, `goat-inspect` and `goat-merge` tools to
+`target/` (with `.exe` on Windows). A failed check leaves the previous publication
+untouched; a publication failure makes the full check fail.
 
 ## Prerequisites
 

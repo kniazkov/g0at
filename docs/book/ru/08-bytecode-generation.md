@@ -96,11 +96,11 @@ println(choose(3));
 Из корня репозитория:
 
 ```sh
-./goat --optimize none --print-bytecode docs/book/examples/08-bytecode.goat
+./target/goat --optimize none --print-bytecode docs/book/examples/08-bytecode.goat
 ```
 
 ```powershell
-.\goat.exe --optimize none --print-bytecode .\docs\book\examples\08-bytecode.goat
+.\target\goat.exe --optimize none --print-bytecode .\docs\book\examples\08-bytecode.goat
 ```
 
 Ниже тот же листинг в компактной записи: каждый номер указан явно, имена добавлены для чтения. Числа дескрипторов относятся именно к этому примеру.

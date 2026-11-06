@@ -63,13 +63,13 @@ ZIP-модуль — другой контейнер: `module.json`, `bytecode.b
 ```sh
 mkdir -p build/book-native/run
 cp docs/book/examples/22-native-module.goat build/book-native/module.goat
-./goat --compile --native required build/book-native/module.goat
+./target/goat --compile --native required build/book-native/module.goat
 cp build/book-native/module.gbin build/book-native/module.so build/book-native/run/
-CC=goat-no-such-compiler ./goat --run --native required build/book-native/run/module.gbin
-./goat --run --native off build/book-native/run/module.gbin
+CC=goat-no-such-compiler ./target/goat --run --native required build/book-native/run/module.gbin
+./target/goat --run --native off build/book-native/run/module.gbin
 ```
 
-Оба запуска печатают `7`, `6`, `4.0` на отдельных строках. Каталог запуска не содержит исходника, несуществующий компилятор не вызывается. На Windows используйте `.\goat.exe`, `Copy-Item` и соседнюю `.dll`; при проверке независимости от компилятора сохраняйте и восстанавливайте `$env:CC`.
+Оба запуска печатают `7`, `6`, `4.0` на отдельных строках. Каталог запуска не содержит исходника, несуществующий компилятор не вызывается. На Windows используйте `.\target\goat.exe`, `Copy-Item` и соседнюю `.dll`; при проверке независимости от компилятора сохраняйте и восстанавливайте `$env:CC`.
 
 Примеры именованных ZIP-модулей и переноса приведены в [главе 30](30-modules.md) и [тестах поставки](../../module-delivery-tests.md). ZIP-модулю не нужна внешняя соседняя нативная библиотека, но использованные архивы зависимостей должны оставаться доступны через настроенные корни поиска модулей.
 

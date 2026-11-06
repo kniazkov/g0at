@@ -102,13 +102,13 @@ Output:
 To inspect the result, print reconstructed source with optimizations disabled. On Linux:
 
 ```sh
-./goat --optimize none --print-source-code docs/book/examples/06-expressions.goat
+./target/goat --optimize none --print-source-code docs/book/examples/06-expressions.goat
 ```
 
 In Windows PowerShell:
 
 ```powershell
-.\goat.exe --optimize none --print-source-code .\docs\book\examples\06-expressions.goat
+.\target\goat.exe --optimize none --print-source-code .\docs\book\examples\06-expressions.goat
 ```
 
 The command then executes the program, so the results follow the source listing. Reconstructed text shows the nodes' representation, not a byte-for-byte file copy: original whitespace and comments are not retained.

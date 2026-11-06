@@ -15,13 +15,13 @@ Goat использует знакомые обозначения: `var`, `const
 Примеры сохранены в [общем каталоге](../examples/). После сборки интерпретатора их можно запускать из корня репозитория. Например, на Linux:
 
 ```sh
-./goat --native off docs/book/examples/02-values.goat
+./target/goat --native off docs/book/examples/02-values.goat
 ```
 
 В Windows PowerShell:
 
 ```powershell
-.\goat.exe --native off .\docs\book\examples\02-values.goat
+.\target\goat.exe --native off .\docs\book\examples\02-values.goat
 ```
 
 Здесь нативное исполнение отключено: пока нас интересуют правила языка, которые реализует VM (программа, выполняющая инструкции байткода).

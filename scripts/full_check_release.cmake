@@ -2,6 +2,7 @@
 # Distributed under the MIT license; see LICENSE.txt.
 # Release-safe labels from build_and_test.yml; keep aligned when CI coverage changes.
 set(release_labels
+  build-publication
   process-input
   process-stream
   scenario-context

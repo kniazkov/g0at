@@ -100,11 +100,11 @@ Analysis of `input()` produces an arbitrary string. It may be empty or nonempty,
 From the repository root:
 
 ```sh
-printf 'yes\n' | ./goat --print-analysis docs/book/examples/14-domains.goat
+printf 'yes\n' | ./target/goat --print-analysis docs/book/examples/14-domains.goat
 ```
 
 ```powershell
-'yes' | .\goat.exe --print-analysis .\docs\book\examples\14-domains.goat
+'yes' | .\target\goat.exe --print-analysis .\docs\book\examples\14-domains.goat
 ```
 
 After the log, the program prints `3`: this run selected the first branch. With an empty line it prints `6`. One execution result does not contradict the analysis range: the range describes both considered paths, while a run follows one.

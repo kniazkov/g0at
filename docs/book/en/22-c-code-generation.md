@@ -104,7 +104,7 @@ println(sum(10));
 println(sum(5000));
 ```
 
-`./goat --native required --print-native docs/book/examples/22-native-for.goat` prints `45` and `12497500`. With sufficient stack headroom, the report has two successful native entries and no retries. Neither loop is limited by its iteration count. In PowerShell, use `.\goat.exe` in place of `./goat`.
+`./target/goat --native required --print-native docs/book/examples/22-native-for.goat` prints `45` and `12497500`. With sufficient stack headroom, the report has two successful native entries and no retries. Neither loop is limited by its iteration count. In PowerShell, use `.\target\goat.exe` in place of `./target/goat`.
 
 ### The built-in absolute value
 
@@ -157,12 +157,12 @@ Execution result:
 4.0
 ```
 
-From the repository root, with `./goat` available, prepare a working copy:
+From the repository root, with `./target/goat` available, prepare a working copy:
 
 ```sh
 mkdir -p build/book-native
 cp docs/book/examples/22-native-module.goat build/book-native/module.goat
-./goat --save-c build/book-native/module.goat
+./target/goat --save-c build/book-native/module.goat
 ```
 
 This creates `module.c` beside the source. Look for integer and real specializations of both functions, temporaries, forward declarations, and adapters. `calculate` calls the typed C function for `twice` directly; no ABI packing is needed between these two functions.

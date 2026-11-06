@@ -37,7 +37,7 @@ their configure/build/run sequences.
 The Debug build scripts accept `--build-only` or `--test-only` before the optional
 job count. CI uses these modes to time the same core runners separately; the
 default still builds and tests. Test-only mode requires the preceding Debug build
-(including the root `goat.exe` copy on Windows). Linux CI exercises both modes
+(including `build/goat.exe` on Windows); it does not depend on the published `target/` copies. Linux CI exercises both modes
 from outside the checkout with the same `BUILD_DIR`.
 
 Labels select `core`, `integration`, `native`, `format`, `sanitizer`, `fault`,
@@ -263,3 +263,8 @@ GOAT_BINARY="$PWD/build/goat" GRAPH_SCENARIOS_BINARY="$PWD/build/graph_scenarios
 Inputs remain read-only. The C runner copies each quartet into its unique build
 workspace; failures and `--keep-work` preserve the actual inspected files.
 See [fixture provenance and predicate map](data/graph/README.md).
+
+`integration.build_publication` tests the shared publication step with real host
+executables: all three tools, a path with spaces, an unrelated working directory,
+repeated replacement, executable permissions, missing inputs and obstructed
+destinations. Debug and Release CI run it on Linux and Windows.
