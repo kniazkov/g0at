@@ -1,4 +1,4 @@
-name: UCRT64 crash diagnosis
+name: UCRT64 crash verification
 on:
   push:
     branches: [diagnose/ucrt64-abort]
@@ -6,13 +6,12 @@ permissions:
   contents: read
 jobs:
   probe:
-    name: UCRT64 ${{ matrix.crash }} ${{ matrix.config }}
+    name: UCRT64 final patch ${{ matrix.config }}
     runs-on: windows-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        crash: [abort, terminate]
         config: [Debug, Release]
     steps:
       - uses: actions/checkout@v4
@@ -23,18 +22,15 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-make
-      - name: Select controlled crash mechanism
-        shell: msys2 {0}
-        run: |
-          if [ "${{ matrix.crash }}" = terminate ]; then
-            sed -i 's/abort();/TerminateProcess(GetCurrentProcess(), 0xc0000005);/g' test/src/component/inspect_probe_library.c
-          fi
-          gcc --version
       - name: Build inspection scenarios
         shell: msys2 {0}
         run: |
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.config }}
           cmake --build build --parallel 4 --target inspect_probe_scenarios
+      - name: Check all probe scenarios
+        shell: msys2 {0}
+        run: |
+          ctest --test-dir build --output-on-failure --parallel 4 -R '^integration[.]inspect_probe[.]'
       - name: Repeat crashes under parallel load
         shell: msys2 {0}
         run: |
@@ -43,7 +39,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: crash-${{ matrix.crash }}-${{ matrix.config }}
+          name: final-crash-${{ matrix.config }}
           path: |
             build/crash-repeat.log
             build/Testing/Temporary/LastTest.log
