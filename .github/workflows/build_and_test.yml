@@ -686,7 +686,6 @@ jobs:
         with:
           name: failures-Windows-GCC-${{ matrix.msystem }}
           path: |
-            build/**/scenario-*/**/markers/events
             build/**/package-diagnostics/**
             build/runtime-floor-evidence/**
             build/runtime-floor/**

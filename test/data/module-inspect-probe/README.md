@@ -60,21 +60,6 @@ original deadline, never accepted as absence. Persistent denial still fails.
 Reports use the shared strict `inspect_report` parser and schema validator;
 duplicate fields, malformed UTF-8 and malformed report structures are rejected.
 
-Intentional fixture crashes use `TerminateProcess(GetCurrentProcess(), 0xc0000005)`
-on Windows and `abort()` on POSIX. UCRT `abort()` can invoke Windows Error Reporting
-before process termination, so it is not a reliable immediate-crash fixture under
-the one-second probe deadline. Disabling reporting alone is insufficient: the CRT
-fallback can run DLL detach callbacks. See Microsoft's
-[`abort` documentation](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/abort).
-The production inspector still observes arbitrary library crashes and deadlines
-normally; only the test's deliberate crash mechanism changes.
-
-Crash scenarios require a flushed `crash` marker and the expected native result
-(`0xc0000005` on Windows, `SIGABRT` on POSIX). They continue checking the probe
-stage, cleanup and descendant lifetime. Probe state/stage mismatches print the
-expected and actual values plus fixture events; Windows failure artifacts retain
-the event files alongside owner reports. Probe deadlines remain unchanged.
-
 Production execution and fault-hook semantics are unchanged. Validation evidence
 is recorded in the migration PR after Debug/Release parity and CI complete.
 
@@ -92,18 +77,6 @@ build/probe-Debug/inspect_probe_scenarios integration.inspect_probe.success \
 
 Repeat with Release. CMake supplies absolute executable paths in registered tests;
 the direct interface also resolves relative paths before changing directories.
-
-To stress crash classification and cleanup on a native Windows runner, build the
-same target in an MSYS2 UCRT64 shell with `-G "MinGW Makefiles"`, then run:
-
-```sh
-ctest --test-dir build/probe-Debug --output-on-failure --parallel 4 \
-  --repeat until-fail:40 \
-  -R '^integration[.]inspect_probe[.](load-crash|unload-crash|tree-crash|cleanup-timeout-load-crash)$'
-```
-
-`until-fail` requires every repetition to pass; it does not retry failed tests to
-turn a flaky run green. Repeat for Release and the other Windows CRT targets.
 
 ## Local validation and remote gate
 

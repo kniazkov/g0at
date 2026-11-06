@@ -1,4 +1,4 @@
-name: UCRT64 crash verification
+name: UCRT64 instrumented master
 on:
   push:
     branches: [diagnose/ucrt64-abort]
@@ -6,42 +6,55 @@ permissions:
   contents: read
 jobs:
   probe:
-    name: UCRT64 final patch ${{ matrix.config }}
+    name: UCRT64 original full suite ${{ matrix.replica }}
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
-        config: [Debug, Release]
+        replica: [1, 2]
     steps:
       - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
           install: >-
+            diffutils
             mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-x86_64-gcc
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-make
-      - name: Build inspection scenarios
+      - name: Locate delivery compilers
         shell: msys2 {0}
         run: |
-          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.config }}
-          cmake --build build --parallel 4 --target inspect_probe_scenarios
-      - name: Check all probe scenarios
+          echo "GOAT_DELIVERY_MINGW64_CC=$(cygpath -w /mingw64/bin/gcc.exe)" >> "$GITHUB_ENV"
+          echo "GOAT_DELIVERY_UCRT64_CC=$(cygpath -w /ucrt64/bin/gcc.exe)" >> "$GITHUB_ENV"
+      - name: Build original master with probe diagnostics
         shell: msys2 {0}
         run: |
-          ctest --test-dir build --output-on-failure --parallel 4 -R '^integration[.]inspect_probe[.]'
-      - name: Repeat crashes under parallel load
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build --parallel 4
+      - name: Exercise original integration workload
         shell: msys2 {0}
         run: |
           set -o pipefail
-          ctest --test-dir build --verbose --parallel 4 --repeat until-fail:40 -R '^integration[.]inspect_probe[.](load-crash|unload-crash|tree-crash|cleanup-timeout-load-crash)$' 2>&1 | tee build/crash-repeat.log
+          ctest --test-dir build --output-on-failure --parallel 4 -L integration 2>&1 | tee build/integration.log
+      - name: Record Windows crash reports
+        if: always()
+        shell: pwsh
+        run: |
+          Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddHours(-1)} -ErrorAction SilentlyContinue |
+            Where-Object { $_.ProviderName -in 'Windows Error Reporting', 'Application Error' } |
+            Select-Object -First 30 TimeCreated, Id, ProviderName, Message |
+            Format-List | Out-File build/windows-crashes.log
+          exit 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: final-crash-${{ matrix.config }}
+          name: original-full-${{ matrix.replica }}
           path: |
-            build/crash-repeat.log
+            build/integration.log
+            build/windows-crashes.log
             build/Testing/Temporary/LastTest.log
             build/scenario-*/**/events
             build/scenario-*/**/stdout.bin
