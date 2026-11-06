@@ -539,7 +539,10 @@ compilation_error_t *analyze(node_t *root_node,
     if (get_most_severe_compilation_error(errors) > WARNING)
         return errors;
 
-    interpret(root_node, memory, collector);
+    if (options->module_source)
+        interpret_module(root_node, memory, collector);
+    else
+        interpret(root_node, memory, collector);
 
     function_call_graph_t *calls = build_function_call_graph(root_node, memory->graph, 1024);
     analyze_function_return_types(root_node);
@@ -550,7 +553,7 @@ compilation_error_t *analyze(node_t *root_node,
     propagate_function_effects(calls, 64);
     analyze_function_c_contracts(root_node);
     analyze_function_c_bodies(calls, 64);
-    if (requires_access_safe_optimization(root_node)
+    if (options->module_source || requires_access_safe_optimization(root_node)
         || requires_concurrency_safe_optimization(root_node)) {
         /* Scope identities and mutable flat captures are observable. Do not prune or fold
            bindings from abstract samples; only closed scalar expressions can be replaced. */

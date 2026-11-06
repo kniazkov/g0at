@@ -637,3 +637,92 @@ goat_container_status goat_module_container_read(const void *data,
                                              NULL,
                                              NULL);
 }
+
+goat_container_status goat_module_container_from_parts(const yyjson_doc *metadata,
+                                                       zip_view_t bytecode,
+                                                       const goat_container_native *native,
+                                                       size_t count,
+                                                       goat_module_container **out) {
+    if (out)
+        *out = NULL;
+    if (!out || !metadata || !bytecode.data || (count && !native))
+        return GOAT_CONTAINER_INVALID;
+    goat_module_container *c = calloc(1, sizeof(*c));
+    if (!c)
+        return GOAT_CONTAINER_MEMORY;
+    goat_container_status status = GOAT_CONTAINER_MEMORY;
+    char *json = NULL;
+    size_t length = 0;
+    goat_module_json_error je =
+        goat_module_json_write(metadata, GOAT_MODULE_METADATA, false, &json, &length);
+    if (!je)
+        je = goat_module_json_read(json, length, GOAT_MODULE_METADATA, &c->metadata);
+    goat_module_json_free(json);
+    if (je) {
+        status = je == GOAT_MODULE_JSON_MEMORY ? GOAT_CONTAINER_MEMORY : GOAT_CONTAINER_JSON;
+        goto done;
+    }
+    yyjson_val *variants = yyjson_obj_get(yyjson_doc_get_root(c->metadata), "native");
+    if (count != yyjson_arr_size(variants)) {
+        status = GOAT_CONTAINER_UNDECLARED;
+        goto done;
+    }
+    bool matches = false;
+    je = goat_module_main_hash_verify(c->metadata, bytecode.data, bytecode.size, &matches);
+    if (je || !matches) {
+        status = GOAT_CONTAINER_MAIN_HASH;
+        goto done;
+    }
+    void *code = malloc(bytecode.size);
+    if (!code)
+        goto done;
+    memcpy(code, bytecode.data, bytecode.size);
+    c->bytecode = (zip_view_t){code, bytecode.size};
+    if (count > SIZE_MAX / sizeof(*c->native))
+        goto done;
+    c->native = count ? calloc(count, sizeof(*c->native)) : NULL;
+    if (count && !c->native)
+        goto done;
+    c->native_count = count;
+    for (size_t i = 0; i < count; ++i) {
+        yyjson_val *variant = yyjson_arr_get(variants, i);
+        yyjson_val *name = yyjson_obj_get(variant, "library");
+        const goat_container_native *part = NULL;
+        for (size_t j = 0; j < count; ++j) {
+            if (!native[j].name || !native[j].bytes.data) {
+                status = GOAT_CONTAINER_INVALID;
+                goto done;
+            }
+            if (native[j].name_length == yyjson_get_len(name)
+                && !memcmp(native[j].name, yyjson_get_str(name), native[j].name_length)) {
+                if (part) {
+                    status = GOAT_CONTAINER_DUPLICATE;
+                    goto done;
+                }
+                part = native + j;
+            }
+        }
+        part_kind kind;
+        if (!part || !path_kind((zip_view_t){(const uint8_t *)part->name, part->name_length}, &kind)
+            || kind != PART_NATIVE) {
+            status = GOAT_CONTAINER_PATH;
+            goto done;
+        }
+        if (!native_hash(part->bytes, yyjson_get_str(yyjson_obj_get(variant, "hash")))) {
+            status = GOAT_CONTAINER_NATIVE_HASH;
+            goto done;
+        }
+        void *bytes = malloc(part->bytes.size);
+        if (!bytes)
+            goto done;
+        memcpy(bytes, part->bytes.data, part->bytes.size);
+        c->native[i] = (goat_container_native){yyjson_get_str(name),
+                                               yyjson_get_len(name),
+                                               {bytes, part->bytes.size}};
+    }
+    *out = c;
+    return GOAT_CONTAINER_OK;
+done:
+    goat_module_container_free(c);
+    return status;
+}

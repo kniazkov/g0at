@@ -106,3 +106,14 @@ size_t goat_module_container_native_count(const goat_module_container *container
 bool goat_module_container_native_at(const goat_module_container *container,
                                      size_t index,
                                      goat_container_native *out);
+
+/** Build an owned container directly from compiler output, without ZIP encoding.
+ * Metadata, declared payloads, safe names and all hashes are checked exactly as
+ * for an archive. Inputs are borrowed only during the call. Bytecode semantics
+ * and native descriptors are checked by the VM validation layer afterwards.
+ */
+goat_container_status goat_module_container_from_parts(const yyjson_doc *metadata,
+                                                       zip_view_t bytecode,
+                                                       const goat_container_native *native,
+                                                       size_t count,
+                                                       goat_module_container **out);

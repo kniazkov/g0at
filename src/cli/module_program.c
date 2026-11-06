@@ -5,7 +5,9 @@
 #include "module_program.h"
 
 #include "c_output.h"
+#include "codegen/source_builder.h"
 #include "common/module_build.h"
+#include "graph/visualization.h"
 #include "lib/files/file_system.h"
 #include "lib/files/io.h"
 #include "lib/memory/allocate.h"
@@ -234,22 +236,44 @@ static int execute_snapshot(const options_t *options,
     return status;
 }
 
+static bool source_output(node_t *root,
+                          parser_memory_t *memory,
+                          analysis_collector_t *collector,
+                          void *opaque) {
+    const options_t *options = opaque;
+    if (collector) {
+        string_value_t report = analysis_collector_to_text(collector);
+        if (options->print_analysis)
+            print_utf8(report.data);
+        bool ok = !options->analysis_output_file
+                  || write_utf8_file(options->analysis_output_file->full_path, report.data);
+        FREE_STRING(report);
+        if (!ok)
+            return false;
+    }
+    if (options->print_source_code) {
+        source_builder_t *builder = create_source_builder();
+        generate_indented_goat_code_from_node(root, builder, 0);
+        string_value_t text = build_source(builder);
+        if (text.data)
+            print_utf8(text.data);
+        FREE_STRING(text);
+        destroy_source_builder(builder);
+    }
+    if (options->graph_output_file
+        && (!is_graphviz_available()
+            || !generate_image(root, options->graph_output_file->full_path)))
+        return false;
+    if (options->print_c || options->save_c || options->save_library)
+        return output_c_module(options, memory->graph, root);
+    return true;
+}
+
 int try_module_program(const options_t *options, bool *handled) {
     *handled = false;
     bool descriptor = extension(options, "gmod");
     bool binary = options->run_binary || extension(options, "gbin");
-    if (binary) {
-        FILE *file = FOPEN(options->launch_path, "rb");
-        char magic[8] = {0};
-        size_t count = file ? FREAD(magic, 1, sizeof(magic), file) : 0;
-        if (file)
-            FCLOSE(file);
-        /* The legacy reader owns raw GOATBC01 bytecode, GOATPG01 programs and
-         * their malformed/truncated diagnostics. Only ZIP inputs use modules. */
-        if (count < 2 || memcmp(magic, "PK", 2))
-            return 0;
-    }
-    *handled = descriptor || binary;
+    *handled = true;
     int result = 1;
     bool native_disabled = false;
     module_sources_t *sources = NULL;
@@ -266,13 +290,9 @@ int try_module_program(const options_t *options, bool *handled) {
     module_writer_error_t writer_error = {0};
     module_snapshot_t *snapshot = NULL;
     native_build_context_t *context = NULL;
-    void *archive = NULL;
-    size_t archive_size = 0;
     char *output = NULL;
     if (!binary) {
         if (module_sources_read(options->launch_path, descriptor, NULL, &sources, &source_error)) {
-            if (!descriptor && source_error.status == MODULE_SOURCES_SYNTAX)
-                goto done; /* Legacy parser owns ordinary-source syntax diagnostics. */
             *handled = true;
             FPRINTF(stderr,
                     "%s:%zu:%zu: %s (%s)\n",
@@ -293,14 +313,12 @@ int try_module_program(const options_t *options, bool *handled) {
                     import_error.message ? import_error.message : "Invalid imports");
             goto done;
         }
-        if (!descriptor && sources->count == 1 && !sources->files[0].includes.count
-            && !imports->count)
-            goto done;
-        *handled = true;
     }
-    if (options->print_c || options->save_c || options->save_library || options->print_source_code
-        || options->print_analysis || options->analysis_output_file || options->graph_output_file) {
-        FPRINTF(stderr, "Source/C/analysis/graph export is not supported for module CLI input.\n");
+    bool export_c = options->print_c || options->save_c || options->save_library;
+    if ((binary || (sources && sources->count > 1))
+        && (export_c || options->print_source_code || options->print_analysis
+            || options->analysis_output_file || options->graph_output_file)) {
+        FPRINTF(stderr, "Source/C/analysis/graph export requires one source file.\n");
         goto done;
     }
     if (prepare_module_search_from_environment(
@@ -352,8 +370,11 @@ int try_module_program(const options_t *options, bool *handled) {
             FREE(message);
             goto done;
         }
-        module_build_options_t build_options = {.override_mode = true,
-                                                .mode = native_mode,
+        module_build_options_t build_options = {.source_options = options,
+                                                .observer = source_output,
+                                                .observer_context = (void *)options,
+                                                .override_mode = true,
+                                                .mode = export_c ? NATIVE_OFF : native_mode,
                                                 .target = options->native_target,
                                                 .compiler = options->native_compiler,
                                                 .probe_timeout_seconds =
@@ -365,12 +386,30 @@ int try_module_program(const options_t *options, bool *handled) {
                           &build_options,
                           &build,
                           &compile_error)) {
-            FPRINTF(stderr,
-                    "file %zu:%zu:%zu: %s\n",
-                    compile_error.file,
-                    compile_error.row,
-                    compile_error.column,
-                    compile_error.message ? compile_error.message : "Module compilation failed.");
+            if (compile_error.row && sources && compile_error.file < sources->count) {
+                string_value_t file = decode_utf8(sources->files[compile_error.file].name);
+                string_value_t message = decode_utf8(compile_error.message);
+                fprintf_utf8(stderr,
+                             compile_error.severity == CRITICAL
+                                 ? get_messages()->critical_compilation_error
+                                 : get_messages()->compilation_error,
+                             file.data,
+                             compile_error.row,
+                             compile_error.column,
+                             message.data);
+                FPRINTF(stderr, "\n");
+                FREE_STRING(file);
+                FREE_STRING(message);
+            } else {
+                FPRINTF(stderr,
+                        "%s\n",
+                        compile_error.message ? compile_error.message
+                                              : "Module compilation failed.");
+            }
+            goto done;
+        }
+        if (export_c) {
+            result = 0;
             goto done;
         }
         if (build->warning) {
@@ -394,17 +433,20 @@ int try_module_program(const options_t *options, bool *handled) {
             goto done;
         module_writer_native_t native = {0};
         module_writer_input_t input = module_build_writer_input(build, &native);
-        if (module_write_memory(&input, NULL, &archive, &archive_size, &writer_error)) {
-            FPRINTF(stderr, "Module packaging failed (%d).\n", writer_error.status);
+        goat_container_native part = {native.name, native.name_length, native.bytes};
+        validated_module_t *root = NULL;
+        module_validation_result_t validation =
+            validate_module_parts(input.metadata,
+                                  input.bytecode,
+                                  input.native_count ? &part : NULL,
+                                  input.native_count,
+                                  options->launch_path,
+                                  &root);
+        if (validation.status) {
+            FPRINTF(stderr, "Compiled module validation failed (%d).\n", validation.status);
             goto done;
         }
-        status = load_module_snapshot_memory(archive,
-                                             archive_size,
-                                             options->launch_path,
-                                             search,
-                                             NULL,
-                                             &snapshot,
-                                             &graph);
+        status = load_module_snapshot_parts(root, search, &snapshot, &graph);
         if (status) {
             graph_error(graph, status);
             goto done;
@@ -462,7 +504,6 @@ int try_module_program(const options_t *options, bool *handled) {
 done:
     FREE(output);
     free_module_snapshot(snapshot);
-    free_module_writer_bytes(archive);
     free_module_graph(graph);
     free_module_graph(source_graph);
     clear_module_writer_error(&writer_error);

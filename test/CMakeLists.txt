@@ -546,3 +546,12 @@ target_link_libraries(timed_execution_testing PRIVATE goat_test_support goat_pro
 # selected by their labels, even when callers use an explicit target list.
 add_dependencies(scenario_execution_testing timed_execution_testing)
 add_dependencies(native_runner_testing native_performance_scenarios timed_execution_testing)
+
+add_test(NAME integration.unified_gbin
+  COMMAND "${CMAKE_COMMAND}"
+    "-DGOAT=$<TARGET_FILE:goat>"
+    "-DINSPECT=$<TARGET_FILE:goat-inspect>"
+    "-DMERGE=$<TARGET_FILE:goat-merge>"
+    "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/unified-gbin"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/unified_gbin.cmake")
+set_tests_properties(integration.unified_gbin PROPERTIES LABELS "integration;module" TIMEOUT 60)

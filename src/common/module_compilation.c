@@ -14,6 +14,7 @@
 #include "analysis/module_interface.h"
 #include "cli/options.h"
 #include "codegen/linker.h"
+#include "goat/module_identity.h"
 #include "graph/declarations.h"
 #include "graph/expression.h"
 #include "graph/function_call.h"
@@ -59,6 +60,7 @@ static void fail(module_compilation_error_t *error,
         return;
     error->file = file;
     if (diagnostic) {
+        error->severity = diagnostic->severity;
         error->message = encode_utf8_view(diagnostic->message, NULL);
         if (diagnostic->position) {
             error->row = diagnostic->position->begin->row;
@@ -538,8 +540,12 @@ static yyjson_doc *metadata(const module_sources_t *sources,
     yyjson_mut_doc_set_root(doc, root);
     yyjson_mut_obj_add_uint(doc, root, "formatVersion", 1);
     yyjson_mut_obj_add_uint(doc, root, "bytecodeVersion", 1);
-    yyjson_mut_obj_add_str(doc, root, "name", "source");
-    yyjson_mut_obj_add_str(doc, root, "version", "0.0.0");
+    const char *name = strrchr(sources->files[0].name, '/');
+    name = name ? name + 1 : sources->files[0].name;
+    const char *dot = strrchr(name, '.');
+    size_t name_length = dot ? (size_t)(dot - name) : strlen(name);
+    yyjson_mut_obj_add_strncpy(doc, root, "name", name, name_length);
+    yyjson_mut_obj_add_str(doc, root, "version", "0");
     if (sources->descriptor) {
         const char *keys[] = {"name", "version", "description", "license", "homepage", "authors"};
         for (size_t i = 0; i < sizeof(keys) / sizeof(*keys); ++i) {
@@ -649,6 +655,28 @@ bool compile_module_sources_with_backend(const module_sources_t *sources,
                                          void *context,
                                          module_compilation_t **out,
                                          module_compilation_error_t *error) {
+    return compile_module_sources_configured(sources,
+                                             dependencies,
+                                             graph,
+                                             NULL,
+                                             NULL,
+                                             NULL,
+                                             backend,
+                                             context,
+                                             out,
+                                             error);
+}
+
+bool compile_module_sources_configured(const module_sources_t *sources,
+                                       const module_dependencies_t *dependencies,
+                                       const module_graph_t *graph,
+                                       const options_t *cli,
+                                       module_source_observer_t observer,
+                                       void *observer_context,
+                                       module_compilation_backend_t backend,
+                                       void *context,
+                                       module_compilation_t **out,
+                                       module_compilation_error_t *error) {
     if (out)
         *out = NULL;
     if (error)
@@ -669,6 +697,19 @@ bool compile_module_sources_with_backend(const module_sources_t *sources,
             || source->includes.count > SIZE_MAX / sizeof(size_t)
             || (source->includes.count && (!source->includes.items || !source->targets))) {
             fail(error, i, NULL, "invalid source snapshot");
+            return false;
+        }
+    }
+    if (!sources->descriptor) {
+        const char *name = strrchr(sources->files[0].name, '/');
+        name = name ? name + 1 : sources->files[0].name;
+        const char *dot = strrchr(name, '.');
+        size_t length = dot ? (size_t)(dot - name) : strlen(name);
+        if (!goat_module_name_valid(name, length)) {
+            fail(error,
+                 0,
+                 NULL,
+                 "source filename is not a valid module name; rename it or use an explicit .gmod");
             return false;
         }
     }
@@ -759,13 +800,24 @@ bool compile_module_sources_with_backend(const module_sources_t *sources,
             goto done;
         }
         options_t options = {.optimization_level = OPTIMIZATION_NONE};
-        diagnostic = analyze(root, memory, &options, NULL);
+        if (cli)
+            options = *cli;
+        options.module_source = true;
+        analysis_collector_t *collector = options.print_analysis || options.analysis_output_file
+                                              ? create_analysis_collector(memory->graph)
+                                              : NULL;
+        diagnostic = analyze(root, memory, &options, collector);
         if (get_most_severe_compilation_error(diagnostic) > WARNING) {
             fail(error, i, diagnostic, NULL);
             goto done;
         }
         roots[i] = root;
-        interpret_module(root, memory, NULL);
+        if (observer && !observer(root, memory, collector, observer_context)) {
+            fail(error, i, NULL, "source export failed");
+            goto done;
+        }
+        if (options.optimization_level == OPTIMIZATION_NONE)
+            interpret_module(root, memory, NULL);
         size_t warning_count = count_call_warnings(root);
         if (warning_count) {
             if (warning_count

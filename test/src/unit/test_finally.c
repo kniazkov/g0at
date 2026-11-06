@@ -6,17 +6,27 @@
 
 #include "analysis_test_support.h"
 #include "codegen/linker.h"
+#include "lib/files/binary_file.h"
 #include "lib/files/file_system.h"
+#include "lib/hash/sha256.h"
 #include "lib/memory/allocate.h"
 #include "model/context.h"
 #include "model/process.h"
 #include "model/thread.h"
 #include "test_macro.h"
-#include "vm/binary.h"
+#include "vm/bytecode.h"
 #include "vm/gc.h"
 #include "vm/vm.h"
 
 #include <stdio.h>
+
+static bytecode_t *read_image(const char *path) {
+    size_t size;
+    void *bytes = read_binary_file(path, 256u * 1024u * 1024u, &size);
+    bytecode_t *code = decode_bytecode_image(bytes, size);
+    FREE(bytes);
+    return code;
+}
 
 bool test_finally_parser(void) {
     const gchar_t *valid[] = {U"try {} finally {}",
@@ -101,20 +111,22 @@ bool test_finally_binary(void) {
     add_instruction(builder, (instruction_t){.opcode = END});
     bytecode_t *code = link_code_and_data(builder, data);
     const char *path = "goat-finally-unit.gbin";
-    ASSERT(save_binary_program(path, code, NULL));
-    binary_program_t saved = load_binary_program(path);
-    ASSERT(saved.code);
+    ASSERT(write_binary_file(path, code->buffer, code->buffer_size));
+    bytecode_t *saved = read_image(path);
+    ASSERT(saved);
     process_t *proc = create_process();
-    ASSERT(run(proc, saved.code) == 0);
+    ASSERT(run(proc, saved) == 0);
     destroy_process(proc);
-    destroy_binary_program(&saved);
+    if (saved)
+        free_bytecode(saved);
     for (size_t i = 0; i < 2; i++) {
         uint32_t address = ((instruction_t *)code->instructions)[i].arg1;
         ((instruction_t *)code->instructions)[i].arg1 = code->instructions_count;
-        ASSERT(save_binary_program(path, code, NULL));
-        saved = load_binary_program(path);
-        ASSERT(!saved.code);
-        destroy_binary_program(&saved);
+        ASSERT(write_binary_file(path, code->buffer, code->buffer_size));
+        saved = read_image(path);
+        ASSERT(!saved);
+        if (saved)
+            free_bytecode(saved);
         ((instruction_t *)code->instructions)[i].arg1 = address;
     }
     proc = create_process();

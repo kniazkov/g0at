@@ -402,13 +402,16 @@ bool build_module(const module_sources_t *sources,
             : create_native_toolchain_context(native_build_cleanup(context.context));
     context.result = CALLOC(sizeof(*context.result));
     bool ok = context.context && context.toolchains
-              && compile_module_sources_with_backend(sources,
-                                                     dependencies,
-                                                     graph,
-                                                     build_native,
-                                                     &context,
-                                                     &context.result->compilation,
-                                                     error);
+              && compile_module_sources_configured(sources,
+                                                   dependencies,
+                                                   graph,
+                                                   options->source_options,
+                                                   options->observer,
+                                                   options->observer_context,
+                                                   build_native,
+                                                   &context,
+                                                   &context.result->compilation,
+                                                   error);
     if (!options->toolchains)
         destroy_native_toolchain_context(context.toolchains);
     if (!options->context)

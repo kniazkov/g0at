@@ -252,3 +252,20 @@ bool set_module_snapshot_native_state(module_snapshot_t *snapshot,
 void *module_snapshot_native_state(module_snapshot_t *snapshot) {
     return snapshot ? snapshot->native_state : NULL;
 }
+
+module_graph_status_t load_module_snapshot_parts(validated_module_t *root,
+                                                 const module_search_t *search,
+                                                 module_snapshot_t **out,
+                                                 module_graph_t **diagnostics) {
+    if (out)
+        *out = NULL;
+    if (diagnostics)
+        *diagnostics = NULL;
+    if (!out || !search) {
+        free_validated_module(root);
+        return MODULE_GRAPH_ARGUMENT;
+    }
+    module_graph_t *graph = NULL;
+    module_graph_status_t status = validate_module_graph_parts(root, search, &graph);
+    return create_snapshot(graph, status, search, out, diagnostics);
+}
