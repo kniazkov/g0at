@@ -4,12 +4,14 @@
 set -euo pipefail
 
 usage() {
-    printf 'Usage: %s [--build-only|--test-only] [jobs]\n' "$0"
+    printf 'Usage: %s [--build-only|--test-only|--full-check] [jobs]\n' "$0"
     printf 'jobs: positive integer; default: CMAKE_BUILD_PARALLEL_LEVEL or logical CPU count.\n'
+    printf '%s\n' '--full-check: local Debug/Release CI checks; Bash and CMake >= 3.21 required.'
     printf 'Default: build and test. --test-only requires an existing Debug build.\n'
 }
 build_mode=all
 case "${1:-}" in
+    --full-check) build_mode=full; shift ;;
     --build-only) build_mode=build; shift ;;
     --test-only) build_mode=test; shift ;;
 esac
@@ -28,6 +30,9 @@ if [[ ! $build_jobs =~ ^[1-9][0-9]*$ || ( $# -eq 1 && -z $1 ) ]]; then
 fi
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ $build_mode == full ]]; then
+    exec cmake "-DGOAT_FULL_JOBS=$build_jobs" -P "$repo_root/scripts/full_check.cmake"
+fi
 cd "$repo_root"
 build_dir="${BUILD_DIR:-$repo_root/build}"
 mkdir -p "$build_dir"

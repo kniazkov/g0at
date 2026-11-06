@@ -170,6 +170,10 @@ jobs:
           test "$(uname -m)" = "${{ matrix.arch }}"
           sudo apt-get update
           sudo apt-get install -y gcc clang cmake make
+      - name: Check local full-check orchestration
+        run: cmake -P test/full_check_driver.cmake
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Build Debug binaries from outside the checkout
         run: |
           repo_root="$PWD"
@@ -455,6 +459,7 @@ jobs:
         with:
           name: failures-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: |
+            build/full-check-driver-test/**
             build/**/package-diagnostics/**
             build/runtime-floor-evidence/**
             build/runtime-floor/**
@@ -534,6 +539,9 @@ jobs:
         run: |
           echo "GOAT_DELIVERY_MINGW64_CC=$(cygpath -w /mingw64/bin/gcc.exe)" >> "$GITHUB_ENV"
           echo "GOAT_DELIVERY_UCRT64_CC=$(cygpath -w /ucrt64/bin/gcc.exe)" >> "$GITHUB_ENV"
+      - name: Check local full-check orchestration
+        shell: msys2 {0}
+        run: cmake -P test/full_check_driver.cmake
       - name: Build Debug binaries
         shell: msys2 {0}
         run: |
