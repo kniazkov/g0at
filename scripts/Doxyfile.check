@@ -1,7 +1,10 @@
 # Lightweight documentation validation; run from the repository root.
 @INCLUDE = src/Doxyfile
-INPUT = lib src include test/src/unit test/src/component test/src/analysis test/src/functional/functional_testing.c
-FILE_PATTERNS = *.c *.h
+INPUT = lib src include test/src/unit test/src/component test/src/analysis test/src/functional/functional_testing.c docs/internals
+FILE_PATTERNS = *.c *.h *.md
+EXAMPLE_PATH = test/data/analysis
+EXAMPLE_PATTERNS = *.goat *.expect
+FILTER_PATTERNS = "*.md=bash scripts/doxygen_markdown.sh"
 OUTPUT_DIRECTORY = build/doxygen-check
 EXTRACT_ALL = YES
 EXTRACT_STATIC = YES
