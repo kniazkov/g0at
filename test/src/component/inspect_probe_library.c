@@ -30,6 +30,18 @@ static int mode_is(const char *expected) {
     return mode && !strcmp(mode, expected);
 }
 
+static void crash(void) {
+    mark("crash");
+#ifdef _WIN32
+    /* UCRT abort() may wait for Windows Error Reporting. This fixture needs an
+     * immediate abnormal exit, without reporting or DLL detach callbacks. */
+    TerminateProcess(GetCurrentProcess(), 0xc0000005);
+    _Exit(99); /* A failed termination must not look like the injected crash. */
+#else
+    abort();
+#endif
+}
+
 static void hang(void) {
 #ifdef _WIN32
     Sleep(INFINITE);
@@ -131,7 +143,7 @@ __attribute__((constructor)) static void loaded(void) {
     if (mode_is("tree") || mode_is("tree-crash") || mode_is("tree-hang"))
         spawn_descendant();
     if (mode_is("load-crash") || mode_is("tree-crash"))
-        abort();
+        crash();
     if (mode_is("load-hang") || mode_is("tree-hang"))
         hang();
     if (mode_is("load-exit-zero"))
@@ -141,7 +153,7 @@ __attribute__((constructor)) static void loaded(void) {
 __attribute__((destructor)) static void unloaded(void) {
     mark("unloaded");
     if (mode_is("unload-crash"))
-        abort();
+        crash();
     if (mode_is("unload-hang"))
         hang();
 }

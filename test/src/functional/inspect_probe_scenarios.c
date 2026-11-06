@@ -13,6 +13,7 @@
 #include "test/support/process_watch.h"
 #include "test/support/registry.h"
 
+#include <signal.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -466,7 +467,16 @@ static jval_t *checked_loading(case_t *c, report_t report) {
     return get(l, "probe");
 }
 
-static void probe_state(scenario_run_t *r, jval_t *p, const char *state, const char *stage) {
+static void probe_state(case_t *c, jval_t *p, const char *state, const char *stage) {
+    scenario_run_t *r = c->s->r;
+    if (!eq(get(p, "state"), state) || (stage && !eq(get(p, "stage"), stage)))
+        fprintf(stderr,
+                "probe mismatch: expected=%s/%s, actual=%s/%s, fixture events=[%s]\n",
+                state,
+                stage ? stage : "any",
+                str(r, get(p, "state")),
+                str(r, get(p, "stage")),
+                events(c));
     REQUIRE(eq(get(p, "state"), state));
     if (stage)
         REQUIRE(eq(get(p, "stage"), stage));
@@ -478,6 +488,20 @@ static void completed(scenario_run_t *r, jval_t *p) {
     REQUIRE(yyjson_mut_arr_size(a) == 4);
     for (size_t i = 0; i < 4; i++)
         REQUIRE(eq(yyjson_mut_arr_get(a, i), names[i]));
+}
+
+static void fixture_crashed(case_t *c, jval_t *p) {
+    scenario_run_t *r = c->s->r;
+    REQUIRE(strstr(events(c), "\ncrash\n"));
+#ifdef _WIN32
+    REQUIRE(yyjson_mut_is_int(get(p, "exitCode"))
+            && yyjson_mut_get_sint(get(p, "exitCode")) == 0xc0000005LL);
+    REQUIRE(yyjson_mut_is_null(get(p, "signal")));
+#else
+    REQUIRE(yyjson_mut_is_int(get(p, "signal"))
+            && yyjson_mut_get_sint(get(p, "signal")) == SIGABRT);
+    REQUIRE(yyjson_mut_is_null(get(p, "exitCode")));
+#endif
 }
 
 static void loaded_once(case_t *c, size_t expected) {
@@ -768,7 +792,9 @@ static void basic_cases(suite_t *s) {
             completed(r, p);
         }
     }
-    probe_state(r, p, state, stage);
+    probe_state(c, p, state, stage);
+    if (!strcmp(kind, "load-crash") || !strcmp(kind, "unload-crash"))
+        fixture_crashed(c, p);
     if (!strcmp(kind, "success")) {
         completed(r, p);
         REQUIRE(!strcmp(events(c), "loaded\nunloaded\n") && value.elapsed < 5);
@@ -1151,7 +1177,9 @@ static void cleanup_timeout(suite_t *s) {
     cleaner->gate = gate;
     pin_alive(r, cleaner);
     jval_t *l = loading(r, value.json);
-    probe_state(r, get(l, "probe"), state, NULL);
+    probe_state(c, get(l, "probe"), state, NULL);
+    if (!strcmp(mode, "load-crash"))
+        fixture_crashed(c, get(l, "probe"));
     jval_t *cleanup = get(l, "cleanup");
     REQUIRE(eq(get(cleanup, "state"), "failed")
             && yyjson_mut_arr_size(get(cleanup, "diagnostics")) > 0);
@@ -1178,7 +1206,9 @@ static void cleanup_timeout(suite_t *s) {
     wait_absent(c, temporary, 15000);
     pin_wait(r, cleaner, 15000);
     value = report(c, s->valid, mode, 0, ARGS("--probe-timeout", "1"));
-    probe_state(r, checked_loading(c, value), state, NULL);
+    probe_state(c, checked_loading(c, value), state, NULL);
+    if (!strcmp(mode, "load-crash"))
+        fixture_crashed(c, checked_loading(c, value));
     loaded_once(c, 2);
 }
 
@@ -1240,7 +1270,9 @@ static void owner_cases(suite_t *s) {
     const char *state = !strcmp(kind, "tree")         ? "passed"
                         : !strcmp(kind, "tree-crash") ? "crashed"
                                                       : "timeout";
-    probe_state(r, checked_loading(c, value), state, NULL);
+    probe_state(c, checked_loading(c, value), state, NULL);
+    if (!strcmp(kind, "tree-crash"))
+        fixture_crashed(c, checked_loading(c, value));
     pin_alive(r, unrelated);
     loading_owner_command_kill(independent->owner, 10000);
     pin_wait(r, unrelated, 10000);
