@@ -94,6 +94,8 @@ bash scripts/build.sh 8
 
 Оба скрипта Debug также принимают `CMAKE_BUILD_PARALLEL_LEVEL` как число заданий по умолчанию; явный аргумент имеет приоритет. Тесты запускаются последовательно. Справка доступна через `--help`.
 
+Чтобы измерить сборку и тесты отдельно, запустите `bash scripts/build.sh --build-only 8`, затем `bash scripts/build.sh --test-only`. Используйте одинаковый `BUILD_DIR` в обеих командах. Режим тестирования использует готовые Debug-файлы без пересборки; без выбора режима скрипт по-прежнему собирает и тестирует одной командой.
+
 Для Clang с отдельным каталогом сборки:
 
 ```bash
@@ -122,6 +124,8 @@ bash scripts/build_release.sh
 ```powershell
 .\scripts\build_mingw.cmd 8
 ```
+
+На Windows доступны те же режимы: `.\scripts\build_mingw.cmd --build-only 8`, затем `.\scripts\build_mingw.cmd --test-only`.
 
 Без аргумента используются `CMAKE_BUILD_PARALLEL_LEVEL`, затем `%NUMBER_OF_PROCESSORS%`. Для сборки Release без тестов:
 
