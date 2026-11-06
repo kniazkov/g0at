@@ -130,8 +130,10 @@ __attribute__((constructor)) static void loaded(void) {
     }
     if (mode_is("tree") || mode_is("tree-crash") || mode_is("tree-hang"))
         spawn_descendant();
-    if (mode_is("load-crash") || mode_is("tree-crash"))
+    if (mode_is("load-crash") || mode_is("tree-crash")) {
+        mark("crash-entered");
         abort();
+    }
     if (mode_is("load-hang") || mode_is("tree-hang"))
         hang();
     if (mode_is("load-exit-zero"))
@@ -140,8 +142,10 @@ __attribute__((constructor)) static void loaded(void) {
 
 __attribute__((destructor)) static void unloaded(void) {
     mark("unloaded");
-    if (mode_is("unload-crash"))
+    if (mode_is("unload-crash")) {
+        mark("crash-entered");
         abort();
+    }
     if (mode_is("unload-hang"))
         hang();
 }

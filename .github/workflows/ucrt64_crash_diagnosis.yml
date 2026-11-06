@@ -1,0 +1,54 @@
+name: UCRT64 crash diagnosis
+on:
+  push:
+    branches: [diagnose/ucrt64-abort]
+permissions:
+  contents: read
+jobs:
+  probe:
+    name: UCRT64 ${{ matrix.crash }} ${{ matrix.config }}
+    runs-on: windows-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        crash: [abort, terminate]
+        config: [Debug, Release]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-make
+      - name: Select controlled crash mechanism
+        shell: msys2 {0}
+        run: |
+          if [ "${{ matrix.crash }}" = terminate ]; then
+            sed -i 's/abort();/TerminateProcess(GetCurrentProcess(), 0xc0000005);/g' test/src/component/inspect_probe_library.c
+          fi
+          gcc --version
+      - name: Build inspection scenarios
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+          cmake --build build --parallel 4 --target inspect_probe_scenarios
+      - name: Repeat crashes under parallel load
+        shell: msys2 {0}
+        run: |
+          set -o pipefail
+          ctest --test-dir build --verbose --parallel 4 --repeat until-fail:40 -R '^integration[.]inspect_probe[.](load-crash|unload-crash|tree-crash|cleanup-timeout-load-crash)$' 2>&1 | tee build/crash-repeat.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crash-${{ matrix.crash }}-${{ matrix.config }}
+          path: |
+            build/crash-repeat.log
+            build/Testing/Temporary/LastTest.log
+            build/scenario-*/**/events
+            build/scenario-*/**/stdout.bin
+            build/scenario-*/**/stderr.bin
+            build/scenario-*/**/*.log
+          if-no-files-found: ignore

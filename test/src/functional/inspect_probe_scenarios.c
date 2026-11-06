@@ -431,6 +431,7 @@ report(case_t *c, const char *archive, const char *mode, int expected, const cha
         touch(r, mark(c, "descendant-pinned"));
     }
     report_t value = finish_report(c, expected, started, true);
+    fprintf(stderr, "DIAG mode=%s elapsed=%.3f events=[%s]\n", mode, value.elapsed, events(c));
     if (descendant)
         pin_wait(r, descendant, 10000);
     return value;
@@ -467,6 +468,7 @@ static jval_t *checked_loading(case_t *c, report_t report) {
 }
 
 static void probe_state(scenario_run_t *r, jval_t *p, const char *state, const char *stage) {
+    fprintf(stderr, "DIAG expected=%s actual=%s stage=%s\n", state, str(r, get(p, "state")), str(r, get(p, "stage")));
     REQUIRE(eq(get(p, "state"), state));
     if (stage)
         REQUIRE(eq(get(p, "stage"), stage));
