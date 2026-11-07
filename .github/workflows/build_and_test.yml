@@ -675,17 +675,42 @@ jobs:
             build/native-windows/program.c
             build/native-windows/program.dll
           if-no-files-found: ignore
+      - name: Check Windows build observer
+        shell: pwsh
+        run: |
+          & ./scripts/observe_windows_build.ps1 -OutputDirectory build/ci/observer-control -IntervalSeconds 1 -MaxSeconds 1
+          $records = @(Get-Content build/ci/observer-control/processes.jsonl | ForEach-Object { $_ | ConvertFrom-Json })
+          if ($records.Count -lt 1 -or $records[0].processes.Count -lt 1) { throw 'Observer produced no process snapshot' }
+          if (!(Test-Path build/ci/observer-control/observer-finished.txt)) { throw 'Observer did not finish' }
+          New-Item -ItemType File -Force build/ci/observer-control/stop | Out-Null
+          & ./scripts/observe_windows_build.ps1 -OutputDirectory build/ci/observer-control -MaxSeconds 60
+          $after = @(Get-Content build/ci/observer-control/processes.jsonl)
+          if ($after.Count -ne $records.Count) { throw 'Observer ignored stop marker' }
       - name: Build Release binaries and package
         # A normal run takes a few minutes. Bound CI only, so a stalled tool
         # produces a finished log instead of occupying the runner for hours.
         timeout-minutes: 15
         shell: msys2 {0}
         run: |
-          set -euo pipefail
-          mkdir -p build/ci
-          MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_release_mingw.cmd' 2>&1 | tee build/ci/release-build.log
+          bash scripts/observe_release_mingw.sh
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: 4
+      - name: Preserve Windows Release observation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-observation-${{ matrix.msystem }}
+          path: |
+            build/ci/release-observation/**
+            build/ci/release-build.log
+            build/release/CMakeCache.txt
+            build/release/Makefile
+            build/release/CMakeFiles/Makefile2
+            build/release/CPackConfig.cmake
+            build/release/cmake_install.cmake
+            build/release/_CPack_Packages/**/PreinstallOutput.log
+            build/release/_CPack_Packages/**/PreinstallOutput.log.verbose
+          if-no-files-found: warn
       - name: Check relocated release package
         shell: msys2 {0}
         run: |
