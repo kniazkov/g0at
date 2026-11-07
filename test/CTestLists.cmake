@@ -27,7 +27,11 @@ foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash ti
   # Internal deadlines are at most 5 seconds; leave time for process-tree cleanup and artifacts.
   set_tests_properties(framework.execution.${scenario} PROPERTIES TIMEOUT 30)
 endforeach()
-foreach(scenario success failure keep-work isolation invalid cleanup-error parallel)
+set(context_scenarios success failure keep-work isolation invalid cleanup-error parallel)
+if(WIN32)
+  list(APPEND context_scenarios sharing-released sharing-held)
+endif()
+foreach(scenario IN LISTS context_scenarios)
   goat_scenario(framework.context.${scenario} "scenario-context" TIMEOUT 30 COMMAND "$<TARGET_FILE:scenario_context_testing>"
     "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
   set_tests_properties(framework.context.${scenario} PROPERTIES TIMEOUT 30)

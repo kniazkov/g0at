@@ -8,6 +8,9 @@
 #include "lib/memory/allocate.h"
 
 #include <string.h>
+#ifdef _WIN32
+#    include <windows.h>
+#endif
 
 struct scenario_context_t {
     char *name, *work, *data;
@@ -109,26 +112,53 @@ bool scenario_keep_work_argument(const char *argument) {
     return argument && !strcmp(argument, "--keep-work");
 }
 
+/* Retry only Windows sharing/lock violations. Process completion does not imply
+ * immediate release of every filesystem handle (e.g. an external image scanner).
+ * Recheck the workspace identity before each attempt; never retry permission or
+ * identity errors, and retain diagnostics when the bounded budget expires. */
+static bool remove_workspace(scenario_context_t *context, fs_error_t *error) {
+#ifdef _WIN32
+    ULONGLONG deadline = GetTickCount64() + 2000;
+#endif
+    for (;;) {
+        clear_fs_error(error);
+        fs_info_t current;
+        bool owned = inspect_fs_path(context->work, false, &current, error);
+        if (owned
+            && (current.kind != FS_DIRECTORY || current.device != context->identity.device
+                || current.identity != context->identity.identity)) {
+            error->status = FS_CHANGED;
+            error->operation = "workspace identity changed";
+            return false;
+        }
+        if (owned && remove_fs_tree(context->work, error))
+            return true;
+#ifdef _WIN32
+        if ((error->native_code == ERROR_SHARING_VIOLATION
+             || error->native_code == ERROR_LOCK_VIOLATION)
+            && GetTickCount64() < deadline) {
+            Sleep(10);
+            continue;
+        }
+#endif
+        return false;
+    }
+}
+
 bool scenario_finish(scenario_context_t *context, bool success) {
     if (!context)
         return false;
     if (success && !context->keep) {
-        fs_info_t current;
         fs_error_t error = {0};
-        bool owned = inspect_fs_path(context->work, false, &current, &error);
-        if (owned
-            && (current.kind != FS_DIRECTORY || current.device != context->identity.device
-                || current.identity != context->identity.identity)) {
-            error.status = FS_CHANGED;
-            error.operation = "workspace identity changed";
-            owned = false;
-        }
-        if (!owned || !remove_fs_tree(context->work, &error)) {
+        if (!remove_workspace(context, &error)) {
             fprintf(context->diagnostics,
-                    "scenario '%s': cleanup failed (status %d, native %lu); retained work: %s\n",
+                    "scenario '%s': cleanup failed (status %d, native %lu, operation %s, path %s); "
+                    "retained work: %s\n",
                     context->name,
                     error.status,
                     error.native_code,
+                    error.operation ? error.operation : "unknown",
+                    error.path ? error.path : context->work,
                     context->work);
             success = false;
         }
