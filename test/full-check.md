@@ -16,6 +16,12 @@ succeed, it publishes the Release `goat`, `goat-inspect` and `goat-merge` tools 
 `target/` (with `.exe` on Windows). A failed check leaves the previous publication
 untouched; a publication failure makes the full check fail.
 
+All build stages, including sanitizer, package, allocation-failure and host-tool
+builds, use the same generator-aware output synchronization as the quick scripts.
+GNU Make 4.0+ buffers each job with `--output-sync=target`; Ninja keeps its native
+buffering without Make flags. Messages may arrive only after a job completes.
+Warnings/errors and parallel job counts are preserved.
+
 ## Prerequisites
 
 - CMake/CTest 3.21 or newer, Bash, Git and a supported native GCC/Clang toolchain.

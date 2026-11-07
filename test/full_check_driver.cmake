@@ -17,7 +17,7 @@ string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef run_id)
 set(WORK "${WORK}/run-${run_id}")
 set(fixture "${WORK}/fixture with spaces")
 file(MAKE_DIRECTORY "${fixture}/scripts" "${fixture}/tools/unicode" "${fixture}/tools/module-schema")
-file(COPY "${repo}/scripts/full_check.cmake" "${repo}/scripts/full_check_release.cmake" "${repo}/scripts/publish_tools.cmake" DESTINATION "${fixture}/scripts")
+file(COPY "${repo}/scripts/build_command.cmake" "${repo}/scripts/full_check.cmake" "${repo}/scripts/full_check_release.cmake" "${repo}/scripts/publish_tools.cmake" DESTINATION "${fixture}/scripts")
 file(WRITE "${fixture}/dummy.c" "int main(void) { return 0; }\n")
 file(WRITE "${fixture}/CMakeLists.txt" [=[
 cmake_minimum_required(VERSION 3.21)
