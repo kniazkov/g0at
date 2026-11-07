@@ -50,6 +50,17 @@ static bool scalar_constructions(const function_summary_t *summary, const node_t
             if (proof->node == node && proof->constant
                 && proof->constant->type == LATTICE_CHAR_CONSTANT)
                 proven = scalar(((const char_constant_element_t *)proof->constant)->value);
+        /* chr has no constant result proof in every analysis path. A proven
+           integer argument still determines its full uint32 result exactly. */
+        if (get_node_child_count(node) == 2) {
+            const node_t *argument = replacement_original(get_node_child(node, 1));
+            for (const c_expression_proof_t *proof = summary->c_expressions; proof;
+                 proof = proof->next)
+                if (proof->node == argument && proof->constant
+                    && proof->constant->type == LATTICE_INTEGER_CONSTANT)
+                    proven = scalar(
+                        (uint32_t)((const integer_constant_element_t *)proof->constant)->value);
+        }
         if (!proven)
             return false;
     }
@@ -347,11 +358,17 @@ generate_c_module_v1(arena_t *arena, const node_t *const *roots, size_t count) {
             builder,
             1,
             U"const goat_module_value_v1 *arguments, goat_module_value_v1 *result) {");
-        add_source(
-            builder,
-            1,
-            U"return g_v1_invoke(g_adapter_%zu, version, context, count, arguments, result);",
-            entry->id);
+        add_source(builder,
+                   1,
+                   U"uint32_t status = g_v1_invoke(g_adapter_%zu, version, context, count, "
+                   U"arguments, result);",
+                   entry->id);
+        if (!entry->summary->effects)
+            add_static_source(
+                builder,
+                1,
+                U"if (status == GOAT_MODULE_RESOURCE_LIMIT) return GOAT_MODULE_PURE_RETRY;");
+        add_static_source(builder, 1, U"return status;");
         add_static_source(builder, 0, U"}");
     }
     output.specializations = yyjson_mut_doc_imut_copy(doc, NULL);

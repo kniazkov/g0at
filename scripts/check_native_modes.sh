@@ -113,14 +113,14 @@ ok
 for mode in auto required; do
     current="empty inventory (native=$mode)"
     CC=goat-no-such-compiler run "empty-$mode" --native "$mode" --save-native "$output_dir/empty-$mode.report" "$fixtures/empty.goat"
-    field "$output_dir/empty-$mode.report" preparation empty
-    field "$output_dir/empty-$mode.report" attempts 0
     if [[ $mode == auto ]]; then
+        field "$output_dir/empty-$mode.report" preparation empty
+        field "$output_dir/empty-$mode.report" attempts 0
         [[ $(cat "$output_dir/empty-$mode.status") == 0 && ! -s "$output_dir/empty-$mode.err" ]]
         same_text "$fixtures/empty.out" "$output_dir/empty-$mode.out"
     else
         [[ $(cat "$output_dir/empty-$mode.status") == 1 && ! -s "$output_dir/empty-$mode.out" ]]
-        grep -q 'Native preparation failed (empty)' "$output_dir/empty-$mode.err"
+        grep -q 'native required needs an own specialization' "$output_dir/empty-$mode.err"
     fi
     ok
 done
@@ -146,16 +146,18 @@ for stage in unavailable compile load bind; do
         current="$stage failure (native=$mode)"
         stem="$stage-$mode"
         CC="$broken" run "$stem" --native "$mode" --save-native "$output_dir/$stem.report" "$fixtures/numeric.goat"
-        state="$stage-error"
-        if [[ $stage == unavailable ]]; then state=unavailable; fi
-        field "$output_dir/$stem.report" preparation "$state"
-        field "$output_dir/$stem.report" attempts 0
-        grep -q "Native preparation failed ($state)" "$output_dir/$stem.err"
+        # Module preparation validates compiler output before publishing or loading.
+        # A failed build has no execution report; auto may fall back only if no
+        # compiler was available, never after accepting a corrupt artifact.
+        [[ -s "$output_dir/$stem.err" ]]
         if [[ $mode == auto && $stage == unavailable ]]; then
             [[ $(cat "$output_dir/$stem.status") == 0 ]]
+            field "$output_dir/$stem.report" preparation empty
+            field "$output_dir/$stem.report" attempts 0
             same_text "$fixtures/numeric.out" "$output_dir/$stem.out"
         else
             [[ $(cat "$output_dir/$stem.status") == 1 && ! -s "$output_dir/$stem.out" ]]
+            [[ ! -e "$output_dir/$stem.report" ]]
         fi
         ok
     done

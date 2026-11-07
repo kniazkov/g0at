@@ -27,7 +27,7 @@ Prefix: `native.native_integrity.`.
 | sha256-binding | Required compilation succeeds; magic and independent library SHA-256 binding match; required execution stdout is `42\n` |
 | substitution | Same IDs/signature but body +2 library replaces +1; required mode rejects with empty stdout; auto exits zero and prints `42\n` |
 | append-corruption | Append literal `changed`; same required rejection/empty stdout and successful auto fallback |
-| preload-constructor | Compile other source, save C, append constructor; mismatched library rejects before marker creation; explicitly paired digest/checksum succeeds with `43\n` and marker `loaded`; restore original library/artifact and observe `42\n` |
+| preload-constructor | Compile other source, save C, append constructor; mismatched library rejects before marker creation; a rehashed legacy library reaches its constructor but fails module ABI validation; an independent OS loader proves that its constructor writes `loaded`; restore the original archive and observe `42\n` |
 
 All scenarios establish the original digest and 42 baseline first. Substitution
 and append-corruption each compile the other source before mutation, as in the

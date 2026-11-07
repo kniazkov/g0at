@@ -405,6 +405,7 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
     }
     module_files_t *module = find_module_files(thread->process, dfobj->access.module);
     bool module_native = module_files_native(module) != NULL;
+    bool retry = false;
     if ((!receiver || receiver == dfobj->closure) && !thread->context->native_disabled
         && !dfobj->native_disabled) {
         module_native_call_status_t status = call_module_native(module,
@@ -414,7 +415,9 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
                                                                 dfobj->arg_count,
                                                                 arg_count,
                                                                 thread);
-        if (status != MODULE_NATIVE_FALLBACK)
+        if (status == MODULE_NATIVE_RETRY)
+            retry = true;
+        else if (status != MODULE_NATIVE_FALLBACK)
             return status == MODULE_NATIVE_COMPLETE;
     }
     /* A method call resolves names through the receiver, which a native specialization does not
@@ -426,7 +429,6 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
         module_native || receiver || thread->context->native_disabled || dfobj->native_disabled
             ? NULL
             : select_native_entry(dfobj, arg_count, thread->data_stack);
-    bool retry = false;
     if (entry) {
         if (!native_stack_has_headroom()) {
             retry = true;

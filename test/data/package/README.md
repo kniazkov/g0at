@@ -31,7 +31,7 @@ ZIP contexts and both native musl architectures.
 | Numeric VM; compile bytecode without optimization; remove source and execute bytecode | `integration.package.end-to-end` |
 | Compile printed C using installed headers; link and execute frozen external-symbol SDK probe | `integration.package.end-to-end` |
 | Exported static archive and three headers match installed bytes | `integration.package.end-to-end` |
-| Compile native pair; delete source; relocate again; require native preparation and execution | `integration.package.end-to-end` |
+| Compile unified ZIP; verify embedded native member; delete source; relocate only .gbin; require native preparation and execution | `integration.package.end-to-end` |
 | Full module-v1 delivery using relocated goat/inspect/merge | Nested `integration.module_delivery.end-to-end`, unchanged 300-second limit |
 | Corrupt archive/path and counter rejection | `integration.package.controls` |
 

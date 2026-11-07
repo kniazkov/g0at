@@ -8,6 +8,8 @@
  * only within their callback and must not export borrowed AST pointers.
  */
 #pragma once
+#include "analysis/analysis.h"
+#include "common/compilation_error.h"
 #include "graph/node.h"
 #include "module_sources.h"
 #include "vm/bytecode.h"
@@ -27,12 +29,15 @@ typedef struct {
     size_t count;
     module_compilation_warning_t *warnings;
     size_t warning_count;
+    string_value_t diagnostics;
 } module_compilation_t;
 
 /** Initialize with {0}; clear after use. Owns its UTF-8 diagnostic message. */
 typedef struct {
     size_t file, row, column;
     char *message;
+    compilation_error_severity_t severity;
+    string_value_t diagnostics;
 } module_compilation_error_t;
 
 /** @brief Release the saved diagnostic; accepts NULL. */
@@ -85,3 +90,21 @@ bool compile_module_sources_with_backend(const module_sources_t *sources,
                                          void *context,
                                          module_compilation_t **out,
                                          module_compilation_error_t *error);
+
+/** Same compiler with CLI diagnostics/optimization and a synchronous source observer.
+ * Observer runs after analysis while its arena and root are alive. It must not retain them.
+ */
+typedef bool (*module_source_observer_t)(node_t *root,
+                                         parser_memory_t *memory,
+                                         analysis_collector_t *collector,
+                                         void *context);
+bool compile_module_sources_configured(const module_sources_t *sources,
+                                       const module_dependencies_t *dependencies,
+                                       const module_graph_t *graph,
+                                       const options_t *options,
+                                       module_source_observer_t observer,
+                                       void *observer_context,
+                                       module_compilation_backend_t backend,
+                                       void *context,
+                                       module_compilation_t **out,
+                                       module_compilation_error_t *error);

@@ -73,9 +73,10 @@ chmod +x "$output_dir/compiler ; with spaces"
 REAL_CC="$compiler" CC="$output_dir/compiler ; with spaces" "$interpreter" --save-library "$output_dir/$strange/program.goat"
 test -s "$output_dir/$strange/program.so"
 test ! -e INJECTED
-cp "$output_dir/program.goat" "$output_dir/-leading.goat"
-(cd "$output_dir" && CC="$compiler" "$interpreter" --save-library ./-leading.goat)
-test -s "$output_dir/-leading.so"
+mkdir -p "$output_dir/-leading"
+cp "$output_dir/program.goat" "$output_dir/-leading/program.goat"
+(cd "$output_dir" && CC="$compiler" "$interpreter" --save-library ./-leading/program.goat)
+test -s "$output_dir/-leading/program.so"
 ok
 current='compiler start failure preserves previous library'
 cp "$output_dir/program.so" "$output_dir/original.so"

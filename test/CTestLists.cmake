@@ -27,7 +27,11 @@ foreach(scenario success mismatch binary-mismatch crlf strict-crlf exit crash ti
   # Internal deadlines are at most 5 seconds; leave time for process-tree cleanup and artifacts.
   set_tests_properties(framework.execution.${scenario} PROPERTIES TIMEOUT 30)
 endforeach()
-foreach(scenario success failure keep-work isolation invalid cleanup-error parallel)
+set(context_scenarios success failure keep-work isolation invalid cleanup-error parallel)
+if(WIN32)
+  list(APPEND context_scenarios sharing-released sharing-held)
+endif()
+foreach(scenario IN LISTS context_scenarios)
   goat_scenario(framework.context.${scenario} "scenario-context" TIMEOUT 30 COMMAND "$<TARGET_FILE:scenario_context_testing>"
     "${scenario}" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
   set_tests_properties(framework.context.${scenario} PROPERTIES TIMEOUT 30)
@@ -131,6 +135,13 @@ foreach(native_requirements_id IN LISTS native_requirements_ids)
     "$<TARGET_FILE:native_requirements_scenarios>" "${native_requirements_id}"
     "$<TARGET_FILE:native_requirements_testing>" "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-requirements")
+endforeach()
+# Supplemental regressions are separate from the frozen migration corpus.
+foreach(native_requirements_case IN ITEMS pe-msvcrt-hypot pe-msvcrt-hypot-unknown)
+  goat_scenario(integration.native_requirements.${native_requirements_case} "integration;native-requirements-migration" TIMEOUT 30 COMMAND
+    "$<TARGET_FILE:native_requirements_scenarios>" "integration.native_requirements.${native_requirements_case}"
+    "$<TARGET_FILE:native_requirements_testing>" "${PROJECT_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-requirements-regressions")
 endforeach()
 foreach(native_toolchains_case IN ITEMS cache reprobe linux-relro unicode-temp timeout-cache unsupported-target zero-timeout absent-compiler link-failure hang-query hang-link avx2 sha2 crypto foreign-libc musl-trace musl-crypto unknown-profile path-first path-fallback path-timeout path-unsearched path-list explicit-failure)
   goat_scenario(integration.native_toolchains.${native_toolchains_case} "integration;native-toolchains-migration" TIMEOUT 510 COMMAND
@@ -715,9 +726,9 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1909 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1915 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
-  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (SVG validation and controls added for #393); found ${goat_integration_count}")
+  message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (including four safe native retry cases for #316); found ${goat_integration_count}")
 endif()
 # Read-only frozen integrity check; ordinary consumers never generate inputs.
 # Historical IDs remain C aliases; recipe reproduction is an inactive #395 tool.

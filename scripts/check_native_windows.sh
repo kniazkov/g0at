@@ -48,9 +48,11 @@ mkdir -p "$output_dir/$strange"
 cp "$output_dir/program.goat" "$output_dir/$strange/program.goat"
 CC="$fixture" "$interpreter" --save-library "$output_dir/$strange/program.goat"
 "$output_dir/host.exe" "$output_dir/$strange/program.dll"
-cp "$output_dir/program.goat" "$output_dir/-leading.goat"
-(cd "$output_dir" && CC="$fixture" "$interpreter" --save-library ./-leading.goat)
-test -s "$output_dir/-leading.dll"
+mkdir -p "$output_dir/-leading"
+cp "$output_dir/program.goat" "$output_dir/-leading/program.goat"
+(cd "$output_dir" && CC="$fixture" "$interpreter" --save-library ./-leading/program.goat)
+test -s "$output_dir/-leading/program.dll"
+"$output_dir/host.exe" "$output_dir/-leading/program.dll"
 ok
 current='compiler failures preserve old DLL and remove temporary files'
 cp "$output_dir/program.dll" "$output_dir/original.dll"

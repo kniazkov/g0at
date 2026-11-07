@@ -16,7 +16,7 @@ ok() {
 compile() {
     "${CC:-gcc}" -I"$runtime_include" -I"$runtime_include/../../test/src/functional/native_abi" -I"$runtime_include/.." -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "$@"
 }
-cat > "$output_dir/recursive sample.goat" <<'GOAT'
+cat > "$output_dir/recursive-sample.goat" <<'GOAT'
 const fib=func(n){if(n<1)return 0;if(n==1)return 1;return fib(n-1)+fib(n-2);};
 const twice=func(n){return n+n;};
 const mixed=func(n){if(n<0.5)return n+1;return n;};
@@ -24,18 +24,18 @@ twice(1);twice(1.5);mixed(1);fib(2);
 print("THIS MUST NOT RUN");
 throw "NEITHER SHOULD THIS";
 GOAT
-"$interpreter" --lang en --print-c --save-c "$output_dir/recursive sample.goat" > "$output_dir/printed.c" 2> "$output_dir/errors.txt"
+"$interpreter" --lang en --print-c --save-c "$output_dir/recursive-sample.goat" > "$output_dir/printed.c" 2> "$output_dir/errors.txt"
 test ! -s "$output_dir/errors.txt"
 # Both stdout and saved files use the platform text-mode newline convention.
-cmp "$output_dir/printed.c" "$output_dir/recursive sample.c"
-"$interpreter" --print-c "$output_dir/recursive sample.goat" > "$output_dir/repeated.c"
+cmp "$output_dir/printed.c" "$output_dir/recursive-sample.c"
+"$interpreter" --print-c "$output_dir/recursive-sample.goat" > "$output_dir/repeated.c"
 cmp "$output_dir/printed.c" "$output_dir/repeated.c"
 test "$(grep -c '#include "native_runtime.h"' "$output_dir/printed.c")" = 1
 ok
 current='compile and execute exported recursive specializations'
 cat > "$output_dir/driver.c" <<'C'
 #include "test_allocator.h"
-#include "recursive sample.c"
+#include "recursive-sample.c"
 int main(void) {
     goat_native_context_v2_t allocator = test_context();
     return g_f1_i_(&allocator, 10)!=55 || g_f1_i_(&allocator, 11)!=89 ||
@@ -43,12 +43,12 @@ int main(void) {
            g_f3_i_(&allocator, 0)!=1 || g_f3_i_(&allocator, 2)!=2;
 }
 C
-compile -c "$output_dir/recursive sample.c" -o "$output_dir/module.o"
+compile -c "$output_dir/recursive-sample.c" -o "$output_dir/module.o"
 compile "$output_dir/driver.c" -lm -o "$output_dir/driver.exe"
 "$output_dir/driver.exe"
 ok
 current='save-only mode and analysis sidecar'
-"$interpreter" --save-c --save-analysis "$output_dir/report.txt" "$output_dir/recursive sample.goat" > "$output_dir/stdout.txt"
+"$interpreter" --save-c --save-analysis "$output_dir/report.txt" "$output_dir/recursive-sample.goat" > "$output_dir/stdout.txt"
 test ! -s "$output_dir/stdout.txt"
 test -s "$output_dir/report.txt"
 ok

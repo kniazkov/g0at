@@ -26,8 +26,8 @@
   пользовательским кодом языка. Память остаётся стабильной до копирования результата.
 - `goat_module_abi_invoke`: один вызов адаптера после проверки контекста и аргументов.
   Результат предварительно обнулён; проверяются статус, тип и представление.
-  Любой ненулевой статус (включая неизвестный) после входа — ошибка, не разрешение
-  повторить действие в VM. На ошибке результат снова нулевой. Строки заимствованы:
+  Ненулевой статус возвращается хосту как ошибка вызова. Только PURE_RETRY
+  допускает отдельно проверяемый чистый повтор, описанный ниже. На ошибке результат снова нулевой. Строки заимствованы:
   хост копирует их до освобождения аргументов/контекста. Буферы результата и
   аргументов должны быть отдельными. Хостовые таблицы и массив аргументов являются
   доверенными доступными объектами; размеры этих объектов обеспечивает вызывающий.
@@ -145,3 +145,28 @@ the descriptor and fixed adapter. Actual calls use the new ABI, not VM fallback
 or the legacy query ABI. Every existing Linux GCC/Clang x86-64/ARM64 and Windows
 MINGW32/MINGW64/UCRT64 job runs these tests. Controlled library compilation does
 not wait for .gmod integration #211; the complete packaged pipeline remains #219.
+
+## Безопасный повтор чистой функции
+
+`GOAT_MODULE_PURE_RETRY` (7) сообщает об исчерпании ресурсов доказанно чистого
+тела. Генератор выдаёт этот статус только для специализации без эффектов. Хост
+дополнительно проверяет подходящее к фактическим типам аргументов доказательство
+`effects.may=[]`, `effects.unknown=false` в метаданных функции. Более узкие
+ограничения значений и диапазонов пока не используются для разрешения повтора.
+Обычный `GOAT_MODULE_RESOURCE_LIMIT` (4) остаётся окончательной ошибкой.
+
+Повтор использует уже вычисленные аргументы; нативные вызовы внутри повторяемого
+тела и его потомков отключены. Сохранённое исключение сервиса хоста, запрос exit
+и нарушение ABI не разрешают повтор. Нативный код обязан честно соблюдать этот
+контракт; метаданные и статусы не являются защитой от вредоносной библиотеки.
+
+## Safe pure-resource retry
+
+`GOAT_MODULE_PURE_RETRY` (7) is reserved for resource exhaustion in a proven pure
+body. Generated wrappers emit it only for an effect-free specialization. The host
+also requires a metadata summary covering the actual argument types with
+`effects.may=[]` and `effects.unknown=false`; narrower value/range predicates are
+conservatively excluded. Ordinary `GOAT_MODULE_RESOURCE_LIMIT` (4) is terminal.
+The VM reuses evaluated arguments and disables native dispatch throughout the
+retried call subtree. Host exceptions, exit requests and ABI violations never
+permit replay. This is a trusted native-code contract, not a security boundary.

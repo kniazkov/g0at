@@ -9,14 +9,14 @@ baseline `77894149bbdf306ea57ac4a6558ebfcc1a125c34`. The executable is
 
 ## Cases and oracles
 
-- **Dispatch:** 73 independently selected source/configuration cases (37 auto,
-  35 required, one off), plus the real component `--identity` check. The JSON
+- **Dispatch:** 77 independently selected source/configuration cases (39 auto,
+  37 required, one off), plus the real component `--identity` check. The JSON
   corpus preserves the original sources, include files, native adapter actions,
   guard constants/types and expected outputs/metrics. No adapter result is
   substituted by the new runner: the production VM and controlled real ABI
   adapters execute each call. Every case checks exact UTF-8 stdout, including
   embedded NUL, the required exit class, the **first** METRICS line, calls,
-  zero retries, optional resolver counts and required terminal diagnostic.
+  expected retries (zero except explicit pure retry cases), optional resolver counts and required terminal diagnostic.
 - **Consistency:** 68 independently selected exact binary stdin envelopes. Their
   expected status numbers come from the original handwritten `run(..., expected)`
   arguments, not from recording the host's answer. They retain real archive
@@ -31,13 +31,13 @@ baseline `77894149bbdf306ea57ac4a6558ebfcc1a125c34`. The executable is
   assertions.
 - **Producer identities:** one relational ID really compiles the unchanged
   `identities.goat` four times: `(none,off)`, `(all,off)`, `(all,auto)`,
-  `(all,required)`. It independently reads GOATPG01/GOATBC01, validates bytecode,
+  `(all,required)`. It independently extracts GOATBC01 from the ZIP, validates bytecode,
   compares the first six words of all six function records, requires IDs 1–6,
   then really runs `--print-c`. Generated `g_f2_i_`/`g_f3_i_` must be present;
   `g_f4_`/`g_f5_`/`g_f6_` must be absent. Outputs are **not frozen** and no VM
   loader supplies expected identity values.
 
-Total: **144 CTest IDs**. Original printed counts are 74 dispatch and 72
+Total: **148 CTest IDs**. Original printed counts are 74 dispatch and 72
 consistency. The latter excludes its API smoke and `--print-c`; all original
 operations remain: 74 dispatch + 68 consistency + one API + five producer
 commands = **148 actual host commands**.
@@ -142,3 +142,5 @@ exit 1 and a retained semantic assertion (not a setup/launch failure):
 Temporary proxies preserve real host inputs/status and unrelated output. Never
 edit canonical fixture files for negative testing. Shared Python compatibility
 helpers remain for their explicitly listed consumers until cleanup task #394.
+
+Four #316 cases verify pure resource retry with arguments evaluated once and rejection of the same status for an effectful function, in auto and required modes.

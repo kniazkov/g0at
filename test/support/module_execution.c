@@ -6,6 +6,7 @@
 
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
+#include "lib/platform/windows_target.h"
 #include "yyjson.h"
 
 #include <stdlib.h>

@@ -7,6 +7,8 @@
 #include "analysis_test_support.h"
 #include "codegen/linker.h"
 #include "graph/index_access.h"
+#include "lib/files/binary_file.h"
+#include "lib/hash/sha256.h"
 #include "lib/memory/allocate.h"
 #include "lib/memory/arena.h"
 #include "model/common_methods.h"
@@ -14,7 +16,7 @@
 #include "model/process.h"
 #include "model/thread.h"
 #include "test_macro.h"
-#include "vm/binary.h"
+#include "vm/bytecode.h"
 #include "vm/gc.h"
 #include "vm/vm.h"
 
@@ -77,6 +79,14 @@ bool test_index_parser(void) {
 }
 
 /** @brief Test-only two-dimensional receiver; proves the VM imposes no dictionary arity. */
+static bytecode_t *read_image(const char *path) {
+    size_t size;
+    void *bytes = read_binary_file(path, 256u * 1024u * 1024u, &size);
+    bytecode_t *code = decode_bytecode_image(bytes, size);
+    FREE(bytes);
+    return code;
+}
+
 static operation_result_t read_matrix(process_t *process, object_t *obj, object_array_t indices) {
     if (indices.size != 2)
         return operation_exception(get_exception_invalid_argument());
@@ -120,16 +130,17 @@ bool test_index_dispatch(void) {
         destroy_code_builder(builder);
         destroy_data_builder(data);
         const char *path = "goat-index-unit.gbin";
-        ASSERT(save_binary_program(path, code, NULL));
-        binary_program_t saved = load_binary_program(path);
-        ASSERT(saved.code);
-        ASSERT(saved.code->instructions[0].arg1 == 2);
-        ASSERT(run(proc, saved.code) == 0);
+        ASSERT(write_binary_file(path, code->buffer, code->buffer_size));
+        bytecode_t *saved = read_image(path);
+        ASSERT(saved);
+        ASSERT(saved->instructions[0].arg1 == 2);
+        ASSERT(run(proc, saved) == 0);
         ASSERT(stack->size == 2);
         ASSERT(get_object_integer_value(peek_object_from_stack(stack, 0)).value
                == (store ? 142 : 42));
         ASSERT(get_object_integer_value(peek_object_from_stack(stack, 1)).value == 99);
-        destroy_binary_program(&saved);
+        if (saved)
+            free_bytecode(saved);
         free_bytecode(code);
         destroy_process(proc);
         remove(path);

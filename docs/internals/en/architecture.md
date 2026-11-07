@@ -4,18 +4,16 @@
 
 ## Follow one request
 
-`src/main.c` handles internal cleanup-service mode before ordinary CLI parsing.
-`src/cli/launcher.c` then chooses interactive input, module input, an already
-compiled binary, or standalone source. These paths share components but are not
-one interchangeable pipeline: loading an archive must validate stored evidence,
-whereas compiling source can create new evidence from an AST.
+`src/main.c` handles cleanup-service mode before ordinary CLI parsing.
+`src/cli/launcher.c` keeps the interactive REPL separate and sends every other
+input to module_program(). Source input is resolved and frozen, scanned, parsed,
+and analyzed by the module compiler. Source observers export diagnostics and
+single-file C/source/analysis/graph output while its arena is alive.
 
-For standalone source, go() fixes the canonical launch path. The launcher reads
-UTF-8, creates a scanner, groups brackets, reduces tokens, builds a root, and
-calls analyze(). Diagnostics above warning severity prevent generation. It can
-then emit a graph, regenerated Goat, C, a compiled binary, or execute bytecode.
-Deferred function bodies are emitted after their enclosing code has established
-entry references. Native preparation happens before the analysis arena dies.
+Direct execution validates and loads owned metadata, bytecode and native parts
+without serializing a temporary ZIP. Compilation publishes those same parts as
+one ZIP. Saved `.gbin` input follows archive validation and joins the same snapshot
+loader. File scopes, imports and native bindings have one runtime lifecycle.
 
 ## Directory map
 

@@ -334,7 +334,7 @@ static bool mapped_native_origin(void) {
     const exception_trace_t *trace = proc->main_thread->exception.trace;
     ASSERT(trace && exception_trace_frame(trace, 0)->native_entry);
     string_value_t text = format_exception_trace(proc, trace);
-    ASSERT(STRSTR(text.data, U"source@0.0.0: math.goat (external file #0):2:11, f [native entry]"));
+    ASSERT(STRSTR(text.data, U"math@0: math.goat (external file #0):2:11, f [native entry]"));
     ASSERT(!STRSTR(text.data, U"private") && !STRSTR(text.data, U"throw 123"));
     ASSERT(run_module_file(proc, module_files_main(files)) != 0 && calls() == before + 1);
     ASSERT(proc->main_thread->exception.trace == trace);

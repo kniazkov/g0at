@@ -3,6 +3,7 @@
  * @brief Independent Unicode bytecode, locale and embedded-NUL scenarios.
  */
 #include "test/support/language_execution.h"
+#include "test/support/module_artifact.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -90,8 +91,8 @@ void unicode_cases(scenario_run_t *run, const char *exe) {
     const char *const *environment = language_environment_override(run, "LC_ALL", "C");
     const char *directory = language_join(run, work, "каталог-😀");
     language_directory(run, directory);
-    const char *path_source = language_join(run, directory, "программа-𐐨.goat");
-    const char *path_binary = language_join(run, directory, "программа-𐐨.gbin");
+    const char *path_source = language_join(run, directory, "program.goat");
+    const char *path_binary = language_join(run, directory, "program.gbin");
     const char path_code[] = "println(\"path-ok\");\n";
     language_write(run, path_source, path_code, sizeof(path_code) - 1);
     CHECK(CMD(path_source), "path-ok\n", 8);
@@ -131,7 +132,13 @@ void unicode_cases(scenario_run_t *run, const char *exe) {
     scenario_require(run, high < 0, "odd fixture hex");
     scenario_require_bytes(run, "independent Unicode fixture", image, n, decoded, count, false);
     const char *binary = language_join(run, work, "scalars.gbin");
+    /* The frozen legacy envelope remains an independent rejection control.
+       Its Unicode image is exercised inside the only launchable format, ZIP. */
     language_write(run, binary, image, n);
+    rejected(run, CMD("--run", binary));
+    size_t zip_size;
+    const unsigned char *zip = test_module_wrap_image(run, image + 96, n - 96, &zip_size);
+    language_write(run, binary, zip, zip_size);
     accepted(run, CMD("--run", binary));
     const char *magics[] = {"GOATBI11", "GOATBIN1", "goat v.1", "GOATST01", "GOATSC01"};
     for (unsigned i = 0; i < 5; i++) {

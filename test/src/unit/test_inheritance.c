@@ -6,14 +6,24 @@
 
 #include "analysis_test_support.h"
 #include "codegen/linker.h"
+#include "lib/files/binary_file.h"
+#include "lib/hash/sha256.h"
 #include "lib/memory/allocate.h"
 #include "lib/memory/arena.h"
 #include "model/process.h"
 #include "test_macro.h"
-#include "vm/binary.h"
+#include "vm/bytecode.h"
 #include "vm/gc.h"
 
 #include <stdio.h>
+
+static bytecode_t *read_image(const char *path) {
+    size_t size;
+    void *bytes = read_binary_file(path, 256u * 1024u * 1024u, &size);
+    bytecode_t *code = decode_bytecode_image(bytes, size);
+    FREE(bytes);
+    return code;
+}
 
 bool test_inheritance_parser(void) {
     const gchar_t *valid[] = {U"A -> {}",
@@ -95,18 +105,20 @@ bool test_inheritance_bytecode(void) {
     }
     ASSERT(inherited == 1);
     const char *path = "goat-inheritance-unit.gbin";
-    ASSERT(save_binary_program(path, code, NULL));
-    binary_program_t saved = load_binary_program(path);
-    ASSERT(saved.code);
-    destroy_binary_program(&saved);
+    ASSERT(write_binary_file(path, code->buffer, code->buffer_size));
+    bytecode_t *saved = read_image(path);
+    ASSERT(saved);
+    if (saved)
+        free_bytecode(saved);
     for (size_t i = 0; i < code->instructions_count; i++) {
         if (code->instructions[i].opcode != INHERIT)
             continue;
         ((instruction_t *)code->instructions)[i].arg0 = 2;
-        ASSERT(save_binary_program(path, code, NULL));
-        saved = load_binary_program(path);
-        ASSERT(!saved.code);
-        destroy_binary_program(&saved);
+        ASSERT(write_binary_file(path, code->buffer, code->buffer_size));
+        saved = read_image(path);
+        ASSERT(!saved);
+        if (saved)
+            free_bytecode(saved);
     }
     remove(path);
     free_bytecode(code);

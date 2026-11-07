@@ -33,6 +33,7 @@ struct options_t {
 
     /** @brief Execute Goat commands entered interactively from the console, line by line. */
     bool interactive;
+    bool module_source; /**< Internal: retain exported bindings during module analysis. */
 
     bool build_module;         /**< Explicit build command, restricted to .gmod input. */
     bool run_command;          /**< Explicit run command; dispatch follows the input format. */

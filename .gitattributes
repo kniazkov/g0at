@@ -75,3 +75,6 @@ docs/module-format-v1/gmod.schema.json -text
 docs/module-format-v1/module.schema.json -text
 docs/module-format-v1/target.schema.json -text
 docs/module-format-v1/native.schema.json -text
+
+# Supplemental native-image regression fixtures retain exact bytes.
+test/data/native-requirements-regressions/blobs/*.bin -text

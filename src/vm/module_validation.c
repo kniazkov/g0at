@@ -324,3 +324,45 @@ const char *validated_module_archive(const validated_module_t *module) {
 uint32_t validated_module_entry(const validated_module_t *module) {
     return module ? module->entry : 0;
 }
+
+module_validation_result_t validate_module_parts(const yyjson_doc *metadata,
+                                                 zip_view_t bytecode,
+                                                 const goat_container_native *native,
+                                                 size_t count,
+                                                 const char *label,
+                                                 validated_module_t **out) {
+    validation v = begin(label, NULL);
+    if (!out)
+        return (module_validation_result_t){.status = MODULE_VALIDATION_ARGUMENT};
+    *out = NULL;
+    goat_module_container *container = NULL;
+    goat_container_status status =
+        goat_module_container_from_parts(metadata, bytecode, native, count, &container);
+    if (status)
+        return (module_validation_result_t){.status = status == GOAT_CONTAINER_MEMORY
+                                                          ? MODULE_VALIDATION_MEMORY
+                                                          : MODULE_VALIDATION_CORRUPT,
+                                            .failures = 1};
+    inspect(container, &v);
+    validated_module_t *module = NULL;
+    if (!v.result.status) {
+        module = calloc(1, sizeof(*module));
+        if (module)
+            module->archive = malloc(strlen(v.archive) + 1);
+        if (!module || !module->archive)
+            v.result.status = MODULE_VALIDATION_MEMORY;
+    }
+    if (v.result.status) {
+        free(module);
+        goat_module_container_free(container);
+        if (v.code)
+            free_bytecode(v.code);
+        return v.result;
+    }
+    strcpy(module->archive, v.archive);
+    module->container = container;
+    module->code = v.code;
+    module->entry = v.entry;
+    *out = module;
+    return v.result;
+}

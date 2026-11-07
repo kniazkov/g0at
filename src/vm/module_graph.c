@@ -649,3 +649,25 @@ bool module_graph_paths(const module_graph_t *graph,
     FREE(stack);
     return complete;
 }
+
+module_graph_status_t validate_module_graph_parts(validated_module_t *snapshot,
+                                                  const module_search_t *search,
+                                                  module_graph_t **out) {
+    if (out)
+        *out = NULL;
+    if (!snapshot || !search || !out) {
+        free_validated_module(snapshot);
+        return MODULE_GRAPH_ARGUMENT;
+    }
+    module_graph_t *graph = CALLOC(sizeof(*graph));
+    yyjson_val *root = metadata(snapshot);
+    add_node(graph,
+             yyjson_get_str(yyjson_obj_get(root, "name")),
+             yyjson_get_str(yyjson_obj_get(root, "version")));
+    module_graph_node_t *node = &graph->nodes[0].view;
+    node->archive = copy_text(validated_module_archive(snapshot));
+    node->snapshot = snapshot;
+    node->hash = yyjson_get_str(yyjson_obj_get(root, "mainHash"));
+    expand(graph, 0);
+    return finish(graph, search, NULL, out);
+}

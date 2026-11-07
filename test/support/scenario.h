@@ -33,7 +33,9 @@ const char *scenario_work_directory(const scenario_context_t *context);
 const char *scenario_data_directory(const scenario_context_t *context);
 /** @brief Consume context. Preserve failures/keep-work and report their absolute path.
  * Successful runs remove only the owned directory. Changed identity or cleanup failure
- * makes the result false with an explicit diagnostic. Never use the context afterwards.
+ * makes the result false with an explicit diagnostic. Windows sharing/lock violations
+ * get at most two seconds of retries, with identity rechecked each time.
+ * Never use the context afterwards.
  */
 bool scenario_finish(scenario_context_t *context, bool success);
 /** @brief Recognize the exact optional CLI flag; runners reject other unknown arguments. */

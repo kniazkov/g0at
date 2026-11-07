@@ -1276,13 +1276,7 @@ static void raw(suite_t *s, bool invalid, unsigned index) {
     scenario_run_t *r = s->r;
     const char *binary = legacy(s);
     bytes_t envelope = read_bytes(r, binary);
-    REQUIRE(envelope.size >= 96 && !memcmp(envelope.data, "GOATPG01", 8));
-    const unsigned char *bytes = envelope.data;
-    uint64_t size = 0;
-    for (unsigned i = 0; i < 8; i++)
-        size |= (uint64_t)bytes[24 + i] << (8 * i);
-    REQUIRE(size <= envelope.size - 96 && size >= 12 && !memcmp(bytes + 96, "GOATBC01", 8));
-    bytes_t code = {bytes + 96, (size_t)size};
+    bytes_t code = member(r, envelope, "bytecode.bin");
     unsigned mode = invalid ? index % 3 : index;
     if (invalid) {
         switch (index / 3) {
@@ -1317,11 +1311,8 @@ static void raw(suite_t *s, bool invalid, unsigned index) {
     const char *direct[] = {file, "--native", "off", "--lang", "en", NULL},
                *command[] =
                    {mode == 1 ? "run" : "--run", file, "--native", "off", "--lang", "en", NULL};
-    scenario_command_result_t result =
-        invoke(s, mode ? command : direct, invalid ? "" : "42\n", invalid, NULL, NULL);
-    if (invalid)
-        REQUIRE(contains((bytes_t){result.err, result.err_size},
-                         "Invalid, incompatible or unreadable Goat binary"));
+    scenario_command_result_t result = invoke(s, mode ? command : direct, "", true, NULL, NULL);
+    REQUIRE(contains((bytes_t){result.err, result.err_size}, "Module graph validation failed"));
     equal(r, "raw input unchanged", code, read_bytes(r, file));
 }
 

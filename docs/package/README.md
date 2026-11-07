@@ -30,9 +30,9 @@ bin/goat --save-c examples/numeric.goat
 Для ручной сборки вывода `--print-c` добавь `-I<пакет>/include/goat` и `<пакет>/lib/libgoat_native.a` после C-файла;
 полные команды описаны в [native-runtime.md](docs/native-runtime.md).
 
-Готовый модульный `.gbin` содержит байткод и собственные нативные варианты;
-исходник и C-компилятор для запуска не нужны. Старый формат отдельной программы
-может использовать лежащую рядом одноимённую `.so`/`.dll`. Нативный вариант должен
+Любой готовый `.gbin` — ZIP с байткодом и собственными нативными вариантами;
+для переноса достаточно этого файла, исходник и C-компилятор для запуска не нужны.
+Старые форматы отдельной программы не поддерживаются. Нативный вариант должен
 соответствовать ОС, архитектуре, runtime и поддерживаемому ABI интерпретатора.
 Режим `--native off` не требует C-компилятора.
 
@@ -58,9 +58,9 @@ selects one compiler executable, without flags; the default is GCC. Automatic
 compilation uses embedded headers and the matching static archive. For manual compilation of `--print-c`
 output use `-I<package>/include/goat` and link `<package>/lib/libgoat_native.a` after the C file; see [native-runtime.md](docs/native-runtime.md).
 
-A ready module-format `.gbin` contains its bytecode and native variants and runs
-without sources or a C compiler. The legacy standalone format may use an adjacent
-same-named `.so`/`.dll`. A native variant must match the interpreter's OS,
+Every ready `.gbin` is a ZIP containing its bytecode and native variants. Deploy
+that file alone; execution needs neither sources nor a C compiler. Legacy
+standalone formats are unsupported. A native variant must match the interpreter's OS,
 architecture, runtime and supported ABI.
 
 A Linux package depends on the system libc family it was built against: glibc

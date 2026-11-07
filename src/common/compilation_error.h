@@ -73,3 +73,7 @@ compilation_error_t *reverse_compilation_errors(compilation_error_t *head);
 
 /** @brief Determines the most severe diagnostic in a linked list. */
 compilation_error_severity_t get_most_severe_compilation_error(const compilation_error_t *head);
+
+/** Render all diagnostics in source reporting order; owns the returned text.
+ * The borrowed linked list and source positions remain unchanged. */
+string_value_t format_compilation_errors(const compilation_error_t *error);
