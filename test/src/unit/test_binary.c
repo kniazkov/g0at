@@ -7,14 +7,23 @@
 #include "cli/options.h"
 #include "codegen/linker.h"
 #include "lib/files/binary_file.h"
+#include "lib/hash/sha256.h"
 #include "lib/memory/allocate.h"
 #include "model/access.h"
 #include "test_macro.h"
-#include "vm/binary.h"
+#include "vm/bytecode.h"
 #include "vm/vm.h"
 
 #include <stdio.h>
 #include <string.h>
+
+static bytecode_t *read_image(const char *path) {
+    size_t size;
+    void *bytes = read_binary_file(path, 256u * 1024u * 1024u, &size);
+    bytecode_t *code = decode_bytecode_image(bytes, size);
+    FREE(bytes);
+    return code;
+}
 
 static const char *filename = "goat-binary-unit.gbin";
 
@@ -72,41 +81,38 @@ bool test_sha256(void) {
 
 bool test_binary_roundtrip(void) {
     bytecode_t *code = sample();
-    ASSERT(save_binary_program(filename, code, 0));
-    binary_program_t loaded = load_binary_program(filename);
-    ASSERT(loaded.code && !loaded.binding_count);
-    ASSERT(loaded.code->buffer_size == code->buffer_size);
-    ASSERT(!memcmp(loaded.code->buffer, code->buffer, code->buffer_size));
-    ASSERT(loaded.code->instructions_count == 3 && loaded.code->data_descriptor_count == 1);
-    ASSERT(!loaded.code->native_functions);
+    ASSERT(write_binary_file(filename, code->buffer, code->buffer_size));
+    bytecode_t *loaded = read_image(filename);
+    ASSERT(loaded && !0);
+    ASSERT(loaded->buffer_size == code->buffer_size);
+    ASSERT(!memcmp(loaded->buffer, code->buffer, code->buffer_size));
+    ASSERT(loaded->instructions_count == 3 && loaded->data_descriptor_count == 1);
+    ASSERT(!loaded->native_functions);
     void *snapshot = ALLOC(code->buffer_size);
-    memcpy(snapshot, loaded.code->buffer, code->buffer_size);
-    ASSERT(validate_bytecode_image(loaded.code));
+    memcpy(snapshot, loaded->buffer, code->buffer_size);
+    ASSERT(validate_bytecode_image(loaded));
     for (unsigned i = 0; i < 2; ++i) {
         process_t *process = create_process();
-        ASSERT(!run(process, loaded.code));
+        ASSERT(!run(process, loaded));
         destroy_process(process);
-        ASSERT(!memcmp(snapshot, loaded.code->buffer, code->buffer_size));
+        ASSERT(!memcmp(snapshot, loaded->buffer, code->buffer_size));
     }
     FREE(snapshot);
-    ASSERT(!STRCMP((const gchar_t *)loaded.code->data, U"Unicode: \u03bb\u0416"));
-    destroy_binary_program(&loaded);
+    ASSERT(!STRCMP((const gchar_t *)loaded->data, U"Unicode: \u03bb\u0416"));
+    if (loaded)
+        free_bytecode(loaded);
     free_bytecode(code);
     ASSERT(!remove(filename));
     return true;
 }
 
-static void put64(unsigned char *bytes, size_t offset, uint64_t value) {
-    for (unsigned i = 0; i < 8; i++)
-        bytes[offset + i] = (unsigned char)(value >> (8 * i));
-}
-
 static bool rejected(const void *bytes, size_t size) {
-    binary_program_t loaded = decode_binary_program(bytes, size);
-    bool result = !loaded.code;
+    bytecode_t *loaded = decode_bytecode_image(bytes, size);
+    bool result = !loaded;
     if (!result)
         printf("Decoder accepted a corrupted binary (%zu bytes)\n", size);
-    destroy_binary_program(&loaded);
+    if (loaded)
+        free_bytecode(loaded);
     return result;
 }
 
@@ -172,10 +178,11 @@ static bool declaration_rejection(void) {
                 break;
         }
         memcpy((uint8_t *)code->data + descriptor.offset, &altered, sizeof(altered));
-        ASSERT(save_binary_program(filename, code, NULL));
-        binary_program_t loaded = load_binary_program(filename);
-        ASSERT((loaded.code != NULL) == (test == 0 || test == 12));
-        destroy_binary_program(&loaded);
+        ASSERT(write_binary_file(filename, code->buffer, code->buffer_size));
+        bytecode_t *loaded = read_image(filename);
+        ASSERT((loaded != NULL) == (test == 0 || test == 12));
+        if (loaded)
+            free_bytecode(loaded);
     }
     free_bytecode(code);
     ASSERT(!remove(filename));
@@ -296,74 +303,21 @@ bool test_binary_rejection(void) {
     ASSERT(declaration_rejection());
     ASSERT(instruction_rejection());
     bytecode_t *code = sample();
-    ASSERT(save_binary_program(filename, code, 0));
-    size_t size;
-    unsigned char *bytes = read_binary_file(filename, GOAT_BINARY_LIMIT, &size);
-    ASSERT(bytes);
-    uint64_t checksum = binary_checksum(bytes, size);
-    binary_program_t loaded = decode_binary_program(bytes, size);
-    ASSERT(loaded.code);
-    ASSERT(!memcmp(loaded.code->buffer, code->buffer, code->buffer_size));
-    ASSERT(binary_checksum(bytes, size) == checksum);
-    destroy_binary_program(&loaded);
-    ASSERT(rejected(NULL, size));
-    ASSERT(rejected(bytes, (size_t)GOAT_BINARY_LIMIT + 1));
-    for (size_t length = 0; length < size; length++)
-        ASSERT(rejected(bytes, length));
-    unsigned char *copy = ALLOC(size + 1);
-    for (size_t offset = 0; offset < size; offset++) {
-        memcpy(copy, bytes, size);
-        copy[offset] ^= 0x80;
-        bool invalid = rejected(copy, size);
-        if (!invalid)
-            printf("Corrupted byte offset: %zu\n", offset);
-        ASSERT(invalid);
+    ASSERT(rejected(NULL, code->buffer_size));
+    for (size_t length = 0; length < code->buffer_size; ++length)
+        ASSERT(rejected(code->buffer, length));
+    uint8_t *copy = ALLOC(code->buffer_size + 1);
+    memcpy(copy, code->buffer, code->buffer_size);
+    copy[code->buffer_size] = 0;
+    ASSERT(rejected(copy, code->buffer_size + 1));
+    const size_t offsets[] = {0, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60};
+    for (size_t i = 0; i < sizeof(offsets) / sizeof(*offsets); ++i) {
+        memcpy(copy, code->buffer, code->buffer_size);
+        memset(copy + offsets[i], 0xff, 4);
+        ASSERT(rejected(copy, code->buffer_size));
     }
-    memcpy(copy, bytes, size);
-    copy[size] = 0;
-    ASSERT(rejected(copy, size + 1));
-    /* Reject earlier instruction sets even when the checksum is valid. */
-    for (unsigned version = 1; version < 11; version++) {
-        memcpy(copy, bytes, size);
-        memcpy(copy, "GOATBIN", 7);
-        copy[7] = (unsigned char)('0' + version);
-        if (version == 10)
-            memcpy(copy, "GOATBI10", 8);
-        put64(copy, 8, version);
-        put64(copy, 56, 0);
-        put64(copy, 56, binary_checksum(copy, size));
-        ASSERT(rejected(copy, size));
-    }
-    /* Recompute checksums to exercise structural validation independently. */
-    const size_t offsets[] = {8,
-                              16,
-                              24,
-                              32,
-                              40,
-                              48,
-                              64,
-                              96 + 8,
-                              96 + 16,
-                              96 + 24,
-                              96 + sizeof(goat_binary_header_t),
-                              96 + sizeof(goat_binary_header_t) + 4,
-                              96 + sizeof(goat_binary_header_t) + 3 * sizeof(instruction_t)};
-    for (size_t i = 0; i < sizeof(offsets) / sizeof(*offsets); i++) {
-        memcpy(copy, bytes, size);
-        put64(copy, offsets[i], UINT64_MAX);
-        put64(copy, 56, 0);
-        put64(copy, 56, binary_checksum(copy, size));
-        ASSERT(rejected(copy, size));
-    }
-    memcpy(copy, bytes, size);
-    copy[size - sizeof(gchar_t)] = 1; /* Missing string terminator. */
-    put64(copy, 56, 0);
-    put64(copy, 56, binary_checksum(copy, size));
-    ASSERT(rejected(copy, size));
     FREE(copy);
-    FREE(bytes);
     free_bytecode(code);
-    ASSERT(!remove(filename));
     return true;
 }
 

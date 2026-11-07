@@ -12,7 +12,10 @@ The final C-only CI is checked separately.
 
 The files in this directory come from the unchanged original at
 `3c6f1d95b94a5343c6a1db2e26a20be1ced3b918`. `manifest.json` records its SHA-256,
-the exact source/descriptor fixture hashes, and the two existing producer goldens:
+the exact source/descriptor fixture hashes, and the two existing producer goldens.
+The producer checks explicitly use `--optimize none`, matching the original
+module compiler. Unified source compilation now defaults to optimization; its
+optimized bytecode is not expected to match these unoptimized frozen hashes:
 
 - Portable main hash: `06ab143298bb8cd0a951a60efd33587c0ea89c17e438d3b2113043d0703b713b`.
 - Bytecode SHA-256: `ba0a5dd1d608878e46e3d18c707bb2e3a1d21a53e6e62a93114485b051e83ccf`.

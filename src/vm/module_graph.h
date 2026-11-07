@@ -119,3 +119,9 @@ bool module_graph_paths(const module_graph_t *graph,
                         size_t final_edge,
                         module_graph_path_report_t report,
                         void *context);
+
+/** Consume a validated compiler root on every outcome; check its complete graph
+ * with the same hash, cycle and reference rules as an archive root. */
+module_graph_status_t validate_module_graph_parts(validated_module_t *root,
+                                                  const module_search_t *search,
+                                                  module_graph_t **out);

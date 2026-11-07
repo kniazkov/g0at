@@ -30,7 +30,7 @@ Processes use the portable child-process API, with explicit argument arrays and 
 
 A common cleanup process must report READY before temporary native build or extraction files are created. It owns the run’s temporary tree and tracks compiler descendants. The same service is shared by compilation and module loading; saved user artifacts are outside its tree. Its startup/READY budget is one second. A ready janitor’s later death does not change the program’s exit code, but cleanup can no longer be guaranteed.
 
-Publication uses the common filesystem API and a same-directory atomic replacement with permission preservation. A failed module build leaves the old archive intact. This single-file guarantee must not be confused with an atomic transaction over a standalone `.gbin` plus companion library. See [filesystem](../../file-system-api.md) and [cleanup](../../cleanup-service-api.md).
+Publication uses the common filesystem API and a same-directory atomic replacement with permission preservation. A failed module build leaves the old archive intact. All `.gbin` files use this one-archive publication; adjacent DLL/SO files are not part of execution. See [filesystem](../../file-system-api.md) and [cleanup](../../cleanup-service-api.md).
 
 <a id="section-24-4"></a>
 

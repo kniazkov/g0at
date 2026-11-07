@@ -8,6 +8,7 @@
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
 #include "test/support/language_execution.h"
+#include "test/support/module_artifact.h"
 #include "test/support/module_loading_owner.h"
 #include "test/support/registry.h"
 
@@ -602,7 +603,7 @@ static void body(scenario_run_t *r, void *user) {
             line(o, "9");
         }
         loading_bytes_t err = end(o, !strcmp(mode, "auto") ? 0 : 1);
-        REQUIRE(count(err, "Native preparation failed (cleanup-error)") == 1);
+        REQUIRE(count(err, "cleanup service did not become ready") == 1);
         REQUIRE(!exists(r, language_join(r, o->root, "compiler.query")) && !roots(o, NULL));
     } else if (!strncmp(k, "cleaner-death-", 14) || !strncmp(k, "normal-", 7)) {
         bool death = !strncmp(k, "cleaner-death-", 14);
@@ -706,9 +707,17 @@ static void body(scenario_run_t *r, void *user) {
                            : ARGS("--cc", s.cc, "--save-library", source),
                   NULL);
         REQUIRE(!end(o, 0).size);
-        REQUIRE(file(r, language_join(r, s.root, "export" EXT), true));
-        if (compiled)
-            REQUIRE(file(r, language_join(r, s.root, "export.gbin"), true));
+        if (compiled) {
+            const char *archive = language_join(r, s.root, "export.gbin");
+            REQUIRE(file(r, archive, true));
+            REQUIRE(!exists(r, language_join(r, s.root, "export" EXT)));
+            size_t size, native_size;
+            const void *bytes = language_read(r, archive, &size);
+            REQUIRE(test_module_member(r, bytes, size, "native/variant-1" EXT, &native_size));
+            REQUIRE(native_size);
+        } else {
+            REQUIRE(file(r, language_join(r, s.root, "export" EXT), true));
+        }
         REQUIRE(!roots(o, NULL));
     } else {
         REQUIRE(!strcmp(k, "interrupted-build"));

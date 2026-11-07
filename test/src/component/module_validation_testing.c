@@ -19,6 +19,57 @@
 #    include <io.h>
 #endif
 
+/** The in-memory entry point must enforce the archive contract and own its bytes. */
+static void check_parts(const goat_module_container *container) {
+    size_t count = goat_module_container_native_count(container);
+    goat_container_native *parts = count ? calloc(count, sizeof(*parts)) : NULL;
+    assert(!count || parts);
+    for (size_t i = 0; i < count; ++i)
+        assert(goat_module_container_native_at(container, i, parts + i));
+    zip_view_t original = goat_module_container_bytecode(container);
+    unsigned char *bytes = malloc(original.size);
+    assert(bytes && original.size);
+    memcpy(bytes, original.data, original.size);
+    zip_view_t image = {bytes, original.size};
+    const yyjson_doc *metadata = goat_module_container_metadata(container);
+    validated_module_t *copy = NULL;
+    assert(validate_module_parts(metadata, image, parts, count, "parts", &copy).status == 0);
+    assert(copy && !strcmp(validated_module_archive(copy), "parts"));
+    assert(validated_module_bytecode(copy)->buffer != original.data);
+    bytes[0] ^= 1;
+    assert(!memcmp(validated_module_bytecode(copy)->buffer, original.data, original.size));
+    validated_module_t *invalid = (void *)(uintptr_t)1;
+    assert(validate_module_parts(metadata, image, parts, count, "bad image", &invalid).status);
+    assert(!invalid);
+    bytes[0] ^= 1;
+    assert(validate_module_parts(NULL, image, parts, count, "missing metadata", &invalid).status);
+    assert(!invalid);
+    if (count) {
+        assert(validate_module_parts(metadata, image, NULL, 0, "missing native", &invalid).status);
+        assert(!invalid);
+        goat_container_native saved = parts[0];
+        parts[0].name = "../escape.so";
+        parts[0].name_length = strlen(parts[0].name);
+        assert(
+            validate_module_parts(metadata, image, parts, count, "unsafe name", &invalid).status);
+        assert(!invalid);
+        parts[0] = saved;
+        unsigned char *native = malloc(saved.bytes.size);
+        assert(native && saved.bytes.size);
+        memcpy(native, saved.bytes.data, saved.bytes.size);
+        native[0] ^= 1;
+        parts[0].bytes.data = native;
+        assert(
+            validate_module_parts(metadata, image, parts, count, "native hash", &invalid).status);
+        assert(!invalid);
+        free(native);
+    }
+    free(bytes);
+    free(parts);
+    assert(!memcmp(validated_module_bytecode(copy)->buffer, original.data, original.size));
+    free_validated_module(copy);
+}
+
 static void quoted(const void *data, size_t size) {
     const unsigned char *text = data;
     putchar('"');
@@ -128,6 +179,7 @@ int main(int argc, char **argv) {
         const bytecode_t *code = validated_module_bytecode(module);
         const goat_module_container *container = validated_module_container(module);
         assert(code && container && code->instructions_count);
+        check_parts(container);
         assert(validated_module_entry(module) < code->instructions_count);
         assert(!strcmp(validated_module_archive(module), label));
         size_t length = code->buffer_size;

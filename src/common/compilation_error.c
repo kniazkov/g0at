@@ -10,6 +10,7 @@
 #include "lib/memory/allocate.h"
 #include "lib/memory/arena.h"
 #include "lib/strings/string_ext.h"
+#include "resources/messages.h"
 #include "scanner/token.h"
 
 #include <assert.h>
@@ -96,4 +97,33 @@ compilation_error_severity_t get_most_severe_compilation_error(const compilation
     }
 
     return result;
+}
+
+string_value_t format_compilation_errors(const compilation_error_t *error) {
+    size_t count = 0;
+    for (const compilation_error_t *p = error; p; p = p->next)
+        ++count;
+    const compilation_error_t **items = count ? ALLOC(count * sizeof(*items)) : NULL;
+    size_t i = 0;
+    for (const compilation_error_t *p = error; p; p = p->next)
+        items[i++] = p;
+    string_builder_t builder = {0};
+    string_value_t text = NULL_STRING_VALUE;
+    while (i) {
+        const compilation_error_t *p = items[--i];
+        const gchar_t *format = p->severity == WARNING ? get_messages()->compilation_warning
+                                : p->severity == CRITICAL
+                                    ? get_messages()->critical_compilation_error
+                                    : get_messages()->compilation_error;
+        string_value_t line = format_string(format,
+                                            p->position->begin->file_name,
+                                            p->position->begin->row,
+                                            p->position->begin->column,
+                                            p->message.data);
+        append_string_value(&builder, line);
+        FREE_STRING(line);
+        text = append_char(&builder, '\n');
+    }
+    FREE(items);
+    return text;
 }

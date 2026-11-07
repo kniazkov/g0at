@@ -5,6 +5,7 @@
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
 #include "test/support/language_execution.h"
+#include "test/support/module_artifact.h"
 #include "test/support/registry.h"
 
 #include <ctype.h>
@@ -354,13 +355,15 @@ static void archive(scenario_run_t *r, config_t *c, const char *path, unsigned i
     language_remove(r, join(r, work, "numeric.c"));
     language_remove(r, generated);
     output(r, RUN(env, "--compile", "--native", "required", source), "");
-    const char *library = join(r, work, "numeric" LIB);
-    REQUIRE(kind(r, library) == FS_FILE);
+    size_t artifact_size, native_size;
+    const void *artifact = language_read(r, binary, &artifact_size);
+    REQUIRE(test_module_member(r, artifact, artifact_size, "native/variant-1" LIB, &native_size)
+            && native_size > 0);
     language_remove(r, source);
     const char *deployed = join(r, root, "deployed program");
     language_directory(r, deployed);
     move(r, binary, join(r, deployed, "numeric.gbin"));
-    move(r, library, join(r, deployed, "numeric" LIB));
+    /* The native library travels inside the archive: deploy only one file. */
     output(r,
            RUN(isolated,
                "--run",

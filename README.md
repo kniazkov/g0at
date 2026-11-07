@@ -208,7 +208,7 @@ Copy-Item .\docs\book\examples\22-native-module.goat .\build\quickstart\program.
 .\target\goat.exe --run .\build\quickstart\program.gbin
 ```
 
-This example has no include/import and uses the standalone binary path. Adding `--native required` to its compile command also builds a companion `.so` or `.dll`. Keep that library beside the `.gbin` with the same basename. Execution of the saved pair needs neither the source nor a C compiler. See [Separate Compilation](docs/book/en/26-separate-compilation.md) for compatibility and failure rules.
+`--compile` always produces a ZIP module beside the source. Its name is the source basename without the extension and its version is `0`. Invalid module names require renaming the file or supplying a `.gmod`; names are never silently rewritten. Optional native `.so`/`.dll` variants live inside the ZIP. Running it needs neither source nor a C compiler. `goat-inspect`, `goat-merge` and imports accept the same artifact. Direct-source imports must specify an exact version; `include` files are embedded and imported modules remain external dependencies.
 
 Generated native C uses the [native support library](docs/native-runtime.md). `--save-c` exports its headers and `libgoat_native.a` beside the C file; automatic DLL/SO compilation stages and links the matching archive from the interpreter bundle.
 
@@ -218,7 +218,7 @@ The [model layout](docs/model-layout.md) describes the separation of value stora
 
 Module-system v1 is implemented. A strict JSON `.gmod` identifies a name, exact version and main source. `include` joins source files with separate scopes; `import` uses a built module with an exact dependency version. Unmodified declarations are file-local, `public` is module-local, and `external` crosses module boundaries; `protected`/`private` retain their object-domain rules. A caller does not transfer its privileges to the called function. See the [tutorial and format](docs/book/en/30-modules.md).
 
-A module build publishes a single deterministic ZIP `.gbin` containing metadata, portable bytecode and optional native variants. It does not execute initializers or load DLL/SO. Running `.gmod` builds in memory without publishing; running a ready ZIP needs no source or compiler, but used dependency archives must be discoverable. ZIP modules do **not** use the standalone companion-library layout above. The old host-dependent `GOATBI11` format is not accepted: rebuild old artifacts.
+A module build publishes a single deterministic ZIP `.gbin` containing metadata, portable bytecode and optional native variants. It does not execute initializers or load DLL/SO. Running `.gmod` builds in memory without publishing; running a ready ZIP needs no source or compiler, but used dependency archives must be discoverable. Direct source execution uses the same compiler result without a ZIP round trip. The REPL retains its separate persistent session. Old standalone envelopes (including `GOATPG01`) and raw bytecode are not launchable: recompile from source.
 
 Try the checked-in two-module tutorial in a working copy. After the default Debug build, from the repository root:
 

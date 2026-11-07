@@ -114,17 +114,18 @@ static void remove_writes(node_t *node, const declarator_t *binding, arena_t *ar
     }
 }
 
-static bool pass(node_t *node, node_t *root, arena_t *arena) {
+static bool pass(node_t *node, node_t *root, arena_t *arena, bool keep_file) {
     if (is_deletion(node))
         return false;
     if (is_replacement(node))
-        return pass(get_node_child(node, 1), root, arena);
+        return pass(get_node_child(node, 1), root, arena, keep_file);
     bool changed = false;
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         node_t *child = get_node_child(node, i);
         node_type_t type = child->vtbl->type;
         if ((type == NODE_VARIABLE_DECLARATOR || type == NODE_CONSTANT_DECLARATOR)
-            && !exposed(child) && !reads(root, (const declarator_t *)child)) {
+            && !(keep_file && child->scope == root->scope) && !exposed(child)
+            && !reads(root, (const declarator_t *)child)) {
             node_t *initial = get_node_child(child, 0);
             node_t *wrapper;
             if (!initial || discardable(initial)) {
@@ -142,14 +143,19 @@ static bool pass(node_t *node, node_t *root, arena_t *arena) {
                 changed = true;
             }
         } else {
-            changed |= pass(child, root, arena);
+            changed |= pass(child, root, arena, keep_file);
         }
     }
     return changed;
 }
 
 void eliminate_unused_bindings(node_t *root, arena_t *arena) {
-    while (pass(root, root, arena)) {
+    while (pass(root, root, arena, false)) {
         /* Every successful pass removes at least one executable declarator. */
+    }
+}
+
+void eliminate_unused_module_bindings(node_t *root, arena_t *arena) {
+    while (pass(root, root, arena, true)) {
     }
 }

@@ -29,7 +29,7 @@ Representation, padding, boolean values, Unicode scalars, readable ranges and st
 
 The module adapter accepts the ABI version, host context, argument count, an array of values and a separate result buffer. Before entry, the VM applies access checks, ordinary call semantics and the specialization’s declarative guards. Missing arguments count as null; extra arguments have already been evaluated once. Guards do not call Goat code or overloaded operators.
 
-The host initializes the result and validates both status and returned representation. No matching specialization means VM execution **before** any native attempt. An adapter already entered is never replayed on the VM under the module ABI, even for `RESOURCE_LIMIT`. See [dispatch](../../module-dispatch-api.md). The standalone query ABI has a separate, narrowly checked pure-resource fallback described in chapter 25.
+The host initializes the result and validates both status and returned representation. No matching specialization means VM execution **before** any native attempt. After entry, only `GOAT_MODULE_PURE_RETRY` with a matching metadata proof of no effects permits VM replay; ordinary `RESOURCE_LIMIT` is terminal. See [dispatch](../../module-dispatch-api.md) and chapter 25.
 
 <a id="section-23-4"></a>
 

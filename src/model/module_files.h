@@ -6,6 +6,7 @@
 
 #include "context.h"
 #include "exception.h"
+#include "goat/module_abi.h"
 #include "lib/strings/string_ext.h"
 #include "vm/module_bytecode.h"
 
@@ -32,7 +33,8 @@ module_bytecode_status_t create_module_files(process_t *process,
  * The process owns fresh scopes and a runtime wrapper with independent bindings.
  * The caller must retain the source image until AFTER destroy_process, including
  * all image-backed objects and wrappers. Metadata is borrowed only for this call.
- * Invalid NULL arguments or unrepresentable file storage clear out and return false.
+ * Invalid NULL arguments, unrepresentable file storage or metadata copy allocation
+ * failure clear out and return false without changing the process.
  * This API neither executes files nor grants partial graphs permission to run.
  */
 bool create_module_files_from_snapshot(process_t *process,
@@ -167,3 +169,9 @@ module_initialize_status_t initialize_module_file_direct(module_file_t *file,
                                                          exception_t *failure);
 /** @brief Whether this OS execution thread has an active file diagnostic chain. */
 bool module_initialization_active(process_t *process);
+
+/** A summary covering these argument types proves no effects; missing facts are false. */
+bool module_function_is_pure(const module_files_t *files,
+                             uint32_t function_id,
+                             size_t count,
+                             const goat_module_value_v1 *arguments);

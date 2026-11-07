@@ -6,6 +6,7 @@
 #include "lib/memory/allocate.h"
 #include "test/support/format_binary.h"
 #include "test/support/language_execution.h"
+#include "test/support/module_artifact.h"
 #include "test/support/registry.h"
 
 #include <ctype.h>
@@ -20,10 +21,6 @@ static void put(unsigned char *p, uint32_t n) {
 
 static uint32_t get(const unsigned char *p) {
     return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
-}
-
-static uint64_t get64(const unsigned char *p) {
-    return (uint64_t)get(p) | (uint64_t)get(p + 4) << 32;
 }
 
 static void words(unsigned char *p, const uint32_t *values, size_t count) {
@@ -155,7 +152,9 @@ static void execute(scenario_run_t *run,
                     size_t expected_size) {
     const char *path =
         language_join(run, scenario_work_directory(scenario_run_context(run)), "image.gbin");
-    language_write(run, path, data, size);
+    size_t zip_size;
+    const unsigned char *zip = test_module_wrap_image(run, data, size, &zip_size);
+    language_write(run, path, zip, zip_size);
     scenario_command_result_t result = language_command(
         run,
         exe,
@@ -163,7 +162,7 @@ static void execute(scenario_run_t *run,
         NULL);
     scenario_require(run, (result.exit_code == 0) == valid, "bytecode acceptance mismatch");
     if (!valid) {
-        const char diagnostic[] = "Invalid, incompatible or unreadable Goat binary";
+        const char diagnostic[] = "Module graph validation failed";
         bool found = false;
         for (size_t i = 0; i + sizeof(diagnostic) - 1 <= result.err_size; ++i)
             if (!memcmp((const char *)result.err + i, diagnostic, sizeof(diagnostic) - 1))
@@ -179,7 +178,7 @@ static void execute(scenario_run_t *run,
                            true);
     size_t after_size;
     const char *after = language_read(run, path, &after_size);
-    scenario_require_bytes(run, "unchanged bytecode input", data, size, after, after_size, false);
+    scenario_require_bytes(run, "unchanged module input", zip, zip_size, after, after_size, false);
 }
 
 static void bad(scenario_run_t *run,
@@ -306,15 +305,15 @@ static void bytecode_body(scenario_run_t *run, void *user) {
         (const unsigned char *)language_read(run,
                                              language_join(run, work, "empty.gbin"),
                                              &artifact_size);
-    scenario_require(run, artifact_size >= 96, "truncated empty envelope");
+    artifact = test_module_member(run, artifact, artifact_size, "bytecode.bin", &artifact_size);
     put(minimal + 100, 0);
     put(minimal + 104, 0);
     scenario_require_bytes(run,
                            "empty writer",
                            minimal,
                            minimal_size,
-                           artifact + 96,
-                           artifact_size - 96,
+                           artifact,
+                           artifact_size,
                            false);
     source = language_join(run, work, "roundtrip.goat");
     const char program[] = "const outer=func(n){const inner=func(x){return x+1;};return inner(n);};"
@@ -331,14 +330,19 @@ static void bytecode_body(scenario_run_t *run, void *user) {
         artifact = (const unsigned char *)language_read(run,
                                                         language_join(run, work, "roundtrip.gbin"),
                                                         &artifact_size);
-        scenario_require(run, artifact_size >= 96, "truncated standalone envelope");
-        scenario_require(run,
-                         !memcmp(artifact, "GOATPG01", 8) && get64(artifact + 16) == 0,
-                         "incorrect standalone envelope or flags");
-        uint64_t code_size = get64(artifact + 24);
-        scenario_require(run, code_size <= artifact_size - 96, "bytecode extends beyond envelope");
-        oracle(run, artifact + 96, (size_t)code_size);
-        execute(run, exe, artifact + 96, (size_t)code_size, true, "42\n", 3);
+        const unsigned char *code =
+            test_module_member(run, artifact, artifact_size, "bytecode.bin", &artifact_size);
+        oracle(run, code, artifact_size);
+        result = language_command(run,
+                                  exe,
+                                  (const char *const[]){exe,
+                                                        "--run",
+                                                        "--native",
+                                                        "off",
+                                                        language_join(run, work, "roundtrip.gbin"),
+                                                        NULL},
+                                  NULL);
+        language_check(run, result, 0, "42\n", 3, "", 0);
     }
     printf("[ ok ] Bytecode v1: independent numeric/string/function image, %u corruptions, shared "
            "codec\n",

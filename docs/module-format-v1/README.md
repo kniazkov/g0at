@@ -447,37 +447,14 @@ cross-part references; #221 informational fields; #250 strings/Unicode. The
 format tooling does not execute libraries, resolve imports, prove analysis facts or
 constitute the future complete bytecode verifier.
 
-## Standalone program envelope v1 (#251)
+## Saved programs
 
-The standalone CLI stores the same `GOATBC01` bytes inside a `GOATPG01` envelope.
-The envelope has its own version 1 and is not the future ZIP module container.
-All integers are fixed-width little-endian; the header occupies 96 bytes:
+Every `.gbin`, including a compiled single source, uses the ZIP module container
+specified above. The former `GOATPG01` envelope is no longer supported. Raw
+`GOATBC01` is an internal member codec, never a CLI executable artifact. Native
+libraries are embedded declared members, not adjacent companion files. Rebuild
+old saved programs from source.
 
-| Offset | Width | Field |
-| --- | --- | --- |
-| 0 | 8 | ASCII GOATPG01 |
-| 8 | 8 | envelopeVersion=1 |
-| 16 | 8 | reserved=0 (no host ABI marker) |
-| 24 | 8 | bytecode byte length |
-| 32 | 8 | native binding count |
-| 40,48 | 8 each | reserved=0 |
-| 56 | 8 | FNV-1a checksum of the entire envelope with these eight bytes zero |
-| 64 | 32 | SHA-256 of exact companion library bytes; all zero without bindings |
-
-The checksum starts at 14695981039346656037 and multiplies by 1099511628211
-modulo 2^64 after XOR with each byte. The image begins at byte 96, followed
-immediately by binding records: uint64 FUNC instruction index and uint64
-function ID. Both must fit the referenced v1 u32 fields and agree with the
-function table. Records have strictly increasing instruction indices. No extra
-bytes are allowed. Native addresses are never stored; binding only changes
-external runtime structures. The standalone CLI caps artifacts at 256 MiB.
-The bare codec retains the format's uint32 total-size limit.
-
-The bytecode reader accepts only `GOATBC01` version 1; the standalone reader
-accepts only this envelope or a bare new image. In particular, neither accepts
-`GOATST01`/`GOATSC01` or previous numeric-version-1 layouts. Native ABI is already
-version 1; historical `_v2` C identifiers are not serialized format versions.
-The module's `GOATND01` descriptor and ZIP implementation remain #209/#247.
 
 ## Inspector report v1 (#223)
 

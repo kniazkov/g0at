@@ -267,7 +267,9 @@ static void body(scenario_run_t *r, void *user) {
                             NULL,
                             false);
             check(r, result, false, "");
-            REQUIRE(contains(result.err, result.err_size, "Access checks require VM execution"));
+            REQUIRE(contains(result.err,
+                             result.err_size,
+                             "native required needs an own specialization"));
             verify(r, !exists(r, gbin), "access rejected bytecode absent");
         } else {
             result = invoke(r,
@@ -312,7 +314,7 @@ static int probe(int argc, char **argv, const char *mode) {
             save = argv[++i];
     }
     if (compile) {
-        fputs("Access checks require VM execution\n", stderr);
+        fputs("native required needs an own specialization\n", stderr);
         if (!strcmp(mode, "bytecode")) {
             char *path = ALLOC(strlen(argv[argc - 1]) + 1);
             strcpy(path, argv[argc - 1]);

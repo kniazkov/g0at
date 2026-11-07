@@ -14,6 +14,9 @@
  * Neither compilation nor discovery loads a native library or executes Goat code.
  */
 typedef struct {
+    const options_t *source_options;
+    module_source_observer_t observer;
+    void *observer_context;
     bool override_mode;
     native_execution_mode_t mode;
     const char *target;

@@ -5,6 +5,7 @@
 #include "module_files.h"
 
 #include "lib/memory/allocate.h"
+#include "module/module_guards.h"
 #include "module/module_json_internal.h"
 #include "module_file_declarations.h"
 #include "module_native.h"
@@ -38,6 +39,7 @@ struct module_files_t {
     object_t **strings;
     module_file_t **imports;
     module_native_binding_t *native;
+    yyjson_doc *analysis_metadata;
 };
 
 /** Take ownership of the wrapper, borrowing parsed metadata only during construction. */
@@ -47,7 +49,17 @@ static module_files_t *create_files(process_t *process, const yyjson_doc *doc, b
     bool valid = goat_json_integer(yyjson_obj_get(root, "main"), &main);
     assert(valid && main >= 0 && (uint64_t)main < code->file_count);
     (void)valid;
+    /* Preserve the process on recoverable JSON allocation failures: no identity
+       or scope may be published until both metadata copies have succeeded. */
+    yyjson_mut_doc *copy = yyjson_doc_mut_copy(doc, NULL);
+    yyjson_doc *analysis_metadata = copy ? yyjson_mut_doc_imut_copy(copy, NULL) : NULL;
+    yyjson_mut_doc_free(copy);
+    if (!analysis_metadata) {
+        free_bytecode(code);
+        return NULL;
+    }
     module_files_t *set = CALLOC(sizeof(*set));
+    set->analysis_metadata = analysis_metadata;
     set->process = process;
     set->identity = create_module_identity();
     set->code = code;
@@ -123,6 +135,12 @@ module_bytecode_status_t create_module_files(process_t *process,
     }
     *out = create_files(process, doc, code);
     yyjson_doc_free(doc);
+    if (!*out) {
+        if (error)
+            *error =
+                (module_bytecode_error_t){MODULE_BYTECODE_JSON, SIZE_MAX, GOAT_MODULE_JSON_MEMORY};
+        return MODULE_BYTECODE_JSON;
+    }
     return MODULE_BYTECODE_OK;
 }
 
@@ -137,7 +155,7 @@ bool create_module_files_from_snapshot(process_t *process,
             || code->data_descriptor_count > SIZE_MAX / sizeof(void *)))
         return false;
     *out = create_files(process, metadata, borrow_bytecode_image(code));
-    return true;
+    return *out != NULL;
 }
 
 size_t module_files_count(const module_files_t *files) {
@@ -285,6 +303,7 @@ void destroy_module_files(process_t *process) {
         FREE_STRING(set->name);
         FREE_STRING(set->version);
         FREE(set->strings);
+        yyjson_doc_free(set->analysis_metadata);
         FREE(set->imports);
         FREE(set->files);
         free_bytecode(set->code);
@@ -425,7 +444,10 @@ static module_initialize_status_t initialize_file(module_file_t *file,
     module_file_t *previous = process->initializing_file;
     if (!direct)
         process->initializing_file = file;
-    bool success = prepare_module_file_declarations(file);
+    /* The launch file executes sequential declarations until it publishes its
+       first worker. Imported/included initializers reserve their complete scope
+       before exposing it to recursive consumers. */
+    bool success = direct || prepare_module_file_declarations(file);
     if (success) {
         context_t *frame = create_module_file_context(file, caller);
         frame->file_initialization_boundary = true;
@@ -525,4 +547,52 @@ string_view_t module_files_name(const module_files_t *files) {
 
 string_view_t module_files_version(const module_files_t *files) {
     return files ? (string_view_t){files->version.data, files->version.length} : (string_view_t){0};
+}
+
+bool module_function_is_pure(const module_files_t *files,
+                             uint32_t id,
+                             size_t count,
+                             const goat_module_value_v1 *arguments) {
+    if (!files || !files->analysis_metadata)
+        return false;
+    yyjson_val *functions =
+        yyjson_obj_get(yyjson_doc_get_root(files->analysis_metadata), "functions");
+    size_t i, n;
+    yyjson_val *function;
+    yyjson_arr_foreach(functions, i, n, function) {
+        int64_t function_id;
+        if (!goat_json_integer(yyjson_obj_get(function, "functionId"), &function_id)
+            || function_id != id)
+            continue;
+        yyjson_val *summaries = yyjson_obj_get(yyjson_obj_get(function, "analysis"), "summaries");
+        size_t j, m;
+        yyjson_val *summary;
+        yyjson_arr_foreach(summaries, j, m, summary) {
+            yyjson_val *effects = yyjson_obj_get(summary, "effects");
+            yyjson_val *may = yyjson_obj_get(effects, "may");
+            if (!yyjson_is_false(yyjson_obj_get(effects, "unknown")) || !yyjson_is_arr(may)
+                || yyjson_arr_size(may))
+                continue;
+            yyjson_val *conditions = yyjson_obj_get(yyjson_obj_get(summary, "when"), "arguments");
+            if (conditions && yyjson_arr_size(conditions) != count)
+                continue;
+            bool matches = true;
+            for (size_t k = 0; k < yyjson_arr_size(conditions); ++k) {
+                yyjson_val *facts = yyjson_arr_get(conditions, k);
+                if (!yyjson_obj_size(facts))
+                    continue;
+                /* Only unconstrained scalar-type proofs qualify. Narrower value,
+                   range or structural facts require a separate implication proof. */
+                yyjson_val *type = yyjson_obj_get(facts, "type");
+                if (yyjson_obj_size(facts) != 1 || !type
+                    || goat_module_scalar_tag(type) != arguments[k].tag) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches)
+                return true;
+        }
+    }
+    return false;
 }

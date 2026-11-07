@@ -8,6 +8,7 @@
 #include "test/support/format_binary.h"
 #include "test/support/format_zip.h"
 #include "test/support/language_execution.h"
+#include "test/support/module_artifact.h"
 #include "test/support/module_execution.h"
 #include "test/support/registry.h"
 #include "yyjson.h"
@@ -128,7 +129,8 @@ static void dispatch(scenario_run_t *r, void *arg) {
     yyjson_val *root = yyjson_doc_get_root(metrics), *calls = yyjson_obj_get(root, "calls"),
                *retries = yyjson_obj_get(root, "retries");
     REQUIRE(yyjson_is_uint(calls) && yyjson_equals(calls, yyjson_obj_get(v, "calls")));
-    REQUIRE(yyjson_is_uint(retries) && yyjson_get_uint(retries) == 0);
+    REQUIRE(yyjson_is_uint(retries)
+            && yyjson_get_uint(retries) == yyjson_get_uint(yyjson_obj_get(v, "retries")));
     yyjson_val *resolutions = yyjson_obj_get(v, "resolutions");
     if (!yyjson_is_null(resolutions))
         REQUIRE(yyjson_equals(yyjson_obj_get(root, "resolutions"), resolutions));
@@ -238,11 +240,7 @@ static void producer(scenario_run_t *r, void *arg) {
         size_t size;
         const unsigned char *bytes =
             (const unsigned char *)language_read(r, language_join(r, root, name), &size);
-        if (size >= 8 && !memcmp(bytes, "GOATPG01", 8)) {
-            REQUIRE(size >= 96);
-            bytes += 96;
-            size -= 96;
-        }
+        bytes = test_module_member(r, bytes, size, "bytecode.bin", &size);
         REQUIRE(size >= 64 && !memcmp(bytes, "GOATBC01", 8));
         size_t image_size = u32(bytes + 16);
         REQUIRE(image_size <= size);

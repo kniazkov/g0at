@@ -6,6 +6,7 @@
 #include "lib/memory/allocate.h"
 #include "lib/threads/os_thread.h"
 #include "lib/wire/wire.h"
+#include "model/module_file_declarations.h"
 #include "model/module_files.h"
 #include "model/process.h"
 #include "model/thread.h"
@@ -55,6 +56,11 @@ static bool execute(module_file_t *file, context_t *frame, void *data, exception
     object_static_string_t xs = {0}, cs = {0};
     object_t *x = get_static_string_object(&xs, U"x");
     object_t *c = get_static_string_object(&cs, U"c");
+    /* A direct launch publishes pending declarations when it starts workers. */
+    if (test->direct && id == 0) {
+        assert(!get_own_field_cell(frame->data, x));
+        assert(prepare_module_file_declarations(file));
+    }
     assert(lookup_accessible_property(&frame->access, frame->data, x, false).status
            == MSTAT_UNINITIALIZED);
     assert(write_accessible_property(&frame->access, frame->data, x, get_static_integer_object(1))

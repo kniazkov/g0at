@@ -4,15 +4,25 @@
  */
 #include "codegen/linker.h"
 #include "lib/collections/comparison.h"
+#include "lib/files/binary_file.h"
 #include "lib/files/io.h"
+#include "lib/hash/sha256.h"
 #include "lib/memory/allocate.h"
 #include "lib/strings/string_ext.h"
 #include "test_lib.h"
 #include "test_macro.h"
-#include "vm/binary.h"
+#include "vm/bytecode.h"
 
 #include <locale.h>
 #include <math.h>
+
+static bytecode_t *read_image(const char *path) {
+    size_t size;
+    void *bytes = read_binary_file(path, 256u * 1024u * 1024u, &size);
+    bytecode_t *code = decode_bytecode_image(bytes, size);
+    FREE(bytes);
+    return code;
+}
 
 bool test_unicode_strings(void) {
     string_value_t value = STATIC_STRING(U"\0A\0B\0\0\U0001f600");
@@ -142,17 +152,18 @@ bool test_unicode_binary(void) {
             ((data_descriptor_t *)code->data_descriptors)[id].offset = 1;
         if (test == 5)
             ((uint8_t *)code->data)[sizeof(expected) - 4] = 1;
-        ASSERT(save_binary_program(path, code, NULL));
-        binary_program_t loaded = load_binary_program(path);
-        ASSERT((loaded.code != NULL) == (test == 0));
-        if (loaded.code) {
-            const gchar_t *s = (const gchar_t *)loaded.code->data;
+        ASSERT(write_binary_file(path, code->buffer, code->buffer_size));
+        bytecode_t *loaded = read_image(path);
+        ASSERT((loaded != NULL) == (test == 0));
+        if (loaded) {
+            const gchar_t *s = (const gchar_t *)loaded->data;
             ASSERT(!MEMCMP(s, text.data, text.length));
-            ASSERT((const uint8_t *)s >= (const uint8_t *)loaded.code->buffer);
+            ASSERT((const uint8_t *)s >= (const uint8_t *)loaded->buffer);
             ASSERT((const uint8_t *)(s + text.length + 1)
-                   <= (const uint8_t *)loaded.code->buffer + loaded.code->buffer_size);
+                   <= (const uint8_t *)loaded->buffer + loaded->buffer_size);
         }
-        destroy_binary_program(&loaded);
+        if (loaded)
+            free_bytecode(loaded);
     }
     free_bytecode(code);
     ASSERT(!remove(path));

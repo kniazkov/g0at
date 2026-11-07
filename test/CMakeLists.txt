@@ -9,8 +9,9 @@ add_executable(process_watch_testing src/support/process_watch_testing.c)
 target_link_libraries(process_watch_testing PRIVATE goat_process_watch_support)
 
 # Shared Python-to-C execution/report helpers remain test-only.
-add_library(goat_language_execution_support STATIC support/language_execution.c)
-target_link_libraries(goat_language_execution_support PUBLIC goat_test_support)
+add_library(goat_language_execution_support STATIC support/language_execution.c support/module_artifact.c)
+target_link_libraries(goat_language_execution_support PUBLIC goat_test_support goat_format_oracle)
+target_compile_definitions(goat_language_execution_support PRIVATE GOAT_TEST_SCHEMA="${PROJECT_SOURCE_DIR}/docs/module-format-v1/schema-source.json")
 add_executable(loop_index_testing src/functional/loop_index_testing.c)
 target_link_libraries(loop_index_testing PRIVATE goat_language_execution_support)
 add_dependencies(loop_index_testing goat)
@@ -558,3 +559,12 @@ add_test(NAME integration.build_publication
     -P "${CMAKE_CURRENT_SOURCE_DIR}/publish_tools.cmake")
 set_tests_properties(integration.build_publication PROPERTIES
   LABELS "integration;build-publication" TIMEOUT 60)
+
+add_test(NAME integration.unified_gbin
+  COMMAND "${CMAKE_COMMAND}"
+    "-DGOAT=$<TARGET_FILE:goat>"
+    "-DINSPECT=$<TARGET_FILE:goat-inspect>"
+    "-DMERGE=$<TARGET_FILE:goat-merge>"
+    "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/unified-gbin"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/unified_gbin.cmake")
+set_tests_properties(integration.unified_gbin PROPERTIES LABELS "integration;module" TIMEOUT 60)

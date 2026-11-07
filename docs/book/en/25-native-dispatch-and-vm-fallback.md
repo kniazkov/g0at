@@ -4,7 +4,7 @@
 
 Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
 
-This chapter’s resource-limit retry and query-ABI counters describe the standalone source/program path. **ZIP modules use another contract:** declarative per-call guards, root-only required preparation, lazy libraries, and no VM replay after module adapter entry (including RESOURCE_LIMIT). Detected ABI violations are terminal for the process, not catchable Goat errors. See [module dispatch](../../module-dispatch-api.md), [loading](../../module-loading-api.md), and [chapter 23](23-native-abi.md).
+Source and saved programs now share ZIP module dispatch. Resource fallback requires the dedicated `GOAT_MODULE_PURE_RETRY` status and a matching metadata proof of no effects. Ordinary `RESOURCE_LIMIT` and all ABI violations remain terminal. The retried VM body and its descendants cannot enter native code; argument expressions are evaluated only once. See [dispatch](../../module-dispatch-api.md).
 
 <a id="section-25-1"></a>
 

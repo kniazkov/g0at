@@ -39,7 +39,10 @@ enum {
     GOAT_MODULE_ABI_MISMATCH = 3,
     GOAT_MODULE_RESOURCE_LIMIT = 4,
     GOAT_MODULE_EXTERNAL_ERROR = 5,
-    GOAT_MODULE_HOST_EXCEPTION = 6
+    GOAT_MODULE_HOST_EXCEPTION = 6,
+    /** Pure adapter exhausted resources without observable effects. Host must
+     * independently require a complete purity proof before replaying in the VM. */
+    GOAT_MODULE_PURE_RETRY = 7
 };
 
 /** Borrowed Unicode scalars, no terminator required. All padding must be zero.

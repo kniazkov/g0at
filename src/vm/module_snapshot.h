@@ -87,3 +87,10 @@ bool set_module_snapshot_native_state(module_snapshot_t *snapshot,
                                       void *state,
                                       void (*destroy)(void *));
 void *module_snapshot_native_state(module_snapshot_t *snapshot);
+
+/** Consume a validated compiler root, preflight dependencies and create runtime
+ * scopes without encoding or decoding a root ZIP. */
+module_graph_status_t load_module_snapshot_parts(validated_module_t *root,
+                                                 const module_search_t *search,
+                                                 module_snapshot_t **out,
+                                                 module_graph_t **diagnostics);

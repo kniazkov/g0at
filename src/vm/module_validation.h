@@ -104,3 +104,13 @@ const goat_module_container *validated_module_container(const validated_module_t
 const bytecode_t *validated_module_bytecode(const validated_module_t *module);
 const char *validated_module_archive(const validated_module_t *module);
 uint32_t validated_module_entry(const validated_module_t *module);
+
+/** Validate compiler parts without serializing a ZIP. Owns copies on success;
+ * applies the same metadata, hash, bytecode and native consistency checks.
+ */
+module_validation_result_t validate_module_parts(const yyjson_doc *metadata,
+                                                 zip_view_t bytecode,
+                                                 const goat_container_native *native,
+                                                 size_t count,
+                                                 const char *label,
+                                                 validated_module_t **out);
