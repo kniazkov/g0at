@@ -2,8 +2,8 @@
 
 The CI-only `scripts/observe_release_mingw.sh` runs the existing Release script
 with the same output pipeline and exit status. It does not retry the build or
-change Make options, parallelism, packaging or the 15-minute Actions timeout.
-Local build scripts are unaffected.
+change the 15-minute Actions timeout. The Windows Release packaging experiment
+is described below and also applies to the local Release script.
 
 Each Windows profile uploads `release-observation-<MSYSTEM>` immediately after
 this step, on success as well as failure. Compare these artifacts from the same
@@ -43,3 +43,21 @@ The shell wrapper is also amenable to a stubbed command test: a successful and a
 failing `cmd.exe` must retain their exit statuses and output, and both must stop
 the observer. Windows process inspection itself requires Windows; Linux shell
 checks cannot validate it.
+
+## Captured stall and next experiment
+
+Run 42402498674 captured 84 UCRT64 and 83 MINGW32 snapshots. Both jobs
+reached 100% compilation and timed out in packaging. Their final snapshots
+contain the same chain: outer Make package -> CPack -> cmake preinstall ->
+Make preinstall -> Make all. CPU and I/O counters in the final two snapshots
+are unchanged. This locates the stall inside the nested preinstall build;
+it does not identify the mutex/jobserver/handle responsible.
+
+The next experiment changes the Windows Release script to run synchronized
+preinstall first and then invoke CPack directly with the generated config and
+Release configuration. CPack may still run preinstall internally, but no outer
+package Make process holds output synchronization resources around CPack.
+Parallelism and failure propagation remain enabled. This is a candidate
+workaround to investigate, not a proven root-cause fix. The full-check driver
+still exercises the original package target. Compare the next CI artifacts;
+a single green run is insufficient to close #507.
