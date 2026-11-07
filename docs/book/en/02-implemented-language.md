@@ -17,13 +17,13 @@ Goat uses familiar notation: `var`, `const`, `if`, `func`, `return`, braces, and
 The examples are stored in a [shared directory](../examples/). After building the interpreter, run them from the repository root. For example, on Linux:
 
 ```sh
-./goat --native off docs/book/examples/02-values.goat
+./target/goat --native off docs/book/examples/02-values.goat
 ```
 
 In Windows PowerShell:
 
 ```powershell
-.\goat.exe --native off .\docs\book\examples\02-values.goat
+.\target\goat.exe --native off .\docs\book\examples\02-values.goat
 ```
 
 Native execution is disabled here: we are examining the language rules implemented by the VM (the program that executes bytecode instructions).

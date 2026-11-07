@@ -61,11 +61,11 @@ CI поставки проверяет перенесённые артефакт
 ```sh
 mkdir -p build/book-native
 cp docs/book/examples/22-native-module.goat build/book-native/module.goat
-./goat --save-library build/book-native/module.goat
-./goat --native required --print-native build/book-native/module.goat
-./goat --list-native-targets
+./target/goat --save-library build/book-native/module.goat
+./target/goat --native required --print-native build/book-native/module.goat
+./target/goat --list-native-targets
 ```
 
-Первая команда Goat сохраняет `module.so` на Linux или `module.dll` на Windows; вторая готовит собственную временную библиотеку, а не использует сохранённую. Эквиваленты PowerShell используют `New-Item -ItemType Directory -Force`, `Copy-Item` и `.\goat.exe`.
+Первая команда Goat сохраняет `module.so` на Linux или `module.dll` на Windows; вторая готовит собственную временную библиотеку, а не использует сохранённую. Эквиваленты PowerShell используют `New-Item -ItemType Directory -Force`, `Copy-Item` и `.\target\goat.exe`.
 
 Для именованного модуля используйте `goat build app.gmod --native required`, затем запускайте полученный `modules/<name>/<version>.gbin` без компилятора. Полные примеры `.gmod` даёт глава 30. Наборы сборки, загрузки, toolchain, уборки и поставки в CI проверяют отдельные этапы; отчёт `ready` свидетельствует о подготовке, а счётчики native устанавливают реальное исполнение адаптера.

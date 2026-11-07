@@ -40,13 +40,13 @@
 ```sh
 mkdir -p build/book-native/run
 cp docs/book/examples/22-native-module.goat build/book-native/module.goat
-./goat --compile --native required build/book-native/module.goat
+./target/goat --compile --native required build/book-native/module.goat
 cp build/book-native/module.gbin build/book-native/run/
-CC=goat-no-such-compiler ./goat --run --native required build/book-native/run/module.gbin
-./goat --run --native off build/book-native/run/module.gbin
+CC=goat-no-such-compiler ./target/goat --run --native required build/book-native/run/module.gbin
+./target/goat --run --native off build/book-native/run/module.gbin
 ```
 
-Оба запуска печатают `7`, `6`, `4.0`. Переносится только ZIP; каталог запуска не требует исходника и C-компилятора. В Windows используйте `.\goat.exe`, `Copy-Item` и `$env:CC`.
+Оба запуска печатают `7`, `6`, `4.0`. Переносится только ZIP; каталог запуска не требует исходника и C-компилятора. В Windows используйте `.\target\goat.exe`, `Copy-Item` и `$env:CC`.
 
 <a id="section-26-7"></a>
 ## 26.7. Политика ошибок

@@ -40,13 +40,13 @@ Compilation does not execute Goat initializers. The writer atomically replaces o
 ```sh
 mkdir -p build/book-native/run
 cp docs/book/examples/22-native-module.goat build/book-native/module.goat
-./goat --compile --native required build/book-native/module.goat
+./target/goat --compile --native required build/book-native/module.goat
 cp build/book-native/module.gbin build/book-native/run/
-CC=goat-no-such-compiler ./goat --run --native required build/book-native/run/module.gbin
-./goat --run --native off build/book-native/run/module.gbin
+CC=goat-no-such-compiler ./target/goat --run --native required build/book-native/run/module.gbin
+./target/goat --run --native off build/book-native/run/module.gbin
 ```
 
-Both executions print `7`, `6`, `4.0`. Only the ZIP is moved; the run directory needs neither the source nor a C compiler. On Windows use `.\goat.exe`, `Copy-Item` and `$env:CC`.
+Both executions print `7`, `6`, `4.0`. Only the ZIP is moved; the run directory needs neither the source nor a C compiler. On Windows use `.\target\goat.exe`, `Copy-Item` and `$env:CC`.
 
 <a id="section-26-7"></a>
 ## 26.7. Failure policy

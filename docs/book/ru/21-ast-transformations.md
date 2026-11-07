@@ -107,13 +107,13 @@ DIVISION_BY_ZERO
 Из корня репозитория можно посмотреть восстановленный текст в двух режимах:
 
 ```sh
-./goat --optimize none --print-source-code docs/book/examples/21-preservation.goat
-./goat --optimize all --print-source-code docs/book/examples/21-preservation.goat
+./target/goat --optimize none --print-source-code docs/book/examples/21-preservation.goat
+./target/goat --optimize all --print-source-code docs/book/examples/21-preservation.goat
 ```
 
 ```powershell
-.\goat.exe --optimize none --print-source-code .\docs\book\examples\21-preservation.goat
-.\goat.exe --optimize all --print-source-code .\docs\book\examples\21-preservation.goat
+.\target\goat.exe --optimize none --print-source-code .\docs\book\examples\21-preservation.goat
+.\target\goat.exe --optimize all --print-source-code .\docs\book\examples\21-preservation.goat
 ```
 
 Эти команды также исполняют программу, поэтому после восстановленного текста следует её вывод. Для сравнения инструкций используется `--print-bytecode`. Тексты двух представлений могут различаться; сравнивать нужно сохранение поведения, а не требовать одинакового листинга.

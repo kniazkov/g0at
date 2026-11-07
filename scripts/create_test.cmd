@@ -12,7 +12,7 @@ copy program.goat test\data\functional\%1
 echo %1 >> test\data\functional\list.txt
 gcc -Isrc -Iinclude -Itest\src -Ithird_party\yyjson test\src\functional\functional_testing.c third_party\yyjson\yyjson.c -o functional_testing
 cd test\data\functional
-..\..\..\functional_testing.exe ..\..\..\goat.exe list.txt > NUL
+..\..\..\functional_testing.exe ..\..\..\target\goat.exe list.txt > NUL
 cd ..\..\..
 for %%F in ("test\data\functional\%1\actual_output_all.txt") do if %%~zF NEQ 0 (
     ren test\data\functional\%1\actual_output_all.txt expected_output.txt
@@ -25,7 +25,7 @@ for %%F in ("test\data\functional\%1\actual_error_all.txt") do if %%~zF NEQ 0 (
     del test\data\functional\%1\actual_error_all.txt
 )
 cd test\data\functional
-..\..\..\functional_testing.exe ..\..\..\goat.exe list.txt
+..\..\..\functional_testing.exe ..\..\..\target\goat.exe list.txt
 cd ..\..\..
 del functional_testing.exe
 echo.

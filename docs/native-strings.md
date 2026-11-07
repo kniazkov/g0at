@@ -93,7 +93,7 @@
 `examples/native_string_identity.goat`):
 
 ```sh
-./goat --native required --save-native identity.report example/native_string_identity.goat
+./target/goat --native required --save-native identity.report example/native_string_identity.goat
 ```
 
 Чистая `identity(value) { return value; }` выполняется нативно. Тест требует
@@ -123,7 +123,7 @@
 пустые строки, Unicode и встроенные нули, а также повторные и сохранённые вызовы.
 
 ```sh
-./goat --native required --save-native concat.report example/native_string_concat.goat
+./target/goat --native required --save-native concat.report example/native_string_concat.goat
 ```
 
 Генератор C связывает все перечисленные строковые методы с библиотекой: `isEmpty`,

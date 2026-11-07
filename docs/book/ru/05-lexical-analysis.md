@@ -72,13 +72,13 @@ println("A\tB");
 Запуск на Linux:
 
 ```sh
-./goat --native off docs/book/examples/05-tokens.goat
+./target/goat --native off docs/book/examples/05-tokens.goat
 ```
 
 В Windows PowerShell:
 
 ```powershell
-.\goat.exe --native off .\docs\book\examples\05-tokens.goat
+.\target\goat.exe --native off .\docs\book\examples\05-tokens.goat
 ```
 
 <a id="section-5-5"></a>

@@ -100,13 +100,13 @@ println(a + b);
 Для наблюдения можно вывести восстановленный исходник без оптимизаций. На Linux:
 
 ```sh
-./goat --optimize none --print-source-code docs/book/examples/06-expressions.goat
+./target/goat --optimize none --print-source-code docs/book/examples/06-expressions.goat
 ```
 
 В Windows PowerShell:
 
 ```powershell
-.\goat.exe --optimize none --print-source-code .\docs\book\examples\06-expressions.goat
+.\target\goat.exe --optimize none --print-source-code .\docs\book\examples\06-expressions.goat
 ```
 
 Команда затем исполняет программу, поэтому после исходника появятся и результаты. Восстановленный текст показывает представление узлов, а не побайтовую копию файла: исходные пробелы и комментарии не сохраняются.

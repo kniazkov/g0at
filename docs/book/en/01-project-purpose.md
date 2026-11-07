@@ -59,15 +59,15 @@ We can already observe the difference between VM and native execution. The repos
 Let us run the same source in two ways. After building Goat, from the repository root on Linux:
 
 ```sh
-./goat --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
-./goat --native required --save-native native.txt example/fibonacci_analysis.goat
+./target/goat --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
+./target/goat --native required --save-native native.txt example/fibonacci_analysis.goat
 ```
 
 For Windows PowerShell:
 
 ```powershell
-.\goat.exe --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
-.\goat.exe --native required --save-native native.txt example/fibonacci_analysis.goat
+.\target\goat.exe --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
+.\target\goat.exe --native required --save-native native.txt example/fibonacci_analysis.goat
 ```
 
 The first run uses the VM and writes the analyzer's information to `analysis.txt`. The second prepares a native library and writes a report to `native.txt`. It requires a compatible C compiler: `cc` on Linux or `gcc` on Windows by default. The `CC` environment variable can select a different executable. Reports are saved in the current directory.

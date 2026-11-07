@@ -27,7 +27,7 @@ println(step(4));
 ```sh
 mkdir -p build/book
 cp docs/book/examples/03-pipeline.goat build/book/pipeline.goat
-./goat --native off --save-analysis build/book/analysis.txt build/book/pipeline.goat
+./target/goat --native off --save-analysis build/book/analysis.txt build/book/pipeline.goat
 ```
 
 В Windows PowerShell:
@@ -35,7 +35,7 @@ cp docs/book/examples/03-pipeline.goat build/book/pipeline.goat
 ```powershell
 New-Item -ItemType Directory -Force .\build\book | Out-Null
 Copy-Item .\docs\book\examples\03-pipeline.goat .\build\book\pipeline.goat
-.\goat.exe --native off --save-analysis .\build\book\analysis.txt .\build\book\pipeline.goat
+.\target\goat.exe --native off --save-analysis .\build\book\analysis.txt .\build\book\pipeline.goat
 ```
 
 На экране появится результат, а в `analysis.txt` — сведения анализатора. Генерируемые файлы далее также будут находиться в `build/book`.
@@ -91,13 +91,13 @@ Copy-Item .\docs\book\examples\03-pipeline.goat .\build\book\pipeline.goat
 Посмотрим байткод без необязательных преобразований. На Linux:
 
 ```sh
-./goat --optimize none --native off --print-bytecode build/book/pipeline.goat
+./target/goat --optimize none --native off --print-bytecode build/book/pipeline.goat
 ```
 
 В Windows PowerShell:
 
 ```powershell
-.\goat.exe --optimize none --native off --print-bytecode .\build\book\pipeline.goat
+.\target\goat.exe --optimize none --native off --print-bytecode .\build\book\pipeline.goat
 ```
 
 Команда печатает листинг (текстовое представление инструкций), а затем запускает программу. В нём можно найти следующую последовательность; здесь показаны только инструкции вычисления `println(step(4))`, без числовых индексов строковых данных:
@@ -124,15 +124,15 @@ Copy-Item .\docs\book\examples\03-pipeline.goat .\build\book\pipeline.goat
 На Linux:
 
 ```sh
-./goat --save-c build/book/pipeline.goat
-./goat --native required --save-native build/book/native.txt build/book/pipeline.goat
+./target/goat --save-c build/book/pipeline.goat
+./target/goat --native required --save-native build/book/native.txt build/book/pipeline.goat
 ```
 
 В Windows PowerShell:
 
 ```powershell
-.\goat.exe --save-c .\build\book\pipeline.goat
-.\goat.exe --native required --save-native .\build\book\native.txt .\build\book\pipeline.goat
+.\target\goat.exe --save-c .\build\book\pipeline.goat
+.\target\goat.exe --native required --save-native .\build\book\native.txt .\build\book\pipeline.goat
 ```
 
 Первая команда сохраняет `pipeline.c` и не исполняет программу. Вторая сама выполняет необходимую подготовку; предварительное сохранение C ей не требуется. Для неё нужен внешний компилятор C: по умолчанию `cc` на Linux и `gcc` на Windows, с возможностью выбора через переменную окружения `CC`.
@@ -163,19 +163,19 @@ retries=0
 На Linux:
 
 ```sh
-./goat --compile --native off build/book/pipeline.goat
-./goat --run --native off build/book/pipeline.gbin
-./goat --compile --native required build/book/pipeline.goat
-./goat --run --native required --save-native build/book/saved-native.txt build/book/pipeline.gbin
+./target/goat --compile --native off build/book/pipeline.goat
+./target/goat --run --native off build/book/pipeline.gbin
+./target/goat --compile --native required build/book/pipeline.goat
+./target/goat --run --native required --save-native build/book/saved-native.txt build/book/pipeline.gbin
 ```
 
 В Windows PowerShell:
 
 ```powershell
-.\goat.exe --compile --native off .\build\book\pipeline.goat
-.\goat.exe --run --native off .\build\book\pipeline.gbin
-.\goat.exe --compile --native required .\build\book\pipeline.goat
-.\goat.exe --run --native required --save-native .\build\book\saved-native.txt .\build\book\pipeline.gbin
+.\target\goat.exe --compile --native off .\build\book\pipeline.goat
+.\target\goat.exe --run --native off .\build\book\pipeline.gbin
+.\target\goat.exe --compile --native required .\build\book\pipeline.goat
+.\target\goat.exe --run --native required --save-native .\build\book\saved-native.txt .\build\book\pipeline.gbin
 ```
 
 Первая команда сохраняет байткод в `pipeline.gbin`, вторая исполняет его и выводит `5`. Третья заново сохраняет `pipeline.gbin`, теперь вместе со связью с нативной библиотекой: рядом появляется `pipeline.so` на Linux или `pipeline.dll` на Windows. Четвёртая загружает эту пару и тоже выводит `5`. Команды с `--compile` пользовательскую программу не исполняют.

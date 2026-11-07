@@ -122,13 +122,13 @@ println(missing);
 Он выводит `null`, затем `5`, каждое значение с новой строки: первый вызов `println` читает ещё не объявленное имя и получает `null`, затем `missing = 5` объявляет константу со значением `5`, и последний вызов печатает `5`. Увидеть вставленное объявление можно на Linux:
 
 ```sh
-./goat --optimize none --enable-warnings --print-source-code docs/book/examples/07-implicit.goat
+./target/goat --optimize none --enable-warnings --print-source-code docs/book/examples/07-implicit.goat
 ```
 
 В Windows PowerShell:
 
 ```powershell
-.\goat.exe --optimize none --enable-warnings --print-source-code .\docs\book\examples\07-implicit.goat
+.\target\goat.exe --optimize none --enable-warnings --print-source-code .\docs\book\examples\07-implicit.goat
 ```
 
 В восстановленном исходнике второй оператор заменён на `const missing = 5;`. Предупреждение укажет на чтение `missing` до объявления; затем программа исполнится. Предупреждение и вывод программы направляются в разные потоки, поэтому их взаимное расположение на экране может зависеть от окружения.

@@ -100,11 +100,11 @@ println(value + 1);
 Из корня репозитория:
 
 ```sh
-printf 'yes\n' | ./goat --print-analysis docs/book/examples/14-domains.goat
+printf 'yes\n' | ./target/goat --print-analysis docs/book/examples/14-domains.goat
 ```
 
 ```powershell
-'yes' | .\goat.exe --print-analysis .\docs\book\examples\14-domains.goat
+'yes' | .\target\goat.exe --print-analysis .\docs\book\examples\14-domains.goat
 ```
 
 После журнала программа печатает `3`: при этом запуске выбрана первая ветвь. С пустой строкой она напечатает `6`. Один результат исполнения не противоречит диапазону анализа: диапазон описывает оба рассматриваемых пути, а запуск проходит один.

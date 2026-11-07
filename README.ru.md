@@ -94,7 +94,9 @@ cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/manual --parallel 2
 ```
 
-Из другого рабочего каталога передавайте абсолютный путь репозитория в `-S` и абсолютный путь сборки в `-B`. Скрипты сборки находят репозиторий относительно собственного расположения. Старые каталоги сборки, настроенные через `-S src`, повторно использовать нельзя: выберите новый каталог (либо удалите только старый сгенерированный каталог сборки). Исполняемые файлы остаются непосредственно в выбранном каталоге сборки, пакеты Release — в его подкаталоге `packages/`. Публикация утилит в `target/` рассматривается отдельно в [#317](https://github.com/kniazkov/g0at/issues/317).
+Из другого рабочего каталога передавайте абсолютный путь репозитория в `-S` и абсолютный путь сборки в `-B`. Скрипты сборки находят репозиторий относительно собственного расположения. Старые каталоги сборки, настроенные через `-S src`, повторно использовать нельзя: выберите новый каталог (либо удалите только старый сгенерированный каталог сборки). Исполняемые файлы остаются непосредственно в выбранном каталоге сборки, пакеты Release — в его подкаталоге `packages/`. Скрипты дополнительно публикуют все три утилиты в `target/` в корне репозитория. Для прямой сборки CMake публикацию можно выполнить отдельно: `cmake -DGOAT_BUILD_DIR=build/manual -P scripts/publish_tools.cmake`.
+
+Скрипты автоматически создают `target/` и обновляют утилиты после успешной сборки. Ошибка копирования завершает скрипт с ошибкой. `--test-only` использует каталог сборки без повторной публикации; `--full-check` публикует Release-утилиты только после успешного завершения всех проверок. Пути определяются относительно репозитория, даже при запуске из другого каталога. Пользовательские `BUILD_DIR` и `FULL_CHECK_DIR` размещай внутри `build/` или вне checkout, чтобы результаты не попадали в Git. В Windows Debug-утилиты используют runtime активного MinGW из PATH; Release-пакеты остаются переносимыми.
 
 ### Linux
 
@@ -102,10 +104,10 @@ cmake --build build/manual --parallel 2
 
 ```bash
 bash scripts/build.sh
-./goat example/hello_world.goat
+./target/goat example/hello_world.goat
 ```
 
-Скрипт Debug собирает `goat`, `goat-inspect`, `goat-merge` и компонентные тесты в `build`, копирует только `goat` в корень репозитория и запускает строгие проверки JSON модулей, unit-тесты, тесты анализа и функциональные тесты исполнения. Полная интеграционная матрица CI им не запускается. Пример выводит `it works!`.
+Скрипт Debug собирает `goat`, `goat-inspect`, `goat-merge` и компонентные тесты в `build`, копирует все три утилиты в `target/` и запускает строгие проверки JSON модулей, unit-тесты, тесты анализа и функциональные тесты исполнения. Полная интеграционная матрица CI им не запускается. Пример выводит `it works!`.
 
 Компиляция идёт параллельно, по умолчанию с числом логических CPU. Положительный аргумент ограничивает число заданий (`1` собирает последовательно):
 
@@ -129,7 +131,7 @@ CC=clang BUILD_DIR=build/clang bash scripts/build.sh
 bash scripts/build_release.sh
 ```
 
-Исполняемый файл Release помещается в `build/release` и копируется в корень репозитория. Этот скрипт также учитывает `CC` и `BUILD_DIR`. В Release отключены собственный учёт выделений памяти и защитные проверки (`MEMORY_DEBUG`); в Debug они сохранены.
+Исполняемые файлы Release собираются в `build/release` и публикуются в `target/`. Этот скрипт также учитывает `CC` и `BUILD_DIR`. В Release отключены собственный учёт выделений памяти и защитные проверки (`MEMORY_DEBUG`); в Debug они сохранены.
 
 ### Windows (MinGW)
 
@@ -137,10 +139,10 @@ bash scripts/build_release.sh
 
 ```powershell
 .\scripts\build_mingw.cmd
-.\goat.exe .\example\hello_world.goat
+.\target\goat.exe .\example\hello_world.goat
 ```
 
-Скрипт Debug собирает интерпретатор, оба инструмента модулей и компонентные тесты в `build`, копирует только `goat.exe` в корень и запускает те же проверки JSON и три основных набора тестов. Для выбора числа параллельных заданий:
+Скрипт Debug собирает интерпретатор, оба инструмента модулей и компонентные тесты в `build`, копирует `goat.exe`, `goat-inspect.exe` и `goat-merge.exe` в `target/` и запускает те же проверки JSON и три основных набора тестов. Для выбора числа параллельных заданий:
 
 ```powershell
 .\scripts\build_mingw.cmd 8
@@ -154,7 +156,7 @@ bash scripts/build_release.sh
 .\scripts\build_release_mingw.cmd
 ```
 
-Он создаёт `build\release\goat.exe` и копирует его в корень репозитория.
+Он собирает утилиты в `build\release` и публикует `goat.exe`, `goat-inspect.exe` и `goat-merge.exe` в `target`.
 
 Релизные скрипты также создают переносимый архив в `<каталог сборки>/packages`
 (`.tar.gz` на Linux, `.zip` на Windows). В нём находятся `bin/goat`, `bin/goat-inspect`, `bin/goat-merge` (с `.exe` на Windows), публичные
@@ -182,10 +184,10 @@ C-компилятором.
 Отдельный `.goat` по умолчанию использует `--native off`; исполнение на VM не требует C-компилятора. Готовый бинарный вход по умолчанию использует `auto`; `.gmod` берёт режим из описания (по умолчанию `auto`) и цель (по умолчанию `host`). Для сборки/запуска модулей без компилятора явно задайте `--native off`. Чтобы проверить нативное исполнение и посмотреть отчёт:
 
 ```bash
-./goat --native required --print-native docs/book/examples/22-native-module.goat
+./target/goat --native required --print-native docs/book/examples/22-native-module.goat
 ```
 
-В PowerShell замените `./goat` на `.\goat.exe`. Нативная подготовка требует совместимого C-компилятора. `--cc` выбирает одно имя или путь к исполняемому файлу без флагов оболочки; отдельный исходник также учитывает `CC`, который перекрывается `--cc`. Сборка модулей проверяет поддерживаемые toolchain из PATH; `--list-native-targets` показывает реально успешные цели, а не просто известные имена. Недоступная явная цель вызывает ошибку, а не молча заменяется на host. См. [правила нативной сборки](docs/module-build-api.md).
+В PowerShell замените `./target/goat` на `.\target\goat.exe`. Нативная подготовка требует совместимого C-компилятора. `--cc` выбирает одно имя или путь к исполняемому файлу без флагов оболочки; отдельный исходник также учитывает `CC`, который перекрывается `--cc`. Сборка модулей проверяет поддерживаемые toolchain из PATH; `--list-native-targets` показывает реально успешные цели, а не просто известные имена. Недоступная явная цель вызывает ошибку, а не молча заменяется на host. См. [правила нативной сборки](docs/module-build-api.md).
 
 Для отдельного исходника `required` требует хотя бы одну привязанную нативную функцию, а `auto` разрешает переход на VM при предусмотренных отказах подготовки. Нативная подготовка требует анализа (`--optimize all`, значение по умолчанию). Модули сохраняют обязательный анализ интерфейса даже с `--optimize none`; `required` проверяет совместимую специализацию собственных файлов корня, а не только его зависимостей. **Ни один режим не требует нативности каждого вызова.** Применимые библиотеки модулей загружаются лениво; повреждения артефактов и обнаруженные нарушения ABI не допускают молчаливого fallback или повтора. См. [нативную загрузку](docs/module-loading-api.md).
 
@@ -194,8 +196,8 @@ C-компилятором.
 ```bash
 mkdir -p build/quickstart
 cp docs/book/examples/22-native-module.goat build/quickstart/program.goat
-./goat --compile build/quickstart/program.goat
-./goat --run build/quickstart/program.gbin
+./target/goat --compile build/quickstart/program.goat
+./target/goat --run build/quickstart/program.gbin
 ```
 
 Эквивалент для PowerShell:
@@ -203,8 +205,8 @@ cp docs/book/examples/22-native-module.goat build/quickstart/program.goat
 ```powershell
 New-Item -ItemType Directory -Force .\build\quickstart | Out-Null
 Copy-Item .\docs\book\examples\22-native-module.goat .\build\quickstart\program.goat
-.\goat.exe --compile .\build\quickstart\program.goat
-.\goat.exe --run .\build\quickstart\program.gbin
+.\target\goat.exe --compile .\build\quickstart\program.goat
+.\target\goat.exe --run .\build\quickstart\program.gbin
 ```
 
 `--compile` всегда создаёт ZIP-модуль рядом с исходником. Имя модуля — имя исходного файла без расширения, версия — `0`. Если имя недопустимо для модуля, нужно переименовать файл или использовать `.gmod`; автоматической замены символов нет. Необязательные нативные варианты `.so`/`.dll` находятся внутри ZIP. Для запуска не нужны исходники или компилятор C. Тот же артефакт принимают `goat-inspect`, `goat-merge` и импорт. Импорт в прямом исходнике требует явной версии; файлы `include` включаются в модуль, а импортируемые модули остаются внешними зависимостями.
@@ -222,7 +224,7 @@ Copy-Item .\docs\book\examples\22-native-module.goat .\build\quickstart\program.
 Попробуйте готовый учебный пример из двух модулей в рабочей копии. После обычной сборки Debug, из корня репозитория:
 
 ```bash
-export PATH="$PWD/build:$PATH"
+export PATH="$PWD/target:$PATH"
 mkdir -p build/quickstart/modules
 cp -R docs/book/examples/30-modules/. build/quickstart/modules/
 cd build/quickstart/modules
@@ -231,7 +233,7 @@ cd build/quickstart/modules
 Подготовка PowerShell (из корня репозитория):
 
 ```powershell
-$env:PATH = "$PWD\build;$env:PATH"
+$env:PATH = "$PWD\target;$env:PATH"
 New-Item -ItemType Directory -Force .\build\quickstart\modules | Out-Null
 Copy-Item .\docs\book\examples\30-modules\* .\build\quickstart\modules\ -Recurse -Force
 Set-Location .\build\quickstart\modules
@@ -253,7 +255,7 @@ goat-merge merged.gbin modules/geometry/1.0.gbin
 
 `goat-inspect` проверяет полный граф зависимостей и показывает метаданные; **совместимые локальные нативные библиотеки также могут проверяться в изолированных подпроцессах с исполнением конструкторов**. `--target PROFILE.json` выбирает профиль среды; чужой профиль анализируется без локальной загрузки, но профиль, совпадающий с текущей средой, по-прежнему допускает пробы. Изоляция процесса не является защитной песочницей для вредоносного нативного кода. `goat-merge` никогда не исполняет байткод и не загружает библиотеки; внешние архивы зависимостей ему не нужны. См. [inspect](docs/module-inspect-api.md) и [merge](docs/module-merge-api.md).
 
-Перед следующими командами вернитесь в корень репозитория (`cd ../../..` или `Set-Location ../../..`). Для нестандартного каталога сборки используйте в PATH его; релизный пакет содержит все три инструмента в `bin`.
+Перед следующими командами вернитесь в корень репозитория (`cd ../../..` или `Set-Location ../../..`). При нестандартном каталоге сборки скрипты публикуют утилиты в тот же `target/`; релизный пакет содержит все три инструмента в `bin`.
 
 ## Наблюдение и тестирование
 

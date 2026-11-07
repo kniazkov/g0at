@@ -61,11 +61,11 @@ From the repository root, with a suitable compiler:
 ```sh
 mkdir -p build/book-native
 cp docs/book/examples/22-native-module.goat build/book-native/module.goat
-./goat --save-library build/book-native/module.goat
-./goat --native required --print-native build/book-native/module.goat
-./goat --list-native-targets
+./target/goat --save-library build/book-native/module.goat
+./target/goat --native required --print-native build/book-native/module.goat
+./target/goat --list-native-targets
 ```
 
-The first Goat command saves `module.so` on Linux or `module.dll` on Windows; the second prepares its own temporary library, not that saved companion. PowerShell equivalents use `New-Item -ItemType Directory -Force`, `Copy-Item`, and `.\goat.exe`.
+The first Goat command saves `module.so` on Linux or `module.dll` on Windows; the second prepares its own temporary library, not that saved companion. PowerShell equivalents use `New-Item -ItemType Directory -Force`, `Copy-Item`, and `.\target\goat.exe`.
 
 For a named module use `goat build app.gmod --native required`, then run the resulting `modules/<name>/<version>.gbin` without a compiler. Chapter 30 supplies complete `.gmod` examples. Build, loader, toolchain, cleanup and delivery suites in CI check the distinct stages; a `ready` report is preparation evidence, whereas native counters establish actual adapter execution.

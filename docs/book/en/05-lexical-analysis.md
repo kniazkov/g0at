@@ -74,13 +74,13 @@ The first output line is `37.0`. The second contains `A`, a tab character, and `
 Run it on Linux:
 
 ```sh
-./goat --native off docs/book/examples/05-tokens.goat
+./target/goat --native off docs/book/examples/05-tokens.goat
 ```
 
 In Windows PowerShell:
 
 ```powershell
-.\goat.exe --native off .\docs\book\examples\05-tokens.goat
+.\target\goat.exe --native off .\docs\book\examples\05-tokens.goat
 ```
 
 <a id="section-5-5"></a>

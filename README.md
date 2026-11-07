@@ -94,7 +94,9 @@ cmake -S . -B build/manual -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/manual --parallel 2
 ```
 
-From another working directory, pass an absolute repository path to `-S` and an absolute build path to `-B`. Build scripts locate the repository relative to themselves. Existing build directories configured with `-S src` cannot be reused: choose a fresh build directory (or remove only the old generated build directory). Executables remain directly in the selected build directory; Release packages remain in its `packages/` subdirectory. Publishing binaries to `target/` is tracked separately in [#317](https://github.com/kniazkov/g0at/issues/317).
+From another working directory, pass an absolute repository path to `-S` and an absolute build path to `-B`. Build scripts locate the repository relative to themselves. Existing build directories configured with `-S src` cannot be reused: choose a fresh build directory (or remove only the old generated build directory). Executables remain directly in the selected build directory; Release packages remain in its `packages/` subdirectory. The build scripts additionally publish all three tools to the repository’s `target/` directory. A direct CMake build only populates its build directory; publish it with `cmake -DGOAT_BUILD_DIR=build/manual -P scripts/publish_tools.cmake` if needed.
+
+The scripts create `target/` automatically and refresh its tools after a successful build. Copy failures are fatal. `--test-only` uses the build directory without republishing; `--full-check` publishes Release tools only after all checks succeed. Paths are relative to the repository, including when a script is called from another directory. Keep custom `BUILD_DIR` and `FULL_CHECK_DIR` paths under `build/` or outside the checkout so generated files stay out of Git. On Windows, Debug executables still use the active MinGW runtime from PATH; Release packages remain relocatable.
 
 ### Linux
 
@@ -102,10 +104,10 @@ Install GCC or Clang, GNU Make, Bash, CMake 3.13 or newer, and the standard C de
 
 ```bash
 bash scripts/build.sh
-./goat example/hello_world.goat
+./target/goat example/hello_world.goat
 ```
 
-The Debug script builds `goat`, `goat-inspect`, `goat-merge` and component-test executables in `build`, copies only `goat` to the repository root, and runs the strict module-JSON checks plus the unit, analysis and runtime functional suites. It does not run the complete CI integration matrix. The example prints `it works!`.
+The Debug script builds `goat`, `goat-inspect`, `goat-merge` and component-test executables in `build`, copies all three tools to `target/`, and runs the strict module-JSON checks plus the unit, analysis and runtime functional suites. It does not run the complete CI integration matrix. The example prints `it works!`.
 
 Compilation runs in parallel, using the logical CPU count by default. Pass a positive job count to limit it (`1` builds sequentially):
 
@@ -129,7 +131,7 @@ For a Release build without running tests:
 bash scripts/build_release.sh
 ```
 
-The Release executable is placed in `build/release` and copied to the repository root. `CC` and `BUILD_DIR` also apply to this script. Release builds disable the project's allocation accounting and guards (`MEMORY_DEBUG`); Debug builds retain them.
+The Release executables are built in `build/release` and published to `target/`. `CC` and `BUILD_DIR` also apply to this script. Release builds disable the project's allocation accounting and guards (`MEMORY_DEBUG`); Debug builds retain them.
 
 ### Windows (MinGW)
 
@@ -137,10 +139,10 @@ Install CMake 3.13 or newer and a MinGW toolchain with GCC, `mingw32-make`, and 
 
 ```powershell
 .\scripts\build_mingw.cmd
-.\goat.exe .\example\hello_world.goat
+.\target\goat.exe .\example\hello_world.goat
 ```
 
-The Debug script builds the interpreter, both module tools and component-test executables in `build`, copies only `goat.exe` to the root, and runs the same JSON checks and three core suites. To choose the parallel job count:
+The Debug script builds the interpreter, both module tools and component-test executables in `build`, copies `goat.exe`, `goat-inspect.exe` and `goat-merge.exe` to `target/`, and runs the same JSON checks and three core suites. To choose the parallel job count:
 
 ```powershell
 .\scripts\build_mingw.cmd 8
@@ -154,7 +156,7 @@ Without an argument it uses `CMAKE_BUILD_PARALLEL_LEVEL`, then `%NUMBER_OF_PROCE
 .\scripts\build_release_mingw.cmd
 ```
 
-It writes `build\release\goat.exe` and copies it to the repository root.
+It builds in `build\release` and publishes `target\goat.exe`, `target\goat-inspect.exe` and `target\goat-merge.exe`.
 
 The Release scripts also create a relocatable archive in `<build directory>/packages`
 (`.tar.gz` on Linux, `.zip` on Windows). It contains `bin/goat`, `bin/goat-inspect`, `bin/goat-merge` (with `.exe` on Windows), public native
@@ -181,10 +183,10 @@ programs after removing their source, with the compiler unavailable.
 A standalone `.goat` uses `--native off` by default and needs no C compiler for VM execution. Ready binary execution defaults to `auto`; `.gmod` uses its descriptor’s mode (default `auto`) and target (default `host`). Use explicit `--native off` for compiler-independent module builds/runs. To try native execution and inspect its report:
 
 ```bash
-./goat --native required --print-native docs/book/examples/22-native-module.goat
+./target/goat --native required --print-native docs/book/examples/22-native-module.goat
 ```
 
-In PowerShell, replace `./goat` with `.\goat.exe`. Native preparation needs a compatible C compiler. `--cc` selects one executable name or path, without shell flags; standalone source commands also honor `CC`, overridden by `--cc`. Module builds probe supported PATH toolchains; `--list-native-targets` reports actual successful targets, not merely recognized names. An explicit unavailable target fails rather than silently changing to host. See [native build rules](docs/module-build-api.md).
+In PowerShell, replace `./target/goat` with `.\target\goat.exe`. Native preparation needs a compatible C compiler. `--cc` selects one executable name or path, without shell flags; standalone source commands also honor `CC`, overridden by `--cc`. Module builds probe supported PATH toolchains; `--list-native-targets` reports actual successful targets, not merely recognized names. An explicit unavailable target fails rather than silently changing to host. See [native build rules](docs/module-build-api.md).
 
 For standalone source, `required` needs at least one bound native function and `auto` allows supported preparation failures to use VM. Native preparation needs analysis (`--optimize all`, the default). Modules retain mandatory interface analysis even with `--optimize none`; `required` checks a compatible specialization of the root’s own files, not merely its dependencies. **Neither mode requires every call to be native.** Applicable module libraries load lazily; corrupt artifacts and detected ABI violations do not permit silent fallback or replay. See [native loading](docs/module-loading-api.md).
 
@@ -193,8 +195,8 @@ To save bytecode without executing the program, then run it:
 ```bash
 mkdir -p build/quickstart
 cp docs/book/examples/22-native-module.goat build/quickstart/program.goat
-./goat --compile build/quickstart/program.goat
-./goat --run build/quickstart/program.gbin
+./target/goat --compile build/quickstart/program.goat
+./target/goat --run build/quickstart/program.gbin
 ```
 
 PowerShell equivalent:
@@ -202,8 +204,8 @@ PowerShell equivalent:
 ```powershell
 New-Item -ItemType Directory -Force .\build\quickstart | Out-Null
 Copy-Item .\docs\book\examples\22-native-module.goat .\build\quickstart\program.goat
-.\goat.exe --compile .\build\quickstart\program.goat
-.\goat.exe --run .\build\quickstart\program.gbin
+.\target\goat.exe --compile .\build\quickstart\program.goat
+.\target\goat.exe --run .\build\quickstart\program.gbin
 ```
 
 `--compile` always produces a ZIP module beside the source. Its name is the source basename without the extension and its version is `0`. Invalid module names require renaming the file or supplying a `.gmod`; names are never silently rewritten. Optional native `.so`/`.dll` variants live inside the ZIP. Running it needs neither source nor a C compiler. `goat-inspect`, `goat-merge` and imports accept the same artifact. Direct-source imports must specify an exact version; `include` files are embedded and imported modules remain external dependencies.
@@ -221,7 +223,7 @@ A module build publishes a single deterministic ZIP `.gbin` containing metadata,
 Try the checked-in two-module tutorial in a working copy. After the default Debug build, from the repository root:
 
 ```bash
-export PATH="$PWD/build:$PATH"
+export PATH="$PWD/target:$PATH"
 mkdir -p build/quickstart/modules
 cp -R docs/book/examples/30-modules/. build/quickstart/modules/
 cd build/quickstart/modules
@@ -230,7 +232,7 @@ cd build/quickstart/modules
 PowerShell setup (from the repository root):
 
 ```powershell
-$env:PATH = "$PWD\build;$env:PATH"
+$env:PATH = "$PWD\target;$env:PATH"
 New-Item -ItemType Directory -Force .\build\quickstart\modules | Out-Null
 Copy-Item .\docs\book\examples\30-modules\* .\build\quickstart\modules\ -Recurse -Force
 Set-Location .\build\quickstart\modules
@@ -252,7 +254,7 @@ Both run commands print `25`. `--module-dir modules` explicitly locates dependen
 
 `goat-inspect` validates the full dependency graph and reports metadata; **compatible local native libraries may also be probed in isolated subprocesses, executing constructors**. `--target PROFILE.json` selects the environment profile; a foreign profile is analyzed without local loading, but a profile matching the current environment still permits probes. Process isolation is not a security sandbox for malicious native code. `goat-merge` never executes bytecode or loads libraries and does not require external dependency archives. See [inspect](docs/module-inspect-api.md) and [merge](docs/module-merge-api.md).
 
-Return to the repository root before the commands below (`cd ../../..`, or `Set-Location ../../..`). For a custom build directory, use that directory in PATH instead; release packages provide all three tools in `bin`.
+Return to the repository root before the commands below (`cd ../../..`, or `Set-Location ../../..`). The scripts publish to the same `target/` even with a custom build directory; release packages provide all three tools in `bin`.
 
 ## Inspect and test
 

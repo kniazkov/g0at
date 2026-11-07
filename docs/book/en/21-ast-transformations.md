@@ -107,13 +107,13 @@ Two calls to `step` check that shared code has not become specialized for the fi
 From the repository root, reconstructed source can be inspected in both modes:
 
 ```sh
-./goat --optimize none --print-source-code docs/book/examples/21-preservation.goat
-./goat --optimize all --print-source-code docs/book/examples/21-preservation.goat
+./target/goat --optimize none --print-source-code docs/book/examples/21-preservation.goat
+./target/goat --optimize all --print-source-code docs/book/examples/21-preservation.goat
 ```
 
 ```powershell
-.\goat.exe --optimize none --print-source-code .\docs\book\examples\21-preservation.goat
-.\goat.exe --optimize all --print-source-code .\docs\book\examples\21-preservation.goat
+.\target\goat.exe --optimize none --print-source-code .\docs\book\examples\21-preservation.goat
+.\target\goat.exe --optimize all --print-source-code .\docs\book\examples\21-preservation.goat
 ```
 
 These commands also execute the program, so its output follows the reconstructed source. Use `--print-bytecode` to compare instructions. The representations may differ; the comparison should concern preserved behavior rather than identical listings.

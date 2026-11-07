@@ -28,9 +28,9 @@ println(twice(value));
 Its result is `4`. The branch containing `100` is unreachable, and `twice` admits an integer specialization. From the repository root:
 
 ```sh
-./goat --optimize none --print-source-code docs/book/examples/27-observability.goat
-./goat --print-source-code docs/book/examples/27-observability.goat
-./goat --optimize none --print-bytecode docs/book/examples/27-observability.goat
+./target/goat --optimize none --print-source-code docs/book/examples/27-observability.goat
+./target/goat --print-source-code docs/book/examples/27-observability.goat
+./target/goat --optimize none --print-bytecode docs/book/examples/27-observability.goat
 ```
 
 Reconstructed source comes from the AST: comments and original whitespace are not restored. `none` preserves the original computation structure; `all` reveals chosen replacements and removed unreachable actions. This helps inspect tree transformations but does not prove two programs equivalent for every input.
@@ -42,7 +42,7 @@ Bytecode addresses are instruction indices, not byte offsets. Every fifth index 
 ## 27.3. The log: observations and proofs
 
 ```sh
-./goat --print-analysis docs/book/examples/27-observability.goat
+./target/goat --print-analysis docs/book/examples/27-observability.goat
 ```
 
 The log includes:
@@ -67,7 +67,7 @@ Graph output requires installed Graphviz with `dot` available (`dot.exe` on Wind
 
 ```sh
 mkdir -p build/book-observe
-./goat --save-graph build/book-observe/program.svg docs/book/examples/27-observability.goat
+./target/goat --save-graph build/book-observe/program.svg docs/book/examples/27-observability.goat
 ```
 
 [visualization.c](https://github.com/kniazkov/g0at/blob/b1f72ad8ccd273427f256243ad4d1625ced37a77/src/graph/visualization.c) builds DOT, invokes Graphviz, and removes the intermediate `.dot`. Supported extensions are `.svg` and `.png`.
@@ -93,7 +93,7 @@ A function may carry a `C view:` label identifying a selected signature. [functi
 ## 27.5. Confirming actual native entry
 
 ```sh
-./goat --native required --print-native docs/book/examples/27-observability.goat
+./target/goat --native required --print-native docs/book/examples/27-observability.goat
 ```
 
 With ordinary sufficient stack headroom, output after `4` is:
@@ -113,7 +113,7 @@ retries=0
 Use files to keep logs separate from program output:
 
 ```sh
-./goat --save-analysis build/book-observe/analysis.txt --native required --save-native build/book-observe/native.txt docs/book/examples/27-observability.goat
+./target/goat --save-analysis build/book-observe/analysis.txt --native required --save-native build/book-observe/native.txt docs/book/examples/27-observability.goat
 ```
 
 Only the program result remains on stdout. Errors still go to stderr. Options and prohibited combinations are collected in [appendix E](appendix-e-launch-interfaces.md); color and selected-view checks are in [check_graph.sh](https://github.com/kniazkov/g0at/blob/b1f72ad8ccd273427f256243ad4d1625ced37a77/scripts/check_graph.sh).

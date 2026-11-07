@@ -59,15 +59,15 @@ Goat позволяет разобрать такие решения на раб
 Запустим один и тот же исходник двумя способами. После сборки Goat, из корня репозитория на Linux:
 
 ```sh
-./goat --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
-./goat --native required --save-native native.txt example/fibonacci_analysis.goat
+./target/goat --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
+./target/goat --native required --save-native native.txt example/fibonacci_analysis.goat
 ```
 
 Для Windows PowerShell:
 
 ```powershell
-.\goat.exe --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
-.\goat.exe --native required --save-native native.txt example/fibonacci_analysis.goat
+.\target\goat.exe --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
+.\target\goat.exe --native required --save-native native.txt example/fibonacci_analysis.goat
 ```
 
 Первый запуск использует VM и записывает сведения анализатора в `analysis.txt`. Второй подготавливает нативную библиотеку и записывает отчёт в `native.txt`. Для него нужен совместимый компилятор C: по умолчанию `cc` на Linux или `gcc` на Windows. Другой исполняемый файл можно выбрать переменной окружения `CC`. Отчёты сохраняются в текущем каталоге.

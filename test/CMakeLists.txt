@@ -548,6 +548,18 @@ target_link_libraries(timed_execution_testing PRIVATE goat_test_support goat_pro
 add_dependencies(scenario_execution_testing timed_execution_testing)
 add_dependencies(native_runner_testing native_performance_scenarios timed_execution_testing)
 
+# Publication is shared by all user-facing build scripts on Linux and Windows.
+add_test(NAME integration.build_publication
+  COMMAND "${CMAKE_COMMAND}"
+    "-DPUBLISH=${CMAKE_SOURCE_DIR}/scripts/publish_tools.cmake"
+    "-DWORK=${CMAKE_BINARY_DIR}/test/build-publication"
+    "-Dgoat=$<TARGET_FILE:goat>"
+    "-Dgoat-inspect=$<TARGET_FILE:goat-inspect>"
+    "-Dgoat-merge=$<TARGET_FILE:goat-merge>"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/publish_tools.cmake")
+set_tests_properties(integration.build_publication PROPERTIES
+  LABELS "integration;build-publication" TIMEOUT 60)
+
 add_test(NAME integration.unified_gbin
   COMMAND "${CMAKE_COMMAND}"
     "-DGOAT=$<TARGET_FILE:goat>"
