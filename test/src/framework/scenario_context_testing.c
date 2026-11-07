@@ -10,6 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#    include "lib/files/file_system_internal.h"
+
+#    include <windows.h>
+#endif
 
 #define CHECK(condition)                                                                           \
     do {                                                                                           \
@@ -182,6 +187,71 @@ static int cleanup_error(scenario_options_t options) {
     return 0;
 }
 
+#ifdef _WIN32
+typedef struct {
+    HANDLE file;
+    bool closed;
+} held_file_t;
+
+static void *release_file(void *argument) {
+    held_file_t *held = argument;
+    Sleep(100);
+    held->closed = CloseHandle(held->file) != 0;
+    return NULL;
+}
+
+static int sharing_cleanup(scenario_options_t options, bool release) {
+    FILE *diagnostics = tmpfile();
+    CHECK(diagnostics);
+    options.diagnostics = diagnostics;
+    scenario_context_t *context = scenario_create(&options);
+    CHECK(context);
+    char *path = copy_text(scenario_work_directory(context));
+    CHECK(path && marker(path));
+    char *file = join_fs_path(path, "marker.bin", NULL);
+    wchar_t *wide = fs_wide(file);
+    CHECK(wide);
+    held_file_t held = {CreateFileW(wide,
+                                    GENERIC_READ,
+                                    FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                    NULL,
+                                    OPEN_EXISTING,
+                                    FILE_ATTRIBUTE_NORMAL,
+                                    NULL),
+                        false};
+    FREE(wide);
+    CHECK(held.file != INVALID_HANDLE_VALUE);
+    /* Establish the exact failure being exercised, not just a slow filesystem. */
+    fs_error_t error = {0};
+    CHECK(!remove_fs_tree(path, &error) && error.native_code == ERROR_SHARING_VIOLATION);
+    clear_fs_error(&error);
+    os_thread_t *thread = NULL;
+    if (release)
+        CHECK(create_os_thread(&thread, release_file, &held, 0) == OS_THREAD_OK);
+    ULONGLONG start = GetTickCount64();
+    bool finished = scenario_finish(context, true);
+    ULONGLONG elapsed = GetTickCount64() - start;
+    if (release) {
+        CHECK(join_os_thread(thread, NULL) == OS_THREAD_OK);
+        CHECK(destroy_os_thread(thread) == OS_THREAD_OK);
+        CHECK(held.closed && finished && !exists(path));
+    } else {
+        CHECK(!finished && exists(path));
+        CHECK(elapsed >= 2000 && elapsed < 10000);
+        CHECK(diagnostic_contains(diagnostics, "cleanup failed"));
+        CHECK(diagnostic_contains(diagnostics, "native 32"));
+        CHECK(diagnostic_contains(diagnostics, "marker.bin"));
+        CHECK(CloseHandle(held.file));
+        CHECK(remove_fs_tree(path, &error));
+    }
+    clear_fs_error(&error);
+    FREE(file);
+    free(path);
+    CHECK(fclose(diagnostics) == 0);
+    return 0;
+}
+#endif
+
 static int invalid(scenario_options_t options) {
     CHECK(scenario_keep_work_argument("--keep-work"));
     CHECK(!scenario_keep_work_argument(NULL));
@@ -235,6 +305,12 @@ static int run(int argc, char **argv) {
         return parallel(options);
     if (!strcmp(argv[1], "cleanup-error"))
         return cleanup_error(options);
+#ifdef _WIN32
+    if (!strcmp(argv[1], "sharing-released"))
+        return sharing_cleanup(options, true);
+    if (!strcmp(argv[1], "sharing-held"))
+        return sharing_cleanup(options, false);
+#endif
     if (!strcmp(argv[1], "invalid"))
         return invalid(options);
     return 2;
