@@ -8,7 +8,11 @@ mkdir -p "$output"
 rm -f "$output/stop"
 {
     date -u
-    git rev-parse HEAD
+    checkout_git=${GOAT_CHECKOUT_GIT:-git}
+    if ! "$checkout_git" rev-parse HEAD; then
+        printf 'Revision unavailable; GITHUB_SHA=%s\n' "${GITHUB_SHA:-unknown}"
+        printf 'Warning: cannot read checkout revision; continuing build\n' >&2
+    fi
     for name in MSYSTEM MAKEFLAGS MFLAGS CMAKE_BUILD_PARALLEL_LEVEL; do
         printf '%s=%s\n' "$name" "${!name-}"
     done
