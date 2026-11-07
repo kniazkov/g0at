@@ -169,7 +169,11 @@ jobs:
         run: |
           test "$(uname -m)" = "${{ matrix.arch }}"
           sudo apt-get update
-          sudo apt-get install -y gcc clang cmake make
+          sudo apt-get install -y gcc clang cmake make ninja-build
+      - name: Check synchronized parallel build output
+        run: cmake -P test/build_output.cmake
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Check local full-check orchestration
         run: cmake -P test/full_check_driver.cmake
         env:
@@ -461,6 +465,7 @@ jobs:
           name: failures-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: |
             build/full-check-driver-test/**
+            build/build-output-test/**
             build/**/package-diagnostics/**
             build/runtime-floor-evidence/**
             build/runtime-floor/**
@@ -535,11 +540,15 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             ${{ matrix.prefix }}-cmake
             ${{ matrix.prefix }}-make
+            ${{ matrix.prefix }}-ninja
       - name: Locate both Windows native delivery compilers
         shell: msys2 {0}
         run: |
           echo "GOAT_DELIVERY_MINGW64_CC=$(cygpath -w /mingw64/bin/gcc.exe)" >> "$GITHUB_ENV"
           echo "GOAT_DELIVERY_UCRT64_CC=$(cygpath -w /ucrt64/bin/gcc.exe)" >> "$GITHUB_ENV"
+      - name: Check synchronized parallel build output
+        shell: msys2 {0}
+        run: cmake -P test/build_output.cmake
       - name: Check local full-check orchestration
         shell: msys2 {0}
         run: cmake -P test/full_check_driver.cmake
@@ -667,9 +676,14 @@ jobs:
             build/native-windows/program.dll
           if-no-files-found: ignore
       - name: Build Release binaries and package
+        # A normal run takes a few minutes. Bound CI only, so a stalled tool
+        # produces a finished log instead of occupying the runner for hours.
+        timeout-minutes: 15
         shell: msys2 {0}
         run: |
-          MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_release_mingw.cmd'
+          set -euo pipefail
+          mkdir -p build/ci
+          MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_release_mingw.cmd' 2>&1 | tee build/ci/release-build.log
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: 4
       - name: Check relocated release package
@@ -740,6 +754,9 @@ jobs:
         with:
           name: failures-Windows-GCC-${{ matrix.msystem }}
           path: |
+            build/ci/release-build.log
+            build/full-check-driver-test/**
+            build/build-output-test/**
             build/**/scenario-*/**/markers/events
             build/**/package-diagnostics/**
             build/runtime-floor-evidence/**

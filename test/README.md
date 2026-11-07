@@ -268,3 +268,16 @@ See [fixture provenance and predicate map](data/graph/README.md).
 executables: all three tools, a path with spaces, an unrelated working directory,
 repeated replacement, executable permissions, missing inputs and obstructed
 destinations. Debug and Release CI run it on Linux and Windows.
+
+### Parallel build output controls
+
+`cmake -P test/build_output.cmake` exercises the real shared build wrapper with
+GNU Make and Ninja (both are required), in Debug and Release. Independent jobs
+exchange readiness files, so replacing parallel builds with serial execution
+cannot pass. The test checks fragmented stdout/stderr, warnings, failed jobs,
+environment job selection, cached-generator selection and native arguments.
+It also invokes the platform's actual Debug/Release scripts on invalid C source
+and checks that they stop before packaging/publication while retaining compiler
+diagnostics. Fixtures and logs are retained under `build/build-output-test/`.
+The existing `full_check_driver.cmake` controls exercise the same helper across
+all full-check build stages. Both controls run in Linux and Windows CI.

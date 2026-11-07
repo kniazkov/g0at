@@ -117,6 +117,15 @@ bash scripts/build.sh 8
 
 Both Debug scripts also accept `CMAKE_BUILD_PARALLEL_LEVEL` as the default job count; an explicit argument takes precedence. Tests still run sequentially. Use `--help` for usage.
 
+Debug, Release and full-check build stages keep each job's output together with
+GNU Make 4.0+ (`--output-sync=target`). Messages can appear when a job finishes;
+warnings and errors are not filtered. Parallelism and job-count selection stay
+unchanged (Release uses `CMAKE_BUILD_PARALLEL_LEVEL` when set). The scripts inspect
+the configured generator: Ninja keeps its native output buffering and receives no
+Make-specific options. Older/non-GNU Make builds still work, with a warning that
+output synchronization is unavailable. For the same behavior in a direct build,
+use `cmake -P scripts/build_command.cmake build/manual --parallel 2`.
+
 To measure compilation and tests separately, run `bash scripts/build.sh --build-only 8`, then `bash scripts/build.sh --test-only`. Keep the same `BUILD_DIR` for both commands. The test-only mode uses the existing Debug binaries without rebuilding; omitting the mode still builds and tests in one command.
 
 To use Clang in a separate build directory:
