@@ -1,0 +1,26 @@
+[
+  {
+    "id": "integration.native_requirements.pe-msvcrt-hypot",
+    "name": "pe-msvcrt-hypot",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [
+      "10.0.0.0 0.0.0.0"
+    ],
+    "files": {
+      "image.bin": "blobs/5426ddd0d85f2556a37bdbbbdce18cf965eb4146c8a01a52d42ba801181ff593.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-msvcrt-hypot-unknown",
+    "name": "pe-msvcrt-hypot-unknown",
+    "target": "msvcrt",
+    "succeeds": false,
+    "contains": [
+      "msvcrt.dll!_hypot_future"
+    ],
+    "files": {
+      "image.bin": "blobs/ceaedf64bc8663f722e7fe0c175d090cd5412bd2303288b7653b49ba04a52181.bin"
+    }
+  }
+]

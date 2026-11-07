@@ -225,6 +225,28 @@ static void print_hex(const child_output_t *out) {
         printf("%02x", out->data[i]);
 }
 
+/* Keep failed probe phases visible in the scenario's stderr artifact. */
+static bool
+check_compiler_probe(const char *phase, const native_compile_result_t *result, bool ok) {
+    ok = ok && !result->system_error && !result->windows_error && !result->cleanup_error
+         && !result->windows_cleanup_error;
+    if (!ok)
+        fprintf(stderr,
+                "compiler-probe %s: status=%d exit=%lld diagnostics=%zu truncated=%d "
+                "system=%d windows=%lu cleanup=%d windows-cleanup=%lu service=%d\n",
+                phase,
+                result->status,
+                (long long)result->exit_code,
+                result->diagnostics_length,
+                result->diagnostics_truncated,
+                result->system_error,
+                (unsigned long)result->windows_error,
+                result->cleanup_error,
+                (unsigned long)result->windows_cleanup_error,
+                result->cleanup_status);
+    return ok;
+}
+
 static int fixture_main(int argc, char **argv) {
     int cleanup_code;
     if (cleanup_service_main(argc, argv, &cleanup_code))
@@ -237,12 +259,29 @@ static int fixture_main(int argc, char **argv) {
         const char *commands[] = {argv[0], "--worker", "continuous", NULL};
         native_compile_result_t result = {.exit_code = -1};
         native_compiler_run(&result, commands, child_deadline_after(150));
-        bool ok = result.status == NATIVE_COMPILE_TIMED_OUT && result.diagnostics_length
-                  && !result.cleanup_error && !result.windows_cleanup_error;
+        /* The absolute deadline includes cleanup-service and worker startup. On a busy
+         * host it can expire before the worker writes anything; empty diagnostics are
+         * valid in that case. Test capture separately with a finite producer. */
+        bool ok =
+            check_compiler_probe("timeout", &result, result.status == NATIVE_COMPILE_TIMED_OUT);
         destroy_native_compile_result(&result);
+        result = (native_compile_result_t){.exit_code = -1};
+        commands[2] = "over";
+        native_compiler_run(&result, commands, 0);
+        bool captured = result.status == NATIVE_COMPILE_OK && !result.exit_code
+                        && result.diagnostics_length == CHILD_OUTPUT_LIMIT
+                        && result.diagnostics_truncated;
+        for (size_t i = 0; captured && i < result.diagnostics_length; i++)
+            captured = (unsigned char)result.diagnostics[i] == (unsigned char)i;
+        ok = check_compiler_probe("capture", &result, captured) && ok;
+        destroy_native_compile_result(&result);
+        result = (native_compile_result_t){.exit_code = -1};
         commands[2] = "delay";
         native_compiler_run(&result, commands, 0);
-        ok = ok && result.status == NATIVE_COMPILE_OK && !result.exit_code;
+        ok = check_compiler_probe("no deadline",
+                                  &result,
+                                  result.status == NATIVE_COMPILE_OK && !result.exit_code)
+             && ok;
         destroy_native_compile_result(&result);
         return ok && !get_allocated_memory_size() ? 0 : 94;
     }

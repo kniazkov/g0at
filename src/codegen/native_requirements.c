@@ -397,6 +397,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                               "_fpreset",
                                               "_free_locale",
                                               "_get_initial_narrow_environment",
+                                              "_hypot",
                                               "_initialize_narrow_environment",
                                               "_initialize_onexit_table",
                                               "_initterm",

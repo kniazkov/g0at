@@ -136,6 +136,13 @@ foreach(native_requirements_id IN LISTS native_requirements_ids)
     "$<TARGET_FILE:native_requirements_testing>" "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-requirements")
 endforeach()
+# Supplemental regressions are separate from the frozen migration corpus.
+foreach(native_requirements_case IN ITEMS pe-msvcrt-hypot pe-msvcrt-hypot-unknown)
+  goat_scenario(integration.native_requirements.${native_requirements_case} "integration;native-requirements-migration" TIMEOUT 30 COMMAND
+    "$<TARGET_FILE:native_requirements_scenarios>" "integration.native_requirements.${native_requirements_case}"
+    "$<TARGET_FILE:native_requirements_testing>" "${PROJECT_BINARY_DIR}"
+    "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-requirements-regressions")
+endforeach()
 foreach(native_toolchains_case IN ITEMS cache reprobe linux-relro unicode-temp timeout-cache unsupported-target zero-timeout absent-compiler link-failure hang-query hang-link avx2 sha2 crypto foreign-libc musl-trace musl-crypto unknown-profile path-first path-fallback path-timeout path-unsearched path-list explicit-failure)
   goat_scenario(integration.native_toolchains.${native_toolchains_case} "integration;native-toolchains-migration" TIMEOUT 510 COMMAND
     "$<TARGET_FILE:native_toolchains_scenarios>" "integration.native_toolchains.${native_toolchains_case}"
@@ -719,7 +726,7 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1909 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1911 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
   message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (SVG validation and controls added for #393); found ${goat_integration_count}")
 endif()
