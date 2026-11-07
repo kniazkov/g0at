@@ -3,6 +3,8 @@
 # Distributed under the MIT license; see LICENSE.txt.
 # CI-only observer: keep the original build command, pipefail and timeout.
 set -euo pipefail
+source scripts/windows_shell_pid.sh
+root_pid=$(windows_shell_pid)
 output=build/ci/release-observation
 mkdir -p "$output"
 rm -f "$output/stop"
@@ -23,7 +25,7 @@ rm -f "$output/stop"
     pacman -Q || true
 } > "$output/environment.txt" 2>&1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/observe_windows_build.ps1 \
-    -OutputDirectory "$(cygpath -w "$PWD/$output")" > "$output/observer-console.txt" 2>&1 &
+    -RootProcessId "$root_pid" -OutputDirectory "$(cygpath -w "$PWD/$output")" > "$output/observer-console.txt" 2>&1 &
 observer=$!
 finish() {
     result=$?

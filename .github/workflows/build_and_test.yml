@@ -676,16 +676,15 @@ jobs:
             build/native-windows/program.dll
           if-no-files-found: ignore
       - name: Check Windows build observer
-        shell: pwsh
-        run: |
-          & ./scripts/observe_windows_build.ps1 -OutputDirectory build/ci/observer-control -IntervalSeconds 1 -MaxSeconds 1
-          $records = @(Get-Content build/ci/observer-control/processes.jsonl | ForEach-Object { $_ | ConvertFrom-Json })
-          if ($records.Count -lt 1 -or $records[0].processes.Count -lt 1) { throw 'Observer produced no process snapshot' }
-          if (!(Test-Path build/ci/observer-control/observer-finished.txt)) { throw 'Observer did not finish' }
-          New-Item -ItemType File -Force build/ci/observer-control/stop | Out-Null
-          & ./scripts/observe_windows_build.ps1 -OutputDirectory build/ci/observer-control -MaxSeconds 60
-          $after = @(Get-Content build/ci/observer-control/processes.jsonl)
-          if ($after.Count -ne $records.Count) { throw 'Observer ignored stop marker' }
+        shell: msys2 {0}
+        run: bash scripts/check_windows_observer.sh
+      - name: Preserve Windows observer controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: observer-control-${{ matrix.msystem }}
+          path: build/ci/observer-control/**
+          if-no-files-found: warn
       - name: Build Release binaries and package
         # A normal run takes a few minutes. Bound CI only, so a stalled tool
         # produces a finished log instead of occupying the runner for hours.

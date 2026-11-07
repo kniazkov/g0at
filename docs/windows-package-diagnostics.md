@@ -12,7 +12,9 @@ commit before changing build options:
 - `environment.txt`: revision, tool paths and versions, installed MSYS2 packages,
   and the four allowlisted build environment variables.
 - `processes.jsonl`: UTC snapshots every 10 seconds, rooted at the observer's
-  invoking shell. Rows include PID/parent PID, creation time, command line,
+  invoking shell. Its native WINPID is resolved explicitly from MSYS2 `ps`,
+  rather than inferred from the background observer parent (which may be an
+  intermediate forked shell). Rows include PID/parent PID, creation time, command line,
   cumulative CPU time (Windows 100 ns units), I/O bytes, handle count and thread
   states/wait reasons. The observer itself and its descendants are excluded.
 - `observer-console.txt`, `observer-errors.txt`, `observer-finished.txt`: observer
@@ -34,7 +36,9 @@ cause of a wait. Next, use the observed process chain to target stack/wait-objec
 capture and controlled output-sync/preinstall experiments. Do not infer a hang
 solely from silence: Make buffers output with `--output-sync=target`.
 
-CI checks real process enumeration and the stop marker on each Windows profile.
+CI launches a native child from MSYS2 and requires its exact PID in a snapshot,
+then checks the stop marker on each Windows profile. Control artifacts are
+uploaded even on failure. A snapshot of only the root shell cannot pass.
 The shell wrapper is also amenable to a stubbed command test: a successful and a
 failing `cmd.exe` must retain their exit statuses and output, and both must stop
 the observer. Windows process inspection itself requires Windows; Linux shell

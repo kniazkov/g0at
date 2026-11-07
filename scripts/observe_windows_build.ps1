@@ -3,6 +3,7 @@
 # Observe the invoking shell and its descendants without changing their handles.
 param(
     [Parameter(Mandatory = $true)][string]$OutputDirectory,
+    [Parameter(Mandatory = $true)][ValidateRange(1, 2147483647)][int]$RootProcessId,
     [int]$IntervalSeconds = 10,
     [int]$MaxSeconds = 840
 )
@@ -11,7 +12,7 @@ New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $stopFile = Join-Path $OutputDirectory 'stop'
 $log = Join-Path $OutputDirectory 'processes.jsonl'
 $errors = Join-Path $OutputDirectory 'observer-errors.txt'
-$root = (Get-CimInstance Win32_Process -Filter "ProcessId=$PID").ParentProcessId
+$root = $RootProcessId
 $rootProcess = Get-Process -Id $root
 $rootStart = $rootProcess.StartTime.ToUniversalTime()
 $clock = [Diagnostics.Stopwatch]::StartNew()
