@@ -17,7 +17,7 @@
 ## Порядок задач
 
 - [x] 01. [#492 — Массив arguments: неизменяемое хранение и время жизни](https://github.com/kniazkov/g0at/issues/492). Зависимости: нет. Реализован фундамент хранения в [PR #510](https://github.com/kniazkov/g0at/pull/510); merge `6065d657`, [CI master](https://github.com/kniazkov/g0at/actions/runs/42488839322) и [vectors](https://github.com/kniazkov/g0at/actions/runs/42488839333) зелёные. Привязка имени и сценарии вызовов на исходном языке относятся к #493.
-- [ ] 02. [#493 — arguments: привязка всех фактических аргументов в вызовах VM](https://github.com/kniazkov/g0at/issues/493). Зависимости: #492.
+- [x] 02. [#493 — arguments: привязка всех фактических аргументов в вызовах VM](https://github.com/kniazkov/g0at/issues/493). Зависимости: #492. Реализовано в [PR #511](https://github.com/kniazkov/g0at/pull/511); merge `b30659c7`, [CI master](https://github.com/kniazkov/g0at/actions/runs/42498548009) и [vectors](https://github.com/kniazkov/g0at/actions/runs/42498547956) зелёные.
 - [ ] 03. [#494 — Операторы: поиск функций, права доступа и безопасное продолжение вызова](https://github.com/kniazkov/g0at/issues/494). Зависимости: #493.
 - [ ] 04. [#495 — Анализатор: консервативная семантика пользовательских операторов](https://github.com/kniazkov/g0at/issues/495). Зависимости: #494.
 - [ ] 05. [#496 — Арифметические, побитовые и унарные обработчики в VM](https://github.com/kniazkov/g0at/issues/496). Зависимости: #494, #495.

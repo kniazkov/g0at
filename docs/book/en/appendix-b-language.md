@@ -210,6 +210,11 @@ unrelated eligible functions can still run natively. Native argument capture is
 a separate step, [#502](https://github.com/kniazkov/g0at/issues/502), and is not
 claimed by this VM implementation.
 
+The internal [operator dispatch foundation](../../operator-dispatch-api.md)
+adds checked handler selection and deferred result completion. It does not yet
+enable operator overloading in source programs. Its explicit handler receiver
+is separate from ordinary calls and their scope-local `this`.
+
 ## Object.clone()
 
 This section describes shallow copying. Implemented access modifiers, method

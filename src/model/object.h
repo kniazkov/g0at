@@ -724,3 +724,6 @@ static inline operation_result_t
 shift_right_objects(process_t *process, object_t *left, object_t *right) {
     return left->vtbl->shift_right(process, left, right);
 }
+
+/** @brief True only for builtin and Goat function values, not callable user objects. */
+bool is_function_object(const object_t *object);

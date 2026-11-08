@@ -5,6 +5,7 @@
  */
 
 #include "access.h"
+#include "array.h"
 #include "builtin_function.h"
 #include "common_methods.h"
 #include "context.h"
@@ -18,6 +19,7 @@
 #include "process.h"
 #include "thread.h"
 #include "transfer.h"
+#include "vm/gc.h"
 
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t static_to_string(const object_t *obj) {
@@ -390,7 +392,11 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
 }
 
 /** @brief Chooses native execution before allocating a bytecode call context. */
-static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
+static bool dynamic_call_impl(object_t *obj,
+                              uint16_t arg_count,
+                              object_t *receiver,
+                              thread_t *thread,
+                              bool operator_receiver) {
     if (thread->process->native_failed)
         return false;
     require_object_stack_size(thread->data_stack, arg_count);
@@ -406,8 +412,8 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
     module_files_t *module = find_module_files(thread->process, dfobj->access.module);
     bool module_native = module_files_native(module) != NULL;
     bool retry = false;
-    if ((!receiver || receiver == dfobj->closure) && !thread->context->native_disabled
-        && !dfobj->native_disabled) {
+    if (!operator_receiver && (!receiver || receiver == dfobj->closure)
+        && !thread->context->native_disabled && !dfobj->native_disabled) {
         module_native_call_status_t status = call_module_native(module,
                                                                 dfobj->access.file_id,
                                                                 dfobj->function_id,
@@ -426,7 +432,8 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
        method context, so native execution would bypass the receiver, even after the closure
        escapes to an outer scope. */
     const goat_native_entry_v2_t *entry =
-        module_native || receiver || thread->context->native_disabled || dfobj->native_disabled
+        operator_receiver || module_native || receiver || thread->context->native_disabled
+                || dfobj->native_disabled
             ? NULL
             : select_native_entry(dfobj, arg_count, thread->data_stack);
     if (entry) {
@@ -471,6 +478,10 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
     inherit_function_access(&ctx->access, &dfobj->access);
     add_inherited_receiver_access(&ctx->access, receiver, &dfobj->access);
     create_object_property(ctx->data, get_this_key(), ctx->data, true);
+    if (operator_receiver) {
+        ctx->operator_receiver = receiver;
+        INCREF(receiver);
+    }
     /* The method body resolves names through the receiver, so every call made from it, and every
        function created in it, must stay on the bytecode path. The same holds for a closure that
        itself was created inside a method body, even after it escapes to an outer scope. */
@@ -504,6 +515,11 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
     thread->context = ctx;
     thread->instr_id = dfobj->first_instr_id;
     return true;
+}
+
+/** @brief Ordinary calls keep their existing scope-local this binding. */
+static bool dynamic_call(object_t *obj, uint16_t count, object_t *receiver, thread_t *thread) {
+    return dynamic_call_impl(obj, count, receiver, thread, false);
 }
 
 /** @brief Virtual table defining the behavior of the dynamic functional object. */
@@ -623,4 +639,37 @@ void link_transferred_function(object_t *destination, object_t *source, transfer
     DECREF(copy->closure);
     copy->closure = closure;
     transfer_function_access(transfer, &copy->access, &original->access);
+}
+
+bool is_function_object(const object_t *object) {
+    return object && (object->vtbl == &static_vtbl || object->vtbl == &dynamic_vtbl);
+}
+
+bool call_function_with_operator_receiver(object_t *function,
+                                          uint16_t count,
+                                          object_t *receiver,
+                                          thread_t *thread) {
+    if (!is_function_object(function) || !receiver
+        || receiver->vtbl->type != TYPE_USER_DEFINED_OBJECT) {
+        clear_exception(&thread->exception);
+        thread->exception.value = get_exception_invalid_operation();
+        return false;
+    }
+    if (function->vtbl != &static_vtbl)
+        return dynamic_call_impl(function, count, receiver, thread, true);
+    /* Builtins pop their arguments before execution. A tracing collection inside a builtin
+       must still see those values and its receiver; C-local references alone are not roots. */
+    require_object_stack_size(thread->data_stack, count);
+    object_t **values = ALLOC(((size_t)count + 1) * sizeof(*values));
+    values[0] = receiver;
+    for (size_t i = 0; i < count; i++)
+        values[i + 1] = thread->data_stack->objects[thread->data_stack->size - count + i];
+    object_t *roots =
+        create_read_only_array_object(thread->process, (object_array_t){values, (size_t)count + 1});
+    FREE(values);
+    add_gc_root(thread->process, roots);
+    bool result = static_call(function, count, receiver, thread);
+    remove_gc_root(thread->process, roots);
+    DECREF(roots);
+    return result;
 }

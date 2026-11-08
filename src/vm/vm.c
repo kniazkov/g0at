@@ -244,7 +244,9 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     const data_descriptor_t *descriptor = runtime->code->data_descriptors + string_id;
     const gchar_t *name = (const gchar_t *)(runtime->code->data + descriptor->offset);
     object_t *constant = NULL;
-    if (descriptor->count == 9 && !MEMCMP(name, U"arguments", 9)) {
+    if (descriptor->count == 4 && !MEMCMP(name, U"this", 4) && thread->context->operator_receiver) {
+        constant = thread->context->operator_receiver;
+    } else if (descriptor->count == 9 && !MEMCMP(name, U"arguments", 9)) {
         constant = get_context_arguments(thread->context);
         if (!constant)
             return false; /* No current call: invalid bytecode, not an outer lexical binding. */
@@ -841,8 +843,17 @@ static bool return_value(runtime_t *runtime, thread_t *thread, object_t *ret_val
     }
     assert(ctx != NULL);
     reduce_object_stack(thread->data_stack, ctx->unwinding_index);
-    thread->instr_id = ctx->jump_address[0];
+    instr_index_t resume = ctx->jump_address[0];
+    bool operator_call = ctx->operator_call;
+    operator_result_policy_t policy = ctx->operator_policy;
+    instr_index_t origin = ctx->operator_origin;
+    thread->instr_id = resume;
     thread->context = destroy_context(ctx);
+    if (operator_call && !complete_operator_result(thread, policy, origin, resume)) {
+        exception_t exception = thread->exception;
+        thread->exception = (exception_t){0};
+        return dispatch_exception(runtime, thread, exception);
+    }
     return true;
 }
 

@@ -73,5 +73,6 @@ set(release_labels
   native-strings-migration
   native-saturation-migration
   native-performance-controls
+  operator-dispatch
 )
 list(JOIN release_labels "|" release_labels)
