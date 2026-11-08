@@ -62,9 +62,34 @@ workaround to investigate, not a proven root-cause fix. The Windows full-check d
 sequence; other hosts retain the package target. Compare the next CI artifacts;
 a single green run is insufficient to close #507.
 
+## Optional extended CI checks
+
+Push and pull-request runs retain one observed Release packaging step, the
+observer control, relocated-package validation, and the usual test suites.
+The extra warm repetitions and clean builds run only when explicitly requested:
+
+1. Open Actions -> Build and test -> Run workflow.
+2. Select the branch to check.
+3. Enable `extended_windows_packaging` and start the workflow.
+
+The input defaults to false, including for manual runs. Enabling it adds the
+checks below on all three Windows profiles to the normal full workflow; it does
+not replace the standard suites. Their diagnostic artifacts are uploaded even
+if an earlier step failed. Ordinary runs skip both these checks and their
+artifact uploaders. The scripts remain available for local Windows diagnosis.
+
+Run 42469227114 (including the rerun after MSYS2 download HTTP 504 failures)
+passed all thirty warm packaging pairs and six clean builds with relocated
+package validation. On these runners the additional checks took approximately
+6-8 minutes per Windows profile; the complete jobs took 51-55 minutes. Moving
+these checks behind an explicit input removes that measured additional work,
+not the cost of the existing test suites. This evidence supports the workaround
+but does not establish the underlying Make wait mechanism or close #507.
+
 ## Repeated packaging check
 
-After the initial Release build, all three Windows profiles run ten additional
+In an extended run, after the initial Release build, all three Windows profiles
+run ten additional
 preinstall + direct CPack pairs on the same build tree with four jobs. These are
 warm packaging runs, not ten clean compilations. The first failure stops the
 series and fails CI; no later success can hide it. Each phase has a 120-second
@@ -84,7 +109,7 @@ a failed preinstall prevents CPack and package validation, while independent
 full-check tests still run and the final result remains failure. Linux packaging
 is unchanged.
 
-Each Windows CI profile also configures two new Release trees, builds preinstall
+In an extended run, each Windows CI profile also configures two new Release trees, builds preinstall
 with four workers, invokes direct CPack, and validates each relocated package.
 An existing destination is rejected instead of deleted or reused. The
 `package-clean-<MSYSTEM>` artifacts retain phase logs, results, process snapshots

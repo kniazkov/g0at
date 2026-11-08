@@ -5,6 +5,12 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      extended_windows_packaging:
+        description: 'Run 10 warm packaging repetitions and 2 clean builds per Windows profile'
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 jobs:
@@ -711,26 +717,28 @@ jobs:
             build/release/_CPack_Packages/**/PreinstallOutput.log.verbose
           if-no-files-found: warn
       - name: Repeat Windows Release packaging ten times
+        if: github.event_name == 'workflow_dispatch' && inputs.extended_windows_packaging
         timeout-minutes: 15
         shell: msys2 {0}
         run: bash scripts/repeat_windows_package.sh
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: 4
       - name: Preserve Windows package repetitions
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.extended_windows_packaging
         uses: actions/upload-artifact@v4
         with:
           name: package-repetitions-${{ matrix.msystem }}
           path: build/ci/package-repetitions/**
           if-no-files-found: warn
       - name: Check two clean Windows Release packages
+        if: github.event_name == 'workflow_dispatch' && inputs.extended_windows_packaging
         timeout-minutes: 30
         shell: msys2 {0}
         run: bash scripts/repeat_windows_package.sh --clean
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: 4
       - name: Preserve clean Windows packaging evidence
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.extended_windows_packaging
         uses: actions/upload-artifact@v4
         with:
           name: package-clean-${{ matrix.msystem }}
