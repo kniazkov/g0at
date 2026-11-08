@@ -53,7 +53,8 @@ static const lattice_element_t *
 calculate_short(node_t *node, abstract_state_t *state, arena_t *arena) {
     binary_operation_t *expr = (binary_operation_t *)node;
     const lattice_element_t *left = calculate_expression(expr->left_operand, state, arena);
-    abstract_truth_t truth = lattice_truth(left);
+    bool dispatch = lattice_may_dispatch_operator(left);
+    abstract_truth_t truth = dispatch ? ABSTRACT_EITHER : lattice_truth(left);
     if (state->control_flow != FLOW_NORMAL || truth == ABSTRACT_NEVER)
         return make_bottom_element();
     bool is_or = node->vtbl->type == NODE_LOGICAL_OR;
@@ -74,6 +75,10 @@ calculate_short(node_t *node, abstract_state_t *state, arena_t *arena) {
     destroy_abstract_state(merged);
     destroy_abstract_state(right);
     collect_joined_abstract_state(state, node);
+    if (dispatch) {
+        forget_abstract_values(state);
+        return make_top_element();
+    }
     return lattice_join(arena, skipped, value);
 }
 
@@ -84,11 +89,21 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
         return calculate_short(node, state, arena);
     binary_operation_t *expr = (binary_operation_t *)node;
     const lattice_element_t *left = calculate_expression(expr->left_operand, state, arena);
-    if (type == NODE_LOGICAL_NOT || type == NODE_BOOLEAN_CONVERSION)
-        return lattice_boolean(left, type == NODE_LOGICAL_NOT);
+    if (type == NODE_BOOLEAN_CONVERSION)
+        return lattice_boolean(left, false);
+    if (type == NODE_LOGICAL_NOT || type == NODE_BITWISE_NOT) {
+        if (state->control_flow == FLOW_NORMAL && lattice_may_dispatch_operator(left)) {
+            forget_abstract_values(state);
+            return type == NODE_LOGICAL_NOT ? make_boolean_element() : make_top_element();
+        }
+    }
+    if (type == NODE_LOGICAL_NOT)
+        return lattice_boolean(left, true);
     if (type == NODE_BITWISE_NOT)
         return lattice_bitwise_not(arena, left);
     const lattice_element_t *right = calculate_expression(expr->right_operand, state, arena);
+    if (state->control_flow == FLOW_NORMAL && lattice_may_dispatch_operator(left))
+        forget_abstract_values(state);
     return lattice_bitwise(arena, left, right, node_bitwise_kind(type));
 }
 
@@ -181,7 +196,8 @@ static const lattice_element_t *analyze_short_reachability(node_t *node,
         return make_bottom_element();
     }
     bool is_or = node->vtbl->type == NODE_LOGICAL_OR;
-    abstract_truth_t truth = lattice_truth(left);
+    bool dispatch = lattice_may_dispatch_operator(left);
+    abstract_truth_t truth = dispatch ? ABSTRACT_EITHER : lattice_truth(left);
     const lattice_element_t *skipped = is_or ? make_true_element() : make_false_element();
     if (truth == (is_or ? ABSTRACT_TRUE : ABSTRACT_FALSE)) {
         mark_unreachable_subtree(right_node, collector);
@@ -198,6 +214,10 @@ static const lattice_element_t *analyze_short_reachability(node_t *node,
     destroy_abstract_state(right);
     destroy_abstract_state(*state);
     *state = merged;
+    if (dispatch) {
+        forget_abstract_values(merged);
+        return make_top_element();
+    }
     return lattice_join(merged->arena, skipped, value);
 }
 
@@ -208,6 +228,11 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     if (type == NODE_LOGICAL_NOT || type == NODE_BOOLEAN_CONVERSION || type == NODE_BITWISE_NOT) {
         const lattice_element_t *value =
             visit_reachable_node(get_node_child(node, 0), state, collector);
+        if ((*state)->control_flow == FLOW_NORMAL && type != NODE_BOOLEAN_CONVERSION
+            && lattice_may_dispatch_operator(value)) {
+            forget_abstract_values(*state);
+            return type == NODE_LOGICAL_NOT ? make_boolean_element() : make_top_element();
+        }
         value = node->vtbl->type == NODE_BITWISE_NOT
                     ? lattice_bitwise_not((*state)->arena, value)
                     : lattice_boolean(value, node->vtbl->type == NODE_LOGICAL_NOT);
@@ -218,6 +243,8 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     const lattice_element_t *left = visit_reachable_node(get_node_child(node, 0), state, collector);
     const lattice_element_t *right =
         visit_reachable_node(get_node_child(node, 1), state, collector);
+    if ((*state)->control_flow == FLOW_NORMAL && lattice_may_dispatch_operator(left))
+        forget_abstract_values(*state);
     const lattice_element_t *value =
         lattice_bitwise((*state)->arena, left, right, node_bitwise_kind(node->vtbl->type));
     if (value->type == LATTICE_BOTTOM)

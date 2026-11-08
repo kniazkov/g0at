@@ -6,6 +6,7 @@
 
 #include "graph/node.h"
 #include "lib/memory/arena.h"
+#include "operator.h"
 
 #include <math.h>
 
@@ -91,7 +92,8 @@ void record_c_expression(c_expression_context_t *context,
     if (!context)
         return;
     c_value_type_t type = C_VALUE_UNKNOWN;
-    if (node->vtbl->can_generate_c_code && node->vtbl->can_generate_c_code(node, value, context)) {
+    if (!node_may_dispatch_operator(node, context) && node->vtbl->can_generate_c_code
+        && node->vtbl->can_generate_c_code(node, value, context)) {
         type = classify_c_value_type(value->type);
         if (value->type == LATTICE_TRUE || value->type == LATTICE_FALSE
             || value->type == LATTICE_BOOLEAN)
@@ -108,6 +110,7 @@ void record_c_expression(c_expression_context_t *context,
                 proof->type = C_VALUE_UNKNOWN;
             if (proof->value_type != value_type)
                 proof->value_type = C_VALUE_UNKNOWN;
+            proof->may_dispatch_operator |= lattice_may_dispatch_operator(value);
             proof->discardable &= total;
             if (!c_constants_equal(proof->constant, constant))
                 proof->constant = NULL;
@@ -118,6 +121,7 @@ void record_c_expression(c_expression_context_t *context,
     proof->node = node;
     proof->type = type;
     proof->value_type = value_type;
+    proof->may_dispatch_operator = lattice_may_dispatch_operator(value);
     proof->discardable = total;
     proof->constant = constant;
     if (context->tail)

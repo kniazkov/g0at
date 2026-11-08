@@ -19,8 +19,12 @@
 static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
-    return context ? c_numeric_operands(node, context)
-                   : node->vtbl->type == NODE_UNARY_PLUS && child_c_code(node, value, NULL);
+    if (context)
+        return c_numeric_operands(node, context);
+    const expression_t *operand = (const expression_t *)get_node_child(node, 0);
+    return node->vtbl->type == NODE_UNARY_PLUS
+           && is_numeric_lattice_element(operand->immediate_value)
+           && child_c_code(node, value, NULL);
 }
 
 /** @brief Implements node_vtbl_t::get_child_count. */
@@ -42,6 +46,8 @@ static const gchar_t *get_child_tag(const node_t *node, size_t index) {
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const lattice_element_t *value =
         calculate_expression(((unary_expression_t *)node)->operand, state, arena);
+    if (state->control_flow == FLOW_NORMAL && lattice_may_dispatch_operator(value))
+        forget_abstract_values(state);
     return lattice_unary(arena, value, node->vtbl->type == NODE_UNARY_MINUS);
 }
 
@@ -77,6 +83,8 @@ static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     const lattice_element_t *value =
         visit_reachable_node(get_node_child(node, 0), state, collector);
+    if ((*state)->control_flow == FLOW_NORMAL && lattice_may_dispatch_operator(value))
+        forget_abstract_values(*state);
     const lattice_element_t *result =
         lattice_unary((*state)->arena, value, node->vtbl->type == NODE_UNARY_MINUS);
     if (result->type == LATTICE_BOTTOM)

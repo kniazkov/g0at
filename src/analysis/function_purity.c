@@ -37,6 +37,21 @@ static uint32_t called_effects(const function_call_graph_node_t *node) {
         if (resolve_native_builtin(get_node_child(call->site, 0)) != NULL
             || resolve_native_string_method(call->site, &proof) != NULL)
             continue;
+        bool precise = false, discovered = false;
+        for (const function_call_edge_t *edge = node->edges; edge; edge = edge->next)
+            discovered |= edge->site == call->site;
+        if (discovered && summary->operator_proofs_complete) {
+            for (const c_call_t *target = summary->effect_targets; target; target = target->next) {
+                if (target->site != call->site)
+                    continue;
+                precise = true;
+                effects |= target->target ? target->target->effects : FUNCTION_EFFECT_UNKNOWN;
+            }
+        }
+        /* Discovery can contain provisional broad profiles from before return solving.
+           Replace them only with complete per-signature call-site coverage. */
+        if (precise)
+            continue;
         bool found = false;
         for (const function_call_edge_t *edge = node->edges; edge; edge = edge->next) {
             if (edge->site != call->site)

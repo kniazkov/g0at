@@ -4,10 +4,13 @@
  */
 #include "function_effects.h"
 
+#include "function_call_graph.h"
+#include "function_return.h"
 #include "goat/unicode.h"
 #include "graph/common_methods.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
+#include "operator.h"
 
 const function_capture_t *find_function_capture(const function_summary_t *summary,
                                                 const declarator_t *declarator,
@@ -59,6 +62,18 @@ void record_function_access(function_summary_t *summary,
 }
 
 void collect_node_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    c_expression_context_t context = {.head = summary->c_expressions};
+    bool visited = false;
+    if (node_has_operator_receiver(node)) {
+        const node_t *receiver = get_node_child(node, 0);
+        for (const c_expression_proof_t *proof = context.head; proof; proof = proof->next)
+            visited |= proof->node == receiver;
+        /* Only a complete execution proof makes an absent receiver infeasible.
+           Calls and explicit effects retain their separate syntactic coverage. */
+        if ((visited || !summary->operator_proofs_complete)
+            && node_may_dispatch_operator(node, &context))
+            summary->direct_effects |= FUNCTION_EFFECT_UNKNOWN;
+    }
     if (node->vtbl->collect_direct_effects)
         node->vtbl->collect_direct_effects(node, summary, arena);
     else
@@ -88,4 +103,26 @@ void record_function_effect_call(function_summary_t *summary, const node_t *site
         tail = &(*tail)->next;
     *tail = alloc_zeroed_from_arena(arena, sizeof(**tail));
     (*tail)->site = site;
+}
+
+void analyze_function_operator_effects(node_t *root,
+                                       function_call_graph_t *graph,
+                                       size_t max_iterations) {
+    for (size_t iteration = 0; iteration < max_iterations; iteration++) {
+        size_t count = graph->count, index = 0;
+        uint32_t *previous = alloc_from_arena(graph->arena, (count + 1) * sizeof(*previous));
+        for (function_call_graph_node_t *node = graph->head; node; node = node->next)
+            previous[index++] = node->summary->effects;
+        bool changed = analyze_function_operator_expressions(graph);
+        analyze_function_direct_effects(root);
+        propagate_function_effects(graph, max_iterations);
+        changed |= graph->count != count;
+        index = 0;
+        for (function_call_graph_node_t *node = graph->head; node && index < count;
+             node = node->next, index++)
+            changed |= previous[index] != node->summary->effects;
+        if (!changed)
+            return;
+    }
+    /* Each iteration is independently conservative; no optimistic purity is introduced. */
 }

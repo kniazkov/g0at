@@ -96,6 +96,8 @@ const lattice_element_t *lattice_compare(const lattice_element_t *left,
                                          comparison_kind_t kind) {
     if (left->type == LATTICE_BOTTOM || right->type == LATTICE_BOTTOM)
         return make_bottom_element();
+    if (lattice_may_dispatch_operator(left))
+        return make_boolean_element();
     bool equality = kind == COMPARE_EQUAL || kind == COMPARE_NOT_EQUAL;
     int a = group(left->type), b = group(right->type);
     if (!equality && ((a && a > 3) || (b && b > 3) || (a && b && a != b)))

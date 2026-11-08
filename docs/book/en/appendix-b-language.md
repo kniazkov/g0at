@@ -215,6 +215,11 @@ adds checked handler selection and deferred result completion. It does not yet
 enable operator overloading in source programs. Its explicit handler receiver
 is separate from ordinary calls and their scope-local `this`.
 
+The [operator analysis rules](../../operator-analysis.md) preserve possible
+handler effects, exceptions and logical right-hand sides while keeping proven
+built-in scalar paths. This analysis preparation does not enable new runtime
+operator dispatch.
+
 ## Object.clone()
 
 This section describes shallow copying. Implemented access modifiers, method

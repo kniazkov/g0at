@@ -301,3 +301,15 @@ memory lifetime, builtin GC roots, and failed-file exception trace ownership.
 These assert-based contracts remain active in Release and are included in both
 the CI and local Release selections. See the [API contract](../docs/operator-dispatch-api.md)
 ([на русском](../docs/operator-dispatch-api.ru.md)).
+
+### Conservative operator analysis
+
+Select `ctest --test-dir build -L operator-analysis --output-on-failure` for the
+8 C component cases in `operator_analysis_testing`. These test unknown and
+user-object receiver effects and result domains, retained logical RHS evaluation,
+compound versus increment/decrement nodes, handler mutation through aliases,
+implicit switch comparisons, and scalar/native specialization preservation.
+The runtime regressions run with optimization both enabled and disabled and
+check builtin behavior and catchable `INVALID_OPERATION`. They do not claim
+source-language overloaded operator execution, which belongs to later VM work.
+Assertions remain active in Release builds.

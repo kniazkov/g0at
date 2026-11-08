@@ -1,3 +1,5 @@
-one write 1 1 a boolean
-one write 2 2 b boolean
+last write 1 1 a top
+last write 2 2 b top
 one write 3 3 c boolean
+one flags 1 0 less none
+one flags 3 0 equal none

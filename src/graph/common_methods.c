@@ -8,6 +8,7 @@
 
 #include "analysis/function_effects.h"
 #include "analysis/lattice.h"
+#include "analysis/operator.h"
 #include "analysis/reachability.h"
 #include "expression.h"
 
@@ -102,7 +103,9 @@ bool no_deferred_bytecode(const node_t *node, code_builder_t *code, data_builder
     return true;
 }
 
-bool children_are_pure(const node_t *node) {
+bool children_are_pure_in_context(const node_t *node, const c_expression_context_t *context) {
+    if (node_may_dispatch_operator(node, context))
+        return false;
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         const node_t *child = get_node_child(node, i);
         /* Creating a closure does not execute its body. */
@@ -111,6 +114,10 @@ bool children_are_pure(const node_t *node) {
             return false;
     }
     return true;
+}
+
+bool children_are_pure(const node_t *node) {
+    return children_are_pure_in_context(node, NULL);
 }
 
 bool not_pure(const node_t *node) {
@@ -164,6 +171,8 @@ visit_reachable_binary(node_t *node,
     const lattice_element_t *left = visit_reachable_node(get_node_child(node, 0), state, collector);
     const lattice_element_t *right =
         visit_reachable_node(get_node_child(node, 1), state, collector);
+    if ((*state)->control_flow == FLOW_NORMAL && lattice_may_dispatch_operator(left))
+        forget_abstract_values(*state);
     const lattice_element_t *value = operation((*state)->arena, left, right);
     if (value->type == LATTICE_BOTTOM)
         (*state)->control_flow = FLOW_UNREACHABLE;

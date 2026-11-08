@@ -338,7 +338,8 @@ bool test_modulo_ranges(void) {
             if (a->type == LATTICE_BOTTOM || b->type == LATTICE_BOTTOM) {
                 ASSERT(value->type == LATTICE_BOTTOM);
             } else if (a->type == LATTICE_TOP || a->type == LATTICE_NOT_NULL
-                       || a->type == LATTICE_ARRAY || a->type == LATTICE_TYPED_ARRAY) {
+                       || a->type == LATTICE_USER_DEFINED_OBJECT || a->type == LATTICE_ARRAY
+                       || a->type == LATTICE_TYPED_ARRAY) {
                 ASSERT(value->type == LATTICE_TOP);
             } else if ((!is_integer_lattice_element(a) && a->type != LATTICE_NUMERIC)
                        || (!is_integer_lattice_element(b) && b->type != LATTICE_NUMERIC

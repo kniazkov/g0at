@@ -54,7 +54,9 @@ bool test_specialization_graph() {
     ASSERT(get_node_child(replacement_original(get_node_child(get_node_child(root, 1), 0)), 0)
                ->vtbl->type
            == NODE_FUNCTION_CALL);
-    ASSERT(function->flags & NODE_FLAG_PURE);
+    /* The unknown-argument profile may dispatch user operators. Shared purity
+     * cannot be inferred from the integer specialization selected above. */
+    ASSERT(!(function->flags & NODE_FLAG_PURE));
     /* Discovery also contains an unknown-argument profile; it must not acquire C support. */
     ASSERT(!(function->flags & NODE_FLAG_C_COMPATIBLE));
     string_value_t before = analysis_collector_to_text(collector);

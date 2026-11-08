@@ -836,3 +836,8 @@ foreach(operator_case lookup receiver continuation unwind nested builtin lexical
   goat_suite(component.operator_dispatch.${operator_case} "component;operator-dispatch"
     "$<TARGET_FILE:operator_dispatch_testing>" "${operator_case}")
 endforeach()
+
+foreach(operator_case conservative logical update runtime builtin mutation switch polymorphic)
+  goat_suite(component.operator_analysis.${operator_case} "component;operator-analysis"
+    "$<TARGET_FILE:operator_analysis_testing>" "${operator_case}")
+endforeach()

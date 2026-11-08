@@ -173,8 +173,15 @@ const lattice_element_t *interpret_recursive_call(const node_t *site,
         forget_abstract_values(state);
         return make_top_element();
     }
+    if (state->c_expressions) {
+        c_call_t *call = alloc_from_arena(state->arena, sizeof(*call));
+        *call = (c_call_t){.next = state->c_expressions->calls, .site = site, .target = target};
+        state->c_expressions->calls = call;
+    }
     /* Another body may be a closure that can write the caller's locals. */
-    if (function == state->call_graph_node->summary->function)
+    if (state->c_expressions && function_summary_is_pure(target)) {
+        /* A previous complete effect proof excludes writes into this activation. */
+    } else if (function == state->call_graph_node->summary->function)
         forget_captured_abstract_values(state, function);
     else
         forget_abstract_values(state);
@@ -268,6 +275,37 @@ void solve_function_recursion(function_call_graph_t *graph, size_t max_iteration
         for (size_t i = 0; i < group.count; i++)
             done.members[done.count++] = group.members[i];
     }
+}
+
+bool analyze_function_operator_expressions(function_call_graph_t *graph) {
+    bool changed = false;
+    recursive_type_group_t group = {
+        .members = alloc_from_arena(graph->arena, (graph->count + 1) * sizeof(*group.members))};
+    for (function_call_graph_node_t *node = graph->head; node; node = node->next)
+        group.members[group.count++] = node;
+    for (function_call_graph_node_t *node = graph->head; node; node = node->next) {
+        function_summary_t *summary = node->summary;
+        c_expression_context_t context = {.arena = graph->arena};
+        bool incomplete = graph->truncated;
+        const lattice_element_t *result =
+            evaluate_signature(get_function_summaries(summary->function),
+                               summary,
+                               node,
+                               &group,
+                               &incomplete,
+                               &context);
+        if (!incomplete && summary->return_type->type != result->type
+            && lattice_join(graph->arena, summary->return_type, result)->type
+                   == summary->return_type->type) {
+            summary->return_type = result;
+            summary->status = FUNCTION_ANALYZED;
+            changed = true;
+        }
+        summary->c_expressions = context.head;
+        summary->operator_proofs_complete = !incomplete;
+        summary->effect_targets = context.calls;
+    }
+    return changed;
 }
 
 void analyze_function_c_expressions(node_t *root) {

@@ -28,6 +28,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const binary_operation_t *expr = (const binary_operation_t *)node;
     const lattice_element_t *left = calculate_expression(expr->left_operand, state, arena);
     const lattice_element_t *right = calculate_expression(expr->right_operand, state, arena);
+    if (state->control_flow == FLOW_NORMAL && lattice_may_dispatch_operator(left))
+        forget_abstract_values(state);
     return lattice_divide(arena, left, right);
 }
 

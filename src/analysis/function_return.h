@@ -37,3 +37,6 @@ const lattice_element_t *interpret_recursive_call(const node_t *site,
 const lattice_element_t *evaluate_function_c_signature(function_summary_t *summary,
                                                        c_expression_context_t *context,
                                                        bool *incomplete);
+
+/** @brief Proves operator receivers using solved call domains, without assuming call purity. */
+bool analyze_function_operator_expressions(function_call_graph_t *graph);

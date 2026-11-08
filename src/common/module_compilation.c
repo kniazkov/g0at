@@ -851,9 +851,7 @@ bool compile_module_sources_configured(const module_sources_t *sources,
             function_call_graph_t *calls = build_function_call_graph(root, memory->graph, 1024);
             analyze_function_return_types(root);
             solve_function_recursion(calls, 64);
-            analyze_function_direct_effects(root);
-            analyze_function_c_expressions(root);
-            propagate_function_effects(calls, 64);
+            analyze_function_operator_effects(root, calls, 64);
             analyze_function_c_contracts(root);
             analyze_function_c_bodies(calls, 64);
         }
