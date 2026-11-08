@@ -5,9 +5,7 @@
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
 #endif
-#if defined(_WIN32) && !defined(_WIN32_WINNT)
-#    define _WIN32_WINNT 0x0600
-#endif
+#include "lib/platform/windows_target.h"
 #include "test/support/process_watch.h"
 
 #include <limits.h>
