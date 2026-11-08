@@ -9,6 +9,7 @@
 /** @brief An array owns its elements and a cached immutable length property. */
 typedef struct {
     object_t base;        /**< Object header. */
+    bool read_only;       /**< Rejects every element mutation, including empty operations. */
     size_t refs;          /**< Strong reference count. */
     object_state_t state; /**< Tracing/destruction state. */
     object_t **items;     /**< Owned element references. */

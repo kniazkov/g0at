@@ -21,6 +21,8 @@ static operation_result_t self(object_t *obj) {
 operation_result_t
 insert_array_elements(object_t *obj, size_t index, object_t **args, size_t count) {
     array_object_t *array = (array_object_t *)obj;
+    if (array->read_only)
+        return operation_exception(get_exception_immutable_object());
     if (count > SIZE_MAX - array->count)
         abort();
     size_t length = array->count + count;
@@ -42,6 +44,8 @@ insert_array_elements(object_t *obj, size_t index, object_t **args, size_t count
 /** @brief Transfers the array's reference to the removed element to the caller. */
 operation_result_t remove_array_element(object_t *obj, size_t index) {
     array_object_t *array = (array_object_t *)obj;
+    if (array->read_only)
+        return operation_exception(get_exception_immutable_object());
     object_t *value = array->items[index];
     memmove(array->items + index,
             array->items + index + 1,
@@ -54,6 +58,8 @@ operation_result_t remove_array_element(object_t *obj, size_t index) {
 /** @brief Clears storage before releasing values, including references to the receiver. */
 operation_result_t clear_array_elements(object_t *obj) {
     array_object_t *array = (array_object_t *)obj;
+    if (array->read_only)
+        return operation_exception(get_exception_immutable_object());
     object_t **items = array->items;
     size_t count = array->count;
     array->items = NULL;
@@ -85,6 +91,8 @@ operation_result_t find_array_element(object_t *obj, object_t *value, bool last)
 /** @brief Stable merge sort of borrowed pointers; original storage changes only on success. */
 operation_result_t sort_array_elements(object_t *obj) {
     array_object_t *array = (array_object_t *)obj;
+    if (array->read_only)
+        return operation_exception(get_exception_immutable_object());
     size_t count = array->count;
     if (count < 2)
         return self(&array->base);
@@ -160,6 +168,8 @@ operation_result_t slice_array(object_t *obj, size_t begin, size_t end) {
 
 operation_result_t reverse_array_elements(object_t *obj) {
     array_object_t *array = (array_object_t *)obj;
+    if (array->read_only)
+        return operation_exception(get_exception_immutable_object());
     for (size_t i = 0; i < array->count / 2; i++) {
         object_t *value = array->items[i];
         array->items[i] = array->items[array->count - 1 - i];

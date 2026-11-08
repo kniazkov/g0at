@@ -1,7 +1,9 @@
 /** @file array.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Mutable arrays, owned elements and tracing garbage collection.
+ * @brief Mutable and read-only arrays, owned elements and tracing garbage collection.
  */
+#include "array.h"
+
 #include "array_internal.h"
 #include "common_methods.h"
 #include "lib/memory/allocate.h"
@@ -112,6 +114,8 @@ static bool index_value(const array_object_t *array, object_array_t indices, siz
 
 /** @brief Reuses the exact assignment bounds check without reading or changing an element. */
 operation_result_t check_array_index_write(object_t *obj, object_array_t indices) {
+    if (((const array_object_t *)obj)->read_only)
+        return operation_exception(get_exception_immutable_object());
     size_t index;
     if (!index_value((const array_object_t *)obj, indices, &index))
         return operation_exception(get_exception_invalid_argument());
@@ -133,6 +137,8 @@ static operation_result_t get_index(process_t *process, object_t *obj, object_ar
 static operation_result_t
 set_index(process_t *process, object_t *obj, object_array_t indices, object_t *value) {
     array_object_t *array = (array_object_t *)obj;
+    if (array->read_only)
+        return operation_exception(get_exception_immutable_object());
     size_t index;
     if (!index_value(array, indices, &index))
         return operation_exception(get_exception_invalid_argument());
@@ -265,4 +271,15 @@ void reserve_array(array_object_t *array, size_t count) {
     FREE(array->items);
     array->items = items;
     array->capacity = capacity;
+}
+
+object_t *create_read_only_array_object(process_t *process, object_array_t elements) {
+    array_object_t *array = (array_object_t *)create_array_object(process, elements);
+    array->read_only = true;
+    return &array->base;
+}
+
+bool is_read_only_array(const object_t *object) {
+    assert(object->vtbl->type == TYPE_ARRAY);
+    return ((const array_object_t *)object)->read_only;
 }

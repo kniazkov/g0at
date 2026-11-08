@@ -46,6 +46,8 @@ static operation_result_t dispatch(array_method_t method,
                                    thread_t *thread) {
     if (receiver->vtbl->type != TYPE_ARRAY)
         return operation_exception(get_exception_invalid_argument());
+    if ((method <= CLEAR || method == REVERSE || method == SORT) && is_read_only_array(receiver))
+        return operation_exception(get_exception_immutable_object());
     size_t length = get_array_elements(receiver).size;
     size_t index, end;
     switch (method) {

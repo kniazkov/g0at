@@ -14,3 +14,8 @@ bool test_array_graph_labels(void);
 
 /** @brief Growth, cycle lifetimes, removal ownership and virtual comparison failures. */
 bool test_array_methods(void);
+
+/** @brief All mutations reject read-only arrays, while reads and copies work. */
+bool test_read_only_array(void);
+/** @brief Call snapshots retain original values through nested frames and GC. */
+bool test_context_argument_snapshot(void);

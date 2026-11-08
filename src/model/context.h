@@ -27,6 +27,8 @@ struct context_t {
     function_access_t access;
     /** @brief A data associated with the current execution context. */
     object_t *data;
+    /** @brief Owned immutable snapshot of this call's actual values, or NULL outside a call. */
+    object_t *arguments;
 
     /** @brief Inherited by retry descendants, discarded on return or exception unwinding. */
     bool native_disabled;
@@ -103,3 +105,6 @@ context_t *create_context_with_protos_in_file(process_t *process,
 
 /** @brief Releases the context and its data reference; returns the previous context. */
 context_t *destroy_context(context_t *context);
+
+/** @brief Captures borrowed actual values once, before parameter binding; excludes this. */
+void capture_context_arguments(context_t *context, object_array_t arguments);

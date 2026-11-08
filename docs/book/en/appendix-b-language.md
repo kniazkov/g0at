@@ -155,6 +155,23 @@ Arrays inherit from the built-in `Array` prototype, which inherits from `Object`
 Both `[].instanceOf(Array)` and `[].instanceOf(Object)` return `true`.
 An empty array prints as `[ ]`, including inside other objects and arrays.
 
+### Read-only array storage
+
+The runtime also supports a read-only mode of the same array type. It keeps an
+owned, shallow snapshot of its elements: replacing a source slot does not change
+the snapshot, while mutations of a referenced object remain visible. Reading,
+length, iteration and inherited read-only methods use the ordinary array rules.
+Element replacement and mutating methods reject changes, including calls that
+would otherwise leave an empty array unchanged. Ordinary array literals remain
+mutable.
+
+This is the storage foundation for the planned `arguments` feature
+([implementation checklist](../../operator-overloading-implementation-checklist.md),
+step 01). The built-in name `arguments` is not yet available in Goat source;
+call binding is a separate implementation step. The context API can retain a
+separate snapshot per call; another object holding a reference keeps that snapshot
+alive after its context is destroyed.
+
 ## Object.clone()
 
 This section describes shallow copying. Implemented access modifiers, method

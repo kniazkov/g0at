@@ -268,6 +268,8 @@ static test_description_t test_list[] = {
     {"clone method", test_clone_method},
     {"flat method", test_flat_method},
     {"array methods", test_array_methods},
+    {"read-only array", test_read_only_array},
+    {"context argument snapshot", test_context_argument_snapshot},
     {"array parser", test_array_parser},
     {"inheritance parser", test_inheritance_parser},
     {"inheritance bytecode", test_inheritance_bytecode},
