@@ -58,8 +58,8 @@ preinstall first and then invoke CPack directly with the generated config and
 Release configuration. CPack may still run preinstall internally, but no outer
 package Make process holds output synchronization resources around CPack.
 Parallelism and failure propagation remain enabled. This is a candidate
-workaround to investigate, not a proven root-cause fix. The full-check driver
-still exercises the original package target. Compare the next CI artifacts;
+workaround to investigate, not a proven root-cause fix. The Windows full-check driver now uses the same preinstall/direct-CPack
+sequence; other hosts retain the package target. Compare the next CI artifacts;
 a single green run is insufficient to close #507.
 
 ## Repeated packaging check
@@ -76,3 +76,19 @@ The `package-repetitions-<MSYSTEM>` artifact contains per-phase logs,
 The existing relocated-package test checks the final generated package. This
 series measures repeatability of the workaround, not the cause of the original
 nested Make stall, and does not by itself justify closing #507.
+
+## Clean Windows builds and full-check parity
+
+Windows full-check records `release-preinstall` and `release-package` separately;
+a failed preinstall prevents CPack and package validation, while independent
+full-check tests still run and the final result remains failure. Linux packaging
+is unchanged.
+
+Each Windows CI profile also configures two new Release trees, builds preinstall
+with four workers, invokes direct CPack, and validates each relocated package.
+An existing destination is rejected instead of deleted or reused. The
+`package-clean-<MSYSTEM>` artifacts retain phase logs, results, process snapshots
+and package test diagnostics. There is no retry; a failure stops the series.
+This adds six clean builds across the three profiles, distinct from the thirty
+warm packaging repetitions. It does not run the complete full-check test suite
+in each clean tree; the standard CI suites remain in the original build trees.

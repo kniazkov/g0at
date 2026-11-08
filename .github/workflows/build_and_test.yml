@@ -723,6 +723,23 @@ jobs:
           name: package-repetitions-${{ matrix.msystem }}
           path: build/ci/package-repetitions/**
           if-no-files-found: warn
+      - name: Check two clean Windows Release packages
+        timeout-minutes: 30
+        shell: msys2 {0}
+        run: bash scripts/repeat_windows_package.sh --clean
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: 4
+      - name: Preserve clean Windows packaging evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-clean-${{ matrix.msystem }}
+          path: |
+            build/ci/package-clean/**
+            build/package-clean-*/CMakeCache.txt
+            build/package-clean-*/Testing/Temporary/LastTest.log
+            build/package-clean-*/package-diagnostics/**
+          if-no-files-found: warn
       - name: Check relocated release package
         shell: msys2 {0}
         run: |

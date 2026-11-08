@@ -4,11 +4,21 @@
 set -euo pipefail
 source scripts/windows_shell_pid.sh
 root_pid=$(windows_shell_pid)
+driver=repeat_windows_package.cmake
 output=build/ci/package-repetitions
+observer_seconds=840
+if [[ ${1-} == --clean ]]; then
+    driver=clean_windows_package.cmake
+    output=build/ci/package-clean
+    observer_seconds=1740
+elif [[ $# != 0 ]]; then
+    printf 'Usage: %s [--clean]\n' "$0" >&2
+    exit 2
+fi
 mkdir -p "$output"
 rm -f "$output/stop"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/observe_windows_build.ps1 \
-    -RootProcessId "$root_pid" -OutputDirectory "$(cygpath -w "$PWD/$output")" \
+    -MaxSeconds "$observer_seconds" -RootProcessId "$root_pid" -OutputDirectory "$(cygpath -w "$PWD/$output")" \
     > "$output/observer-console.txt" 2>&1 &
 observer=$!
 finish() {
@@ -21,4 +31,4 @@ finish() {
     exit "$result"
 }
 trap finish EXIT
-cmake -DBUILD_DIR=build/release -DOUTPUT_DIR="$output" -P scripts/repeat_windows_package.cmake
+cmake -DBUILD_DIR=build/release -DOUTPUT_DIR="$output" -P "scripts/$driver"
