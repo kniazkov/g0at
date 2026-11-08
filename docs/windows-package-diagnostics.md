@@ -61,3 +61,18 @@ Parallelism and failure propagation remain enabled. This is a candidate
 workaround to investigate, not a proven root-cause fix. The full-check driver
 still exercises the original package target. Compare the next CI artifacts;
 a single green run is insufficient to close #507.
+
+## Repeated packaging check
+
+After the initial Release build, all three Windows profiles run ten additional
+preinstall + direct CPack pairs on the same build tree with four jobs. These are
+warm packaging runs, not ten clean compilations. The first failure stops the
+series and fails CI; no later success can hide it. Each phase has a 120-second
+limit, and the CI step has a 15-minute limit. Process observation remains active.
+
+The `package-repetitions-<MSYSTEM>` artifact contains per-phase logs,
+`results.tsv` (iteration, phase, UTC start, elapsed seconds, result), and
+`events.txt` written before each command so an interrupted phase is identifiable.
+The existing relocated-package test checks the final generated package. This
+series measures repeatability of the workaround, not the cause of the original
+nested Make stall, and does not by itself justify closing #507.

@@ -710,6 +710,19 @@ jobs:
             build/release/_CPack_Packages/**/PreinstallOutput.log
             build/release/_CPack_Packages/**/PreinstallOutput.log.verbose
           if-no-files-found: warn
+      - name: Repeat Windows Release packaging ten times
+        timeout-minutes: 15
+        shell: msys2 {0}
+        run: bash scripts/repeat_windows_package.sh
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: 4
+      - name: Preserve Windows package repetitions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-repetitions-${{ matrix.msystem }}
+          path: build/ci/package-repetitions/**
+          if-no-files-found: warn
       - name: Check relocated release package
         shell: msys2 {0}
         run: |
