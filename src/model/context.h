@@ -12,6 +12,7 @@
 #include "common/types.h"
 #include "exception.h"
 #include "object.h"
+#include "operator.h"
 
 #include <stdbool.h>
 
@@ -29,6 +30,13 @@ struct context_t {
     object_t *data;
     /** @brief Owned immutable snapshot of this call's actual values, or NULL outside a call. */
     object_t *arguments;
+
+    /** @brief Owned explicit this for this operator frame only, never inherited by scopes. */
+    object_t *operator_receiver;
+    /** @brief Post-return contract; discarded, not executed, during exception unwinding. */
+    bool operator_call;
+    operator_result_policy_t operator_policy;
+    instr_index_t operator_origin;
 
     /** @brief Inherited by retry descendants, discarded on return or exception unwinding. */
     bool native_disabled;

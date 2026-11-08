@@ -290,3 +290,14 @@ and checks that they stop before packaging/publication while retaining compiler
 diagnostics. Fixtures and logs are retained under `build/build-output-test/`.
 The existing `full_check_driver.cmake` controls exercise the same helper across
 all full-check build stages. Both controls run in Linux and Windows CI.
+
+## Operator dispatch foundation
+
+Select `ctest --test-dir build -L operator-dispatch --output-on-failure` for the
+12 C component cases in `operator_dispatch_testing`. They test direct handler
+lookup and calls, without enabling any operator opcode dispatch: receiver and
+lexical access, nested/finally continuations, strict result policies, stack and
+memory lifetime, builtin GC roots, and failed-file exception trace ownership.
+These assert-based contracts remain active in Release and are included in both
+the CI and local Release selections. See the [API contract](../docs/operator-dispatch-api.md)
+([на русском](../docs/operator-dispatch-api.ru.md)).

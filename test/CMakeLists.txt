@@ -568,3 +568,8 @@ add_test(NAME integration.unified_gbin
     "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/unified-gbin"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/unified_gbin.cmake")
 set_tests_properties(integration.unified_gbin PROPERTIES LABELS "integration;module" TIMEOUT 60)
+
+# Shared operator machinery is exercised without enabling operator opcodes (#494).
+add_executable(operator_dispatch_testing src/component/operator_dispatch_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(operator_dispatch_testing PRIVATE goat_validation m)

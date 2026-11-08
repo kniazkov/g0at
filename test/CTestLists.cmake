@@ -831,3 +831,8 @@ goat_scenario(format.vectors "format;format-vectors;migration-cleanup" TIMEOUT 6
 goat_scenario(format.vectors.controls "format;format-vectors;migration-cleanup" TIMEOUT 180 COMMAND
   "${CMAKE_COMMAND}" "-DGENERATOR=$<TARGET_FILE:format_vectors>" "-DROOT=${PROJECT_SOURCE_DIR}"
   "-DWORK=${CMAKE_BINARY_DIR}" -P "${PROJECT_SOURCE_DIR}/test/support/format_vectors_controls.cmake")
+
+foreach(operator_case lookup receiver continuation unwind nested builtin lexical lifetime builtin-gc result-trace builtin-policy failed-file)
+  goat_suite(component.operator_dispatch.${operator_case} "component;operator-dispatch"
+    "$<TARGET_FILE:operator_dispatch_testing>" "${operator_case}")
+endforeach()
