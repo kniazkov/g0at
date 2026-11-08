@@ -7,9 +7,12 @@
 
 #include "context.h"
 
+#include "array.h"
 #include "lib/memory/allocate.h"
 #include "object.h"
 #include "process.h"
+
+#include <assert.h>
 
 object_t *get_this_key() {
     static object_static_string_t storage;
@@ -49,6 +52,7 @@ context_t *create_context_with_protos_in_file(process_t *process,
     set_inheritance_prototype_count(ctx->data, 0);
     init_function_access_in_file(&ctx->access, module, file_id);
     add_function_access_domain(&ctx->access, get_object_access_domain(ctx->data));
+    ctx->arguments = NULL;
     ctx->native_disabled = caller->native_disabled;
     ctx->file_initialization_boundary = false;
     ctx->iteration_index = 0;
@@ -79,10 +83,16 @@ context_t *destroy_context(context_t *context) {
        which may still be reachable from the program (e.g. returned from the call or captured
        by a closure). */
     DECREF(context->data);
+    DECREFIF(context->arguments);
     DECREFIF(context->pending_value);
     release_exception_trace(context->pending_trace);
     release_module_identity(context->module);
     context_t *previous = context->previous;
     FREE(context);
     return previous;
+}
+
+void capture_context_arguments(context_t *context, object_array_t arguments) {
+    assert(!context->arguments);
+    context->arguments = create_read_only_array_object(context->data->process, arguments);
 }

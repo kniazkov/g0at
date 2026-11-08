@@ -28,3 +28,9 @@ array_to_string(object_t *obj, object_t *separator_object, const function_access
 
 /** @brief Checks index arity, type and current bounds without reading or writing an element. */
 operation_result_t check_array_index_write(object_t *obj, object_array_t indices);
+
+/** @brief Copies and retains borrowed values in an ordinary, shallow read-only array. */
+object_t *create_read_only_array_object(process_t *process, object_array_t elements);
+
+/** @brief Reports whether this array rejects element mutations. */
+bool is_read_only_array(const object_t *object);

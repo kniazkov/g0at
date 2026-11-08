@@ -10,6 +10,8 @@
 #include "graph/visualization.h"
 #include "lib/memory/allocate.h"
 #include "lib/memory/arena.h"
+#include "model/array.h"
+#include "model/context.h"
 #include "model/process.h"
 #include "model/thread.h"
 #include "test_macro.h"
@@ -282,6 +284,123 @@ bool test_array_methods(void) {
     DECREF(second);
     remove_gc_root(proc, array);
     DECREF(array);
+    destroy_process(proc);
+    return true;
+}
+
+/** @brief Checks the exact exception and releases its owned result. */
+static bool immutable_result(operation_result_t result) {
+    bool valid = result.is_exception && result.value == get_exception_immutable_object();
+    DECREF(result.value);
+    return valid;
+}
+
+bool test_read_only_array(void) {
+    process_t *proc = create_process();
+    object_t *zero = get_integer_zero();
+    object_t *values[] = {get_static_integer_object(3), zero, get_static_integer_object(1)};
+    const gchar_t *mutations[] =
+        {U"push", U"prepend", U"insert", U"pop", U"remove", U"clear", U"reverse", U"sort"};
+    for (size_t count = 0; count <= 3; count++) {
+        object_t *array = create_read_only_array_object(proc, (object_array_t){values, count});
+        ASSERT(array->vtbl->type == TYPE_ARRAY && is_read_only_array(array));
+        ASSERT(get_array_elements(array).size == count);
+        ASSERT(get_object_integer_value(get_object_property(array, get_string_length())).value
+               == (int64_t)count);
+        ASSERT(immutable_result(
+            array->vtbl->set_index(proc, array, (object_array_t){&zero, 1}, zero)));
+        ASSERT(immutable_result(check_array_index_write(array, (object_array_t){&zero, 1})));
+        ASSERT(immutable_result(insert_array_elements(array, 0, NULL, 0)));
+        ASSERT(immutable_result(insert_array_elements(array, 0, &zero, 1)));
+        ASSERT(immutable_result(remove_array_element(array, 0)));
+        ASSERT(immutable_result(clear_array_elements(array)));
+        ASSERT(immutable_result(reverse_array_elements(array)));
+        ASSERT(immutable_result(sort_array_elements(array)));
+        for (size_t method = 0; method < sizeof(mutations) / sizeof(*mutations); method++) {
+            size_t argc = method == 2 || method == 4 ? 1 : 0;
+            ASSERT(immutable_result(array_call(proc, array, mutations[method], &zero, argc)));
+            /* Detached methods use the same guard with the array as their first argument. */
+            object_t *key = create_string_object(
+                proc,
+                (string_value_t){mutations[method], STRLEN(mutations[method]), false});
+            object_t *function = get_object_property(get_array_proto(), key);
+            DECREF(key);
+            INCREF(array);
+            push_object_onto_stack(proc->main_thread->data_stack, array);
+            if (argc) {
+                INCREF(zero);
+                push_object_onto_stack(proc->main_thread->data_stack, zero);
+            }
+            ASSERT(!call_object(function, (uint16_t)(argc + 1), NULL, proc->main_thread));
+            ASSERT(proc->main_thread->exception.value == get_exception_immutable_object());
+            clear_exception(&proc->main_thread->exception);
+        }
+        ASSERT(immutable_result(array_call(proc, array, U"push", &zero, 1)));
+        ASSERT(immutable_result(array_call(proc, array, U"prepend", &zero, 1)));
+        for (size_t i = 0; i < count; i++) {
+            object_t *index = get_static_integer_object((int64_t)i);
+            operation_result_t result =
+                array->vtbl->get_index(proc, array, (object_array_t){&index, 1});
+            ASSERT(!result.is_exception && result.value == values[i]);
+            DECREF(result.value);
+        }
+        /* Read operations and independent copies retain ordinary array semantics. */
+        operation_result_t result = array_call(proc, array, U"slice", NULL, 0);
+        ASSERT(!result.is_exception && !is_read_only_array(result.value));
+        object_t *copy = result.value;
+        result = insert_array_elements(copy, count, &zero, 1);
+        ASSERT(!result.is_exception);
+        DECREF(result.value);
+        ASSERT(get_array_elements(array).size == count);
+        DECREF(copy);
+        copy = clone_object(proc, array);
+        ASSERT(!is_read_only_array(copy) && get_array_elements(copy).size == count);
+        DECREF(copy);
+        DECREF(array);
+    }
+    destroy_process(proc);
+    return true;
+}
+
+bool test_context_argument_snapshot(void) {
+    process_t *proc = create_process();
+    context_t *outer = proc->main_thread->context;
+    collect_garbage(proc);
+    size_t baseline = proc->objects.size;
+    for (size_t pass = 0; pass < 20; pass++) {
+        context_t *frame = create_context(proc, outer, NULL);
+        proc->main_thread->context = frame;
+        object_t *child = create_array_object(proc, (object_array_t){0});
+        object_t *values[] = {child, get_null_object(), child};
+        capture_context_arguments(frame, (object_array_t){values, 3});
+        object_t *snapshot = frame->arguments;
+        ASSERT(snapshot && get_array_elements(snapshot).size == 3);
+        values[0] = get_static_integer_object(1); /* Parameter/source storage is independent. */
+        DECREF(child);
+        collect_garbage(proc); /* The context, not the stack, roots the snapshot. */
+        ASSERT(frame->arguments == snapshot && get_array_elements(snapshot).items[0] == child);
+        operation_result_t result = insert_array_elements(child, 0, &snapshot, 1);
+        ASSERT(!result.is_exception); /* Shallow immutability permits child mutation and cycles. */
+        DECREF(result.value);
+        context_t *nested = create_context(proc, frame, NULL);
+        proc->main_thread->context = nested;
+        capture_context_arguments(nested, (object_array_t){0});
+        ASSERT(nested->arguments != snapshot && !get_array_elements(nested->arguments).size);
+        collect_garbage(proc);
+        proc->main_thread->context = destroy_context(nested);
+        ASSERT(get_array_elements(get_array_elements(snapshot).items[0]).items[0] == snapshot);
+        /* Model an escaped strong reference across the common frame destruction path. */
+        INCREF(snapshot);
+        add_gc_root(proc, snapshot);
+        proc->main_thread->context = destroy_context(frame);
+        collect_garbage(proc);
+        ASSERT(get_array_elements(snapshot).size == 3 && is_read_only_array(snapshot));
+        ASSERT(immutable_result(clear_array_elements(snapshot)));
+        remove_gc_root(proc, snapshot);
+        DECREF(snapshot);
+        collect_garbage(proc);
+        ASSERT(proc->objects.size == baseline);
+    }
     destroy_process(proc);
     return true;
 }
