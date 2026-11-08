@@ -96,3 +96,13 @@ void capture_context_arguments(context_t *context, object_array_t arguments) {
     assert(!context->arguments);
     context->arguments = create_read_only_array_object(context->data->process, arguments);
 }
+
+object_t *get_context_arguments(const context_t *context) {
+    for (; context; context = context->previous) {
+        if (context->file_initialization_boundary)
+            return NULL;
+        if (context->control_flow == FLOW_RETURN)
+            return context->arguments;
+    }
+    return NULL;
+}

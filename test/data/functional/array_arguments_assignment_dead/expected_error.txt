@@ -1,0 +1,1 @@
+Error in 'program.goat', 1.21: Built-in constant 'arguments' cannot be assigned or redeclared

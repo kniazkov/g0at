@@ -1,0 +1,7 @@
+const inspect = func(n) {
+    var alias = arguments;
+    return n;
+};
+inspect(1);
+const numeric = func(n) { return n + 1; };
+numeric(1);

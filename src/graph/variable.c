@@ -63,6 +63,9 @@ static relation_type_t get_relation_type(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const variable_t *expr = (const variable_t *)node;
+    /* Actual arity/values are not described by formal-parameter summaries. */
+    if (is_arguments_name(expr->name))
+        return make_top_element();
     if (is_launch_constant_name(expr->name))
         return expr->name.length == 8 ? make_boolean_element() : make_string_element();
     if (expr->dynamic_lookup)
@@ -102,7 +105,8 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
     uint32_t index = add_string_to_data_segment_ex(data, expr->name);
-    if (expr->declarator && expr->declarator->modifier != ACCESS_FILE && !expr->dynamic_lookup)
+    if (!is_arguments_name(expr->name) && expr->declarator
+        && expr->declarator->modifier != ACCESS_FILE && !expr->dynamic_lookup)
         return add_instruction(
             code,
             (instruction_t){.opcode = BLOAD,
@@ -144,7 +148,7 @@ generate_variable_write_check(const node_t *node, code_builder_t *code, data_bui
 static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     const variable_t *var = (const variable_t *)node;
-    if (var->dynamic_lookup)
+    if (is_arguments_name(var->name) || var->dynamic_lookup)
         return make_top_element();
     if (var->name.length == 4 && !MEMCMP(var->name.data, U"this", 4))
         return make_user_defined_object_element();
@@ -161,7 +165,9 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
-    if (((const variable_t *)node)->dynamic_lookup)
+    const variable_t *variable = (const variable_t *)node;
+    /* The typed native ABI cannot yet preserve actual arity or extra arguments. */
+    if (is_arguments_name(variable->name) || variable->dynamic_lookup)
         return false;
     if (context && context->graph && value) {
         c_value_type_t type = classify_c_value_type(value->type);

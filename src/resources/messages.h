@@ -77,6 +77,8 @@ typedef struct {
     const gchar_t const *invalid_function_argument;
     const gchar_t const *invalid_parenthesized_expression;
     const gchar_t const *reserved_this_name;
+    const gchar_t const *reserved_arguments_name;
+    const gchar_t const *arguments_outside_function;
     const gchar_t const *reserved_launch_constant;
     const gchar_t const *variable_used_before_declaration;
     const gchar_t const *implicit_constant_declaration_invalid;

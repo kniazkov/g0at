@@ -2,7 +2,7 @@
 
 Планирование: [#491](https://github.com/kniazkov/g0at/issues/491). [Окончательная спецификация](operator-overloading-specification.md).
 
-Сверка выполнена 7 ноября 2026 по дереву [`f2302f5ae4c9d27bd5de829a6e345161ead4fc26`](https://github.com/kniazkov/g0at/tree/f2302f5ae4c9d27bd5de829a6e345161ead4fc26). Это статическая сверка кода и плана: реализация ещё не выполнена, runtime-тесты новых возможностей не запускались.
+Сверка выполнена 7 ноября 2026 по дереву [`f2302f5ae4c9d27bd5de829a6e345161ead4fc26`](https://github.com/kniazkov/g0at/tree/f2302f5ae4c9d27bd5de829a6e345161ead4fc26). Ниже сохранена исходная статическая сверка кода и плана; выполненные этапы и результаты проверок отмечаются в списке задач.
 
 ## Правила выполнения
 
@@ -16,7 +16,7 @@
 
 ## Порядок задач
 
-- [ ] 01. [#492 — Массив arguments: неизменяемое хранение и время жизни](https://github.com/kniazkov/g0at/issues/492). Зависимости: нет.
+- [x] 01. [#492 — Массив arguments: неизменяемое хранение и время жизни](https://github.com/kniazkov/g0at/issues/492). Зависимости: нет. Реализован фундамент хранения в [PR #510](https://github.com/kniazkov/g0at/pull/510); merge `6065d657`, [CI master](https://github.com/kniazkov/g0at/actions/runs/42488839322) и [vectors](https://github.com/kniazkov/g0at/actions/runs/42488839333) зелёные. Привязка имени и сценарии вызовов на исходном языке относятся к #493.
 - [ ] 02. [#493 — arguments: привязка всех фактических аргументов в вызовах VM](https://github.com/kniazkov/g0at/issues/493). Зависимости: #492.
 - [ ] 03. [#494 — Операторы: поиск функций, права доступа и безопасное продолжение вызова](https://github.com/kniazkov/g0at/issues/494). Зависимости: #493.
 - [ ] 04. [#495 — Анализатор: консервативная семантика пользовательских операторов](https://github.com/kniazkov/g0at/issues/495). Зависимости: #494.

@@ -108,3 +108,5 @@ context_t *destroy_context(context_t *context);
 
 /** @brief Captures borrowed actual values once, before parameter binding; excludes this. */
 void capture_context_arguments(context_t *context, object_array_t arguments);
+/** @brief Borrowed actual values for the innermost call; never crosses a file initializer. */
+object_t *get_context_arguments(const context_t *context);

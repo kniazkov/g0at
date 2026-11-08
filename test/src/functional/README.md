@@ -16,6 +16,8 @@ framework; input fixtures remain read-only in `test/data/functional`.
 | Same: negative fixtures compiled at both optimization levels with exact status/stdout/stderr | `native.index` |
 | Same: nine invalid access declarations in English and Russian | `native.index` |
 | Same: three definite access violations × both languages × both optimization levels; declaration location, no `0:0`, no output artifact | `native.index` |
+| Arguments: exported VM functions plus native scalar sibling in a saved module; source/descriptor removed, compiler unavailable, two native successes and no retries | `native.index` |
+| Arguments: reserved module declaration and unreachable outside-function read fail without publishing bytecode | `native.index` |
 
 Build and run from the repository root:
 

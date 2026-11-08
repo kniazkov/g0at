@@ -258,20 +258,22 @@ static bool writes_pending_constant(const node_t *node,
     return false;
 }
 
-/** @brief Reserved launch constants cannot be shadowed, including hidden binders. */
-static void check_launch_declaration(const declarator_t *decl,
-                                     parser_memory_t *memory,
-                                     compilation_error_t **errors) {
-    if (!is_launch_constant_name(decl->name))
+/** @brief Reserved built-in names cannot be shadowed, including hidden binders. */
+static void check_reserved_declaration(const declarator_t *decl,
+                                       parser_memory_t *memory,
+                                       compilation_error_t **errors) {
+    if (!is_launch_constant_name(decl->name) && !is_arguments_name(decl->name))
         return;
     const node_t *positioned = &decl->base;
     while (positioned->parent && !positioned->position)
         positioned = positioned->parent;
-    compilation_error_t *error = create_error_from_node(memory->errors,
-                                                        positioned,
-                                                        ERROR,
-                                                        get_messages()->reserved_launch_constant,
-                                                        decl->name.data);
+    compilation_error_t *error = create_error_from_node(
+        memory->errors,
+        positioned,
+        ERROR,
+        is_arguments_name(decl->name) ? get_messages()->reserved_arguments_name
+                                      : get_messages()->reserved_launch_constant,
+        decl->name.data);
     error->next = *errors;
     *errors = error;
 }
@@ -293,7 +295,7 @@ static void bind_variables_from_node_and_children(node_t *node,
                                               errors,
                                               options);
         declarator_t *decl = get_catch_declarator(node);
-        check_launch_declaration(decl, memory, errors);
+        check_reserved_declaration(decl, memory, errors);
         add_symbol_to_scope(decl->base.scope, decl->name.data, decl);
         bind_variables_from_node_and_children(get_node_child(node, 1),
                                               memory,
@@ -309,7 +311,7 @@ static void bind_variables_from_node_and_children(node_t *node,
                                               errors,
                                               options);
         declarator_t *decl = get_for_in_declarator(node);
-        check_launch_declaration(decl, memory, errors);
+        check_reserved_declaration(decl, memory, errors);
         add_symbol_to_scope(decl->base.scope, decl->name.data, decl);
         bind_variables_from_node_and_children(get_node_child(node, 3),
                                               memory,
@@ -320,13 +322,37 @@ static void bind_variables_from_node_and_children(node_t *node,
     }
     if (is_declarator(node->vtbl->type)) {
         declarator_t *declarator = (declarator_t *)node;
-        check_launch_declaration(declarator, memory, errors);
+        check_reserved_declaration(declarator, memory, errors);
         add_symbol_to_scope(node->scope, declarator->name.data, declarator);
     } else if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
         /* Bind nested functions later so closures can refer to later declarations. */
         return;
     } else if (node->vtbl->type == NODE_VARIABLE) {
         variable_t *var = (variable_t *)node;
+        if (is_arguments_name(var->name)) {
+            /* This builtin is call-local even inside receiver/inheritance scopes. */
+            var->declarator = get_builtin_declarator();
+            var->dynamic_lookup = false;
+            const node_t *target = node;
+            while (target->parent && target->parent->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
+                target = target->parent;
+            const node_t *parent = target->parent;
+            node_type_t type = parent ? parent->vtbl->type : NODE_ROOT;
+            bool write = is_compound_assignment_target(target)
+                         || (type == NODE_SIMPLE_ASSIGNMENT && get_node_child(parent, 0) == target)
+                         || (type >= NODE_PREFIX_INCREMENT && type <= NODE_POSTFIX_DECREMENT);
+            if (write || !is_inside_function(node)) {
+                compilation_error_t *error =
+                    create_error_from_node(memory->errors,
+                                           node,
+                                           ERROR,
+                                           write ? get_messages()->reserved_arguments_name
+                                                 : get_messages()->arguments_outside_function);
+                error->next = *errors;
+                *errors = error;
+            }
+            return;
+        }
         if (is_launch_constant_name(var->name)) {
             var->declarator = get_builtin_declarator();
             var->dynamic_lookup = false;

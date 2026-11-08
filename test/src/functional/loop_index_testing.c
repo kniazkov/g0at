@@ -269,12 +269,98 @@ static void access_errors(scenario_run_t *run, state_t *state) {
     }
 }
 
+/** @brief Arguments stay in the VM without disabling an unrelated native specialization. */
+static void native_arguments(scenario_run_t *run, state_t *state) {
+    const char *work = scenario_work_directory(scenario_run_context(run));
+    const char *directory = language_join(run, work, "native-arguments");
+    language_directory(run, directory);
+    const char *source = language_join(run, directory, "program.goat");
+    const char *binary = language_join(run, directory, "program.gbin");
+    const char *report_path = language_join(run, directory, "native.report");
+    const char *library = language_join(run, directory, "library.goat");
+    const char *descriptor = language_join(run, directory, "library.gmod");
+    const char *modules = language_join(run, directory, "modules");
+    const char *module_code =
+        "external inspect = func(n) { if (!!arguments) return n; return 99; };\n"
+        "external snapshot = func(x,y) { return arguments; };\n"
+        "external numeric = func(n) { return n + 1; };\n"
+        "numeric(1);\n";
+    const char *module_descriptor = "{\"formatVersion\":1,\"name\":\"arguments-test\","
+                                    "\"version\":\"1\",\"main\":\"library.goat\"}";
+    const char *code = "const lib = import \"arguments-test@1\";\n"
+                       "println(lib.inspect());\n"
+                       "println(lib.inspect(7,8,9));\n"
+                       "println(lib.numeric(41));\n"
+                       "println(lib.snapshot(4,5,6));\n"
+                       "println(lib.snapshot());\n";
+    const char *expected = "99\n7\n42\n[4,5,6]\n[ ]\n";
+    const char *const *environment = NULL;
+    language_write(run, descriptor, module_descriptor, strlen(module_descriptor));
+    static const char *invalid[] = {"var arguments = 1;", "if (false) println(arguments);"};
+    static const char *errors[] = {
+        "Fatal error in 'library.goat', 1.1: Built-in constant 'arguments' cannot be assigned or "
+        "redeclared\n",
+        "Error in 'library.goat', 1.20: Built-in 'arguments' is only available inside a "
+        "function\n"};
+    for (size_t i = 0; i < 2; i++) {
+        language_write(run, library, invalid[i], strlen(invalid[i]));
+        scenario_command_result_t result = COMMAND("--lang",
+                                                   "en",
+                                                   "build",
+                                                   descriptor,
+                                                   "--native",
+                                                   "off",
+                                                   "--module-dir",
+                                                   modules);
+        language_check(run, result, 1, "", 0, errors[i], strlen(errors[i]));
+        scenario_require(
+            run,
+            !language_exists(run, language_join(run, modules, "arguments-test/1.gbin")),
+            "invalid arguments module published bytecode");
+    }
+    language_write(run, library, module_code, strlen(module_code));
+    CHECK(COMMAND("--lang", "en", "build", descriptor, "--native", "auto", "--module-dir", modules),
+          "",
+          0);
+    language_write(run, source, code, strlen(code));
+    CHECK(COMMAND("--lang", "en", "--compile", "--native", "auto", "--module-dir", modules, source),
+          "",
+          0);
+    language_remove(run, source);
+    language_remove(run, library);
+    language_remove(run, descriptor);
+    environment = language_environment(run, true);
+    CHECK(COMMAND("--lang", "en", "--run", "--native", "off", "--module-dir", modules, binary),
+          expected,
+          strlen(expected));
+    CHECK(COMMAND("--lang",
+                  "en",
+                  "--run",
+                  "--native",
+                  "auto",
+                  "--save-native",
+                  report_path,
+                  "--module-dir",
+                  modules,
+                  binary),
+          expected,
+          strlen(expected));
+    size_t size;
+    const char *report = language_read(run, report_path, &size);
+    field(run, report, "preparation", "ready");
+    field(run, report, "attempts", "2");
+    field(run, report, "succeeded", "2");
+    field(run, report, "retries", "0");
+    puts("[ ok ] persisted arguments use VM alongside a successful native sibling");
+}
+
 static void body(scenario_run_t *run, void *opaque) {
     state_t *state = opaque;
     fixtures(run, state);
-    if (state->index)
+    if (state->index) {
         access_errors(run, state);
-    else
+        native_arguments(run, state);
+    } else
         native_loops(run, state);
 }
 

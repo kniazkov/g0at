@@ -1,0 +1,17 @@
+const inspect = func(x,y) {
+    println(x); println(y); println(arguments); println(arguments.length);
+};
+inspect(); inspect(11); inspect(11,22); inspect(11,22,33);
+const other = func(other) { println(other == null); println(arguments.length); };
+other(); other(null);
+const obj = {};
+obj.arguments = 7;
+println(obj.arguments);
+obj.arguments = 8;
+println(obj["arguments"]);
+const method = { var value = 42; const read = func(x) {
+    println(this.value); println(arguments); return arguments.length;
+}; };
+println(method.read(9,10));
+try { sqrt(); } catch(e) { println(e); }
+try { Array.push(); } catch(e) { println(e); }
