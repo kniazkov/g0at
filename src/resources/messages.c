@@ -117,6 +117,8 @@ static messages_t english = {
     .invalid_parenthesized_expression = U"Inside parentheses there must be exactly one expression",
     .reserved_this_name =
         U"The name 'this' is reserved for the current scope object and cannot be declared",
+    .reserved_arguments_name = U"Built-in constant 'arguments' cannot be assigned or redeclared",
+    .arguments_outside_function = U"Built-in 'arguments' is only available inside a function",
     .reserved_launch_constant = U"Built-in constant '%s' cannot be assigned or redeclared",
     .variable_used_before_declaration = U"Variable '%s' is used before its declaration",
     .implicit_constant_declaration_invalid =
@@ -251,6 +253,9 @@ static messages_t russian = {
         U"Внутри круглых скобок должно быть выражение, причем ровно одно",
     .reserved_this_name = U"Имя 'this' зарезервировано для объекта текущей области видимости и не "
                           U"может быть объявлено",
+    .reserved_arguments_name =
+        U"Встроенная константа 'arguments' не допускает присваивания или переобъявления",
+    .arguments_outside_function = U"Встроенное имя 'arguments' доступно только внутри функции",
     .reserved_launch_constant =
         U"Встроенная константа '%s' не допускает присваивания или переобъявления",
     .variable_used_before_declaration = U"Переменная '%s' используется до ее объявления",

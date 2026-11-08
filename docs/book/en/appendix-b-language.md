@@ -59,7 +59,7 @@ Power needs qualification: `-2 ** 2` means `-(2 ** 2)`, but `2 ** -2` is also va
 
 Ordinary binary operands are evaluated left to right. `&&` skips the right operand when the left is false; `||` skips it when the left is true. Both return booleans. A call evaluates arguments left to right, then loads the called function. Assignment evaluates its right side and returns the assigned value. Prefix update returns the new value; postfix update returns the old one.
 
-Missing user-function parameters receive `null`; extra arguments are evaluated and discarded. Built-ins instead require their minimum argument counts. An exception interrupts normal evaluation: operands not yet started are not executed.
+Missing user-function parameters receive `null`; all actual arguments, including extras, remain available through `arguments`. Built-ins instead require their minimum argument counts. An exception interrupts normal evaluation: operands not yet started are not executed.
 
 <a id="section-b-4"></a>
 
@@ -165,12 +165,50 @@ Element replacement and mutating methods reject changes, including calls that
 would otherwise leave an empty array unchanged. Ordinary array literals remain
 mutable.
 
-This is the storage foundation for the planned `arguments` feature
-([implementation checklist](../../operator-overloading-implementation-checklist.md),
-step 01). The built-in name `arguments` is not yet available in Goat source;
-call binding is a separate implementation step. The context API can retain a
-separate snapshot per call; another object holding a reference keeps that snapshot
-alive after its context is destroyed.
+### Function arguments
+
+Every Goat function call has a constant built-in `arguments` binding. It holds a
+read-only array of all actual arguments in source order, including those beyond
+the named parameters. `this` is not an array element. Missing named parameters
+receive `null`, but the array is not padded: a call with no arguments has length
+zero, while an explicit `null` produces one element.
+
+```goat
+const inspect = func(x, y) {
+    x = 99;
+    println(arguments.length); // 1
+    println(arguments[0]);     // 7
+    println(y);                // null
+    return arguments;
+};
+const saved = inspect(7);
+println(saved.length);         // 1, still valid after return
+```
+
+Named parameters and array slots are independent. Both initially refer to the
+same passed object, so mutating that object remains visible through either
+reference. Repeated reads in one call return the same array. Nested blocks,
+loops, catch and finally bodies use their enclosing call's array; a nested
+function call has its own. To capture the outer array in a closure, save it in an
+ordinary variable such as `const outerArgs = arguments` first.
+
+Bare `arguments` outside a function is a compilation error, even in a dead branch.
+The name cannot be declared as a variable, constant, parameter, catch binding or
+for-in binding in any scope. Assigning to it or applying compound assignment or
+`++`/`--` is also a compilation error. Ordinary properties such as `obj.arguments`
+and `obj["arguments"]` are allowed and do not shadow the built-in binding.
+
+Element writes and mutating Array methods throw `IMMUTABLE_OBJECT`. This includes
+empty/no-op calls and detached methods. Reads, length, iteration and read-only
+methods retain ordinary array behavior; `slice()` and `clone()` create independent
+mutable arrays. A retained array survives returns, closures and exception
+unwinding under the ordinary object-lifetime rules.
+
+The binding works in the VM, with and without optimization, and in saved
+bytecode. Functions that need it at runtime stay in the VM when native execution is enabled;
+unrelated eligible functions can still run natively. Native argument capture is
+a separate step, [#502](https://github.com/kniazkov/g0at/issues/502), and is not
+claimed by this VM implementation.
 
 ## Object.clone()
 

@@ -1,0 +1,20 @@
+const outer = func(x) {
+    const outerArgs = arguments;
+    const nested = func(y) {
+        println(arguments);
+        println(arguments == outerArgs);
+        return outerArgs;
+    };
+    println(nested(20,21) == arguments);
+    return func(z) { println(arguments); return outerArgs; };
+};
+const escaped = outer(10,11);
+println(escaped(30));
+println(escaped());
+const recurse = func(n) {
+    const saved = arguments;
+    if (n > 0) recurse(n-1,n);
+    println(arguments);
+    println(saved == arguments);
+};
+recurse(2,99);

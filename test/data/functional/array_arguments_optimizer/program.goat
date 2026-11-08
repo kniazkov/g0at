@@ -1,0 +1,11 @@
+const inspect = func(x) {
+    var alias = arguments;
+    if (arguments) println("arguments true"); else println("arguments false");
+    if (alias) println("alias true"); else println("alias false");
+    println(!arguments);
+    println(!!arguments);
+    try { println(arguments + 1); } catch(e) { println(e); }
+    try { println(alias + 1); } catch(e) { println(e); }
+    println(arguments);
+};
+inspect(); inspect(null);

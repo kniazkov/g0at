@@ -1,0 +1,1 @@
+for (const arguments in [1]) {}

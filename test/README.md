@@ -229,6 +229,15 @@ The former Python loop/index runners are now `loop_index_testing`, registered as
 `native.for` and `native.index` (label `language-roundtrip`). See the
 [scenario correspondence and parity commands](src/functional/README.md).
 
+The `array_arguments_*` fixtures cover actual arity, immutable call snapshots,
+closures, recursion, unwinding, optimizer truthiness, and reserved-name errors.
+They run with `none` and `all` optimization, regenerated source, and saved VM
+bytecode with the source deleted and compiler unavailable. `native.index` also
+builds an exported-function module and a caller, removes both sources and the
+descriptor, and checks VM/native-auto parity with a genuinely native scalar
+sibling (two successful native calls, no retries). Invalid module-level
+`arguments` declarations and unreachable reads must not publish bytecode.
+
 ### Module runtime requirements (#389)
 
 `module_delivery_requirements_scenarios` preserves real compiler/selector audits

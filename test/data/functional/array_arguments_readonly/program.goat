@@ -1,0 +1,16 @@
+const get = func() { return arguments; };
+const a = get(3,1,2);
+try { a[0] = 9; } catch(e) { println(e); }
+try { a[0] += 1; } catch(e) { println(e); }
+try { a.push(4); } catch(e) { println(e); }
+try { a.prepend(4); } catch(e) { println(e); }
+try { a.insert(1,4); } catch(e) { println(e); }
+try { a.remove(0); } catch(e) { println(e); }
+try { a.pop(); } catch(e) { println(e); }
+try { a.clear(); } catch(e) { println(e); }
+try { a.reverse(); } catch(e) { println(e); }
+try { a.sort(); } catch(e) { println(e); }
+try { a.length = 0; } catch(e) { println(e); }
+println(a);
+println(a.slice());
+for (const value in a) println(value);

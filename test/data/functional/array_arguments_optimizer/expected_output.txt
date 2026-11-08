@@ -1,0 +1,14 @@
+arguments false
+alias false
+true
+false
+INVALID_OPERATION
+INVALID_OPERATION
+[ ]
+arguments true
+alias true
+false
+true
+INVALID_OPERATION
+INVALID_OPERATION
+[null]

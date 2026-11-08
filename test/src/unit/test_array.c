@@ -365,16 +365,19 @@ bool test_read_only_array(void) {
 bool test_context_argument_snapshot(void) {
     process_t *proc = create_process();
     context_t *outer = proc->main_thread->context;
+    ASSERT(!get_context_arguments(outer));
     collect_garbage(proc);
     size_t baseline = proc->objects.size;
     for (size_t pass = 0; pass < 20; pass++) {
         context_t *frame = create_context(proc, outer, NULL);
+        frame->control_flow = FLOW_RETURN;
         proc->main_thread->context = frame;
         object_t *child = create_array_object(proc, (object_array_t){0});
         object_t *values[] = {child, get_null_object(), child};
         capture_context_arguments(frame, (object_array_t){values, 3});
         object_t *snapshot = frame->arguments;
         ASSERT(snapshot && get_array_elements(snapshot).size == 3);
+        ASSERT(get_context_arguments(frame) == snapshot);
         values[0] = get_static_integer_object(1); /* Parameter/source storage is independent. */
         DECREF(child);
         collect_garbage(proc); /* The context, not the stack, roots the snapshot. */
@@ -384,8 +387,17 @@ bool test_context_argument_snapshot(void) {
         DECREF(result.value);
         context_t *nested = create_context(proc, frame, NULL);
         proc->main_thread->context = nested;
+        ASSERT(get_context_arguments(nested) == snapshot);
+        nested->control_flow = FLOW_CLEANUP;
+        ASSERT(get_context_arguments(nested) == snapshot);
+        nested->file_initialization_boundary = true;
+        ASSERT(!get_context_arguments(nested));
+        nested->file_initialization_boundary = false;
+        nested->control_flow = FLOW_RETURN;
+        ASSERT(!get_context_arguments(nested)); /* No fall-through to an outer function. */
         capture_context_arguments(nested, (object_array_t){0});
         ASSERT(nested->arguments != snapshot && !get_array_elements(nested->arguments).size);
+        ASSERT(get_context_arguments(nested) == nested->arguments);
         collect_garbage(proc);
         proc->main_thread->context = destroy_context(nested);
         ASSERT(get_array_elements(get_array_elements(snapshot).items[0]).items[0] == snapshot);

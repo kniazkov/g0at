@@ -1,0 +1,15 @@
+const inspect = func(x,y) {
+    x = 99;
+    println(arguments[0]);
+    const first = arguments;
+    println(first == arguments);
+    y.value = 22;
+    println(arguments[1].value);
+    arguments[1].value = 33;
+    println(y.value);
+    y = {};
+    println(arguments[1].value);
+    return arguments;
+};
+const retained = inspect(10,{var value = 11;},30);
+println(retained[0]); println(retained[1].value); println(retained[2]);

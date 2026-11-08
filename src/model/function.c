@@ -481,9 +481,11 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
     uint16_t index;
     object_t **popped = arg_count ? ALLOC(arg_count * sizeof(*popped)) : NULL;
     for (size_t i = 0; i < arg_count; i++)
-        popped[i] = pop_object_from_stack(thread->data_stack);
+        popped[arg_count - 1 - i] = pop_object_from_stack(thread->data_stack);
+    /* Snapshot every actual value before parameters can change or extras are released. */
+    capture_context_arguments(ctx, (object_array_t){popped, arg_count});
     for (index = 0; index < arg_count && index < dfobj->arg_count; index++) {
-        object_t *arg = popped[arg_count - 1 - index];
+        object_t *arg = popped[index];
         create_object_property(ctx->data, dfobj->arg_names[index], arg, false);
         DECREF(arg);
     }
@@ -492,7 +494,7 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
     }
     /* Extra actual arguments have been evaluated but have no parameter binding. */
     for (size_t extra = dfobj->arg_count; extra < arg_count; extra++) {
-        object_t *arg = popped[arg_count - 1 - extra];
+        object_t *arg = popped[extra];
         DECREF(arg);
     }
     FREE(popped);

@@ -1,0 +1,1 @@
+Error in 'program.goat', 1.12: Built-in 'arguments' is only available inside a function

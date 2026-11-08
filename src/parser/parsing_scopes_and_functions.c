@@ -61,11 +61,13 @@ init_function_with_args(token_t *token, parser_memory_t *memory, token_groups_t 
             FREE_STRING(text);
             goto cleanup;
         }
-        if (name_is_reserved_this(arg_token->text)) {
+        if (name_is_reserved_this(arg_token->text) || is_arguments_name(arg_token->text)) {
             error = create_error_from_token(memory->errors,
                                             token,
                                             CRITICAL,
-                                            get_messages()->reserved_this_name);
+                                            is_arguments_name(arg_token->text)
+                                                ? get_messages()->reserved_arguments_name
+                                                : get_messages()->reserved_this_name);
             goto cleanup;
         }
         arg_list[arg_count++] = arg_token->text;

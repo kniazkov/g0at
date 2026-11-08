@@ -76,11 +76,13 @@ parsing_variable_declarations(token_t *keyword, parser_memory_t *memory, token_g
             }
         }
         assert(item != NULL);
-        if (name_is_reserved_this(item->name)) {
+        if (name_is_reserved_this(item->name) || is_arguments_name(item->name)) {
             error = create_error_from_token(memory->errors,
                                             keyword,
                                             CRITICAL,
-                                            get_messages()->reserved_this_name);
+                                            is_arguments_name(item->name)
+                                                ? get_messages()->reserved_arguments_name
+                                                : get_messages()->reserved_this_name);
             FREE(item);
             goto cleanup;
         }
@@ -158,11 +160,13 @@ parsing_constant_declarations(token_t *keyword, parser_memory_t *memory, token_g
         if (item == NULL) {
             goto invalid_declaration;
         }
-        if (name_is_reserved_this(item->name)) {
+        if (name_is_reserved_this(item->name) || is_arguments_name(item->name)) {
             error = create_error_from_token(memory->errors,
                                             keyword,
                                             CRITICAL,
-                                            get_messages()->reserved_this_name);
+                                            is_arguments_name(item->name)
+                                                ? get_messages()->reserved_arguments_name
+                                                : get_messages()->reserved_this_name);
             FREE(item);
             goto cleanup;
         }

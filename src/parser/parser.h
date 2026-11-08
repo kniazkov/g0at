@@ -13,6 +13,7 @@
 #pragma once
 
 #include "common/compilation_error.h"
+#include "graph/declarations.h"
 #include "graph/statement.h"
 #include "lib/collections/linked_list.h"
 #include "scanner/scanner.h"

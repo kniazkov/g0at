@@ -1,0 +1,27 @@
+null
+null
+[ ]
+0
+11
+null
+[11]
+1
+11
+22
+[11,22]
+2
+11
+22
+[11,22,33]
+3
+true
+0
+true
+1
+7
+8
+42
+[9,10]
+2
+INVALID_ARGUMENT
+INVALID_ARGUMENT

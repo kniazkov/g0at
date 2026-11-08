@@ -1,0 +1,30 @@
+var retained = null;
+const run = func(x) {
+    const original = arguments;
+    { println(arguments == original); }
+    for (var i = 0; i < 2; i++) { println(arguments == original); }
+    try { throw "caught"; }
+    catch(e) { println(arguments == original); }
+    finally { println(arguments == original); }
+    try { return arguments; }
+    finally { retained = arguments; }
+};
+const first = run(7,8);
+println(first == retained);
+println(first);
+const fail = func(x) {
+    try { throw arguments; }
+    finally { retained = arguments; }
+};
+try { fail(9,10); } catch(e) { println(e == retained); println(e); }
+const stress = func(x) {
+    var trash = null;
+    for (var i = 0; i < 3000; i++) {
+        trash = { var cycle = null; };
+        trash.cycle = trash;
+    }
+    return arguments;
+};
+println(stress(11,12));
+println(first);
+println(retained);

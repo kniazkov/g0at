@@ -244,7 +244,11 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     const data_descriptor_t *descriptor = runtime->code->data_descriptors + string_id;
     const gchar_t *name = (const gchar_t *)(runtime->code->data + descriptor->offset);
     object_t *constant = NULL;
-    if (descriptor->count == 8 && !MEMCMP(name, U"__main__", 8)) {
+    if (descriptor->count == 9 && !MEMCMP(name, U"arguments", 9)) {
+        constant = get_context_arguments(thread->context);
+        if (!constant)
+            return false; /* No current call: invalid bytecode, not an outer lexical binding. */
+    } else if (descriptor->count == 8 && !MEMCMP(name, U"__main__", 8)) {
         process_t *process = thread->process;
         constant = get_boolean_object(process->launch_module == thread->context->access.module
                                       && process->launch_file == thread->context->access.file_id);
