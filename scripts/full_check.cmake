@@ -103,7 +103,16 @@ if(ok)
     if(NOT CMAKE_HOST_WIN32)
       build(release-sanitizer-build "${release}" --target format_binary_ubsan_testing format_oracle_ubsan_testing integer_oracle_ubsan_testing)
     endif()
-    build(release-package "${release}" --target package --config Release)
+    if(CMAKE_HOST_WIN32)
+      # Do not hold an outer Make output-sync context while CPack runs preinstall.
+      build(release-preinstall "${release}" --target preinstall --config Release)
+      if(ok)
+        step(release-package "${CMAKE_COMMAND}" -E chdir "${release}"
+          "${cmake_bin}/cpack.exe" --config CPackConfig.cmake -C Release)
+      endif()
+    else()
+      build(release-package "${release}" --target package --config Release)
+    endif()
     if(ok)
       # CTest enables package.relocated only after archives exist.
       configure(release-package-register "${root}" "${release}" Release)
