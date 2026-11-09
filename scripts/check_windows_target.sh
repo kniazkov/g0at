@@ -18,19 +18,34 @@ _Static_assert(WINVER == EXPECTED_TARGET, "Windows version target");
 STARTUPINFOEXA startup;
 DWORD flags = LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
 C
+# Discover Windows translation units so new test helpers cannot silently escape
+# the low-API-target regression check. Keep backend files without direct Windows
+# includes in the compilation set as well.
+mapfile -t sources < <(
+    {
+        printf '%s\n' src/codegen/native_compiler.c lib/process/cleanup_service.c
+        while IFS= read -r -d '' source; do
+            if grep -q -E '^[[:space:]]*#[[:space:]]*include[[:space:]]*<windows\.h>' "$source"; then
+                printf '%s\n' "$source"
+            fi
+        done < <(find lib src test tools -type f -name '*.c' -print0)
+    } | LC_ALL=C sort -u
+)
 for target in 0x0501 0x0A00; do
-    current="native backend with initial Windows API target $target"
-    expected="$target"
-    if [[ "$target" == 0x0501 ]]; then expected=0x0A00; fi
-    flags=(-std=c11 -I. -Isrc -Iinclude -D_WIN32_WINNT="$target" -DWINVER="$target" -Werror=implicit-function-declaration)
+    current="Windows API probe with initial target $target"
+    expected=0x0A00
+    flags=(-std=c11 -I. -Isrc -Isrc/module -Iinclude -Itest/src -Ithird_party/yyjson
+           -D_WIN32_WINNT="$target" -DWINVER="$target" -Werror=implicit-function-declaration)
     "$compiler" "${flags[@]}" -DEXPECTED_TARGET="$expected" -c "$output_dir/probe.c" -o "$output_dir/probe-$target.o"
-    "$compiler" "${flags[@]}" -c src/codegen/native_compiler.c -o "$output_dir/compiler-$target.o"
-    "$compiler" "${flags[@]}" -c lib/files/file_system_windows.c -o "$output_dir/filesystem-$target.o"
-    "$compiler" "${flags[@]}" -c lib/process/child_process_windows.c -o "$output_dir/process-$target.o"
-    "$compiler" "${flags[@]}" -c lib/process/process_channel_windows.c -o "$output_dir/channel-$target.o"
-    "$compiler" "${flags[@]}" -c lib/process/cleanup_service.c -o "$output_dir/cleanup-$target.o"
-    "$compiler" "${flags[@]}" -c src/model/native_library_windows.c -o "$output_dir/loader-$target.o"
     printf '[ ok ] %s\n' "$current"
     passed=$((passed+1))
+    for source in "${sources[@]}"; do
+        current="$source with initial Windows API target $target"
+        object="$output_dir/$target/${source%.c}.o"
+        mkdir -p "$(dirname -- "$object")"
+        "$compiler" "${flags[@]}" -c "$source" -o "$object"
+        printf '[ ok ] %s\n' "$current"
+        passed=$((passed+1))
+    done
 done
 printf 'Windows API target testing done; total: %d, passed: %d, failed: 0\n' "$passed" "$passed"
