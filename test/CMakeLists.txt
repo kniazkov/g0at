@@ -593,3 +593,8 @@ target_link_libraries(operator_comparison_testing PRIVATE goat_validation m)
 add_executable(operator_logical_testing src/component/operator_logical_testing.c
   src/unit/analysis_test_support.c)
 target_link_libraries(operator_logical_testing PRIVATE goat_validation m)
+
+# Late index getter/setter selection, ordered actual arguments and retained RHS (#499).
+add_executable(operator_index_testing src/component/operator_index_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(operator_index_testing PRIVATE goat_validation m)

@@ -107,15 +107,17 @@ obj["+"] = 4;
 
 The property dictionary maps **objects to objects**. Keys are not converted to strings: `3`, `"3"`, `true` and `'3'` are different. Numerically equal integer and real keys (`3` and `3.0`) name the same entry. Strings and characters compare by value; user objects and functions by identity. A key may be `null` or the receiver itself.
 
-`obj["x"]` shares properties and prototype rules with `obj.x`. Missing properties read as `null`. Assignment updates the first matching mutable property on the object or its prototypes, otherwise creating an own property. Constant writes raise `PROPERTY_IS_CONSTANT`; immutable receivers raise `IMMUTABLE_OBJECT`.
+Without an index handler, `obj["x"]` shares properties and prototype rules with `obj.x`. Missing properties read as `null`. Assignment updates the first matching mutable property on the object or its prototypes, otherwise creating an own property. Constant writes raise `PROPERTY_IS_CONSTANT`; immutable receivers raise `IMMUTABLE_OBJECT`.
 
-Reads evaluate the receiver, then indices left to right. Assignments evaluate **the right-hand side first**, then the receiver and indices, each exactly once, and return the assigned value. `a[k] = b[j] = value` associates right to left. `obj[key](args)` passes a receiver like `obj.method(args)`; call arguments are evaluated before the receiver. `++` and `--` still accept only variables.
+Reads evaluate the receiver, then indices left to right. Assignments evaluate the receiver, indices, then the right-hand side, each exactly once, and return the original assigned value. `a[k] = b[j] = value` associates right to left. `obj[key](args)` retains the ordinary indexed-method call behavior.
 
-Syntax allows `obj[]` and `obj[i, j]`, but ordinary objects accept **exactly one index**. Other counts raise `INVALID_ARGUMENT` after operand evaluation. This prepares for future multi-index types; arrays also accept one index, but dispatch to their own access methods. Strings currently use property indexing too: `s["length"]` reads the length, while `s[0]` does not replace `s.charAt(0)`.
+User objects can define `"[]"` and `"[]="` function properties. The getter receives the individual indices; the setter receives those indices followed by the value. Empty lists are valid: `obj[]` passes no arguments and `obj[] = value` passes only value. Each handler receives the original object as `this`; the setter's return is ignored. Select the getter after all indices, and the setter after the RHS. Only absence falls back to built-in indexing; a non-function or access error propagates. Named `obj.name` reads/writes never invoke these handlers. See [index handler semantics and VM details](../../operator-index.md).
 
-`this` denotes the object of the current scope, including `{ ... }`. **It is not the method receiver as Java/JS experience might suggest.** See [Section 10.8](10-contexts-and-closures.md#section-10-8) for the comparison and example.
+Built-in property indexing still requires exactly one index; arrays require one valid integer index. Strings use property indexing: `s["length"]` reads the length, while `s[0]` does not replace `s.charAt(0)`. User-object fallback write errors occur after the RHS, because the RHS may install a setter; specialized array preflight remains early.
 
-Indexing executes in the VM through dedicated `GETINDEX`/`SETINDEX` instructions and `get_index`/`set_index` virtual methods accepting an index list. Native lowering of `[]` is not implemented yet. All `index_*` fixtures are automatically checked at both optimization levels, after source regeneration and after saved-bytecode loading.
+Outside operator handlers, `this` retains its ordinary current-scope semantics. See [Section 10.8](10-contexts-and-closures.md#section-10-8).
+
+Indexing reuses `GETINDEX`/`SETINDEX` with their index counts and the shared operator continuation. Native handler integration belongs to #503. C/CTest coverage includes plain/optimized execution, source reconstruction, freshly decoded bytecode, immutable images, GC and exceptions.
 
 
 ## Arrays
@@ -215,7 +217,7 @@ adds checked handler selection and deferred result completion. Its explicit
 handler receiver is separate from ordinary calls and their scope-local `this`.
 [Arithmetic and bitwise handlers](../../operator-arithmetic.md), including unary
 `+`, `-`, `~` and independent `++`/`--`, are connected to VM instructions.
-Comparisons, logical operators, indexing and object calls remain later steps.
+Comparison, logical and index handlers are covered by their dedicated implementation steps; object calls remain a later step.
 
 The [operator analysis rules](../../operator-analysis.md) preserve possible
 handler effects, exceptions and logical right-hand sides while keeping proven

@@ -857,3 +857,8 @@ foreach(operator_case IN ITEMS matrix fallback lookup access order invalid conti
   goat_suite(component.operator_logical.${operator_case} "component;operator-logical"
     "$<TARGET_FILE:operator_logical_testing>" "${operator_case}")
 endforeach()
+
+foreach(operator_case IN ITEMS matrix order mutation analysis module fallback lookup continuation lifetime failed-file wire)
+  goat_suite(component.operator_index.${operator_case} "component;operator-index"
+    "$<TARGET_FILE:operator_index_testing>" "${operator_case}")
+endforeach()

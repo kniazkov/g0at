@@ -292,6 +292,10 @@ operation_result_t access_index(process_t *process,
 operation_result_t check_accessible_index_write(const function_access_t *access,
                                                 object_t *object,
                                                 object_array_t indices) {
+    /* A user-object setter may be installed or replaced by the RHS. Neither
+     * its selection nor fallback arity/access checks may run before that RHS. */
+    if (object->vtbl->type == TYPE_USER_DEFINED_OBJECT)
+        return operation_success(get_null_object());
     if (object->vtbl->type == TYPE_ARRAY)
         return check_array_index_write(object, indices);
     if (indices.size != 1)

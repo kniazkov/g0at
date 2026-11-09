@@ -455,7 +455,14 @@ static bool exec_reserved(runtime_t *runtime, instruction_t instr, thread_t *thr
     return false;
 }
 
-/** @brief Executes indexing with borrowed stack operands and an owned result. */
+static bool execute_selected_operator(runtime_t *runtime,
+                                      thread_t *thread,
+                                      object_t *receiver,
+                                      operator_lookup_t selected,
+                                      uint16_t count,
+                                      operator_result_policy_t policy);
+
+/** @brief Selects the handler only after all indices and the optional RHS exist. */
 static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thread, bool store) {
     object_stack_t *stack = thread->data_stack;
     size_t count = instr.arg1;
@@ -465,6 +472,39 @@ static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thr
         fail_stack_underflow();
     size_t receiver_index = stack->size - count - 1;
     object_t *receiver = stack->objects[receiver_index];
+    static object_static_string_t getter_key, setter_key;
+    object_t *key = store ? get_static_string_object(&setter_key, U"[]=")
+                          : get_static_string_object(&getter_key, U"[]");
+    operator_lookup_t selected = lookup_operator_handler(&thread->context->access, receiver, key);
+    if (selected.status == OPERATOR_FOUND || selected.status == OPERATOR_ERROR) {
+        if (selected.status == OPERATOR_FOUND && count > UINT16_MAX - (store ? 1u : 0u)) {
+            clear_operator_lookup(&selected);
+            reduce_object_stack(stack, receiver_index - (store ? 1 : 0));
+            return dispatch_exception(runtime,
+                                      thread,
+                                      (exception_t){.value = get_exception_invalid_argument()});
+        }
+        /* Transfer the receiver's stack reference to the shared dispatcher.
+         * Keep the original RHS below the arguments as the assignment result,
+         * rooted across synchronous builtins, Goat calls, GC and unwinding. */
+        memmove(stack->objects + receiver_index,
+                stack->objects + receiver_index + 1,
+                count * sizeof(*stack->objects));
+        --stack->size;
+        if (store) {
+            object_t *value = stack->objects[receiver_index - 1];
+            INCREF(value);
+            push_object_onto_stack(stack, value);
+        }
+        return execute_selected_operator(
+            runtime,
+            thread,
+            receiver,
+            selected,
+            selected.status == OPERATOR_FOUND ? (uint16_t)(count + (store ? 1 : 0)) : 0,
+            store ? OPERATOR_RESULT_DISCARD : OPERATOR_RESULT_VALUE);
+    }
+    clear_operator_lookup(&selected);
     object_array_t indices = {stack->objects + receiver_index + 1, count};
     operation_result_t result = access_index(thread->process,
                                              &thread->context->access,
