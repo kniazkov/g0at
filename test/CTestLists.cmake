@@ -846,3 +846,9 @@ foreach(operator_case matrix arity values order invalid access updates continuat
   goat_suite(component.operator_arithmetic.${operator_case} "component;operator-arithmetic"
     "$<TARGET_FILE:operator_arithmetic_testing>" "${operator_case}")
 endforeach()
+
+foreach(operator_case IN ITEMS matrix fallback invalid lookup access independent truth identity
+    order continuation lifetime builtin builtin-regression)
+  goat_suite(component.operator_comparison.${operator_case} "component;operator-comparison"
+    "$<TARGET_FILE:operator_comparison_testing>" "${operator_case}")
+endforeach()

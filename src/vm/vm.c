@@ -531,13 +531,13 @@ static bool finish_call(runtime_t *runtime, thread_t *thread, bool result) {
     return result;
 }
 
-/** @brief Consumes the saved user receiver; call arguments already own their stack references. */
-static bool execute_user_operator(runtime_t *runtime,
-                                  thread_t *thread,
-                                  object_t *receiver,
-                                  object_t *key,
-                                  uint16_t count) {
-    operator_lookup_t selected = lookup_operator_handler(&thread->context->access, receiver, key);
+/** @brief Consumes the saved receiver and lookup; arguments own their stack references. */
+static bool execute_selected_operator(runtime_t *runtime,
+                                      thread_t *thread,
+                                      object_t *receiver,
+                                      operator_lookup_t selected,
+                                      uint16_t count,
+                                      operator_result_policy_t policy) {
     if (selected.status != OPERATOR_FOUND) {
         exception_t exception = selected.status == OPERATOR_ERROR
                                     ? selected.exception
@@ -550,12 +550,27 @@ static bool execute_user_operator(runtime_t *runtime,
     bool result = call_operator_handler(selected.function,
                                         receiver,
                                         count,
-                                        OPERATOR_RESULT_VALUE,
+                                        policy,
                                         thread->instr_id + 1,
                                         thread);
     clear_operator_lookup(&selected);
     DECREF(receiver);
     return finish_call(runtime, thread, result);
+}
+
+/** @brief Selects an arithmetic handler after both operands have been evaluated. */
+static bool execute_user_operator(runtime_t *runtime,
+                                  thread_t *thread,
+                                  object_t *receiver,
+                                  object_t *key,
+                                  uint16_t count) {
+    operator_lookup_t selected = lookup_operator_handler(&thread->context->access, receiver, key);
+    return execute_selected_operator(runtime,
+                                     thread,
+                                     receiver,
+                                     selected,
+                                     count,
+                                     OPERATOR_RESULT_VALUE);
 }
 
 /** @brief Consumes one operand and transfers its result or exception. */
@@ -654,6 +669,22 @@ static bool boolean_unary(thread_t *thread, bool negate) {
 }
 
 static bool exec_LNOT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *value = pop_object_from_stack(thread->data_stack);
+    if (value->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+        static object_static_string_t key;
+        operator_lookup_t selected = lookup_operator_handler(&thread->context->access,
+                                                             value,
+                                                             get_static_string_object(&key, U"!"));
+        if (selected.status != OPERATOR_ABSENT)
+            return execute_selected_operator(runtime,
+                                             thread,
+                                             value,
+                                             selected,
+                                             0,
+                                             OPERATOR_RESULT_BOOL);
+        clear_operator_lookup(&selected);
+    }
+    push_object_onto_stack(thread->data_stack, value);
     return boolean_unary(thread, true);
 }
 
@@ -784,34 +815,100 @@ static bool exec_POWER(runtime_t *runtime, instruction_t instr, thread_t *thread
                                     get_static_string_object(&key, U"**"));
 }
 
+/** @brief Selects comparisons without deriving order or bypassing self-comparison handlers. */
+static bool execute_comparison(runtime_t *runtime,
+                               thread_t *thread,
+                               operation_result_t (*operation)(process_t *, object_t *, object_t *),
+                               object_t *key,
+                               object_t *opposite) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+        operator_lookup_t selected = lookup_operator_handler(&thread->context->access, first, key);
+        operator_result_policy_t policy = OPERATOR_RESULT_BOOL;
+        if (selected.status == OPERATOR_ABSENT && opposite) {
+            clear_operator_lookup(&selected);
+            selected = lookup_operator_handler(&thread->context->access, first, opposite);
+            policy = OPERATOR_RESULT_NEGATED_BOOL;
+        }
+        if (selected.status != OPERATOR_ABSENT || !opposite) {
+            push_object_onto_stack(thread->data_stack, second);
+            return execute_selected_operator(runtime, thread, first, selected, 1, policy);
+        }
+        /* Both equality properties are absent: retain built-in identity semantics. */
+        clear_operator_lookup(&selected);
+    }
+    operation_result_t result = operation(thread->process, first, second);
+    DECREF(first);
+    DECREF(second);
+    if (result.is_exception)
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
+    push_object_onto_stack(thread->data_stack, result.value);
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Executes @ref LESS. */
 static bool exec_LESS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, is_object_less_than, NULL);
+    static object_static_string_t key;
+    return execute_comparison(runtime,
+                              thread,
+                              is_object_less_than,
+                              get_static_string_object(&key, U"<"),
+                              NULL);
 }
 
 /** @brief Executes @ref LEQ. */
 static bool exec_LEQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, is_object_less_or_equal, NULL);
+    static object_static_string_t key;
+    return execute_comparison(runtime,
+                              thread,
+                              is_object_less_or_equal,
+                              get_static_string_object(&key, U"<="),
+                              NULL);
 }
 
 /** @brief Executes @ref GREATER. */
 static bool exec_GREATER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, is_object_greater_than, NULL);
+    static object_static_string_t key;
+    return execute_comparison(runtime,
+                              thread,
+                              is_object_greater_than,
+                              get_static_string_object(&key, U">"),
+                              NULL);
 }
 
 /** @brief Executes @ref GREQ. */
 static bool exec_GREQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, is_object_greater_or_equal, NULL);
+    static object_static_string_t key;
+    return execute_comparison(runtime,
+                              thread,
+                              is_object_greater_or_equal,
+                              get_static_string_object(&key, U">="),
+                              NULL);
 }
 
 /** @brief Executes @ref EQUAL. */
 static bool exec_EQUAL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, are_objects_equal, NULL);
+    static object_static_string_t key, opposite;
+    return execute_comparison(runtime,
+                              thread,
+                              are_objects_equal,
+                              get_static_string_object(&key, U"=="),
+                              get_static_string_object(&opposite, U"!="));
 }
 
 /** @brief Executes @ref DIFF. */
 static bool exec_DIFF(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, are_objects_not_equal, NULL);
+    static object_static_string_t key, opposite;
+    return execute_comparison(runtime,
+                              thread,
+                              are_objects_not_equal,
+                              get_static_string_object(&key, U"!="),
+                              get_static_string_object(&opposite, U"=="));
 }
 
 /** @brief Executes @ref FUNC. */
