@@ -5,8 +5,9 @@
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
 #endif
-#include "lib/platform/windows_target.h"
 #include "test/support/process_watch.h"
+
+#include "lib/platform/windows_target.h"
 
 #include <limits.h>
 #include <stdlib.h>

@@ -21,12 +21,14 @@ C
 # Discover Windows translation units so new test helpers cannot silently escape
 # the low-API-target regression check. Keep backend files without direct Windows
 # includes in the compilation set as well.
-windows_sources="$(git grep -l -E '^[[:space:]]*#[[:space:]]*include[[:space:]]*<windows\.h>' -- \
-    ':(glob)lib/**/*.c' ':(glob)src/**/*.c' ':(glob)test/**/*.c' ':(glob)tools/**/*.c')"
 mapfile -t sources < <(
     {
         printf '%s\n' src/codegen/native_compiler.c lib/process/cleanup_service.c
-        printf '%s\n' "$windows_sources"
+        while IFS= read -r -d '' source; do
+            if grep -q -E '^[[:space:]]*#[[:space:]]*include[[:space:]]*<windows\.h>' "$source"; then
+                printf '%s\n' "$source"
+            fi
+        done < <(find lib src test tools -type f -name '*.c' -print0)
     } | LC_ALL=C sort -u
 )
 for target in 0x0501 0x0A00; do
