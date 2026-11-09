@@ -852,3 +852,8 @@ foreach(operator_case IN ITEMS matrix fallback invalid lookup access independent
   goat_suite(component.operator_comparison.${operator_case} "component;operator-comparison"
     "$<TARGET_FILE:operator_comparison_testing>" "${operator_case}")
 endforeach()
+
+foreach(operator_case IN ITEMS matrix fallback lookup access order invalid continuation lifetime builtin failed-file wire)
+  goat_suite(component.operator_logical.${operator_case} "component;operator-logical"
+    "$<TARGET_FILE:operator_logical_testing>" "${operator_case}")
+endforeach()

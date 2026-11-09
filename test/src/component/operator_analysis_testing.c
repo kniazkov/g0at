@@ -89,8 +89,8 @@ static void conservative_case(void) {
                  {U"a <= 1", NODE_LESS_OR_EQUAL, LATTICE_BOOLEAN},
                  {U"a > 1", NODE_GREATER, LATTICE_BOOLEAN},
                  {U"a >= 1", NODE_GREATER_OR_EQUAL, LATTICE_BOOLEAN},
-                 {U"a && true", NODE_LOGICAL_AND, LATTICE_TOP},
-                 {U"a || false", NODE_LOGICAL_OR, LATTICE_TOP}};
+                 {U"a && true", NODE_LOGICAL_AND, LATTICE_BOOLEAN},
+                 {U"a || false", NODE_LOGICAL_OR, LATTICE_BOOLEAN}};
 
     for (int unknown = 0; unknown < 2; ++unknown)
         for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); ++i) {
@@ -111,11 +111,11 @@ static void conservative_case(void) {
 }
 
 static void logical_case(void) {
-    /* A currently truthy object may acquire a logical handler. RHS must stay in
-     * the analyzed graph even though today's VM still uses builtin truthiness. */
+    /* A user object may have a logical handler. RHS and handler effects must
+     * remain, although successful completion is now guaranteed boolean. */
     fixture_t f =
         analyze_source(U"const a = {};\nvar x = 0;\nvar result = a || ++x;\nvar after = x;", true);
-    assert(write_at(&f, 3)->value->type == LATTICE_TOP);
+    assert(write_at(&f, 3)->value->type == LATTICE_BOOLEAN);
     const analysis_event_t *rhs = flags_for(&f, NODE_PREFIX_INCREMENT);
     assert(!(rhs->flags & NODE_FLAG_UNREACHABLE));
     assert(!(flags_for(&f, NODE_LOGICAL_OR)->flags & NODE_FLAG_PURE));

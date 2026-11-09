@@ -77,7 +77,7 @@ calculate_short(node_t *node, abstract_state_t *state, arena_t *arena) {
     collect_joined_abstract_state(state, node);
     if (dispatch) {
         forget_abstract_values(state);
-        return make_top_element();
+        return make_boolean_element();
     }
     return lattice_join(arena, skipped, value);
 }
@@ -216,7 +216,7 @@ static const lattice_element_t *analyze_short_reachability(node_t *node,
     *state = merged;
     if (dispatch) {
         forget_abstract_values(merged);
-        return make_top_element();
+        return make_boolean_element();
     }
     return lattice_join(merged->arena, skipped, value);
 }
@@ -263,7 +263,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
         } else {
             instr_index_t jump = add_instruction(code, (instruction_t){.opcode = op});
             generate_bytecode_from_expression(expr->right_operand, code, data);
-            add_instruction(code, (instruction_t){.opcode = BOOL});
+            add_instruction(code, (instruction_t){.opcode = BOOL, .arg0 = 1});
             get_instruction(code, jump)->arg1 = get_next_instruction_index(code);
         }
     } else {

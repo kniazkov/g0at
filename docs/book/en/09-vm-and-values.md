@@ -60,7 +60,7 @@ The language rules remain those from chapter 2: integer arithmetic uses its spec
 
 For a branch, the VM asks for an object's boolean value. `null`, `false`, numeric zero, an empty string, and an empty user-defined object are false. Functions are true. A real `NaN` is also true here: the nonzero test succeeds.
 
-`BOOL` and `LNOT` obtain this property and produce a boolean result. `LAND` and `LOR` additionally control short-circuit jumps. Consequently, Goat's `&&` and `||` produce booleans; they must not automatically be read as selecting one of the original objects.
+`BOOL arg0=0` converts built-in truthiness. `LNOT` first looks for a user `"!"` handler. `LAND` and `LOR` select user `"&&"`/`"||"` handlers before the RHS: a selected function disables short-circuiting and must return a boolean. Only an absent handler uses ordinary truthiness and short-circuiting. `BOOL arg0=1` completes the saved selection after the RHS. See [logical overloads](../../operator-logical.md). These operators return booleans, not one of the original operands.
 
 [09-values.goat](../examples/09-values.goat) collects several observations about this model:
 
