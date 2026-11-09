@@ -464,3 +464,9 @@ including errors and unavailable metadata, and does not enter any module hash.
 Its complete bilingual field contract and stable code catalog are in
 [the report specification](../module-inspect-report-v1.md). Native probing is
 reserved for #214; current reports never fabricate a successful probe.
+
+Logical overloads refine the existing LAND/LOR and BOOL contracts without changing
+IDs or the format version. LAND/LOR select before RHS and retain receiver/function
+on the operand stack (null/null for built-in fallthrough). BOOL arg0=1 completes
+that selection; arg0=0 remains single-value conversion. Other BOOL arg0 values
+are rejected; BOOL arg1 remains zero. See [logical operators](../operator-logical.md).

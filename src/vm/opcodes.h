@@ -34,10 +34,10 @@ typedef enum {
     INC,        /**< Replaces the top value with its numeric successor. */
     DEC,        /**< Replaces the top value with its numeric predecessor. */
     LNOT,       /**< Logical negation. */
-    BOOL,       /**< Converts the top value to boolean. */
+    BOOL,       /**< arg0=0: convert top; arg0=1: complete saved logical selection and RHS. */
     BNOT,       /**< Integer bitwise inversion. */
-    LAND,       /**< Converts and keeps false, jumping to arg1; otherwise pops and continues. */
-    LOR,        /**< Converts and keeps true, jumping to arg1; otherwise pops and continues. */
+    LAND,       /**< Select && before RHS; keep false and jump to arg1 only if absent. */
+    LOR,        /**< Select || before RHS; keep true and jump to arg1 only if absent. */
     BAND,       /**< Integer bitwise and. */
     BOR,        /**< Integer bitwise or. */
     BXOR,       /**< Integer bitwise xor. */

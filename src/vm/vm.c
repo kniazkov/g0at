@@ -689,6 +689,35 @@ static bool exec_LNOT(runtime_t *runtime, instruction_t instr, thread_t *thread)
 }
 
 static bool exec_BOOL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (!instr.arg0)
+        return boolean_unary(thread, false);
+    /* LAND/LOR root the early selection below the RHS on the ordinary stack.
+     * Scope unwinding and GC therefore use their existing ownership rules. */
+    require_object_stack_size(thread->data_stack, 3);
+    object_t *right = pop_object_from_stack(thread->data_stack);
+    object_t *function = pop_object_from_stack(thread->data_stack);
+    object_t *receiver = pop_object_from_stack(thread->data_stack);
+    push_object_onto_stack(thread->data_stack, right);
+    if ((function == get_null_object() && receiver != get_null_object())
+        || (function != get_null_object()
+            && (!is_function_object(function)
+                || receiver->vtbl->type != TYPE_USER_DEFINED_OBJECT))) {
+        DECREF(function);
+        DECREF(receiver);
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){.value = get_exception_invalid_operation()});
+    }
+    if (function != get_null_object())
+        return execute_selected_operator(
+            runtime,
+            thread,
+            receiver,
+            (operator_lookup_t){.status = OPERATOR_FOUND, .function = function},
+            1,
+            OPERATOR_RESULT_BOOL);
+    DECREF(function);
+    DECREF(receiver);
     return boolean_unary(thread, false);
 }
 
@@ -700,25 +729,50 @@ static bool exec_BNOT(runtime_t *runtime, instruction_t instr, thread_t *thread)
                                    get_static_string_object(&key, U"~"));
 }
 
-/** @brief Short-circuits with a boolean result, or leaves room for the right operand. */
-static bool logical_jump(instruction_t instr, thread_t *thread, bool is_or) {
+/** @brief Selects before RHS, retaining the call or short-circuiting only on absence. */
+static bool logical_jump(runtime_t *runtime, instruction_t instr, thread_t *thread, bool is_or) {
     object_t *value = pop_object_from_stack(thread->data_stack);
+    if (value->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+        static object_static_string_t and_key, or_key;
+        object_t *key = is_or ? get_static_string_object(&or_key, U"||")
+                              : get_static_string_object(&and_key, U"&&");
+        operator_lookup_t selected = lookup_operator_handler(&thread->context->access, value, key);
+        if (selected.status == OPERATOR_FOUND) {
+            push_object_onto_stack(thread->data_stack, value);
+            push_object_onto_stack(thread->data_stack, selected.function);
+            selected.function = NULL;
+            clear_operator_lookup(&selected);
+            thread->instr_id++;
+            return true;
+        }
+        if (selected.status != OPERATOR_ABSENT)
+            return execute_selected_operator(runtime,
+                                             thread,
+                                             value,
+                                             selected,
+                                             0,
+                                             OPERATOR_RESULT_BOOL);
+        clear_operator_lookup(&selected);
+    }
     bool truth = get_object_boolean_value(value);
     DECREF(value);
     if (truth == is_or) {
         push_object_onto_stack(thread->data_stack, get_boolean_object(truth));
         thread->instr_id = instr.arg1;
-    } else
+    } else {
+        push_object_onto_stack(thread->data_stack, get_null_object());
+        push_object_onto_stack(thread->data_stack, get_null_object());
         thread->instr_id++;
+    }
     return true;
 }
 
 static bool exec_LAND(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return logical_jump(instr, thread, false);
+    return logical_jump(runtime, instr, thread, false);
 }
 
 static bool exec_LOR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return logical_jump(instr, thread, true);
+    return logical_jump(runtime, instr, thread, true);
 }
 
 static bool exec_BAND(runtime_t *runtime, instruction_t instr, thread_t *thread) {
@@ -1542,10 +1596,10 @@ static instr_executor_t executors[] = {
     exec_INC,      /**< Applies numeric increment. */
     exec_DEC,      /**< Applies numeric decrement. */
     exec_LNOT,     /**< Negates truthiness. */
-    exec_BOOL,     /**< Converts the top value to boolean. */
+    exec_BOOL,     /**< Converts truthiness or completes a retained logical selection. */
     exec_BNOT,     /**< Inverts integer bits. */
-    exec_LAND,     /**< Short-circuits when the left value is false. */
-    exec_LOR,      /**< Short-circuits when the left value is true. */
+    exec_LAND,     /**< Selects &&, or short-circuits on absent handler and false LHS. */
+    exec_LOR,      /**< Selects ||, or short-circuits on absent handler and true LHS. */
     exec_BAND,     /**< Computes integer bitwise AND. */
     exec_BOR,      /**< Computes integer bitwise OR. */
     exec_BXOR,     /**< Computes integer bitwise XOR. */

@@ -44,10 +44,10 @@ Updated for the implemented module system (#220); source baseline: [5b98271](htt
 | `0x17` | `INC` | — | S, x → S, result | Increment the numeric value by 1. |
 | `0x18` | `DEC` | — | S, x → S, result | Decrement the numeric value by 1. |
 | `0x19` | `LNOT` | — | S, x → S, result | Negate truthiness; return boolean. |
-| `0x1A` | `BOOL` | — | S, x → S, result | Convert truthiness to boolean. |
+| `0x1A` | `BOOL` | arg0: 0/1 | 0: S, x → S, bool; 1: S, receiver, function, rhs → S, bool | Convert truthiness (0), or finish saved logical selection (1). See [logical operators](../../operator-logical.md). |
 | `0x1B` | `BNOT` | — | S, x → S, result | Integer bitwise complement. |
-| `0x1C` | `LAND` | arg1: target | S, x → S / S, false | If false, leave false and jump; otherwise consume x and continue with the right side. |
-| `0x1D` | `LOR` | arg1: target | S, x → S / S, true | If true, leave true and jump; otherwise consume x and continue with the right side. |
+| `0x1C` | `LAND` | arg1: target | S, lhs → S, bool / S, receiver, function | Select before RHS; absent handler short-circuits on false. Fallthrough retains selection or null/null. |
+| `0x1D` | `LOR` | arg1: target | S, lhs → S, bool / S, receiver, function | Select before RHS; absent handler short-circuits on true. Fallthrough retains selection or null/null. |
 | `0x1E` | `BAND` | — | S, a, b → S, result | Compute `a & b` through object methods. |
 | `0x1F` | `BOR` | — | S, a, b → S, result | Compute `a \| b` through object methods. |
 | `0x20` | `BXOR` | — | S, a, b → S, result | Compute `a ^ b` through object methods. |

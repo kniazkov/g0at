@@ -163,14 +163,17 @@ bool validate_bytecode_image(bytecode_t *c) {
             ++file_id;
         const bytecode_file_t *file = c->files + file_id;
         instruction_t in = c->instructions[i];
-        bool arg0 =
-            in.opcode == FUNC || in.opcode == CALL || in.opcode == CALLM || in.opcode == INHERIT;
+        bool arg0 = in.opcode == FUNC || in.opcode == CALL || in.opcode == CALLM
+                    || in.opcode == INHERIT || in.opcode == BOOL;
         bool arg1 = false;
         if (in.opcode > CHECKBOUND || in.flags || (!arg0 && in.arg0)) {
             valid = false;
             break;
         }
         switch (in.opcode) {
+            case BOOL:
+                valid = in.arg0 <= 1;
+                break;
             case ARG:
                 arg1 = true;
                 valid = i + 1 < (uint64_t)file->first + file->count

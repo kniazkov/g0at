@@ -588,3 +588,8 @@ target_link_libraries(operator_arithmetic_testing PRIVATE goat_validation m)
 add_executable(operator_comparison_testing src/component/operator_comparison_testing.c
   src/unit/analysis_test_support.c)
 target_link_libraries(operator_comparison_testing PRIVATE goat_validation m)
+
+# Early logical selection, eager overloaded RHS and strict Boolean results (#498).
+add_executable(operator_logical_testing src/component/operator_logical_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(operator_logical_testing PRIVATE goat_validation m)

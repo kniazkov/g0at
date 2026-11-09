@@ -52,7 +52,7 @@ static instruction_descriptor_t descriptors[] = {
     {.code = U"INC"},
     {.code = U"DEC"},
     {.code = U"LNOT"},
-    {.code = U"BOOL"},
+    {.code = U"BOOL", .has_arg_0 = true},
     {.code = U"BNOT"},
     {.code = U"LAND", .arg_1_is_unsigned_integer = true},
     {.code = U"LOR", .arg_1_is_unsigned_integer = true},
