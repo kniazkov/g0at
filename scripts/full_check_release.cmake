@@ -75,5 +75,6 @@ set(release_labels
   native-performance-controls
   operator-dispatch
   operator-analysis
+  operator-arithmetic
 )
 list(JOIN release_labels "|" release_labels)

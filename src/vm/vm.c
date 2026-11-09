@@ -15,6 +15,7 @@
 #include "model/context.h"
 #include "model/module_file_declarations.h"
 #include "model/module_files.h"
+#include "model/operator.h"
 #include "model/thread.h"
 
 #include <assert.h>
@@ -512,11 +513,59 @@ static bool exec_SETINDEX(runtime_t *runtime, instruction_t instr, thread_t *thr
     return execute_index(runtime, instr, thread, true);
 }
 
+/** @brief Handles ordinary and operator call failures without hiding backend or language errors. */
+static bool finish_call(runtime_t *runtime, thread_t *thread, bool result) {
+    if (thread->native_status) {
+        thread->process->native_failed = true;
+        broadcast_os_condition(thread->process->threads_changed);
+        runtime->status = 1;
+        return false;
+    }
+    if (!result && thread->exception.value) {
+        exception_t exception = thread->exception;
+        thread->exception = (exception_t){0};
+        return dispatch_exception(runtime, thread, exception);
+    }
+    if (!result)
+        runtime->status = 1;
+    return result;
+}
+
+/** @brief Consumes the saved user receiver; call arguments already own their stack references. */
+static bool execute_user_operator(runtime_t *runtime,
+                                  thread_t *thread,
+                                  object_t *receiver,
+                                  object_t *key,
+                                  uint16_t count) {
+    operator_lookup_t selected = lookup_operator_handler(&thread->context->access, receiver, key);
+    if (selected.status != OPERATOR_FOUND) {
+        exception_t exception = selected.status == OPERATOR_ERROR
+                                    ? selected.exception
+                                    : (exception_t){.value = get_exception_invalid_operation()};
+        selected.exception = (exception_t){0};
+        clear_operator_lookup(&selected);
+        DECREF(receiver);
+        return dispatch_exception(runtime, thread, exception);
+    }
+    bool result = call_operator_handler(selected.function,
+                                        receiver,
+                                        count,
+                                        OPERATOR_RESULT_VALUE,
+                                        thread->instr_id + 1,
+                                        thread);
+    clear_operator_lookup(&selected);
+    DECREF(receiver);
+    return finish_call(runtime, thread, result);
+}
+
 /** @brief Consumes one operand and transfers its result or exception. */
 static bool execute_unary_operation(runtime_t *runtime,
                                     thread_t *thread,
-                                    operation_result_t (*operation)(process_t *, object_t *)) {
+                                    operation_result_t (*operation)(process_t *, object_t *),
+                                    object_t *key) {
     object_t *operand = pop_object_from_stack(thread->data_stack);
+    if (operand->vtbl->type == TYPE_USER_DEFINED_OBJECT)
+        return execute_user_operator(runtime, thread, operand, key, 0);
     operation_result_t result = operation(thread->process, operand);
     DECREF(operand);
     if (result.is_exception)
@@ -531,31 +580,53 @@ static bool execute_unary_operation(runtime_t *runtime,
 
 /** @brief Executes @ref INC. */
 static bool exec_INC(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_unary_operation(runtime, thread, increment_object);
+    static object_static_string_t key;
+    return execute_unary_operation(runtime,
+                                   thread,
+                                   increment_object,
+                                   get_static_string_object(&key, U"++"));
 }
 
 /** @brief Executes @ref DEC. */
 static bool exec_DEC(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_unary_operation(runtime, thread, decrement_object);
+    static object_static_string_t key;
+    return execute_unary_operation(runtime,
+                                   thread,
+                                   decrement_object,
+                                   get_static_string_object(&key, U"--"));
 }
 
 /** @brief Executes @ref UPLUS. */
 static bool exec_UPLUS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_unary_operation(runtime, thread, unary_plus_object);
+    static object_static_string_t key;
+    return execute_unary_operation(runtime,
+                                   thread,
+                                   unary_plus_object,
+                                   get_static_string_object(&key, U"+"));
 }
 
 /** @brief Executes @ref UMINUS. */
 static bool exec_UMINUS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_unary_operation(runtime, thread, unary_minus_object);
+    static object_static_string_t key;
+    return execute_unary_operation(runtime,
+                                   thread,
+                                   unary_minus_object,
+                                   get_static_string_object(&key, U"-"));
 }
 
 /** @brief Consumes operands and transfers the result to the stack or exception handler. */
 static bool
 execute_binary_operation(runtime_t *runtime,
                          thread_t *thread,
-                         operation_result_t (*operation)(process_t *, object_t *, object_t *)) {
+                         operation_result_t (*operation)(process_t *, object_t *, object_t *),
+                         object_t *key) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
+    if (key && first->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+        /* Both operands have already run; lookup observes RHS effects on the saved LHS. */
+        push_object_onto_stack(thread->data_stack, second);
+        return execute_user_operator(runtime, thread, first, key, 1);
+    }
     operation_result_t result =
         operation == add_objects
             ? add_objects_with_access(thread->process, first, second, &thread->context->access)
@@ -591,7 +662,11 @@ static bool exec_BOOL(runtime_t *runtime, instruction_t instr, thread_t *thread)
 }
 
 static bool exec_BNOT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_unary_operation(runtime, thread, bitwise_not_object);
+    static object_static_string_t key;
+    return execute_unary_operation(runtime,
+                                   thread,
+                                   bitwise_not_object,
+                                   get_static_string_object(&key, U"~"));
 }
 
 /** @brief Short-circuits with a boolean result, or leaves room for the right operand. */
@@ -616,83 +691,127 @@ static bool exec_LOR(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 }
 
 static bool exec_BAND(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, bitwise_and_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    bitwise_and_objects,
+                                    get_static_string_object(&key, U"&"));
 }
 
 static bool exec_BOR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, bitwise_or_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    bitwise_or_objects,
+                                    get_static_string_object(&key, U"|"));
 }
 
 static bool exec_BXOR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, bitwise_xor_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    bitwise_xor_objects,
+                                    get_static_string_object(&key, U"^"));
 }
 
 static bool exec_SHL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, shift_left_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    shift_left_objects,
+                                    get_static_string_object(&key, U"<<"));
 }
 
 static bool exec_SHR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, shift_right_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    shift_right_objects,
+                                    get_static_string_object(&key, U">>"));
 }
 
 /** @brief Executes @ref ADD. */
 static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, add_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    add_objects,
+                                    get_static_string_object(&key, U"+"));
 }
 
 /** @brief Executes @ref SUB. */
 static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, subtract_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    subtract_objects,
+                                    get_static_string_object(&key, U"-"));
 }
 
 /** @brief Executes @ref MUL. */
 static bool exec_MUL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, multiply_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    multiply_objects,
+                                    get_static_string_object(&key, U"*"));
 }
 
 /** @brief Executes @ref DIVIDE. */
 static bool exec_DIVIDE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, divide_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    divide_objects,
+                                    get_static_string_object(&key, U"/"));
 }
 
 /** @brief Executes @ref MODULO. */
 static bool exec_MODULO(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, modulo_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    modulo_objects,
+                                    get_static_string_object(&key, U"%"));
 }
 
 /** @brief Executes @ref POWER. */
 static bool exec_POWER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, power_objects);
+    static object_static_string_t key;
+    return execute_binary_operation(runtime,
+                                    thread,
+                                    power_objects,
+                                    get_static_string_object(&key, U"**"));
 }
 
 /** @brief Executes @ref LESS. */
 static bool exec_LESS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, is_object_less_than);
+    return execute_binary_operation(runtime, thread, is_object_less_than, NULL);
 }
 
 /** @brief Executes @ref LEQ. */
 static bool exec_LEQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, is_object_less_or_equal);
+    return execute_binary_operation(runtime, thread, is_object_less_or_equal, NULL);
 }
 
 /** @brief Executes @ref GREATER. */
 static bool exec_GREATER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, is_object_greater_than);
+    return execute_binary_operation(runtime, thread, is_object_greater_than, NULL);
 }
 
 /** @brief Executes @ref GREQ. */
 static bool exec_GREQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, is_object_greater_or_equal);
+    return execute_binary_operation(runtime, thread, is_object_greater_or_equal, NULL);
 }
 
 /** @brief Executes @ref EQUAL. */
 static bool exec_EQUAL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, are_objects_equal);
+    return execute_binary_operation(runtime, thread, are_objects_equal, NULL);
 }
 
 /** @brief Executes @ref DIFF. */
 static bool exec_DIFF(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_binary_operation(runtime, thread, are_objects_not_equal);
+    return execute_binary_operation(runtime, thread, are_objects_not_equal, NULL);
 }
 
 /** @brief Executes @ref FUNC. */
@@ -742,20 +861,7 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
     bool result = call_object(func, instr.arg0, NULL, thread);
     // The ID of the following instruction was set inside the call method
     DECREF(func);
-    if (thread->native_status) {
-        thread->process->native_failed = true;
-        broadcast_os_condition(thread->process->threads_changed);
-        runtime->status = 1;
-        return false;
-    }
-    if (!result && thread->exception.value) {
-        exception_t exception = thread->exception;
-        thread->exception = (exception_t){0};
-        return dispatch_exception(runtime, thread, exception);
-    }
-    if (!result)
-        runtime->status = 1;
-    return result;
+    return finish_call(runtime, thread, result);
 }
 
 /** @brief Executes @ref CALLM; the receiver sits below the function on the stack. */
@@ -767,20 +873,7 @@ static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread
     // The ID of the following instruction was set inside the call method
     DECREF(func);
     DECREF(receiver);
-    if (thread->native_status) {
-        thread->process->native_failed = true;
-        broadcast_os_condition(thread->process->threads_changed);
-        runtime->status = 1;
-        return false;
-    }
-    if (!result && thread->exception.value) {
-        exception_t exception = thread->exception;
-        thread->exception = (exception_t){0};
-        return dispatch_exception(runtime, thread, exception);
-    }
-    if (!result)
-        runtime->status = 1;
-    return result;
+    return finish_call(runtime, thread, result);
 }
 
 /** @brief Drops temporaries above a saved context boundary. */

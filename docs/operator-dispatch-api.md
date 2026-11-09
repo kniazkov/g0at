@@ -3,9 +3,10 @@
 [Русский](operator-dispatch-api.ru.md)
 
 This is the runtime foundation for checklist step [#494](https://github.com/kniazkov/g0at/issues/494).
-It does not yet connect arithmetic, comparison, logical, index or call opcodes to
-user handlers. Those integrations belong to the later checklist steps. Existing
-operator behavior and the bytecode instruction set and format remain unchanged.
+The foundation itself does not route opcodes. [Step #496](operator-arithmetic.md)
+now connects arithmetic, bitwise and unary update instructions to it. Comparison,
+logical, index and object-call integrations remain later checklist steps. The
+bytecode instruction set and format remain unchanged.
 
 ## Lookup and ownership
 
