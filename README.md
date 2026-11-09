@@ -187,6 +187,53 @@ public headers, exports C, builds native modules, and runs saved VM/native
 programs after removing their source, with the compiler unavailable.
 
 
+#### MSYS2 Make: `--sync-mutex` error
+
+If configuration succeeds but the build stops with:
+
+```text
+mingw32-make: the '--sync-mutex' option requires a non-empty string argument
+```
+
+check the build tools before changing Goat sources. The MSYS2 package
+`mingw-w64-x86_64-make 4.4.1-4` has a [reported regression](https://github.com/msys2/MINGW-packages/issues/29218)
+with output synchronization and recursive parallel builds. Goat's build wrapper
+enables `--output-sync=target`, which can trigger this failure. A successful CI
+build does not guarantee that a local machine has the same package revision.
+
+In PowerShell, check the executable and the package revision (adjust the MSYS2
+installation path if necessary):
+
+```powershell
+where.exe mingw32-make
+mingw32-make --version
+C:\msys64\usr\bin\pacman.exe -Q mingw-w64-x86_64-make
+```
+
+`make --version` alone shows `4.4.1`, not the MSYS2 package revision `-4`.
+Stop builds and close other MSYS2 sessions, then open `C:\msys64\msys2.exe`
+and perform a [full MSYS2 update](https://www.msys2.org/docs/updating/):
+
+```bash
+pacman -Syu
+```
+
+If prompted to close the terminal during a core update, agree, reopen it and
+run `pacman -Syu` again. Repeat until no updates remain. Then retry
+`.\scripts\build_mingw.cmd` from PowerShell. Updating MSYS2 resolved the
+reported local failure; no particular fixed package revision is assumed here.
+
+To isolate the output synchronization issue, build one target directly:
+
+```powershell
+cmake --build build --parallel 4 --target process_exit_delayed_testing -- --output-sync=none
+```
+
+This bypasses the wrapper's output synchronization while retaining parallelism.
+It builds only that target and its dependencies, not the full project, and does
+not run tests or publish executables to `target/`. If updating does not help,
+include the package revision and the results of this command in the bug report.
+
 ### Native execution and saved programs
 
 A standalone `.goat` uses `--native off` by default and needs no C compiler for VM execution. Ready binary execution defaults to `auto`; `.gmod` uses its descriptor’s mode (default `auto`) and target (default `host`). Use explicit `--native off` for compiler-independent module builds/runs. To try native execution and inspect its report:
