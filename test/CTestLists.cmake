@@ -841,3 +841,8 @@ foreach(operator_case conservative logical update runtime builtin mutation switc
   goat_suite(component.operator_analysis.${operator_case} "component;operator-analysis"
     "$<TARGET_FILE:operator_analysis_testing>" "${operator_case}")
 endforeach()
+
+foreach(operator_case matrix arity values order invalid access updates continuation cleanup builtin lifetime builtin-regression)
+  goat_suite(component.operator_arithmetic.${operator_case} "component;operator-arithmetic"
+    "$<TARGET_FILE:operator_arithmetic_testing>" "${operator_case}")
+endforeach()

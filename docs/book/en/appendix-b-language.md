@@ -211,9 +211,11 @@ a separate step, [#502](https://github.com/kniazkov/g0at/issues/502), and is not
 claimed by this VM implementation.
 
 The internal [operator dispatch foundation](../../operator-dispatch-api.md)
-adds checked handler selection and deferred result completion. It does not yet
-enable operator overloading in source programs. Its explicit handler receiver
-is separate from ordinary calls and their scope-local `this`.
+adds checked handler selection and deferred result completion. Its explicit
+handler receiver is separate from ordinary calls and their scope-local `this`.
+[Arithmetic and bitwise handlers](../../operator-arithmetic.md), including unary
+`+`, `-`, `~` and independent `++`/`--`, are connected to VM instructions.
+Comparisons, logical operators, indexing and object calls remain later steps.
 
 The [operator analysis rules](../../operator-analysis.md) preserve possible
 handler effects, exceptions and logical right-hand sides while keeping proven

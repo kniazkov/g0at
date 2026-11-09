@@ -578,3 +578,8 @@ target_link_libraries(operator_dispatch_testing PRIVATE goat_validation m)
 add_executable(operator_analysis_testing src/component/operator_analysis_testing.c
   src/unit/analysis_test_support.c)
 target_link_libraries(operator_analysis_testing PRIVATE goat_validation m)
+
+# Real arithmetic opcodes dispatch to functions, with Release-safe checks (#496).
+add_executable(operator_arithmetic_testing src/component/operator_arithmetic_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(operator_arithmetic_testing PRIVATE goat_validation m)

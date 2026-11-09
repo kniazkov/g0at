@@ -313,3 +313,34 @@ The runtime regressions run with optimization both enabled and disabled and
 check builtin behavior and catchable `INVALID_OPERATION`. They do not claim
 source-language overloaded operator execution, which belongs to later VM work.
 Assertions remain active in Release builds.
+
+### Arithmetic operator execution
+
+Select `ctest --test-dir build -L operator-arithmetic --output-on-failure` for the
+12 Release-safe C component groups in `operator_arithmetic_testing`:
+
+- `matrix`: every arithmetic, bitwise, unary and separate `++`/`--` opcode, with
+  own and inherited function properties, original receiver and exact arguments.
+- `arity`, `values`, `order`: unary zero arguments versus binary explicit null,
+  arbitrary return types, observable effects, left-to-right evaluation and late
+  handler selection after the RHS, retaining the original left operand.
+- `invalid`, `access`: missing and shadowing nonfunctions (including callable
+  objects), no reverse dispatch, ordinary access errors and lexical rights.
+- `updates`: simple-variable prefix/postfix results and writeback, separate
+  increment/decrement properties, failure and compound-assignment behavior.
+- `continuation`, `cleanup`: nested operators, finally return/throw replacement,
+  original exception identity and origin, lookup failures with temporary RHS
+  values, and restoration of caller and operand stack boundaries.
+- `builtin`, `lifetime`: synchronous builtin success/errors, argument rejection,
+  forced GC inside builtin and Goat handlers, escaping closures/arguments,
+  temporary receivers and arguments, recursion and handler replacement.
+- `builtin-regression`: unchanged numeric/string operations, builtin updates,
+  short-circuit behavior and no premature comparison/index/call integration.
+
+Every source program executes with optimization off/on and both directly linked
+and file-stored, freshly decoded bytecode images. Tests check that required
+operator opcodes remain present, execution never modifies image bytes, and all
+fixture allocations are released. Complex assignment-target single evaluation
+belongs to #500, and native operator integration belongs to #503. See the
+[arithmetic contract](../docs/operator-arithmetic.md)
+([на русском](../docs/operator-arithmetic.ru.md)).
