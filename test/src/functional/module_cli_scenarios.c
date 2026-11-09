@@ -7,6 +7,7 @@
 #endif
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
+#include "lib/platform/windows_target.h"
 #include "test/support/format_zip.h"
 #include "test/support/language_execution.h"
 #include "test/support/process_watch.h"

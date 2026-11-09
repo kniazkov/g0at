@@ -4,6 +4,7 @@
  */
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
+#include "lib/platform/windows_target.h"
 #include "lib/strings/string_ext.h"
 #include "test/support/format_binary.h"
 #include "test/support/format_json.h"
