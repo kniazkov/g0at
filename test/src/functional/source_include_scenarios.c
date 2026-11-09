@@ -154,8 +154,9 @@ static const fixture_t fixtures[] = {
      false},
     {"failed-repeated",
      {{"main.goat",
-       "var first = null; try { include \"bad.goat\"; } catch(e) { first = e; println(e.message); "
-       "} try { include \"bad.goat\"; } catch(e) { println(first == e); } println(\"done\");"},
+       "const seen = {}; try { include \"bad.goat\"; } catch(e) { seen[e] = true; "
+       "println(e.message); "
+       "} try { include \"bad.goat\"; } catch(e) { println(seen[e] == true); } println(\"done\");"},
       {"bad.goat", "println(\"one effect\"); throw { public message = \"failure\"; };"}},
      2,
      "one effect\nfailure\ntrue\ndone\n",

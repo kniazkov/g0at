@@ -374,7 +374,7 @@
       {
         "mode": "compile",
         "name": "app",
-        "code": "var first = null; try { import \"bad@1\"; } catch(e) { first = e; println(e.message); } try { import \"bad@1\"; } catch(e) { println(first == e); } finally { println(\"outer cleanup\"); } println(\"done\");",
+        "code": "const seen = {}; try { import \"bad@1\"; } catch(e) { seen[e] = true; println(e.message); } try { import \"bad@1\"; } catch(e) { println(seen[e] == true); } finally { println(\"outer cleanup\"); } println(\"done\");",
         "version": "1",
         "files": {},
         "dependencies": null,
@@ -520,7 +520,7 @@
       {
         "mode": "compile",
         "name": "app",
-        "code": "var first = null; try { import \"outer@1\"; } catch(e) { first = e; println(e.message); } try { import \"outer@1\"; } catch(e) { println(first == e); } try { import \"inner@1\"; } catch(e) { println(first == e); }",
+        "code": "const seen = {}; try { import \"outer@1\"; } catch(e) { seen[e] = true; println(e.message); } try { import \"outer@1\"; } catch(e) { println(seen[e] == true); } try { import \"inner@1\"; } catch(e) { println(seen[e] == true); }",
         "version": "1",
         "files": {},
         "dependencies": null,

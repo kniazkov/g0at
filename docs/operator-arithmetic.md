@@ -50,8 +50,9 @@ foundation retains the receiver and arguments through calls and collection.
 
 ## Scope and verification
 
-Built-in left values keep their existing operations. Comparisons, logical
-operators, indexing and object calls are separate checklist steps. This step
+Built-in left values keep their existing operations. [Comparisons and logical
+negation](operator-comparisons.md), logical binary operators, indexing and object
+calls are separate checklist steps. This step
 implements VM dispatch, not native handler integration (#503); running with
 native execution enabled may still use the conservative VM fallback.
 

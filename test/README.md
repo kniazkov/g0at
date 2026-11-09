@@ -335,7 +335,7 @@ Select `ctest --test-dir build -L operator-arithmetic --output-on-failure` for t
   forced GC inside builtin and Goat handlers, escaping closures/arguments,
   temporary receivers and arguments, recursion and handler replacement.
 - `builtin-regression`: unchanged numeric/string operations, builtin updates,
-  short-circuit behavior and no premature comparison/index/call integration.
+  short-circuit behavior and no premature logical-binary/index/call integration.
 
 Every source program executes with optimization off/on and both directly linked
 and file-stored, freshly decoded bytecode images. Tests check that required
@@ -344,3 +344,26 @@ fixture allocations are released. Complex assignment-target single evaluation
 belongs to #500, and native operator integration belongs to #503. See the
 [arithmetic contract](../docs/operator-arithmetic.md)
 ([на русском](../docs/operator-arithmetic.ru.md)).
+
+### Comparison and logical-not execution
+
+Select `ctest --test-dir build -L operator-comparison --output-on-failure` for
+the Release-safe C component groups in `operator_comparison_testing`. They cover
+all six comparisons and `!`, inherited properties and original receivers,
+absence-only opposite equality fallback and identity, independent relations,
+strict boolean results, access failures, left-to-right effects and late handler
+selection, synchronous builtin returns, resumed Goat returns and `finally`,
+GC roots, built-in truthiness (`BOOL`/`!!`/conditions), and object-key identity.
+
+Each source program runs optimized and unoptimized, both directly linked and
+from serialized, freshly decoded bytecode. The harness verifies opcode presence
+where relevant, exception/stack cleanup, and the final result. This proves VM
+behavior rather than native integration (#503). See the [English guide](../docs/operator-comparisons.md)
+and [Russian guide](../docs/operator-comparisons.ru.md).
+
+The existing `operator-dispatch.failed-file` group also executes 83 VM cases for
+comparisons and negation across failed file scopes. It asserts exact cached
+exception/trace propagation (including absent operators), and confirms that own
+valid, invalid and inaccessible descendant handlers retain their precedence.
+Repeated-failure include/import/thread scenarios check cached exception identity
+through object keys, not overloaded equality; their expected output is unchanged.

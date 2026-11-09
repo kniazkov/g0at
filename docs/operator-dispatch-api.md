@@ -4,8 +4,9 @@
 
 This is the runtime foundation for checklist step [#494](https://github.com/kniazkov/g0at/issues/494).
 The foundation itself does not route opcodes. [Step #496](operator-arithmetic.md)
-now connects arithmetic, bitwise and unary update instructions to it. Comparison,
-logical, index and object-call integrations remain later checklist steps. The
+connects arithmetic, bitwise and unary update instructions to it.
+[Step #497](operator-comparisons.md) connects comparisons and logical negation.
+Binary logical, index and object-call integrations remain later checklist steps. The
 bytecode instruction set and format remain unchanged.
 
 ## Lookup and ownership

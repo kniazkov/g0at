@@ -1,7 +1,8 @@
 # Module threads migration (#378)
 
-Frozen independent literals from `scripts/check_module_threads.py` at
-`8ca351d0b513c660e2438ee7c71e760e431e4f1a`. `provenance.json` records hashes.
+Originally frozen independent literals from `scripts/check_module_threads.py` at
+`8ca351d0b513c660e2438ee7c71e760e431e4f1a`. `provenance.json` records original
+and current fixture hashes, plus subsequent semantic adaptations.
 The original project calls and their compile/run arguments were evaluated against
 recording stubs (no Goat execution); the `program` boundary recorded the original
 ordered CLI loop. Native source literals and the host protocol were copied from
@@ -100,3 +101,13 @@ Local Linux validation:
   exercise the independent raw transport, not the production module runtime.
 - Full remote original/C parity passed before Python deletion. Final removal
   CI evidence is maintained in PR #456.
+
+## Operator-overloading adaptation (#497)
+
+`concurrent-failed-include` now checks cached exception identity through object
+keys rather than overloaded `==`. Looking up equality on an escaped exception
+whose prototype includes the failed file correctly rethrows that file's saved
+exception. Object-key lookup retains its original identity semantics and invokes
+no handlers. Expected output, subprocess counts and failure contracts are
+unchanged. The provenance record retains the original fixture hash as well as
+the updated hash; no expected result is derived from runtime output.

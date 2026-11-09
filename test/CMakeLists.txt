@@ -583,3 +583,8 @@ target_link_libraries(operator_analysis_testing PRIVATE goat_validation m)
 add_executable(operator_arithmetic_testing src/component/operator_arithmetic_testing.c
   src/unit/analysis_test_support.c)
 target_link_libraries(operator_arithmetic_testing PRIVATE goat_validation m)
+
+# Strict Boolean comparison/negation dispatch and absence-only fallback (#497).
+add_executable(operator_comparison_testing src/component/operator_comparison_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(operator_comparison_testing PRIVATE goat_validation m)
