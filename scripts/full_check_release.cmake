@@ -74,5 +74,6 @@ set(release_labels
   native-saturation-migration
   native-performance-controls
   operator-dispatch
+  operator-analysis
 )
 list(JOIN release_labels "|" release_labels)

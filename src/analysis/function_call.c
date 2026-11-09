@@ -73,8 +73,7 @@ const lattice_element_t *interpret_function_call(const lattice_element_t *functi
         return make_top_element();
     }
     if (function->type != LATTICE_KNOWN_FUNCTION) {
-        if (function->type == LATTICE_TOP || function->type == LATTICE_NOT_NULL
-            || function->type == LATTICE_FUNCTION)
+        if (lattice_may_dispatch_operator(function) || function->type == LATTICE_FUNCTION)
             forget_abstract_values(caller);
         return make_top_element();
     }

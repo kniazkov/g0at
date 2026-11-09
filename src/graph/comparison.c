@@ -65,6 +65,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     binary_operation_t *expr = (binary_operation_t *)node;
     const lattice_element_t *left = calculate_expression(expr->left_operand, state, arena);
     const lattice_element_t *right = calculate_expression(expr->right_operand, state, arena);
+    if (state->control_flow == FLOW_NORMAL && lattice_may_dispatch_operator(left))
+        forget_abstract_values(state);
     return lattice_compare(left, right, node_comparison_kind(node->vtbl->type));
 }
 
@@ -94,6 +96,8 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     const lattice_element_t *left = visit_reachable_node(get_node_child(node, 0), state, collector);
     const lattice_element_t *right =
         visit_reachable_node(get_node_child(node, 1), state, collector);
+    if ((*state)->control_flow == FLOW_NORMAL && lattice_may_dispatch_operator(left))
+        forget_abstract_values(*state);
     const lattice_element_t *result =
         lattice_compare(left, right, node_comparison_kind(node->vtbl->type));
     if (result->type == LATTICE_BOTTOM)

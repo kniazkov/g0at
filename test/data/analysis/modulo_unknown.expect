@@ -1,2 +1,4 @@
-one write 2 2 a range=0,1
+last write 2 2 a top
 one write 3 3 b top
+one flags 2 0 modulo pure
+one flags 3 0 modulo none

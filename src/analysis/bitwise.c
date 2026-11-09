@@ -28,6 +28,8 @@ static const lattice_element_t *integer_part(const lattice_element_t *value) {
 }
 
 const lattice_element_t *lattice_bitwise_not(arena_t *arena, const lattice_element_t *value) {
+    if (lattice_may_dispatch_operator(value))
+        return make_top_element();
     if (!may_be_integer(value))
         return make_bottom_element();
     if (value->type == LATTICE_INTEGER_CONSTANT)
@@ -47,6 +49,10 @@ const lattice_element_t *lattice_bitwise(arena_t *arena,
                                          const lattice_element_t *left,
                                          const lattice_element_t *right,
                                          bitwise_kind_t kind) {
+    if (left->type == LATTICE_BOTTOM || right->type == LATTICE_BOTTOM)
+        return make_bottom_element();
+    if (lattice_may_dispatch_operator(left))
+        return make_top_element();
     if (!may_be_integer(left) || !may_be_integer(right))
         return make_bottom_element();
     bool shift = kind == BIT_SHIFT_LEFT || kind == BIT_SHIFT_RIGHT;

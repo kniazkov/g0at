@@ -109,6 +109,8 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
                 calculate_expression((expression_t *)branch->labels[j], pending, arena);
             if (pending->control_flow != FLOW_NORMAL)
                 break;
+            if (lattice_may_dispatch_operator(selector))
+                forget_abstract_values(pending);
             abstract_truth_t truth = lattice_truth(lattice_compare(selector, label, COMPARE_EQUAL));
             if (truth == ABSTRACT_TRUE || truth == ABSTRACT_EITHER) {
                 abstract_state_t *chosen = clone_abstract_state(pending);

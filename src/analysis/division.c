@@ -21,8 +21,9 @@ const lattice_element_t *
 lattice_divide(arena_t *arena, const lattice_element_t *left, const lattice_element_t *right) {
     if (left->type == LATTICE_BOTTOM || right->type == LATTICE_BOTTOM)
         return make_bottom_element();
-    if (left->type == LATTICE_TOP || left->type == LATTICE_NOT_NULL || left->type == LATTICE_ARRAY
-        || left->type == LATTICE_TYPED_ARRAY)
+    if (lattice_may_dispatch_operator(left))
+        return make_top_element();
+    if (is_array_lattice_element(left))
         return make_top_element();
     if (!is_numeric_lattice_element(left))
         return make_bottom_element();

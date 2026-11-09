@@ -77,6 +77,9 @@ bool no_deferred_bytecode(const node_t *node, code_builder_t *code, data_builder
 /** @brief Implements node_vtbl_t::is_pure using already classified children. */
 bool children_are_pure(const node_t *node);
 
+/** @brief Checks child purity and operator dispatch under one isolated signature proof. */
+bool children_are_pure_in_context(const node_t *node, const c_expression_context_t *context);
+
 /** @brief Implements node_vtbl_t::is_pure when no proof is available. */
 bool not_pure(const node_t *node);
 

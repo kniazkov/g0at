@@ -36,3 +36,8 @@ typedef struct function_call_graph_t function_call_graph_t;
 
 /** @brief Propagates may-effects to a fixed point; missing coverage or limits prevent purity. */
 void propagate_function_effects(function_call_graph_t *graph, size_t max_iterations);
+
+/** @brief Refines receiver/call proofs using only independently established callee purity. */
+void analyze_function_operator_effects(node_t *root,
+                                       function_call_graph_t *graph,
+                                       size_t max_iterations);

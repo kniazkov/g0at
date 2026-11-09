@@ -30,9 +30,10 @@ const lattice_element_t *
 lattice_subtract(arena_t *arena, const lattice_element_t *left, const lattice_element_t *right) {
     if (left->type == LATTICE_BOTTOM || right->type == LATTICE_BOTTOM)
         return make_bottom_element();
-    /* Unknown receivers and future array models cannot yet constrain dispatch. */
-    if (left->type == LATTICE_TOP || left->type == LATTICE_NOT_NULL || left->type == LATTICE_ARRAY
-        || left->type == LATTICE_TYPED_ARRAY)
+    if (lattice_may_dispatch_operator(left))
+        return make_top_element();
+    /* Future array models cannot yet constrain the builtin result. */
+    if (is_array_lattice_element(left))
         return make_top_element();
     if (!is_numeric_lattice_element(left))
         return make_bottom_element();

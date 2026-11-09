@@ -573,10 +573,8 @@ compilation_error_t *analyze(node_t *root_node,
     function_call_graph_t *calls = build_function_call_graph(root_node, memory->graph, 1024);
     analyze_function_return_types(root_node);
     solve_function_recursion(calls, 64);
-    analyze_function_direct_effects(root_node);
     /* Generic receiver domains must be known before proving string-method purity. */
-    analyze_function_c_expressions(root_node);
-    propagate_function_effects(calls, 64);
+    analyze_function_operator_effects(root_node, calls, 64);
     analyze_function_c_contracts(root_node);
     analyze_function_c_bodies(calls, 64);
     if (requires_access_safe_optimization(root_node)

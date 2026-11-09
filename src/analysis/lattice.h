@@ -277,6 +277,12 @@ static inline bool is_user_defined_object_lattice_element(const lattice_element_
     return element && is_user_defined_object_lattice_type(element->type);
 }
 
+/** @brief Only user receivers can dispatch; unknown domains include such receivers. */
+static inline bool lattice_may_dispatch_operator(const lattice_element_t *value) {
+    return !value || value->type == LATTICE_TOP || value->type == LATTICE_NOT_NULL
+           || value->type == LATTICE_USER_DEFINED_OBJECT;
+}
+
 /**
  * @brief Checks whether a lattice type may participate in `+`.
  * @return true if the type is accepted by abstract addition.

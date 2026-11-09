@@ -211,7 +211,7 @@ bool test_bitwise_domains(void) {
                    ->type
                == LATTICE_BOTTOM);
         ASSERT(lattice_bitwise(arena, make_top_element(), make_top_element(), op)->type
-               == LATTICE_INTEGER);
+               == LATTICE_TOP);
     }
     ASSERT(lattice_bitwise(arena,
                            make_integer_constant_element(arena, 0),

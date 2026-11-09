@@ -573,3 +573,8 @@ set_tests_properties(integration.unified_gbin PROPERTIES LABELS "integration;mod
 add_executable(operator_dispatch_testing src/component/operator_dispatch_testing.c
   src/unit/analysis_test_support.c)
 target_link_libraries(operator_dispatch_testing PRIVATE goat_validation m)
+
+# Analysis safeguards precede VM operator dispatch (#495).
+add_executable(operator_analysis_testing src/component/operator_analysis_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(operator_analysis_testing PRIVATE goat_validation m)

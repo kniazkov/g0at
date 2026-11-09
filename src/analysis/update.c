@@ -11,8 +11,8 @@ const lattice_element_t *
 lattice_update(arena_t *arena, const lattice_element_t *value, bool decrement) {
     if (value->type == LATTICE_BOTTOM)
         return value;
-    if (value->type == LATTICE_TOP || value->type == LATTICE_NOT_NULL
-        || value->type == LATTICE_ARRAY || value->type == LATTICE_TYPED_ARRAY)
+    if (lattice_may_dispatch_operator(value) || value->type == LATTICE_ARRAY
+        || value->type == LATTICE_TYPED_ARRAY)
         return make_top_element();
     if (!is_numeric_lattice_element(value))
         return make_bottom_element();

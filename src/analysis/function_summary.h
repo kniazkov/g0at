@@ -77,10 +77,13 @@ typedef struct function_summary_t {
     uint32_t effects; /**< Transitive may-effects; zero proves purity, UNKNOWN blocks the proof. */
     uint32_t direct_effects; /**< Syntactic body effects, excluding called and nested bodies. */
     bool has_calls;
+    c_call_t *effect_targets; /**< Call targets from complete generic operator proofs. */
     function_effect_call_t *effect_calls; /**< Arena-owned call sites, excluding nested bodies. */
     function_capture_t *captures;         /**< Arena-owned list, in first-access order. */
     function_analysis_status_t status;
     function_c_support_t c_support;
+    bool
+        operator_proofs_complete; /**< Unvisited receiver sites are infeasible in this signature. */
     struct c_expression_proof_t *c_expressions; /**< Arena-owned pointwise expression proofs. */
     c_call_t *c_calls;   /**< Arena-owned generic call records, separate from may-call edges. */
     uint32_t c_blockers; /**< Cached failed/pending checks from the numeric C contract. */

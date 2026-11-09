@@ -44,6 +44,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
         return make_bottom_element();
     if (state->control_flow != FLOW_NORMAL || value->type == LATTICE_BOTTOM)
         return make_bottom_element();
+    if (lattice_may_dispatch_operator(old))
+        forget_abstract_values(state);
     if (var->declarator && var->declarator != get_builtin_declarator())
         set_in_abstract_state_at(state, var->declarator, value, node);
     return update_is_postfix(node->vtbl->type) ? old : value;
@@ -97,6 +99,8 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
         (*state)->control_flow = FLOW_UNREACHABLE;
     if ((*state)->control_flow != FLOW_NORMAL)
         return make_bottom_element();
+    if (lattice_may_dispatch_operator(old))
+        forget_abstract_values(*state);
     if (decl && decl != get_builtin_declarator())
         set_in_abstract_state(*state, decl, value);
     return update_is_postfix(node->vtbl->type) ? old : value;

@@ -196,8 +196,7 @@ bool test_addition_domains(void) {
             const lattice_element_t *a = domains[i], *b = domains[j];
             const lattice_element_t *r = lattice_add(arena, a, b);
             if (a->type == LATTICE_BOTTOM || b->type == LATTICE_BOTTOM || a->type == LATTICE_NULL
-                || is_boolean_lattice_element(a) || a->type == LATTICE_FUNCTION
-                || a->type == LATTICE_USER_DEFINED_OBJECT) {
+                || is_boolean_lattice_element(a) || a->type == LATTICE_FUNCTION) {
                 ASSERT(r->type == LATTICE_BOTTOM);
             } else if (is_string_lattice_element(a)) {
                 ASSERT(is_string_lattice_element(r));

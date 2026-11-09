@@ -9,6 +9,7 @@
 #include "graph/common_methods.h"
 #include "graph/expression.h"
 #include "graph/node.h"
+#include "operator.h"
 
 /** @brief Every registered signature must contain a pointwise expression proof. */
 static bool expression_is_compatible(const function_summary_set_t *set, const node_t *node) {
@@ -31,6 +32,14 @@ classify(node_t *node, analysis_collector_t *collector, const function_summary_s
         classify(get_node_child(node, i), collector, function);
     /* Pointwise facts seed the cache; structural methods refine it after children. */
     bool pure = node->vtbl->is_pure(node);
+    if (!pure && function && function->head && node_has_operator_receiver(node)
+        && node->vtbl->is_pure == children_are_pure) {
+        pure = true;
+        for (const function_summary_t *summary = function->head; summary; summary = summary->next) {
+            c_expression_context_t context = {.head = summary->c_expressions};
+            pure &= children_are_pure_in_context(node, &context);
+        }
+    }
     if (node->vtbl->type == NODE_FUNCTION_CALL && (function_flags & NODE_FLAG_PURE)
         && children_are_pure(node))
         pure = true;

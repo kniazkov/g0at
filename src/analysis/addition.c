@@ -280,6 +280,8 @@ const lattice_element_t *
 lattice_add(arena_t *arena, const lattice_element_t *left, const lattice_element_t *right) {
     if (left->type == LATTICE_BOTTOM || right->type == LATTICE_BOTTOM)
         return make_bottom_element();
+    if (lattice_may_dispatch_operator(left))
+        return make_top_element();
     switch (left->type) {
         case LATTICE_BOTTOM:
             return make_bottom_element();

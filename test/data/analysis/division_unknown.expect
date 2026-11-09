@@ -1,3 +1,6 @@
-one write 2 2 a numeric
-one write 3 3 b real
+last write 2 2 a top
+last write 3 3 b top
 one write 4 4 c top
+one flags 2 0 division pure
+one flags 3 0 division pure
+one flags 4 0 division none
