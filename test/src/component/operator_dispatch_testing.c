@@ -637,7 +637,133 @@ fail_initializer(module_file_t *file, context_t *frame, void *data, exception_t 
     return false;
 }
 
+static unsigned failed_scope_handler_calls;
+
+static operation_result_t failed_scope_handler(object_t **args, uint16_t count, thread_t *t) {
+    (void)args;
+    (void)count;
+    (void)t;
+    ++failed_scope_handler_calls;
+    return operation_success(get_boolean_object(true));
+}
+
+/** Failed ordinary lookup is an error, not an absent operator. In particular, an
+ * object used as a cached exception may inherit its failed initializer scope:
+ * comparing that object must preserve this error rather than silently use identity. */
+static void failed_file_comparisons(void) {
+    static const struct {
+        const gchar_t *sign, *opposite, *source;
+    } operations[] = {{U"==", U"!=", U"target==target;"},
+                      {U"!=", U"==", U"target!=target;"},
+                      {U"<", NULL, U"target<target;"},
+                      {U"<=", NULL, U"target<=target;"},
+                      {U">", NULL, U"target>target;"},
+                      {U">=", NULL, U"target>=target;"},
+                      {U"!", NULL, U"!target;"}};
+
+    static builtin_function_object_t handler_storage;
+    static const builtin_function_t handler_descriptor = {.name = U"failedScopeHandler",
+                                                          .execute = failed_scope_handler};
+    object_t *handler = get_builtin_function_object(&handler_storage, &handler_descriptor);
+    char source[] = "external ready = true;";
+    module_source_t file = {.path = "comparison_failure.goat",
+                            .name = "comparison_failure.goat",
+                            .source = source,
+                            .length = sizeof(source) - 1};
+    module_sources_t sources = {.files = &file, .count = 1};
+    module_compilation_t *compilation = NULL;
+    module_compilation_error_t error = {0};
+    assert(compile_module_sources(&sources, &compilation, &error));
+    for (size_t op = 0; op < sizeof(operations) / sizeof(*operations); ++op) {
+        fixture_t f = {0};
+        f.arena = create_arena(8);
+        parser_memory_t memory = {f.arena, f.arena, f.arena, f.arena};
+        node_t *node = parse_analysis_test_program(
+            &memory,
+            (string_value_t){operations[op].source, STRLEN(operations[op].source), false});
+        assert(node);
+        f.builder = create_code_builder();
+        f.data = create_data_builder();
+        generate_bytecode_from_node(node, f.builder, f.data);
+        f.code = link_code_and_data(f.builder, f.data);
+        for (unsigned derived_target = 0; derived_target < 2; ++derived_target)
+            for (unsigned variant = 0; variant < 9; ++variant) {
+                /* 0: no operator anywhere; 1..4: requested/opposite/nonfunction/private
+                 * on the failed scope; 5..8: own requested/nonfunction/private/opposite
+                 * on a healthy descendant. These latter cases need a descendant. */
+                if ((!derived_target && variant >= 5)
+                    || ((variant == 2 || variant == 8) && !operations[op].opposite))
+                    continue;
+                process_t *p = create_process();
+                thread_t *t = p->main_thread;
+                module_files_t *files = NULL;
+                assert(create_module_files_from_snapshot(p,
+                                                         compilation->metadata,
+                                                         compilation->code,
+                                                         &files));
+                module_file_t *failed = module_files_main(files);
+                object_t *scope = module_file_scope(failed);
+                object_t *derived = object(p, scope);
+                object_t *target = derived_target ? derived : scope;
+                if (variant >= 1 && variant <= 4)
+                    field(p,
+                          scope,
+                          variant == 2 ? operations[op].opposite : operations[op].sign,
+                          variant == 3 ? get_null_object() : handler,
+                          variant == 4 ? ACCESS_PRIVATE : ACCESS_EXTERNAL);
+                if (variant >= 5)
+                    field(p,
+                          derived,
+                          variant == 8 ? operations[op].opposite : operations[op].sign,
+                          variant == 6 ? get_null_object() : handler,
+                          variant == 7 ? ACCESS_PRIVATE : ACCESS_EXTERNAL);
+                field(p, t->context->data, U"target", target, ACCESS_EXTERNAL);
+                field(p, t->context->data, U"descendant", derived, ACCESS_EXTERNAL);
+                object_t *result = NULL;
+                exception_t original = {0};
+                assert(initialize_module_file(failed,
+                                              t->context,
+                                              fail_initializer,
+                                              NULL,
+                                              &result,
+                                              &original)
+                       == MODULE_INITIALIZE_FAILED);
+                assert(!result && original.value && original.trace);
+                DECREF(derived); /* The caller context owns the live descendant. */
+                failed_scope_handler_calls = 0;
+                int status = run(p, f.code);
+                if (variant == 5) {
+                    /* A successfully selected own handler never consults the ancestor. */
+                    assert(status == 0 && !t->exception.value && failed_scope_handler_calls == 1);
+                } else {
+                    assert(status != 0 && failed_scope_handler_calls == 0);
+                    if (variant == 6 || variant == 7) {
+                        /* Neither an invalid nor inaccessible own handler falls through. */
+                        assert(t->exception.value
+                               == (variant == 6 ? get_exception_invalid_operation()
+                                                : get_exception_access_denied()));
+                        assert(t->exception.trace && t->exception.trace != original.trace);
+                    } else {
+                        /* Includes absent requested/opposite handlers and the absent ! case:
+                         * failed lookup must not become identity, negation or opposite fallback. */
+                        assert(t->exception.value == original.value);
+                        assert(t->exception.trace == original.trace);
+                    }
+                }
+                assert(t->data_stack->size == 0);
+                assert(module_file_exception(failed).value == original.value);
+                assert(module_file_exception(failed).trace == original.trace);
+                clear_exception(&original);
+                destroy_process(p);
+            }
+        dispose(&f);
+    }
+    free_module_compilation(compilation);
+    clear_module_compilation_error(&error);
+}
+
 static void failed_file_case(void) {
+    failed_file_comparisons();
     char source[] = "external ready = true;";
     module_source_t file = {.path = "operator_failure.goat",
                             .name = "operator_failure.goat",

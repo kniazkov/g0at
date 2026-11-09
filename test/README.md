@@ -360,3 +360,10 @@ from serialized, freshly decoded bytecode. The harness verifies opcode presence
 where relevant, exception/stack cleanup, and the final result. This proves VM
 behavior rather than native integration (#503). See the [English guide](../docs/operator-comparisons.md)
 and [Russian guide](../docs/operator-comparisons.ru.md).
+
+The existing `operator-dispatch.failed-file` group also executes 83 VM cases for
+comparisons and negation across failed file scopes. It asserts exact cached
+exception/trace propagation (including absent operators), and confirms that own
+valid, invalid and inaccessible descendant handlers retain their precedence.
+Repeated-failure include/import/thread scenarios check cached exception identity
+through object keys, not overloaded equality; their expected output is unchanged.

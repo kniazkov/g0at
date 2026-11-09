@@ -20,7 +20,8 @@ call `==`. The opposite handler's boolean result is negated. If both properties
 are absent, equality uses object identity, and inequality its negation. A found
 property containing `null` or another non-function is an `INVALID_OPERATION`,
 not absence. An access error also stops selection and preserves the original
-exception. Neither case permits fallback. An explicit requested handler always
+exception. Reaching a failed file-scope prototype also rethrows its saved
+exception, even when no handler has been found. Neither case permits fallback. An explicit requested handler always
 wins, even if both handlers return mutually inconsistent results.
 
 Even `a == a` calls the selected handler: its result, side effects and exceptions
@@ -68,3 +69,8 @@ contracts, effects, continuations, truthiness and key identity. Source programs
 run before and after simplification, directly linked and after bytecode
 serialization and fresh decoding. This validates VM dispatch, not native handler
 integration, which belongs to #503. The conservative analysis safeguards introduced in #495 remain in force.
+
+Language equality is therefore not an effect-free identity test for escaped
+exception objects whose prototype chain includes a failed file. Use object-key
+lookup when testing their identity without invoking operator lookup. The existing
+repeated-failure include/import and thread fixtures use that identity oracle.

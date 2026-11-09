@@ -1,6 +1,6 @@
 # Import execution scenario migration (#362)
 
-`scenarios.json` is the exact source/expected-output table from
+`scenarios.json` originated as the exact source/expected-output table from
 `scripts/check_module_import_execution.py` at parent `913d87b8`.
 Each original Project is an independent CTest ID (33 IDs, 95 compile/VM calls).
 The real module host is used, never a simulated evaluator. Source bytes, library
@@ -87,3 +87,13 @@ the first expected dependency identity, or replace a mode with `bogus`.
 Each change must return nonzero, identify the assertion, and retain its workspace.
 Do not modify the production fixture. These mutations were verified during this
 migration. Existing negative compile/load/VM cases are also registered normally.
+
+## Operator-overloading adaptation (#497)
+
+`failed-repeat` and `nested-failure` now use object-key lookup to verify cached
+exception identity, instead of overloaded language equality. Equality handler
+lookup on those escaped exceptions reaches their failed file-scope prototype
+and correctly rethrows the saved failure. Internal keys never invoke equality
+handlers. The original expected stdout, operation order, call counts and failure
+statuses are unchanged; historical byte-for-byte migration claims above refer
+to the original migration, before this documented semantic adaptation.
