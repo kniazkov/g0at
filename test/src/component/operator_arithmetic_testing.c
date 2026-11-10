@@ -553,9 +553,9 @@ static void builtin_regression_case(void) {
     program(U"var result=false; var calls=0; const a={}; const handler=func(x){calls+=1;return "
             U"false;}; "
             U"a[\"&&\"]=handler; a[\"||\"]=handler; "
-            U"a[\"[]\"]=handler; a[\"[]=\"]=handler; a[\"()\"]=handler; "
-            U"a[\"x\"]=7; const same=a==a; const truth=!!a; const negation=!a; "
-            U"false&&++calls; true||++calls; const value=a[\"x\"]; "
+            U"a[\"()\"]=handler; a[\"[]\"]=handler; a[\"[]=\"]=handler; "
+            U"a.x=7; const same=a==a; const truth=!!a; const negation=!a; "
+            U"false&&++calls; true||++calls; const value=a.x; "
             U"result=same && truth && !negation && value==7 && calls==0;",
             NOP,
             false);

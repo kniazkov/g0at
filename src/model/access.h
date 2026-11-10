@@ -235,7 +235,8 @@ object_t *object_observation_failure(object_t *object, const function_access_t *
 /** @brief Borrowed full failure record from the same observation traversal. */
 exception_t object_observation_exception(object_t *object, const function_access_t *access);
 
-/** @brief Validates a retained index destination without evaluating it or creating a field. */
+/** @brief Preflights builtin destinations without mutation; user-object checks wait for the
+ * late setter selection after the RHS, including when the setter is currently absent. */
 operation_result_t check_accessible_index_write(const function_access_t *access,
                                                 object_t *object,
                                                 object_array_t indices);

@@ -78,5 +78,6 @@ set(release_labels
   operator-arithmetic
   operator-comparison
   operator-logical
+  operator-index
 )
 list(JOIN release_labels "|" release_labels)

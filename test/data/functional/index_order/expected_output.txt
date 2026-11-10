@@ -3,7 +3,7 @@ oiv
 7
 oi
 INVALID_ARGUMENT
-oii
+oiiv
 INVALID_ARGUMENT
 oii
 bad

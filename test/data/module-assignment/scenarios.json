@@ -83,7 +83,7 @@
       },
       {
         "mode": "binary",
-        "expected": "ACCESS_DENIED\nACCESS_DENIED\n0\n10\n"
+        "expected": "ACCESS_DENIED\nACCESS_DENIED\n1\n10\n"
       }
     ]
   },
@@ -171,7 +171,7 @@
       },
       {
         "mode": "binary",
-        "expected": "ACCESS_DENIED\nok\n1\n1\n0\n10\n"
+        "expected": "ACCESS_DENIED\nokr\n1\n1\n1\n10\n"
       }
     ]
   },
@@ -215,7 +215,7 @@
       },
       {
         "mode": "binary",
-        "expected": "PROPERTY_IS_CONSTANT\nok\n1\n1\n0\n10\n"
+        "expected": "PROPERTY_IS_CONSTANT\nokr\n1\n1\n1\n10\n"
       }
     ]
   },
@@ -259,7 +259,7 @@
       },
       {
         "mode": "binary",
-        "expected": "PROPERTY_IS_CONSTANT\nok\n1\n1\n0\n10\n"
+        "expected": "PROPERTY_IS_CONSTANT\nokr\n1\n1\n1\n10\n"
       }
     ]
   },
@@ -317,7 +317,7 @@
       },
       {
         "mode": "binary",
-        "expected": "FOREIGN_OBJECT\nok\n{ }\n"
+        "expected": "FOREIGN_OBJECT\nokr\n{ }\n"
       }
     ]
   },
@@ -375,7 +375,7 @@
       },
       {
         "mode": "binary",
-        "expected": "ACCESS_DENIED\nok\nPROPERTY_IS_CONSTANT\nok\nokr\n10\n20\n2\n"
+        "expected": "ACCESS_DENIED\nokr\nPROPERTY_IS_CONSTANT\nokr\nokr\n10\n20\n2\n"
       }
     ]
   },
@@ -433,7 +433,7 @@
       },
       {
         "mode": "binary",
-        "expected": "ACCESS_DENIED\nok\nPROPERTY_IS_CONSTANT\nok\nokr\n10\n20\n32\n"
+        "expected": "ACCESS_DENIED\nok\nPROPERTY_IS_CONSTANT\nokr\nokr\n10\n20\n32\n"
       }
     ]
   },
