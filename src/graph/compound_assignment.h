@@ -14,3 +14,19 @@ expression_t *create_compound_assignment_node(arena_t *arena,
 node_t *compound_assignment_target(const node_t *node);
 /** @brief Whether a variable occurrence is the read/write target of a compound assignment. */
 bool is_compound_assignment_target(const node_t *node);
+
+/** @brief Stack address retained below the current value by read-modify-write lowering. */
+typedef struct {
+    instr_index_t first; /**< First instruction evaluating or checking the target. */
+    uint32_t count;      /**< Number of retained receiver/index operands. */
+    uint32_t property;   /**< Data segment name for a named member. */
+} retained_target_t;
+
+/** @brief Checks the target and reads it once, retaining complex address operands. */
+retained_target_t
+generate_retained_target_read(node_t *target, code_builder_t *code, data_builder_t *data);
+/** @brief Stores the top value through the retained address, leaving the value on the stack. */
+void generate_retained_target_write(node_t *target,
+                                    retained_target_t address,
+                                    code_builder_t *code,
+                                    data_builder_t *data);

@@ -222,13 +222,14 @@ bool test_update_ast_parser(void) {
         code_builder_t *builder = create_code_builder();
         data_builder_t *data = create_data_builder();
         generate_bytecode_from_expression(node, builder, data);
-        ASSERT(builder->size == (i >= 2 ? 5 : 3));
-        ASSERT(builder->instructions[0].opcode == VLOAD);
-        ASSERT(builder->instructions[i >= 2 ? 2 : 1].opcode == (i % 2 ? DEC : INC));
-        ASSERT(builder->instructions[i >= 2 ? 3 : 2].opcode == STORE);
+        ASSERT(builder->size == (i >= 2 ? 6 : 4));
+        ASSERT(builder->instructions[0].opcode == CHECKVAR
+               && builder->instructions[1].opcode == VLOAD);
+        ASSERT(builder->instructions[i >= 2 ? 3 : 2].opcode == (i % 2 ? DEC : INC));
+        ASSERT(builder->instructions[i >= 2 ? 4 : 3].opcode == STORE);
         if (i >= 2)
-            ASSERT(builder->instructions[1].opcode == DUP
-                   && builder->instructions[4].opcode == POP);
+            ASSERT(builder->instructions[2].opcode == DUP
+                   && builder->instructions[5].opcode == POP);
         string_value_t source = generate_goat_code_from_expression(node);
         source_builder_t *sb = create_source_builder();
         generate_indented_goat_code_from_expression(node, sb, 0);
@@ -252,7 +253,15 @@ bool test_update_ast_parser(void) {
                               U"var x=1; -x++ ** 2",
                               U"var x=1; 2 ** --x",
                               U"var x=1; x+++x",
-                              U"var x=1; x++ + ++x"};
+                              U"var x=1; x++ + ++x",
+                              U"++a.x",
+                              U"a.x--",
+                              U"a[0]++",
+                              U"--a[]",
+                              U"++f()[a(),b()]",
+                              U"(f().x[0])--",
+                              U"++((a[0].x[0]))",
+                              U"((a[0]).x)[0]++"};
     const gchar_t *invalid[] = {U"++",
                                 U"--",
                                 U"++1",

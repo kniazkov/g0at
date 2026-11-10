@@ -1,11 +1,11 @@
 /** @file update_expression.h
  * @copyright 2026 Ivan Kniazkov
- * @brief Prefix and postfix updates of variables.
+ * @brief Prefix and postfix updates of assignable targets.
  */
 #pragma once
 #include "assignable_expression.h"
 #include "unary_expression.h"
-/** @brief Creates an update node; the operand must be a variable. */
+/** @brief Creates an update node; the operand must be assignable. */
 expression_t *create_prefix_increment_node(arena_t *arena, assignable_expression_t *operand);
 expression_t *create_prefix_decrement_node(arena_t *arena, assignable_expression_t *operand);
 expression_t *create_postfix_increment_node(arena_t *arena, assignable_expression_t *operand);

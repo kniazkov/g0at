@@ -19,8 +19,9 @@ parameter is `null`, but that does not add an element to `arguments`.
 `++` and `--` use their own properties, without arguments. They never fall back
 to `+ 1` or `- 1`. The handler returns the new value. Existing surrounding update
 code writes it back; prefix returns the new value and postfix preserves the old
-value. The old object is not deep-copied. Single evaluation and early write
-checks for complex assignment targets belong to step #500.
+value. The old object is not deep-copied. Variables, named properties and indices retain their target exactly once;
+see [compound assignments and updates](compound-assignment.md) for write checks,
+late index setters and the complete ordering contract.
 
 Every handler may return any value, including a string, object or number. Its
 bare `this` is the original receiver, including when the property was inherited.

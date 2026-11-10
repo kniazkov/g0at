@@ -862,3 +862,8 @@ foreach(operator_case IN ITEMS matrix order mutation analysis module fallback lo
   goat_suite(component.operator_index.${operator_case} "component;operator-index"
     "$<TARGET_FILE:operator_index_testing>" "${operator_case}")
 endforeach()
+
+foreach(operator_case IN ITEMS matrix order mutation updates early invalid unwind continuation builtin analysis)
+  goat_suite(component.operator_update.${operator_case} "component;operator-update"
+    "$<TARGET_FILE:operator_update_testing>" "${operator_case}")
+endforeach()

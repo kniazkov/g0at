@@ -6,7 +6,7 @@
 #include "parser.h"
 #include "resources/messages.h"
 
-/** @brief Unwraps a parenthesized variable before shells are finalized. */
+/** @brief Unwraps a parenthesized assignable target before shells are finalized. */
 static node_t *target_node(token_t *token, token_groups_t *groups) {
     if (!token || token->type != TOKEN_EXPRESSION)
         return NULL;
@@ -19,7 +19,7 @@ static node_t *target_node(token_t *token, token_groups_t *groups) {
             return NULL;
         node = shell->children.first->node;
     }
-    return node->vtbl->type == NODE_VARIABLE ? node : NULL;
+    return node->vtbl->is_assignable_expression ? node : NULL;
 }
 
 static compilation_error_t *

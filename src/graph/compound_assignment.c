@@ -85,7 +85,22 @@ store(node_t *node, const lattice_element_t *value, abstract_state_t *state, boo
     return value;
 }
 
+/** @brief A known constant binding fails before reading the RHS or calling an operator. */
+static bool constant_target(const node_t *node) {
+    const node_t *target = compound_assignment_target(node);
+    if (target->vtbl->type != NODE_VARIABLE)
+        return false;
+    const variable_t *variable = (const variable_t *)target;
+    const declarator_t *decl = variable->declarator;
+    return !variable->dynamic_lookup && decl && decl != get_builtin_declarator()
+           && decl->base.vtbl->type == NODE_CONSTANT_DECLARATOR;
+}
+
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
+    if (constant_target(node)) {
+        state->control_flow = FLOW_UNREACHABLE;
+        return make_bottom_element();
+    }
     const lattice_element_t *value =
         calculate_expression(((compound_assignment_t *)node)->operation, state, arena);
     return store(node, value, state, true);
@@ -93,6 +108,10 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 
 static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    if (constant_target(node)) {
+        (*state)->control_flow = FLOW_UNREACHABLE;
+        return make_bottom_element();
+    }
     const lattice_element_t *value = visit_reachable_node(get_child(node, 0), state, collector);
     return store(node, value, *state, false);
 }
@@ -122,9 +141,8 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
     append_formatted_source(builder, generate_goat_code(node));
 }
 
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
-    const compound_assignment_t *expr = (const compound_assignment_t *)node;
-    node_t *target = compound_assignment_target(node);
+retained_target_t
+generate_retained_target_read(node_t *target, code_builder_t *code, data_builder_t *data) {
     instr_index_t first;
     uint32_t retained = 0, property = 0;
     if (target->vtbl->type == NODE_MEMBER_ACCESS) {
@@ -149,20 +167,34 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
         first = generate_variable_write_check(target, code, data);
         generate_bytecode_from_expression((expression_t *)target, code, data);
     }
+    return (retained_target_t){first, retained, property};
+}
+
+void generate_retained_target_write(node_t *target,
+                                    retained_target_t address,
+                                    code_builder_t *code,
+                                    data_builder_t *data) {
+    if (address.count) {
+        add_instruction(code, (instruction_t){.opcode = ROTATE, .arg1 = address.count});
+        add_instruction(code,
+                        target->vtbl->type == NODE_MEMBER_ACCESS
+                            ? (instruction_t){.opcode = SETPROP, .arg1 = address.property}
+                            : (instruction_t){.opcode = SETINDEX, .arg1 = address.count - 1});
+    } else {
+        generate_bytecode_assign_from_node(target, code, data);
+    }
+}
+
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    const compound_assignment_t *expr = (const compound_assignment_t *)node;
+    node_t *target = compound_assignment_target(node);
+    retained_target_t address = generate_retained_target_read(target, code, data);
     generate_bytecode_from_expression((expression_t *)get_node_child((node_t *)expr->operation, 1),
                                       code,
                                       data);
     add_instruction(code, (instruction_t){.opcode = expr->opcode});
-    if (retained) {
-        add_instruction(code, (instruction_t){.opcode = ROTATE, .arg1 = retained});
-        add_instruction(code,
-                        target->vtbl->type == NODE_MEMBER_ACCESS
-                            ? (instruction_t){.opcode = SETPROP, .arg1 = property}
-                            : (instruction_t){.opcode = SETINDEX, .arg1 = retained - 1});
-    } else {
-        generate_bytecode_assign_from_node(target, code, data);
-    }
-    return first;
+    generate_retained_target_write(target, address, code, data);
+    return address.first;
 }
 
 static bool can_generate_c_code(const node_t *node,

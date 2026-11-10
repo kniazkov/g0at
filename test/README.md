@@ -341,7 +341,7 @@ Every source program executes with optimization off/on and both directly linked
 and file-stored, freshly decoded bytecode images. Tests check that required
 operator opcodes remain present, execution never modifies image bytes, and all
 fixture allocations are released. Complex assignment-target single evaluation
-belongs to #500, and native operator integration belongs to #503. See the
+is covered by #500, and native operator integration belongs to #503. See the
 [arithmetic contract](../docs/operator-arithmetic.md)
 ([на русском](../docs/operator-arithmetic.ru.md)).
 
@@ -367,3 +367,17 @@ exception/trace propagation (including absent operators), and confirms that own
 valid, invalid and inaccessible descendant handlers retain their precedence.
 Repeated-failure include/import/thread scenarios check cached exception identity
 through object keys, not overloaded equality; their expected output is unchanged.
+
+### Compound assignment and update operators (#500)
+
+Select `ctest --test-dir build -L operator-update --output-on-failure`. The
+Release-safe C component groups cover all eleven compound signs, variable, dot,
+and zero/single/multiple-index targets, parenthesized mixed chains, exact effect
+order, single target evaluation, late setter replacement, early constant-binding
+checks, getter failures, access/nonfunction/absence paths, and prefix/postfix
+object identity. Nested calls, collection, finally/unwind, ignored setter results,
+chain assignment, and built-in operations are included. Every source runs with
+optimization disabled/enabled, directly linked and stored/decoded; the harness
+checks stack/context restoration, immutable bytecode, and allocation balance.
+Direct abstract evaluation and reachability tests verify that constant-target
+preflight does not evaluate the RHS. Native integration remains tracked in #503.
