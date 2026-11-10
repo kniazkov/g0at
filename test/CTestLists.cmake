@@ -879,7 +879,7 @@ foreach(continuation_case mixed unwind escape trace strict-bool recursion no-rep
 endforeach()
 
 foreach(operator_case arithmetic comparison logical index call unwind)
-  goat_scenario(native.operators.${operator_case} "native;language-roundtrip" TIMEOUT 200 COMMAND
+  goat_scenario(native.operators.${operator_case} "native;native-operators;language-roundtrip" TIMEOUT 200 COMMAND
     "$<TARGET_FILE:native_operator_testing>" "native.operators.${operator_case}" "$<TARGET_FILE:goat>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()

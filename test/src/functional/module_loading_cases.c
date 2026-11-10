@@ -250,6 +250,16 @@ static void continuation_controls(scenario_run_t *r,
         loading_owner_expect_output(owner, rejected ? "" : "49\n64\n");
         if (rejected) {
             REQUIRE(number(r, result, "prepare") != 0);
+            /* Cross-file range rejection follows extraction, unlike invalid exports rejected
+               by preflight. Expose its scope so loading_owner_end waits for real cleanup. */
+            yyjson_val *directory = yyjson_obj_get(result, "directory");
+            REQUIRE(yyjson_is_str(directory));
+            if (i == 6)
+                REQUIRE(yyjson_get_len(directory));
+            if (i < 2) {
+                REQUIRE(!yyjson_get_len(directory));
+                no_cleaner(r, owner);
+            }
             no_native_call(r, owner);
         } else if (scalar_empty) {
             REQUIRE(number(r, result, "native_successes") == 0);

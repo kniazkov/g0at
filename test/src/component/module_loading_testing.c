@@ -142,7 +142,21 @@ static int execute(int argc, char **argv) {
     module_loading_result_t prepared = prepare_module_snapshot_native(snapshot, &options);
     if (prepared.status) {
         FPRINTF(stderr, "PREPARE %s\n", prepared.diagnostic ? prepared.diagnostic : "");
-        FPRINTF(stderr, "RESULT {\"prepare\":%d,\"node\":%zu}\n", prepared.status, prepared.node);
+        /* Continuation validation can reject an already extracted library during preparation.
+           Report its cleanup scope just as on the run path, so the supervisor waits for the
+           cleaner before removing this owner's marker directory. */
+        const char *directory = module_snapshot_native_directory(snapshot);
+        yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+        yyjson_mut_val *root = yyjson_mut_obj(doc);
+        yyjson_mut_doc_set_root(doc, root);
+        yyjson_mut_obj_add_int(doc, root, "prepare", prepared.status);
+        yyjson_mut_obj_add_uint(doc, root, "node", prepared.node);
+        yyjson_mut_obj_add_str(doc, root, "directory", directory ? directory : "");
+        char *json = yyjson_mut_write(doc, 0, NULL);
+        assert(json);
+        FPRINTF(stderr, "RESULT %s\n", json);
+        free(json);
+        yyjson_mut_doc_free(doc);
         clear_module_loading_result(&prepared);
         free_module_snapshot(snapshot);
         return 3;
