@@ -603,3 +603,8 @@ target_link_libraries(operator_index_testing PRIVATE goat_validation m)
 add_executable(operator_update_testing src/component/operator_update_testing.c
   src/unit/analysis_test_support.c)
 target_link_libraries(operator_update_testing PRIVATE goat_validation m)
+
+# Callable user objects: late handler selection and retained callee (#501).
+add_executable(operator_call_testing src/component/operator_call_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(operator_call_testing PRIVATE goat_validation m)

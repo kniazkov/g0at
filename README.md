@@ -339,6 +339,8 @@ See [compound assignments](docs/compound-assignment.md) for evaluation order, ex
 
 See [switch selection](docs/switch.md) for ordered variants, branch scopes, diagnostics, and native support (English and Russian).
 
+See [callable user objects](docs/operator-call.md) for `()` handlers, evaluation order, and receiver semantics.
+
 ## Author and license
 
 Created by [Ivan Kniazkov](https://github.com/kniazkov).

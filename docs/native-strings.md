@@ -132,7 +132,8 @@
 Поддерживаются `s.method(...)`, обычные вызовы `method(s, ...)`, неизменяемые
 псевдонимы встроенных функций и свойство `s.length`. Тип получателя должен быть
 доказан как строковый; одноимённые методы других объектов не подменяются.
-Аргументы метода вычисляются перед получателем, как в VM, включая лишние аргументы.
+Получатель метода вычисляется и сохраняется перед аргументами, как в VM; лишние
+аргументы также вычисляются слева направо.
 `format` использует нативный `str` для целых, вещественных, булевых значений и символов.
 Ошибки индекса или размера возвращают управление VM для штатного исключения;
 временная память освобождается контекстом вызова.
@@ -208,8 +209,8 @@ representation remain in the VM.
 All string methods listed above now lower to the linked runtime, both as direct
 `s.method(...)` calls and as builtin `method(s, ...)` calls (including immutable
 aliases). The `s.length` property is also supported. Method resolution requires a
-proven immutable string receiver. Explicit arguments execute before the receiver,
-including ignored extra arguments, matching CALLM. Invalid indices/sizes trigger
+proven immutable string receiver. The receiver is evaluated and retained before
+explicit arguments, including ignored extra arguments, matching CALLM. Invalid indices/sizes trigger
 VM retry with ordinary language exceptions and invocation-context cleanup.
 The external ABI carries integer, real, string, boolean and character values.
 Predicates and `charAt` return their native types directly to the VM; see

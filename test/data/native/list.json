@@ -65,8 +65,8 @@
       "goat_native_string_format(": 1
     },
     "output_contains": [
-      "BXDBXD:3\n",
-      "changed\n3\nalias\n"
+      "XX:3\n",
+      "original\n3\nalias\n"
     ]
   },
   {
@@ -165,5 +165,14 @@
     "name": "compound",
     "calls": 12,
     "bound": 5
+  },
+  {
+    "name": "call_order",
+    "calls": 4,
+    "bound": 2,
+    "generated": {
+      "goat_native_string_trim(g_context,": 1,
+      "goat_native_string_substring(g_context,": 2
+    }
   }
 ]

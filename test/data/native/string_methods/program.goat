@@ -22,7 +22,7 @@ const slices = func(s, begin, end) {
 };
 const chain = func(s) {
     var i = 0;
-    // The outer argument executes before its receiver, just like CALLM.
+    // The receiver chain executes before the outer argument, just like CALLM.
     const result = s.substring(i++, i++ + 2).substring(i++);
     return result.trim().toUpperCase().replace('C', 'X').repeat(2) + ":" + i;
 };

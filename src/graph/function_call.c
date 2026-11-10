@@ -82,30 +82,31 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const function_call_t *expr = (const function_call_t *)node;
     const lattice_element_t **args =
         alloc_from_arena(arena, (expr->args_count + 1) * sizeof(*args));
-    for (size_t i = 0; i < expr->args_count && state->control_flow == FLOW_NORMAL; i++)
-        args[i] = calculate_expression(expr->args[i], state, arena);
-    if (state->control_flow != FLOW_NORMAL)
-        return make_bottom_element();
     const lattice_element_t *function;
+    const lattice_element_t *receiver = NULL;
+    const builtin_function_t *method = NULL;
     if (expr->func_object->base.vtbl->type == NODE_MEMBER_ACCESS) {
         const member_access_t *member = (const member_access_t *)expr->func_object;
-        const lattice_element_t *receiver = calculate_expression(member->object, state, arena);
+        receiver = calculate_expression(member->object, state, arena);
         if (state->control_flow != FLOW_NORMAL)
             return make_bottom_element();
-        const builtin_function_t *method = find_native_string_method(member->name);
-        if (method
-            && (receiver->type == LATTICE_STRING || receiver->type == LATTICE_STRING_CONSTANT)) {
-            for (size_t i = expr->args_count; i > 0; i--)
-                args[i] = args[i - 1];
-            args[0] = receiver;
-            return method->interpret(state, args, expr->args_count + 1);
-        }
+        method = find_native_string_method(member->name);
         function = module_interface_member_at(receiver, member->name, arena, node);
     } else {
         function = calculate_expression(expr->func_object, state, arena);
     }
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
+    for (size_t i = 0; i < expr->args_count && state->control_flow == FLOW_NORMAL; i++)
+        args[i] = calculate_expression(expr->args[i], state, arena);
+    if (state->control_flow != FLOW_NORMAL)
+        return make_bottom_element();
+    if (method && (receiver->type == LATTICE_STRING || receiver->type == LATTICE_STRING_CONSTANT)) {
+        for (size_t i = expr->args_count; i > 0; i--)
+            args[i] = args[i - 1];
+        args[0] = receiver;
+        return method->interpret(state, args, expr->args_count + 1);
+    }
     if (state->module_constants && !state->call_frame) {
         bool top_level = true;
         for (const node_t *owner = node->parent; owner; owner = owner->parent)
@@ -180,8 +181,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     const function_call_t *expr = (const function_call_t *)node;
     assert(expr->args_count < UINT16_MAX);
     instr_index_t first = code->size;
-    for (size_t index = 0; index < expr->args_count; index++)
-        generate_bytecode_from_expression(expr->args[index], code, data);
+    bool method = expr->func_object->base.vtbl->type == NODE_MEMBER_ACCESS
+                  || expr->func_object->base.vtbl->type == NODE_INDEX_ACCESS;
     if (expr->func_object->base.vtbl->type == NODE_MEMBER_ACCESS) {
         /* Method call `object.member(...)`: keep the receiver on the stack below the function so
          * CALLM can pass it as the method context. */
@@ -190,14 +191,21 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
         add_instruction(code, (instruction_t){.opcode = DUP});
         uint32_t index = add_string_to_data_segment_ex(data, member->name);
         add_instruction(code, (instruction_t){.opcode = GETPROP, .arg1 = index});
-        add_instruction(code, (instruction_t){.opcode = CALLM, .arg0 = (uint16_t)expr->args_count});
     } else if (expr->func_object->base.vtbl->type == NODE_INDEX_ACCESS) {
         generate_index_read(&expr->func_object->base, code, data, true);
-        add_instruction(code, (instruction_t){.opcode = CALLM, .arg0 = (uint16_t)expr->args_count});
     } else {
         generate_bytecode_from_expression(expr->func_object, code, data);
-        add_instruction(code, (instruction_t){.opcode = CALL, .arg0 = (uint16_t)expr->args_count});
     }
+    /* Keep the already evaluated callee (and method receiver) rooted while arguments run.
+     * ROTATE places each new argument below those saved values, preserving CALL/CALLM's
+     * argument, receiver, function stack contract without changing executable bytecode. */
+    for (size_t index = 0; index < expr->args_count; index++) {
+        generate_bytecode_from_expression(expr->args[index], code, data);
+        add_instruction(code, (instruction_t){.opcode = ROTATE, .arg1 = method ? 2 : 1});
+    }
+    add_instruction(
+        code,
+        (instruction_t){.opcode = method ? CALLM : CALL, .arg0 = (uint16_t)expr->args_count});
     return first;
 }
 
@@ -206,10 +214,10 @@ static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     size_t count = get_node_child_count(node) - 1;
     const lattice_element_t **args = alloc_from_arena((*state)->arena, (count + 1) * sizeof(*args));
-    for (size_t i = 0; i < count; i++)
-        args[i] = visit_reachable_node(get_node_child(node, i + 1), state, collector);
     const lattice_element_t *callee =
         visit_reachable_node(get_node_child(node, 0), state, collector);
+    for (size_t i = 0; i < count; i++)
+        args[i] = visit_reachable_node(get_node_child(node, i + 1), state, collector);
     if ((*state)->control_flow != FLOW_NORMAL)
         return make_bottom_element();
     if (callee->type == LATTICE_KNOWN_FUNCTION

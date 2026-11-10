@@ -80,5 +80,6 @@ set(release_labels
   operator-logical
   operator-index
   operator-update
+  operator-call
 )
 list(JOIN release_labels "|" release_labels)

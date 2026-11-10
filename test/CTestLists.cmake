@@ -867,3 +867,8 @@ foreach(operator_case IN ITEMS matrix order mutation updates early invalid unwin
   goat_suite(component.operator_update.${operator_case} "component;operator-update"
     "$<TARGET_FILE:operator_update_testing>" "${operator_case}")
 endforeach()
+
+foreach(operator_case matrix order property bypass lookup lifetime continuation failed-file)
+  goat_suite(component.operator_call.${operator_case} "component;operator-call"
+    "$<TARGET_FILE:operator_call_testing>" "${operator_case}")
+endforeach()
