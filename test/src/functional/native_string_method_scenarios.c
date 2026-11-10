@@ -38,7 +38,12 @@ static const char *kinds[] = {"bounds",
                               "all"};
 static const char *keys[] = {"mode", "preparation", "bound", "attempts", "succeeded", "retries"};
 static const char *bounds[] = {"required", "ready", "3", "10", "4", "6"};
-static const char *others[] = {"required", "ready", "1", "1", "1", "0"};
+/* #503 also enters bad/missing string calls through continuation drivers. Their
+ * original exceptions still propagate, so only the valid call succeeds. */
+static const char *types[] = {"required", "ready", "3", "3", "1", "0"};
+/* The shadowed trim function and its plain caller now have native continuations,
+ * alongside the existing typed string method. All three complete successfully. */
+static const char *identity[] = {"required", "ready", "3", "3", "3", "0"};
 
 typedef struct {
     const char *goat, *self, *repo, *build, *data, *kind;
@@ -434,7 +439,9 @@ static void body(scenario_run_t *r, void *user) {
     language_directory(r, work);
     const char *program = source(r, c, work);
     const char *gbin = language_join(r, work, "program.gbin");
-    const char *const *wanted = !strcmp(c->kind, "bounds") ? bounds : others;
+    const char *const *wanted = !strcmp(c->kind, "bounds")  ? bounds
+                                : !strcmp(c->kind, "types") ? types
+                                                            : identity;
     scenario_command_result_t reference =
         execute(r,
                 c,
