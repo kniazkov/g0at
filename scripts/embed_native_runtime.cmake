@@ -5,7 +5,7 @@ if(NOT DEFINED INPUT_DIR OR NOT DEFINED OUTPUT_FILE OR NOT DEFINED ARCHIVE_FILE)
 endif()
 
 set(output "/* Generated from public native headers and the built archive; do not edit. */\n")
-foreach(name unicode native_abi native_runtime native_strings module_abi native_archive)
+foreach(name unicode native_abi native_continuation native_runtime native_strings module_abi native_archive)
   # HEX preserves source bytes and avoids locale/encoding dependencies.
   if(name STREQUAL "native_archive")
     file(READ "${ARCHIVE_FILE}" data HEX)

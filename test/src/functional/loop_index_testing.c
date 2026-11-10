@@ -337,7 +337,9 @@ static void native_argument_scalars(scenario_run_t *run, state_t *state) {
               strlen(expected));
         size_t size;
         const char *report = language_read(run, report_path, &size);
-        field(run, report, "attempts", "10");
+        /* The three invalid reads now enter continuations and throw without replay;
+         * the original ten successful scalar invocations are unchanged. */
+        field(run, report, "attempts", "13");
         field(run, report, "succeeded", "10");
         field(run, report, "retries", "0");
         CHECK(COMMAND("--lang",
@@ -367,7 +369,9 @@ static void native_argument_scalars(scenario_run_t *run, state_t *state) {
               strlen(expected));
         report = language_read(run, report_path, &size);
         field(run, report, "preparation", "ready");
-        field(run, report, "attempts", "10");
+        /* The three invalid reads now enter continuations and throw without replay;
+         * the original ten successful scalar invocations are unchanged. */
+        field(run, report, "attempts", "13");
         field(run, report, "succeeded", "10");
         field(run, report, "retries", "0");
     }
@@ -504,8 +508,10 @@ static void native_arguments(scenario_run_t *run, state_t *state) {
               strlen(expected));
         size_t size;
         const char *report = language_read(run, report_path, &size);
-        field(run, report, "attempts", "10");
-        field(run, report, "succeeded", "10");
+        /* Ten existing successes plus: nested initializer (1), nested method and
+         * its independent count helper (2), tick (3), escaped closure (2). */
+        field(run, report, "attempts", "18");
+        field(run, report, "succeeded", "18");
         field(run, report, "retries", "0");
         CHECK(COMMAND("--lang",
                       "en",
@@ -540,8 +546,10 @@ static void native_arguments(scenario_run_t *run, state_t *state) {
               strlen(expected));
         report = language_read(run, report_path, &size);
         field(run, report, "preparation", "ready");
-        field(run, report, "attempts", "10");
-        field(run, report, "succeeded", "10");
+        /* Ten existing successes plus: nested initializer (1), nested method and
+         * its independent count helper (2), tick (3), escaped closure (2). */
+        field(run, report, "attempts", "18");
+        field(run, report, "succeeded", "18");
         field(run, report, "retries", "0");
         language_write(run, library, module_code, strlen(module_code));
     }

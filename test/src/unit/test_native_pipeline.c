@@ -8,6 +8,7 @@
 #include "analysis_test_support.h"
 #include "cli/launcher.h"
 #include "codegen/linker.h"
+#include "codegen/native_continuation.h"
 #include "codegen/native_pipeline.h"
 #include "functional/native_abi/test_allocator.h"
 #include "graph/expression.h"
@@ -15,6 +16,7 @@
 #include "lib/memory/allocate.h"
 #include "lib/strings/string_ext.h"
 #include "lib/threads/os_thread.h"
+#include "model/builtin_function.h"
 #include "model/context.h"
 #include "model/native_library.h"
 #include "model/object.h"
@@ -138,6 +140,64 @@ static bool dispatch(void) {
     DECREF(result);
     ASSERT(counters(proc, 5, 5, 0));
     destroy_process(proc);
+    return true;
+}
+
+/* A direct call supplies the scalar signature without relying on dynamic-call analysis.
+ * Verify and exclude that warmup before measuring only the mixed operator path. */
+static bool mixed_baseline;
+
+static operation_result_t
+mixed_reset_counters(object_t **arguments, uint16_t count, thread_t *thread) {
+    (void)arguments;
+    mixed_baseline = count == 0 && thread->native_attempts == 1 && thread->native_successes == 1
+                     && thread->native_retries == 0 && !thread->native_status;
+    thread->native_attempts = thread->native_successes = thread->native_retries = 0;
+    return operation_success(get_null_object());
+}
+
+/** @brief Real emitted caller -> VM-only operator -> emitted scalar helper -> caller. */
+static bool generated_operator_bridge(void) {
+    bytecode_t *code = compile(
+        U"const caller=func(a,b){if(arguments.length!=3||arguments[2]!=99)throw 1;return a+b;};"
+        U"const helper=func(n){return n+1;};"
+        U"var receiver={};"
+        U"const handler=func(b){if(this!=receiver||arguments.length!=1||b!=40)throw 2;"
+        U"var answer={};answer.value=helper(40);return answer;};"
+        U"helper(0);resetNativeCounters();"
+        U"receiver[\"+\"]=handler;var result=caller(receiver,40,99);"
+        U"if(result.value!=41)throw 3;func(){result;receiver;};",
+        compiler);
+    ASSERT(code && preparation == NATIVE_PREPARE_READY && code->function_count == 4);
+    const bytecode_function_t *caller = &code->functions[0];
+    const bytecode_function_t *helper = &code->functions[1];
+    const bytecode_function_t *handler = &code->functions[2];
+    native_function_descriptor_t *caller_descriptor =
+        get_bytecode_native_function(code, caller->instruction);
+    native_function_descriptor_t *helper_descriptor =
+        get_bytecode_native_function(code, helper->instruction);
+    ASSERT(caller_descriptor && get_native_function_continuation(caller_descriptor));
+    ASSERT(helper_descriptor && get_native_function_entry_count(helper_descriptor) > 0);
+    /* The middle edge must use the VM regardless of optional generator improvements. */
+    ASSERT(bind_bytecode_native_function(code, handler->instruction, NULL));
+    ASSERT(!get_bytecode_native_function(code, handler->instruction));
+    process_t *proc = create_process();
+    static builtin_function_object_t reset_storage;
+    static const builtin_function_t reset_descriptor = {.name = U"resetNativeCounters",
+                                                        .execute = mixed_reset_counters};
+    object_t *key = create_string_object(proc, STATIC_STRING(U"resetNativeCounters"));
+    ASSERT(create_object_property(proc->main_thread->context->data,
+                                  key,
+                                  get_builtin_function_object(&reset_storage, &reset_descriptor),
+                                  true)
+           == MSTAT_OK);
+    DECREF(key);
+    mixed_baseline = false;
+    ASSERT(!run_immutable(proc, code) && mixed_baseline);
+    ASSERT(variable(proc, U"result") && variable(proc, U"result") != variable(proc, U"receiver"));
+    ASSERT(counters(proc, 2, 2, 0));
+    destroy_process(proc);
+    free_bytecode(code);
     return true;
 }
 
@@ -319,6 +379,170 @@ static bool launcher(void) {
     return true;
 }
 
+/** @brief Deferred child operators cannot accidentally select their enclosing function. */
+static bool continuation_emission(void) {
+    const instruction_t instructions[] = {{.opcode = ARG, .arg1 = 6},
+                                          {.opcode = FUNC},
+                                          {.opcode = ARG, .arg1 = 8},
+                                          {.opcode = FUNC},
+                                          {.opcode = ARG, .arg1 = 11},
+                                          {.opcode = FUNC},
+                                          {.opcode = NIL},
+                                          {.opcode = RET},
+                                          {.opcode = GETINDEX},
+                                          {.opcode = SETINDEX},
+                                          {.opcode = RET},
+                                          {.opcode = LAND},
+                                          {.opcode = CALLM},
+                                          {.opcode = BOOL},
+                                          {.opcode = RET}};
+    const bytecode_function_t functions[] = {{.id = 1, .instruction = 1, .body = 6},
+                                             {.id = 2, .instruction = 3, .body = 8},
+                                             {.id = 3, .instruction = 5, .body = 11}};
+    bytecode_t code = {.instructions = instructions,
+                       .instructions_count = sizeof(instructions) / sizeof(*instructions),
+                       .functions = functions,
+                       .function_count = 3};
+    instruction_t snapshot[sizeof(instructions) / sizeof(*instructions)];
+    memcpy(snapshot, instructions, sizeof(snapshot));
+    native_continuation_output_t output = generate_native_continuations(NULL, &code, NULL, NULL);
+    ASSERT(output.count == 2 && output.source.data);
+    ASSERT(output.entries[0].function_id == 2 && output.entries[0].function_instruction == 3
+           && output.entries[0].first_instruction == 8 && output.entries[0].instruction_count == 3);
+    ASSERT(output.entries[1].function_id == 3 && output.entries[1].first_instruction == 11
+           && output.entries[1].instruction_count == 4);
+    ASSERT(STRSTR(output.source.data, U"switch (pc)")
+           && STRSTR(output.source.data, U"context->step(context->state, 8, &next)")
+           && STRSTR(output.source.data, U"context->step(context->state, 14, &next)")
+           && !STRSTR(output.source.data, U"case 6:"));
+    ASSERT(STRSTR(output.source.data, U"if (status != GOAT_NATIVE_CONTINUE) return status;")
+           && STRSTR(output.source.data, U"goat_native_continuation_query"));
+    ASSERT(!memcmp(snapshot, instructions, sizeof(snapshot)));
+    destroy_native_continuation_output(&output);
+    ASSERT(!output.source.data && !output.count && !output.entries);
+    /* A later file's top-level operators are not part of the previous file's last body. */
+    const instruction_t split_instructions[] = {{.opcode = ARG, .arg1 = 3},
+                                                {.opcode = FUNC},
+                                                {.opcode = END},
+                                                {.opcode = ADD},
+                                                {.opcode = RET},
+                                                {.opcode = CALL},
+                                                {.opcode = ARG, .arg1 = 9},
+                                                {.opcode = FUNC},
+                                                {.opcode = END},
+                                                {.opcode = SUB},
+                                                {.opcode = RET}};
+    const bytecode_file_t files[] = {{0, 5, 0, 0}, {5, 6, 5, 0}};
+    const bytecode_function_t split_functions[] = {
+        {.id = 1, .instruction = 1, .body = 3, .file = 0},
+        {.id = 2, .instruction = 7, .body = 9, .file = 1}};
+    code = (bytecode_t){.instructions = split_instructions,
+                        .instructions_count = 11,
+                        .files = files,
+                        .file_count = 2,
+                        .functions = split_functions,
+                        .function_count = 2};
+    output = generate_native_continuations(NULL, &code, NULL, NULL);
+    ASSERT(output.count == 2 && output.entries[0].instruction_count == 2
+           && output.entries[1].instruction_count == 2);
+    ASSERT(!STRSTR(output.source.data, U"case 5:") && !STRSTR(output.source.data, U"case 8:"));
+    destroy_native_continuation_output(&output);
+    const uint8_t families[] = {UPLUS, UMINUS, INC,    DEC,   LNOT,     BOOL,     BNOT,      LAND,
+                                LOR,   BAND,   BOR,    BXOR,  SHL,      SHR,      ADD,       SUB,
+                                MUL,   DIVIDE, MODULO, POWER, LESS,     LEQ,      GREATER,   GREQ,
+                                EQUAL, DIFF,   CALL,   CALLM, GETINDEX, SETINDEX, CHECKINDEX};
+    instruction_t body[] = {{.opcode = ADD}, {.opcode = RET}};
+    const bytecode_function_t single = {.id = 1, .body = 0};
+    code = (bytecode_t){.instructions = body,
+                        .instructions_count = 2,
+                        .functions = &single,
+                        .function_count = 1};
+    for (size_t i = 0; i < sizeof(families) / sizeof(*families); ++i) {
+        body[0].opcode = families[i];
+        output = generate_native_continuations(NULL, &code, NULL, NULL);
+        ASSERT(output.count == 1 && output.entries[0].instruction_count == 2);
+        destroy_native_continuation_output(&output);
+    }
+    return true;
+}
+
+typedef struct {
+    unsigned calls;
+    uint32_t terminal, next;
+    bool ordered;
+} continuation_probe_t;
+
+static uint32_t GOAT_NATIVE_CALL continuation_probe(void *opaque, uint32_t pc, uint32_t *next) {
+    continuation_probe_t *probe = opaque;
+    probe->ordered &= pc == (probe->calls ? 4u : 2u);
+    ++probe->calls;
+    if (probe->terminal != GOAT_NATIVE_CONTINUE)
+        return probe->terminal;
+    if (pc == 4)
+        return GOAT_NATIVE_COMPLETE;
+    *next = probe->next;
+    return GOAT_NATIVE_CONTINUE;
+}
+
+/** @brief Execute the emitted machine code, including branching and terminal statuses. */
+static bool continuation_protocol(void) {
+    const instruction_t instructions[] = {{.opcode = ARG, .arg1 = 2},
+                                          {.opcode = FUNC},
+                                          {.opcode = ADD},
+                                          {.opcode = NIL},
+                                          {.opcode = RET}};
+    const bytecode_function_t function = {.id = 1, .instruction = 1, .body = 2};
+    bytecode_t code = {.instructions = instructions,
+                       .instructions_count = 5,
+                       .functions = &function,
+                       .function_count = 1};
+    arena_t *arena = create_arena(32);
+    c_module_t module = {0};
+    c_module_output_t scalar = generate_c_module(arena, &module);
+    native_continuation_output_t output =
+        generate_native_continuations(NULL, &code, &module, &scalar);
+    ASSERT(output.count == 1);
+    source_builder_t *builder = create_source_builder();
+    add_formatted_source(builder, 0, scalar.source);
+    add_formatted_source(builder, 0, output.source);
+    output.source = EMPTY_STRING_VALUE;
+    string_value_t source = build_source(builder);
+    destroy_source_builder(builder);
+    native_workspace_t *workspace = create_native_workspace();
+    ASSERT(workspace);
+    native_compile_result_t compiled =
+        compile_native_library(source.data, compiler, workspace->library);
+    FREE_STRING(source);
+    ASSERT(compiled.status == NATIVE_COMPILE_OK);
+    destroy_native_compile_result(&compiled);
+    native_library_result_t loaded = load_native_library(workspace->library);
+    ASSERT(loaded.status == NATIVE_LIBRARY_OK);
+    ASSERT(get_native_library_entry_count(loaded.library) == 0
+           && get_native_library_continuation_count(loaded.library) == 1);
+    const goat_native_continuation_entry_t *entry =
+        get_native_library_continuation(loaded.library, 0);
+    continuation_probe_t probe = {.ordered = true, .next = 4};
+    goat_native_continuation_context_t context = {.state = &probe, .step = continuation_probe};
+    ASSERT(entry->invoke(&context, 2) == GOAT_NATIVE_COMPLETE && probe.calls == 2 && probe.ordered);
+    for (uint32_t terminal = GOAT_NATIVE_COMPLETE; terminal <= GOAT_NATIVE_FAILED; ++terminal) {
+        probe = (continuation_probe_t){.ordered = true, .terminal = terminal};
+        ASSERT(entry->invoke(&context, 2) == terminal && probe.calls == 1 && probe.ordered);
+    }
+    probe = (continuation_probe_t){.ordered = true, .next = 99};
+    ASSERT(entry->invoke(&context, 2) == GOAT_NATIVE_FAILED && probe.calls == 1);
+    probe.calls = 0;
+    ASSERT(entry->invoke(&context, 1) == GOAT_NATIVE_FAILED && !probe.calls);
+    ASSERT(entry->invoke(&context, 5) == GOAT_NATIVE_FAILED && !probe.calls);
+    ASSERT(entry->invoke(NULL, 2) == GOAT_NATIVE_FAILED);
+    context.step = NULL;
+    ASSERT(entry->invoke(&context, 2) == GOAT_NATIVE_FAILED && !probe.calls);
+    destroy_native_library_result(&loaded);
+    destroy_native_workspace(workspace);
+    destroy_native_continuation_output(&output);
+    destroy_arena(arena);
+    return true;
+}
+
 bool test_native_pipeline(const char *command,
                           const char *invalid,
                           const char *wrong,
@@ -333,7 +557,12 @@ bool test_native_pipeline(const char *command,
         const char *name;
         bool (*test)(void);
     } tests[] = {
+        {"compiled operator continuation inventory and immutable PCs", continuation_emission},
+        {"generated continuation branching, terminal statuses and invalid PCs",
+         continuation_protocol},
         {"generated numeric dispatch after graph destruction", dispatch},
+        {"generated caller, VM operator, generated helper and arbitrary result",
+         generated_operator_bridge},
         {"depth retry preserves arguments and disables descendant native calls", recursion},
         {"mutual recursion retries once", mutual},
         {"many shallow calls remain native without retry", shallow_calls},

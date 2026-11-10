@@ -47,3 +47,7 @@ module_library_result_t load_module_library_observed(const char *path,
                                                      module_library_observer_t observer,
                                                      void *context);
 bool release_module_library_checked(module_library_t *library, char **diagnostic);
+
+/** Bind validated optional continuation entries to matching immutable bytecode.
+ * Returns the continuation count, or SIZE_MAX if any identity or range differs. */
+size_t bind_module_library_continuations(module_library_t *library, bytecode_t *code);

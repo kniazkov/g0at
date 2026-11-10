@@ -608,3 +608,11 @@ target_link_libraries(operator_update_testing PRIVATE goat_validation m)
 add_executable(operator_call_testing src/component/operator_call_testing.c
   src/unit/analysis_test_support.c)
 target_link_libraries(operator_call_testing PRIVATE goat_validation m)
+
+add_executable(native_continuation_testing src/component/native_continuation_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(native_continuation_testing PRIVATE goat_validation m)
+
+add_executable(native_operator_testing src/functional/native_operator_testing.c)
+target_link_libraries(native_operator_testing PRIVATE goat_language_execution_support)
+add_dependencies(native_operator_testing goat)

@@ -68,7 +68,8 @@ static bool pe_region(const native_artifact_t *a, uint64_t rva, uint64_t length,
     return false;
 }
 
-static bool lookup_pe(const native_artifact_t *a, const char *name, symbol_t *out) {
+static bool
+lookup_pe(const native_artifact_t *a, const char *name, symbol_t *out, bool presence_only) {
     uint64_t nfunc = read_number(a, a->exports + 20, 4);
     uint64_t nnames = read_number(a, a->exports + 24, 4);
     symbol_t functions, names, ordinals;
@@ -87,6 +88,8 @@ static bool lookup_pe(const native_artifact_t *a, const char *name, symbol_t *ou
             return false;
         if (strcmp(actual, name))
             continue;
+        if (presence_only)
+            return true;
         uint64_t address = read_number(a, functions.offset + ordinal * 4, 4);
         if (found || !address
             || (address >= a->export_rva && address - a->export_rva < a->export_size)
@@ -97,7 +100,8 @@ static bool lookup_pe(const native_artifact_t *a, const char *name, symbol_t *ou
     return found;
 }
 
-static bool lookup_elf(const native_artifact_t *a, const char *name, symbol_t *out) {
+static bool
+lookup_elf(const native_artifact_t *a, const char *name, symbol_t *out, bool presence_only) {
     bool found = false;
     unsigned word = a->wide ? 8 : 4;
     for (uint64_t i = 0; i < a->section_count; i++) {
@@ -124,6 +128,8 @@ static bool lookup_elf(const native_artifact_t *a, const char *name, symbol_t *o
                 return false;
             if (strcmp(actual, name))
                 continue;
+            if (presence_only)
+                return true;
             uint64_t info = read_number(a, p + (a->wide ? 4 : 12), 1);
             uint64_t visibility = read_number(a, p + (a->wide ? 5 : 13), 1) & 3;
             uint64_t section = read_number(a, p + (a->wide ? 6 : 14), 2);
@@ -242,8 +248,8 @@ bool native_artifact_descriptor(const native_artifact_t *artifact,
     if (!artifact || !bytes || !size || !diagnostic)
         return false;
     symbol_t symbol;
-    bool found = artifact->elf ? lookup_elf(artifact, "goat_module_descriptor_v1", &symbol)
-                               : lookup_pe(artifact, "goat_module_descriptor_v1", &symbol);
+    bool found = artifact->elf ? lookup_elf(artifact, "goat_module_descriptor_v1", &symbol, false)
+                               : lookup_pe(artifact, "goat_module_descriptor_v1", &symbol, false);
     if (!found || symbol.function || symbol.size < 17
         || memcmp(artifact->data + symbol.offset, "GOATND01", 8))
         return error(diagnostic, "Native descriptor export is missing or not file-backed data");
@@ -260,7 +266,15 @@ bool native_artifact_has_function(const native_artifact_t *artifact, const char 
     if (!artifact || !symbol || !*symbol)
         return false;
     symbol_t found;
-    bool ok =
-        artifact->elf ? lookup_elf(artifact, symbol, &found) : lookup_pe(artifact, symbol, &found);
+    bool ok = artifact->elf ? lookup_elf(artifact, symbol, &found, false)
+                            : lookup_pe(artifact, symbol, &found, false);
     return ok && found.function;
+}
+
+bool native_artifact_has_symbol(const native_artifact_t *artifact, const char *symbol) {
+    if (!artifact || !symbol || !*symbol)
+        return false;
+    symbol_t ignored;
+    return artifact->elf ? lookup_elf(artifact, symbol, &ignored, true)
+                         : lookup_pe(artifact, symbol, &ignored, true);
 }

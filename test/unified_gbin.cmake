@@ -71,3 +71,39 @@ execute_process(COMMAND "${GOAT}" --lang en --enable-warnings --compile "${WORK}
 if(NOT status EQUAL 0 OR NOT err MATCHES "[Ww]arning" OR NOT out STREQUAL "")
   message(FATAL_ERROR "Compiler warning was lost: ${status} ${out} ${err}")
 endif()
+# Continuation-only native libraries preserve the existing descriptor/schema and
+# execute immutable bytecode identities after both source and compiler disappear.
+file(WRITE "${WORK}/objects.goat" [=[
+var bump = func(obj) {
+    obj["value"] = obj["value"] + 1;
+    return obj["value"];
+};
+var box = { var value = 41 };
+println(bump(box));
+println(box.value);
+]=])
+run("42\n42\n" "${GOAT}" "${WORK}/objects.goat" --native off)
+run("" "${GOAT}" "${WORK}/objects.goat" --compile --native required)
+file(MAKE_DIRECTORY "${WORK}/objects-parts")
+execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf "${WORK}/objects.gbin"
+  WORKING_DIRECTORY "${WORK}/objects-parts" RESULT_VARIABLE status)
+if(NOT status EQUAL 0)
+  message(FATAL_ERROR "Cannot inspect continuation ZIP members")
+endif()
+file(READ "${WORK}/objects-parts/module.json" metadata)
+string(JSON abi GET "${metadata}" native 0 goatAbiVersion)
+string(JSON scalar_count LENGTH "${metadata}" native 0 specializations)
+if(NOT abi EQUAL 1 OR NOT scalar_count EQUAL 0)
+  message(FATAL_ERROR "Continuation-only module fabricated scalar ABI specializations")
+endif()
+file(REMOVE "${WORK}/objects.goat")
+run("42\n42\n" "${GOAT}" --run "${WORK}/objects.gbin" --native required
+    --cc missing-compiler-503 --save-native "${WORK}/objects.report")
+file(READ "${WORK}/objects.report" native_report)
+if(NOT native_report MATCHES "bound=[1-9][0-9]*"
+   OR NOT native_report MATCHES "attempts=[1-9][0-9]*"
+   OR NOT native_report MATCHES "succeeded=[1-9][0-9]*")
+  message(FATAL_ERROR "Persisted object call did not execute native continuation: ${native_report}")
+endif()
+run("42\n42\n" "${GOAT}" --run "${WORK}/objects.gbin" --native off
+    --cc missing-compiler-503)

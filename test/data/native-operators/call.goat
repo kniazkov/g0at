@@ -1,0 +1,19 @@
+const helper=func(n){return n+1;}; helper(1);
+const exercise=func(){
+ const obj={var value=7;}; const output={};var log=0;
+ obj["()"]=func(x){log=log*10+2;if(this!=obj||arguments.length!=3||x!=1)throw 1;return output;};
+ const rhs=func(){log=log*10+1;return 1;};
+ if(obj(rhs(),2,3)!=output||log!=12)throw 2;
+ const make=func(x){const saved=arguments;return func(y){return saved[0]+y;};};
+ const closure=make(8,9);if(closure(4)!=12)throw 3;
+ obj.method=func(n){return helper(n)+this.value;};if(obj.method(3)!=11)throw 4;
+ obj["()"]=func(){return arguments;};const saved=obj(1,2,3);
+ for(var i=0;i<3000;i++){var trash={var cycle=null;};trash.cycle=trash;}
+ if(saved.length!=3||saved[2]!=3)throw 5;
+ try{saved[0]=0;throw 6;}catch(e){println(e);}
+ const proto={private secret=23;public getter=func(){return this.secret;};};
+ proto["+"]=proto.getter;const child=proto -> {};
+ if(child+1!=23)throw 8;
+ const unrelated=func(){return this.secret;};child["+"]=unrelated;
+ try{child+1;throw 9;}catch(e){println(e);}
+};exercise();println("ok");

@@ -212,12 +212,13 @@ static bool build_native(const node_t *const *roots,
     if (!native_toolchain_target(context->target, &requested))
         return fail(error, "unsupported native target; no host substitution is permitted");
     arena_t *arena = create_arena(64);
-    c_module_v1_output_t output = generate_c_module_v1(arena, roots, count);
+    c_module_v1_output_t output =
+        generate_c_module_v1_with_bytecode(arena, roots, count, compilation->code);
     bool ok = false;
     native_toolchain_search_t search = {0};
     native_workspace_t *workspace = NULL;
     yyjson_doc *target = NULL;
-    if (!output.generated_count) {
+    if (!output.generated_count && !output.continuation_count) {
         if (context->mode == NATIVE_REQUIRED)
             fail(error, "native required needs an own specialization, including own include files");
         else if (!strcmp(context->target, "host"))
@@ -240,7 +241,7 @@ static bool build_native(const node_t *const *roots,
         }
         goto done;
     }
-    if (!output.generated_count) {
+    if (!output.generated_count && !output.continuation_count) {
         ok = true;
         goto done;
     }

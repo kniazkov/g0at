@@ -1,0 +1,13 @@
+const exercise=func(){
+ const obj={}; const answer={var marker=81;}; var calls=0;
+ const binary=func(x){calls++; if(arguments.length!=1) throw 1; return answer;};
+ obj["+"]=binary; obj["-"]=binary; obj["*"]=binary; obj["/"]=binary; obj["%"]=binary;
+ obj["&"]=binary; obj["|"]=binary; obj["^"]=binary; obj["<<"]=binary;
+ obj[">>"]=binary;
+ if((obj+1)!=answer||(obj-1)!=answer||(obj*1)!=answer||(obj/1)!=answer||(obj%1)!=answer) throw 2;
+ if((obj&1)!=answer||(obj|1)!=answer||(obj^1)!=answer||(obj<<1)!=answer||(obj>>1)!=answer) throw 3;
+ obj["-"]=func(){calls++;if(arguments.length!=0)throw 4;return answer;};
+ obj["~"]=obj["-"]; obj["+"]=obj["-"];
+ if((-obj)!=answer||(+obj)!=answer||(~obj)!=answer||calls!=13)throw 5;
+ const n=7; if(n+2!=9||n*3!=21||n-2!=5)throw 6;
+}; exercise(); println("ok");

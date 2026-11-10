@@ -1,0 +1,15 @@
+const exercise=func(){
+ var value=7;var log=0;const box={};
+ box["[]"]=func(i,j){log=log*10+2;return value;};
+ box["[]="]=func(i,j,x){log=log*10+5;value=arguments[arguments.length-1];return {};};
+ const target=func(){log=log*10+1;return box;};
+ const index=func(){log=log*10+3;return 4;};
+ const rhs=func(){log=log*10+4;return 9;};
+ if((target()[index(),8]+=rhs())!=16||value!=16||log!=13245)throw 1;
+ log=0;if((box[]=19)!=19||value!=19||log!=5)throw 2;
+ log=0;if(box[]!=19||log!=2)throw 3;
+ const old={};old["++"]=func(){if(arguments.length!=0)throw 4;return 42;};
+ value=old;log=0;if(box[1,2]++!=old||value!=42||log!=25)throw 5;
+ value=old;log=0;if(++box[1,2]!=42||value!=42||log!=25)throw 6;
+ old["--"]=func(){return 41;};value=old;if(--box[]!=41||value!=41)throw 7;
+};exercise();println("ok");

@@ -58,6 +58,8 @@ context_t *create_context_with_protos_in_file(process_t *process,
     ctx->operator_policy = OPERATOR_RESULT_VALUE;
     ctx->operator_origin = BAD_INSTR_INDEX;
     ctx->native_disabled = caller->native_disabled;
+    ctx->native_receiver_scope = caller->native_receiver_scope;
+    ctx->native_context_boundary = false;
     ctx->file_initialization_boundary = false;
     ctx->iteration_index = 0;
     ctx->pending_flow = FLOW_NORMAL;

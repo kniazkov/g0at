@@ -11,6 +11,7 @@
 #include "lib/memory/allocate.h"
 #include "model/native_library.h"
 #include "native_compiler.h"
+#include "native_continuation.h"
 #include "native_toolchain.h"
 #include "vm/binary.h"
 
@@ -97,13 +98,23 @@ static native_prepare_result_t prepare(const node_t *root,
     arena_t *arena = create_arena(32);
     c_module_t *module = create_c_module(arena, root);
     c_module_output_t output = generate_c_module(arena, module);
+    native_continuation_output_t continuations =
+        generate_native_continuations(root, code, module, &output);
+    if (continuations.count) {
+        source_builder_t *combined = create_source_builder();
+        add_formatted_source(combined, 0, output.source);
+        add_formatted_source(combined, 0, continuations.source);
+        continuations.source = EMPTY_STRING_VALUE;
+        output.source = build_source(combined);
+        destroy_source_builder(combined);
+    }
     result.omitted_specializations = output.omitted_count;
     native_workspace_t *workspace = NULL;
     native_library_result_t loaded = {0};
     native_toolchain_context_t *toolchains = NULL;
     native_toolchain_search_t search = {0};
     native_compile_options_t selected_options = {0};
-    if (!output.generated_count) {
+    if (!output.generated_count && !continuations.count) {
         result.status = NATIVE_PREPARE_EMPTY;
         if (has_access_blocker(root))
             result.diagnostic = copy_native_library_diagnostic(
@@ -165,6 +176,26 @@ static native_prepare_result_t prepare(const node_t *root,
             copy_native_library_diagnostic("Generated native metadata does not match bytecode");
         goto done;
     }
+    if (get_native_library_continuation_count(loaded.library) != continuations.count) {
+        result.status = NATIVE_PREPARE_BIND_ERROR;
+        result.diagnostic =
+            copy_native_library_diagnostic("Native continuation inventory mismatch");
+        goto done;
+    }
+    for (size_t i = 0; i < continuations.count; ++i) {
+        const goat_native_continuation_entry_t *expected = &continuations.entries[i];
+        const goat_native_continuation_entry_t *actual =
+            get_native_library_continuation(loaded.library, (uint32_t)i);
+        if (!actual || actual->function_id != expected->function_id
+            || actual->function_instruction != expected->function_instruction
+            || actual->first_instruction != expected->first_instruction
+            || actual->instruction_count != expected->instruction_count) {
+            result.status = NATIVE_PREPARE_BIND_ERROR;
+            result.diagnostic =
+                copy_native_library_diagnostic("Native continuation identity mismatch");
+            goto done;
+        }
+    }
     if (destination) {
         size_t size;
         void *bytes = read_binary_file(workspace->library, GOAT_BINARY_LIMIT, &size);
@@ -198,6 +229,25 @@ static native_prepare_result_t prepare(const node_t *root,
         }
         result.bound_functions++;
     }
+    for (size_t i = 0; i < continuations.count; ++i) {
+        const goat_native_continuation_entry_t *entry = &continuations.entries[i];
+        if (get_bytecode_native_function(code, entry->function_instruction))
+            continue; /* A scalar descriptor already owns the optional continuation too. */
+        native_function_descriptor_t *function =
+            create_native_function_descriptor(loaded.library, entry->function_id);
+        bool bound =
+            function && bind_bytecode_native_function(code, entry->function_instruction, function);
+        release_native_function_descriptor(function);
+        if (!bound) {
+            result.status = NATIVE_PREPARE_BIND_ERROR;
+            for (size_t j = 0; j < code->instructions_count; ++j)
+                if (code->instructions[j].opcode == FUNC)
+                    bind_bytecode_native_function(code, j, NULL);
+            result.bound_functions = 0;
+            goto done;
+        }
+        result.bound_functions++;
+    }
     result.status = result.bound_functions ? NATIVE_PREPARE_READY : NATIVE_PREPARE_EMPTY;
 done:
     destroy_native_toolchain_search(&search);
@@ -205,6 +255,7 @@ done:
     destroy_native_library_result(&loaded);
     destroy_native_workspace(workspace);
     FREE_STRING(output.source);
+    destroy_native_continuation_output(&continuations);
     destroy_arena(arena);
     return result;
 }

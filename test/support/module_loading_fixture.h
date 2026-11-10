@@ -17,6 +17,7 @@ const char *loading_build(loading_fixture_t *fixture,
                           const char *mode,
                           const char *dependency);
 const char *loading_base(loading_fixture_t *fixture);
+const char *loading_two_file_base(loading_fixture_t *fixture);
 const char *loading_custom(loading_fixture_t *fixture,
                            const char *name,
                            const char *original,

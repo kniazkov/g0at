@@ -12,7 +12,7 @@ set(package_root "${CMAKE_CURRENT_LIST_DIR}/..")
 set(native_headers_dir "${package_root}/include/goat")
 install(TARGETS goat goat-inspect goat-merge RUNTIME DESTINATION bin CONFIGURATIONS Release)
 install(TARGETS goat_native ARCHIVE DESTINATION lib CONFIGURATIONS Release)
-install(FILES "${native_headers_dir}/unicode.h" "${native_headers_dir}/native_abi.h" "${native_headers_dir}/native_runtime.h"
+install(FILES "${native_headers_dir}/unicode.h" "${native_headers_dir}/native_abi.h" "${native_headers_dir}/native_continuation.h" "${native_headers_dir}/native_runtime.h"
   "${native_headers_dir}/native_strings.h"
   DESTINATION include/goat CONFIGURATIONS Release)
 install(FILES "${package_root}/LICENSE.txt" "${package_root}/docs/package/README.md"

@@ -11,10 +11,13 @@
 #include "lib/memory/allocate.h"
 #include "lib/wire/wire.h"
 #include "module_library_platform.h"
+#include "native_continuation_descriptor.h"
 #include "native_library_platform.h"
 #include "vm/module_consistency.h"
 
 #include <inttypes.h>
+#include <stdatomic.h>
+#include <stdlib.h>
 #include <string.h>
 #ifdef __linux__
 #    include <dlfcn.h>
@@ -34,6 +37,9 @@ typedef struct {
 #endif
 
 struct module_library_t {
+    atomic_size_t references;
+    goat_native_continuation_entry_t *continuations;
+    size_t continuation_count;
     void *handle;
     module_symbol_t *symbols;
     size_t count;
@@ -309,6 +315,9 @@ static bool readable(void *state, const void *pointer, size_t length) {
 bool release_module_library_checked(module_library_t *library, char **diagnostic) {
     if (!library)
         return true;
+    if (atomic_fetch_sub(&library->references, 1) != 1)
+        return true;
+    FREE(library->continuations);
     for (size_t i = 0; i < library->count; i++)
         FREE(library->symbols[i].symbol);
     FREE(library->symbols);
@@ -346,6 +355,100 @@ static bool validate_descriptor(module_library_t *library,
     return ok;
 }
 
+/* Optional extension metadata must belong to the same immutable checked image. */
+static bool validate_continuations(module_library_t *library) {
+    void *address = symbol_address(library, "goat_native_continuation_query");
+    if (!address)
+        return true;
+    if (!image_range(library, address, 1, true))
+        return false;
+#ifdef __linux__
+    if (!function_symbol(library, address, "goat_native_continuation_query"))
+        return false;
+#endif
+    goat_native_continuation_query_t query;
+    _Static_assert(sizeof(query) == sizeof(address), "Query pointer representation");
+    memcpy(&query, &address, sizeof(query));
+    const goat_native_continuation_module_t *source = query(GOAT_NATIVE_CONTINUATION_VERSION);
+    if ((uintptr_t)source % _Alignof(goat_native_continuation_module_t)
+        || !readable(library, source, sizeof(*source)))
+        return false;
+    goat_native_continuation_module_t table = *source;
+    if (table.version != GOAT_NATIVE_CONTINUATION_VERSION || table.struct_size != sizeof(table)
+        || table.entry_size != sizeof(goat_native_continuation_entry_t) || table.entry_count > 65536
+        || (!table.entry_count) != (!table.entries)
+        || (table.entries
+            && ((uintptr_t)table.entries % _Alignof(goat_native_continuation_entry_t)
+                || !readable(library, table.entries, table.entry_count * sizeof(*table.entries)))))
+        return false;
+    library->continuations = CALLOC(table.entry_count * sizeof(*table.entries));
+    for (size_t i = 0; i < table.entry_count; ++i) {
+        goat_native_continuation_entry_t entry = table.entries[i];
+        void *invoke;
+        _Static_assert(sizeof(invoke) == sizeof(entry.invoke), "Invoke pointer representation");
+        memcpy(&invoke, &entry.invoke, sizeof(invoke));
+        if (!entry.function_id || !entry.instruction_count
+            || entry.first_instruction > UINT32_MAX - entry.instruction_count
+            || (i && library->continuations[i - 1].function_id >= entry.function_id)
+            || !image_range(library, invoke, 1, true))
+            return false;
+        library->continuations[i] = entry;
+    }
+    library->continuation_count = table.entry_count;
+    return true;
+}
+
+static void release_continuation_owner(void *owner) {
+    release_module_library(owner);
+}
+
+size_t bind_module_library_continuations(module_library_t *library, bytecode_t *code) {
+    if (!library || !code)
+        return SIZE_MAX;
+    /* Validate the complete table before attaching any descriptors. */
+    for (size_t i = 0; i < library->continuation_count; ++i) {
+        const goat_native_continuation_entry_t *entry = library->continuations + i;
+        const bytecode_function_t *function = NULL;
+        for (size_t j = 0; j < code->function_count; ++j)
+            if (code->functions[j].id == entry->function_id)
+                function = code->functions + j;
+        if (!function || function->instruction != entry->function_instruction
+            || function->body != entry->first_instruction
+            || function->instruction >= code->instructions_count
+            || code->instructions[function->instruction].opcode != FUNC
+            || get_bytecode_native_function(code, function->instruction))
+            return SIZE_MAX;
+        if (function->file >= code->file_count)
+            return SIZE_MAX;
+        const bytecode_file_t *file = code->files + function->file;
+        if (file->first > code->instructions_count
+            || file->count > code->instructions_count - file->first || function->body < file->first)
+            return SIZE_MAX;
+        size_t end = (size_t)file->first + file->count;
+        for (size_t j = 0; j < code->function_count; ++j)
+            if (code->functions[j].body > function->body && code->functions[j].body < end)
+                end = code->functions[j].body;
+        if (function->body >= end || entry->instruction_count != end - function->body)
+            return SIZE_MAX;
+    }
+    for (size_t i = 0; i < library->continuation_count; ++i) {
+        const goat_native_continuation_entry_t *entry = library->continuations + i;
+        if (atomic_fetch_add(&library->references, 1) == SIZE_MAX)
+            abort();
+        native_function_descriptor_t *descriptor =
+            create_native_continuation_descriptor(entry, library, release_continuation_owner);
+        if (!descriptor) {
+            release_module_library(library);
+            return SIZE_MAX;
+        }
+        bool bound = bind_bytecode_native_function(code, entry->function_instruction, descriptor);
+        release_native_function_descriptor(descriptor);
+        if (!bound)
+            return SIZE_MAX;
+    }
+    return library->continuation_count;
+}
+
 module_library_result_t load_module_library_observed(const char *path,
                                                      const yyjson_doc *metadata,
                                                      size_t variant_index,
@@ -359,6 +462,7 @@ module_library_result_t load_module_library_observed(const char *path,
         return result;
     }
     module_library_t *library = CALLOC(sizeof(*library));
+    atomic_init(&library->references, 1);
     if (observer)
         observer(MODULE_LIBRARY_LOAD, false, context);
     library->handle = open_native_library_handle(path, &result.diagnostic);
@@ -409,6 +513,10 @@ module_library_result_t load_module_library_observed(const char *path,
         _Static_assert(sizeof(symbol->adapter) == sizeof(address),
                        "Adapter pointer representation");
         memcpy(&symbol->adapter, &address, sizeof(address));
+    }
+    if (!validate_continuations(library)) {
+        failure = "Native continuation metadata is unreadable, mutable, foreign or invalid";
+        goto failed;
     }
     if (observer)
         observer(MODULE_LIBRARY_SYMBOLS, true, context);

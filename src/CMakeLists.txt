@@ -59,6 +59,7 @@ add_custom_command(
     goat_native
     "${native_headers_dir}/unicode.h"
     "${native_headers_dir}/native_abi.h"
+    "${native_headers_dir}/native_continuation.h"
     "${native_headers_dir}/native_runtime.h"
     "${native_headers_dir}/native_strings.h"
     "${native_headers_dir}/module_abi.h"

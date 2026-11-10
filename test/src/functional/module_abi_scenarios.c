@@ -134,6 +134,12 @@ static yyjson_mut_doc *spec(scenario_run_t *r, config_t *c, const char *kind) {
 
 static void descriptors(scenario_run_t *r, config_t *c) {
     check(r, c, c->base, 0);
+    /* Empty scalar metadata is structurally valid for a continuation-only image.
+     * This descriptor check does not claim that the library has a callable native
+     * entry; required-mode readiness is checked separately by the runtime loader. */
+    yyjson_mut_doc *empty = copy(r, c->base);
+    set(empty, R(empty), "specializations", yyjson_mut_arr(empty));
+    check(r, c, empty, 0);
     size_t n;
     unsigned char *p = envelope(r, R(c->base), &n);
     size_t sizes[] = {0, 8, n - 1, n + 1, n, n, n, n, n};
@@ -215,14 +221,12 @@ static void descriptors(scenario_run_t *r, config_t *c) {
         yyjson_mut_obj_remove_str(R(d), yyjson_mut_get_str(k));
         check(r, c, d, 2);
     }
-    const char *fields[] =
-        {"formatVersion", "goatAbiVersion", "unknown", "mainHash", "module", "specializations"};
+    const char *fields[] = {"formatVersion", "goatAbiVersion", "unknown", "mainHash", "module"};
     const char *values[] = {"2",
                             "0",
                             "1",
                             "\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"",
-                            "\"../module\"",
-                            "[]"};
+                            "\"../module\""};
     for (size_t i = 0; i < N(fields); i++) {
         yyjson_mut_doc *d = copy(r, c->base), *x = parse(r, values[i], strlen(values[i]));
         set(d, R(d), fields[i], yyjson_mut_val_mut_copy(d, R(x)));

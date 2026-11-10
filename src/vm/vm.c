@@ -19,6 +19,8 @@
 #include "model/thread.h"
 
 #include <assert.h>
+#include <goat/native_abi.h>
+#include <goat/native_continuation.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1024,14 +1026,14 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
             arg_names[index] = load_string(runtime, thread->process, strings[index]);
         }
     }
-    object_t *function =
-        create_function_object(thread->process,
-                               arg_names,
-                               arg_count,
-                               first_instr_id,
-                               closure,
-                               get_bytecode_native_function(runtime->code, thread->instr_id),
-                               thread->context->native_disabled);
+    object_t *function = create_function_object(
+        thread->process,
+        arg_names,
+        arg_count,
+        first_instr_id,
+        closure,
+        get_bytecode_native_function(runtime->code, thread->instr_id),
+        thread->context->native_disabled || thread->context->native_receiver_scope);
     for (size_t i = 0; i < runtime->code->function_count; i++) {
         if (runtime->code->functions[i].instruction == thread->instr_id) {
             set_function_code_identity(function, runtime->code->functions[i].id);
@@ -1200,7 +1202,7 @@ static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thre
        lookup topology of an ordinary call must never manufacture privileges. */
     for (size_t i = 0; i < prototypes.size; i++)
         add_protected_object_access(&context->access, prototypes.items[i]);
-    context->native_disabled = true;
+    context->native_receiver_scope = true;
     while (stack->size > base) {
         object_t *value = pop_object_from_stack(stack);
         DECREF(value);
@@ -1364,7 +1366,8 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
     context_t *root = get_root_context();
     context_t *handler = thread->context;
     while (handler != root && !handler->file_initialization_boundary
-           && handler->control_flow != FLOW_THROW && handler->control_flow != FLOW_FINALLY)
+           && !handler->native_context_boundary && handler->control_flow != FLOW_THROW
+           && handler->control_flow != FLOW_FINALLY)
         handler = handler->previous;
     if (handler->control_flow == FLOW_FINALLY) {
         handler->pending_trace = exception.trace;
@@ -1381,7 +1384,8 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
         DECREF(value);
     }
     thread->args_count = 0;
-    if (handler == root || handler->file_initialization_boundary) {
+    if (handler == root || handler->file_initialization_boundary
+        || handler->native_context_boundary) {
         clear_exception(&thread->exception);
         thread->exception = exception;
         runtime->status = 1;
@@ -1697,6 +1701,153 @@ static instr_executor_t executors[] = {
     exec_binding
     // Additional opcodes can be added here in the future...
 };
+
+/** @brief One native driver owns only its function; nested VM frames remain ordinary calls. */
+typedef struct {
+    runtime_t runtime;
+    thread_t *thread;
+    context_t *frame;
+    const goat_native_continuation_entry_t *entry;
+    bool stopped;
+    uint32_t outcome;
+} native_continuation_t;
+
+/** @brief Compare live lineage only: RET is allowed to have destroyed the saved frame. */
+static bool continuation_frame_live(const native_continuation_t *state) {
+    for (context_t *ctx = state->thread->context; ctx; ctx = ctx->previous) {
+        if (ctx == state->frame)
+            return true;
+        if (ctx == get_root_context())
+            break;
+    }
+    return false;
+}
+
+/** @brief Lexical blocks belong to the driver; only a different call frame needs VM pumping. */
+static bool continuation_nested_call(const native_continuation_t *state) {
+    for (context_t *ctx = state->thread->context; ctx != state->frame; ctx = ctx->previous) {
+        if (!ctx || ctx == get_root_context())
+            return false;
+        if (ctx->control_flow == FLOW_RETURN || ctx->file_initialization_boundary)
+            return true;
+    }
+    return false;
+}
+
+static bool continuation_instruction(native_continuation_t *state) {
+    runtime_t *runtime = &state->runtime;
+    thread_t *thread = state->thread;
+    runtime->files = find_module_files(thread->process, thread->context->module);
+    runtime->code = runtime->files ? module_files_bytecode(runtime->files) : runtime->entry_code;
+    if (!runtime->code || thread->instr_id >= runtime->code->instructions_count)
+        return false;
+    instruction_t instruction = runtime->code->instructions[thread->instr_id];
+    if (instruction.opcode >= sizeof(executors) / sizeof(*executors))
+        return false;
+    thread->context->instruction = thread->instr_id;
+    bool result = executors[instruction.opcode](runtime, instruction, thread);
+    size_t depth = process_execution_suspend(thread->process);
+    process_execution_resume(thread->process, depth);
+    return result;
+}
+
+/** @brief Execute exactly one driver instruction, plus the ordinary call it may suspend for. */
+static uint32_t GOAT_NATIVE_CALL continuation_step(void *opaque, uint32_t pc, uint32_t *next) {
+    native_continuation_t *state = opaque;
+    thread_t *thread = state->thread;
+    if (state->stopped)
+        return state->outcome;
+    if (!next || pc != thread->instr_id || pc < state->entry->first_instruction
+        || pc - state->entry->first_instruction >= state->entry->instruction_count
+        || !continuation_frame_live(state)) {
+        state->stopped = true;
+        return state->outcome = GOAT_NATIVE_FAILED;
+    }
+    bool success = !thread->process->exit_requested && !thread->process->native_failed
+                   && continuation_instruction(state);
+    while (success && !thread->process->exit_requested && !thread->process->native_failed
+           && continuation_frame_live(state) && continuation_nested_call(state))
+        success = continuation_instruction(state);
+    if (thread->exception.value) {
+        state->stopped = true;
+        return state->outcome = GOAT_NATIVE_EXCEPTION;
+    }
+    if (!success || thread->process->exit_requested || thread->process->native_failed
+        || state->runtime.status || thread->native_status) {
+        state->stopped = true;
+        return state->outcome = GOAT_NATIVE_FAILED;
+    }
+    if (!continuation_frame_live(state)) {
+        state->stopped = true;
+        return state->outcome = GOAT_NATIVE_COMPLETE;
+    }
+    *next = thread->instr_id;
+    return GOAT_NATIVE_CONTINUE;
+}
+
+bool vm_run_native_continuation(thread_t *thread, const goat_native_continuation_entry_t *entry) {
+    context_t *frame = thread->context;
+    context_t *caller = frame->previous;
+    instr_index_t origin = frame->jump_address[0] - 1;
+    stack_index_t result_index = frame->ret_value_index;
+    if (!thread->process->execution || !entry->invoke
+        || entry->first_instruction != thread->instr_id || !entry->instruction_count) {
+        thread->native_status = GOAT_NATIVE_BAD_REQUEST;
+        if (!thread->exception.trace)
+            thread->exception.trace = capture_exception_trace(frame, thread->instr_id);
+        thread->context = destroy_context(frame);
+        while (thread->data_stack->size > result_index) {
+            object_t *value = pop_object_from_stack(thread->data_stack);
+            DECREF(value);
+        }
+        thread->instr_id = origin;
+        thread->args_count = 0;
+        return false;
+    }
+    native_continuation_t state = {
+        .runtime = {.entry_code = thread->process->execution->entry_code},
+        .thread = thread,
+        .frame = frame,
+        .entry = entry,
+    };
+    frame->native_context_boundary = true;
+    goat_native_continuation_context_t context = {&state, continuation_step};
+    thread->native_attempts++;
+    /* Unlike scalar adapters, the driver owns no model values: each step operates on the
+       rooted VM stack under the execution lock. Yield only between complete instructions. */
+    uint32_t outcome = entry->invoke(&context, entry->first_instruction);
+    if (outcome == GOAT_NATIVE_COMPLETE && state.stopped && state.outcome == GOAT_NATIVE_COMPLETE
+        && !continuation_frame_live(&state)) {
+        thread->native_successes++;
+        return true;
+    }
+    /* Never replay an entered driver, even when an adapter reports a resource failure.
+       An exception cannot destroy the suspended caller: the native boundary caught it. */
+    bool cancelled = thread->process->exit_requested && !thread->process->native_failed
+                     && !thread->native_status;
+    if (!cancelled && !thread->exception.trace)
+        thread->exception.trace = capture_exception_trace(thread->context, thread->instr_id);
+    if (continuation_frame_live(&state)) {
+        while (thread->context != caller)
+            thread->context = destroy_context(thread->context);
+        while (thread->data_stack->size > result_index) {
+            object_t *value = pop_object_from_stack(thread->data_stack);
+            DECREF(value);
+        }
+        thread->instr_id = origin;
+        thread->args_count = 0;
+    }
+    /* Host cancellation returns its requested status through the outer VM boundary. It is
+       neither an adapter contract failure nor the nonreturning language exit operation. */
+    if (cancelled)
+        return false;
+    if (outcome != GOAT_NATIVE_EXCEPTION || !state.stopped || state.outcome != GOAT_NATIVE_EXCEPTION
+        || !thread->exception.value) {
+        if (!thread->native_status)
+            thread->native_status = GOAT_NATIVE_BAD_REQUEST;
+    }
+    return false;
+}
 
 /** @brief Executes one thread; releases the model lock between instructions. */
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule) {

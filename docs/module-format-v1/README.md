@@ -470,3 +470,21 @@ IDs or the format version. LAND/LOR select before RHS and retain receiver/functi
 on the operand stack (null/null for built-in fallthrough). BOOL arg0=1 completes
 that selection; arg0=0 remains single-value conversion. Other BOOL arg0 values
 are rejected; BOOL arg1 remains zero. See [logical operators](../operator-logical.md).
+
+### Optional native control-flow continuations
+
+A native variant may export `goat_native_continuation_query` in addition to the
+scalar adapters. Its independently size/version-checked table identifies functions
+and original immutable bytecode instruction ranges. The loader checks that the
+query, immutable table and executable entries belong to the verified native image,
+then matches every entry to the module bytecode. The native control flow uses host
+services for the existing object semantics, without recompiling source on reload.
+
+The scalar `specializations` array may be empty for a continuation-only variant.
+This relaxes only that array's minimum length; format version 1, `goatAbiVersion`,
+scalar signatures and all other schema fields remain unchanged. No scalar adapter
+is invented to represent a continuation. Required-native execution still needs an
+actual compatible native function: an empty scalar array without a valid nonempty
+continuation table does not satisfy it. Scalar-only images keep lazy loading;
+continuation-bearing images are validated and bound before execution so function
+objects capture the correct library lifetime.

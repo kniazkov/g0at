@@ -615,8 +615,7 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/specialization"
-          },
-          "minItems": 1
+          }
         },
         "cCompiler": {
           "$ref": "#/$defs/compiler"
@@ -836,8 +835,7 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/specialization"
-          },
-          "minItems": 1
+          }
         }
       },
       "required": [

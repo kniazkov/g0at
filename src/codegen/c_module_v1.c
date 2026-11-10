@@ -11,6 +11,7 @@
 #include "lib/memory/allocate.h"
 #include "lib/strings/string_ext.h"
 #include "lib/wire/wire.h"
+#include "native_continuation.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -313,8 +314,10 @@ static void bridge(source_builder_t *builder) {
     add_static_source(builder, 0, U"}");
 }
 
-c_module_v1_output_t
-generate_c_module_v1(arena_t *arena, const node_t *const *roots, size_t count) {
+c_module_v1_output_t generate_c_module_v1_with_bytecode(arena_t *arena,
+                                                        const node_t *const *roots,
+                                                        size_t count,
+                                                        const bytecode_t *code) {
     c_module_t *module = create_c_module_roots(arena, roots, count);
     for (c_module_function_t *entry = module->head; entry; entry = entry->next)
         if (!scalar_constructions(entry->summary, entry->summary->function)
@@ -325,6 +328,14 @@ generate_c_module_v1(arena_t *arena, const node_t *const *roots, size_t count) {
                                    .omitted_count = lowered.omitted_count};
     source_builder_t *builder = create_source_builder();
     add_formatted_source(builder, 0, lowered.source);
+    native_continuation_output_t continuations =
+        generate_native_continuations(count == 1 ? roots[0] : NULL, code, module, &lowered);
+    output.continuation_count = continuations.count;
+    if (continuations.source.data) {
+        add_formatted_source(builder, 0, continuations.source);
+        continuations.source = EMPTY_STRING_VALUE;
+    }
+    destroy_native_continuation_output(&continuations);
     bridge(builder);
     yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
     yyjson_mut_val *specs = yyjson_mut_arr(doc);
@@ -447,4 +458,9 @@ string_value_t append_c_module_v1_descriptor(string_view_t source,
     destroy_source_builder(builder);
     goat_module_json_free(json);
     return out;
+}
+
+c_module_v1_output_t
+generate_c_module_v1(arena_t *arena, const node_t *const *roots, size_t count) {
+    return generate_c_module_v1_with_bytecode(arena, roots, count, NULL);
 }

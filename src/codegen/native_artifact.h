@@ -23,3 +23,6 @@ bool native_artifact_descriptor(const native_artifact_t *artifact,
                                 char **diagnostic);
 /** @brief A defined, externally exported, executable-backed function, not a forwarder. */
 bool native_artifact_has_function(const native_artifact_t *artifact, const char *symbol);
+
+/** A reserved symbol name occurs in the export table, regardless of callable validity. */
+bool native_artifact_has_symbol(const native_artifact_t *artifact, const char *symbol);

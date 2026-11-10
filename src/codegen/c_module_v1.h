@@ -5,11 +5,12 @@
 #pragma once
 #include "c_module_output.h"
 #include "module/module_json.h"
+#include "vm/bytecode.h"
 
 typedef struct {
     string_value_t source;
     yyjson_doc *specializations;
-    size_t generated_count, omitted_count;
+    size_t generated_count, omitted_count, continuation_count;
 } c_module_v1_output_t;
 
 /** Roots must have their final linked bytecode function IDs. The result owns all
@@ -25,3 +26,9 @@ string_value_t append_c_module_v1_descriptor(string_view_t source,
                                              const yyjson_doc *metadata,
                                              const yyjson_val *target,
                                              const yyjson_doc *specializations);
+
+/** Emit optional control-flow continuations over the final immutable bytecode. */
+c_module_v1_output_t generate_c_module_v1_with_bytecode(arena_t *arena,
+                                                        const node_t *const *roots,
+                                                        size_t count,
+                                                        const bytecode_t *code);

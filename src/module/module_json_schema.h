@@ -395,7 +395,7 @@ static const json_schema schemas[157] = {
     {.types = JSON_STRING, .pattern = PATTERN_HASH},
     {.types = JSON_INTEGER, .bounded = true, .minimum = INT64_C(1), .maximum = INT64_C(4294967295)},
     {.reference = &schemas[64]},
-    {.types = JSON_ARRAY, .items = &schemas[104], .min_count = 1},
+    {.types = JSON_ARRAY, .items = &schemas[104]},
     {.reference = &schemas[92]},
     {.reference = &schemas[7]},
     {.types = JSON_OBJECT, .fields = fields_106, .field_count = 10, .closed = true},
@@ -447,7 +447,7 @@ static const json_schema schemas[157] = {
     {.types = JSON_STRING, .pattern = PATTERN_HASH},
     {.types = JSON_INTEGER, .bounded = true, .minimum = INT64_C(1), .maximum = INT64_C(4294967295)},
     {.reference = &schemas[64]},
-    {.types = JSON_ARRAY, .items = &schemas[156], .min_count = 1},
+    {.types = JSON_ARRAY, .items = &schemas[156]},
     {.reference = &schemas[92]},
 };
 
