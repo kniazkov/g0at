@@ -54,6 +54,30 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
         builder,
         1,
         U"if (!goat_native_has_memory_services(g_context)) return GOAT_NATIVE_BAD_REQUEST;");
+    add_static_source(builder, 1, U"for (uint32_t i = 0; i < count; i++) {");
+    add_static_source(builder, 2, U"if (args[i].reserved) return GOAT_NATIVE_BAD_REQUEST;");
+    add_static_source(builder, 2, U"switch (args[i].type) {");
+    add_static_source(builder,
+                      2,
+                      U"case GOAT_NATIVE_I64: case GOAT_NATIVE_F64: case GOAT_NATIVE_CHAR: break;");
+    add_static_source(builder,
+                      2,
+                      U"case GOAT_NATIVE_BOOL: if (args[i].value.boolean > 1) return "
+                      U"GOAT_NATIVE_BAD_REQUEST; break;");
+    add_static_source(builder,
+                      2,
+                      U"case GOAT_NATIVE_NULL: if (args[i].value.integer) return "
+                      U"GOAT_NATIVE_BAD_REQUEST; break;");
+    add_static_source(builder, 2, U"case GOAT_NATIVE_STRING:");
+    add_static_source(builder,
+                      3,
+                      U"if (!args[i].value.string || (!args[i].value.string->data && "
+                      U"args[i].value.string->length) || args[i].value.string->length > "
+                      U"GOAT_NATIVE_STRING_MAX) return GOAT_NATIVE_BAD_REQUEST;");
+    add_static_source(builder, 3, U"break;");
+    add_static_source(builder, 2, U"default: return GOAT_NATIVE_BAD_REQUEST;");
+    add_static_source(builder, 2, U"}");
+    add_static_source(builder, 1, U"}");
     if (count) {
         add_source(builder, 1, U"if (count < %zu) return GOAT_NATIVE_TYPE_MISMATCH;", count);
         for (size_t i = 0; i < count; i++) {
@@ -95,7 +119,7 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
     string_builder_t call;
     init_string_builder(&call, 64);
     append_substring(&call, entry->name.data, entry->name.length);
-    append_string(&call, U"(g_context");
+    append_string(&call, U"(g_context, count, args");
     for (size_t i = 0; i < count; i++) {
         append_string(&call, U", ");
         string_value_t argument =

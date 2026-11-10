@@ -20,3 +20,6 @@ void set_index_arguments(node_t *node, arena_t *arena, expression_t **indices, s
 /** @brief Emits a read, optionally retaining the receiver for a subsequent method call. */
 instr_index_t
 generate_index_read(node_t *node, code_builder_t *code, data_builder_t *data, bool retain_receiver);
+
+/** @brief Literal slot in the current call snapshot, or SIZE_MAX for other indexing. */
+size_t arguments_literal_index(const node_t *node);

@@ -1,0 +1,10 @@
+const count = func() { return arguments.length; };
+count(); count(1, 2);
+const original = func(n) { n = n + 1; return arguments[0] + arguments.length; };
+original(3, 4);
+const extra = func(n) { return arguments[1]; };
+extra(3, 4);
+const escape = func(n) { return arguments; };
+escape(3);
+const missing = func(n) { return arguments[0]; };
+missing();

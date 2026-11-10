@@ -58,6 +58,8 @@ static const lattice_element_t *evaluate_signature(function_summary_set_t *set,
         requires_concurrency_safe_optimization(unit) || requires_access_safe_optimization(unit);
     state->type_analysis_incomplete = incomplete;
     state->c_expressions = expressions;
+    if (expressions)
+        expressions->summary = summary;
     state->recursive_group = group;
     state->call_graph_node = graph_node;
     /* A type-only key does not prove that root bindings have not been replaced. */

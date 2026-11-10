@@ -92,9 +92,12 @@ bool test_c_module_output(void) {
     ASSERT(module->count == 2 && module->available_count == 2);
     c_module_output_t first = generate_c_module(arena, module);
     ASSERT(first.generated_count == 2 && !first.omitted_count && !first.failures);
-    ASSERT(
-        STRSTR(first.source.data, U"int64_t g_f1_i_(const goat_native_context_v2_t *, int64_t);"));
-    ASSERT(STRSTR(first.source.data, U"double g_f1_r_(const goat_native_context_v2_t *, double);"));
+    ASSERT(STRSTR(first.source.data,
+                  U"int64_t g_f1_i_(const goat_native_context_v2_t *, uint32_t, const "
+                  U"goat_native_value_v2_t *, int64_t);"));
+    ASSERT(STRSTR(first.source.data,
+                  U"double g_f1_r_(const goat_native_context_v2_t *, uint32_t, const "
+                  U"goat_native_value_v2_t *, double);"));
     ASSERT(STRSTR(first.source.data, U"/* Goat function: f(n)"));
     ASSERT(STRSTR(first.source.data, U"\n\n/* Goat function:"));
     ASSERT(STRSTR(first.source.data, U"\n\n/* Native ABI adapter for g_f1_i_. */"));

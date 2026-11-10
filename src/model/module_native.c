@@ -312,16 +312,17 @@ module_native_call_status_t call_module_native(module_files_t *files,
             function = code->functions + i;
     if (!function || function->parameter_count != formal_count)
         return MODULE_NATIVE_FALLBACK;
+    /* Guards and purity proofs use a null-padded formal projection. The ABI
+       receives the original actual vector, including every extra argument. */
+    size_t storage_count = formal_count > actual_count ? formal_count : actual_count;
     goat_module_value_v1 *arguments =
-        CALLOC(allocation_size_multiply(formal_count, sizeof(*arguments)));
+        CALLOC(allocation_size_multiply(storage_count, sizeof(*arguments)));
     goat_module_string_v1 *strings =
-        CALLOC(allocation_size_multiply(formal_count, sizeof(*strings)));
-    call_memory_t memory = {.strings = strings, .count = formal_count, .thread = thread};
+        CALLOC(allocation_size_multiply(storage_count, sizeof(*strings)));
+    call_memory_t memory = {.strings = strings, .count = storage_count, .thread = thread};
     module_native_call_status_t outcome = MODULE_NATIVE_FALLBACK;
-    for (size_t i = 0; i < formal_count; i++) {
-        object_t *arg = i < actual_count
-                            ? peek_object_from_stack(thread->data_stack, actual_count - 1 - i)
-                            : get_null_object();
+    for (size_t i = 0; i < actual_count; i++) {
+        object_t *arg = peek_object_from_stack(thread->data_stack, actual_count - 1 - i);
         if (!convert_argument(arg, arguments + i, strings + i)
             || !goat_module_value_valid(arguments + i, readable, &memory))
             goto done;
@@ -385,7 +386,7 @@ module_native_call_status_t call_module_native(module_files_t *files,
     goat_module_abi_error error = goat_module_abi_invoke(memory.entry.adapter,
                                                          result_tag,
                                                          &context,
-                                                         (uint32_t)formal_count,
+                                                         actual_count,
                                                          arguments,
                                                          &result,
                                                          readable,

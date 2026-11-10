@@ -30,7 +30,8 @@ enum {
     GOAT_NATIVE_F64 = 2,
     GOAT_NATIVE_STRING = 3,
     GOAT_NATIVE_BOOL = 4,
-    GOAT_NATIVE_CHAR = 5
+    GOAT_NATIVE_CHAR = 5,
+    GOAT_NATIVE_NULL = 6 ///< Actual null slot; not a typed parameter/result specialization.
 };
 
 enum {
@@ -189,6 +190,11 @@ static inline void goat_native_deallocate_all(const goat_native_context_v2_t *co
     context->services->deallocate_all(context->state);
 }
 
+/** @brief Receives every actual value in source order, without formal null padding.
+ * Arguments and their borrowed string storage remain alive until invoke returns.
+ * Typed formal parameters are checked separately; assignments never modify this snapshot.
+ * Unsupported values must select the shared runtime before adapter entry, not be dropped.
+ */
 typedef uint32_t(GOAT_NATIVE_CALL *goat_native_adapter_v2_t)(
     uint32_t version,
     const goat_native_context_v2_t *context,

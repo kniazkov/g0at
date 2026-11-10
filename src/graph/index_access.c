@@ -5,13 +5,17 @@
 #include "index_access.h"
 
 #include "analysis/abstract_state.h"
+#include "analysis/function_effects.h"
 #include "analysis/reachability.h"
+#include "codegen/c_lowering.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "lib/memory/allocate.h"
 #include "lib/memory/arena.h"
 #include "lib/strings/string_ext.h"
+#include "replacement.h"
+#include "variable.h"
 
 /** @brief Includes the receiver followed by every index. */
 static size_t get_child_count(const node_t *node) {
@@ -105,9 +109,74 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
     return first;
 }
 
+size_t arguments_literal_index(const node_t *node) {
+    if (!node || node->vtbl->type != NODE_INDEX_ACCESS)
+        return SIZE_MAX;
+    const index_access_t *index = (const index_access_t *)node;
+    const node_t *object = replacement_original((const node_t *)index->object);
+    while (object->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
+        object = replacement_original(get_node_child(object, 0));
+    if (object->vtbl->type != NODE_VARIABLE
+        || !is_arguments_name(((const variable_t *)object)->name) || index->count != 1)
+        return SIZE_MAX;
+    node_t *slot = (node_t *)replacement_original((const node_t *)index->indices[0]);
+    while (slot->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
+        slot = (node_t *)replacement_original(get_node_child(slot, 0));
+    if (slot->vtbl->type != NODE_INTEGER)
+        return SIZE_MAX;
+    const integer_constant_element_t *value =
+        (const integer_constant_element_t *)slot->vtbl->calculate(slot, NULL, NULL);
+    return value->value >= 0 && (uint64_t)value->value < SIZE_MAX ? (size_t)value->value : SIZE_MAX;
+}
+
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    size_t slot = arguments_literal_index(node);
+    if (!context || !context->summary || slot >= context->summary->parameter_count)
+        return false;
+    c_value_type_t type = classify_c_value_type(context->summary->parameter_types[slot]->type);
+    return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_BOOL
+           || type == C_VALUE_CHAR || type == C_VALUE_STRING;
+}
+
+static c_generated_expression_t generate_c_code(const node_t *node,
+                                                c_generation_context_t *context) {
+    c_expression_context_t proof = {.summary = context->summary};
+    size_t slot = arguments_literal_index(node);
+    if (!context->module_definition || !can_generate_c_code(node, NULL, &proof)) {
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    c_value_type_t type = c_generation_parameter_type(context, slot);
+    const gchar_t *field = type == C_VALUE_INT64    ? U"integer"
+                           : type == C_VALUE_DOUBLE ? U"real"
+                           : type == C_VALUE_BOOL   ? U"boolean"
+                           : type == C_VALUE_CHAR   ? U"character"
+                                                    : U"string";
+    return (c_generated_expression_t){.success = true,
+                                      .type = type,
+                                      .value = format_string(U"%sg_arguments[%zu].value.%s",
+                                                             type == C_VALUE_STRING ? U"*" : U"",
+                                                             slot,
+                                                             field)};
+}
+
+static void
+collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    c_expression_context_t proof = {.summary = summary};
+    if (can_generate_c_code(node, NULL, &proof))
+        collect_child_effects(node, summary, arena);
+    else
+        unknown_direct_effects(node, summary, arena);
+}
+
 /** @brief Indexing can invoke arbitrary type behavior, so invalidate mutable facts. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const index_access_t *index = (const index_access_t *)node;
+    size_t slot = arguments_literal_index(node);
+    if (can_generate_c_code(node, NULL, state->c_expressions))
+        return state->c_expressions->summary->parameter_types[slot];
     calculate_expression(index->object, state, arena);
     for (size_t i = 0; i < index->count; i++)
         calculate_expression(index->indices[i], state, arena);
@@ -135,7 +204,7 @@ static node_vtbl_t vtbl = {.type = NODE_INDEX_ACCESS,
                            .analyze_reachability = analyze_reachability,
                            .is_pure = not_pure,
                            .simplify = no_simplification,
-                           .collect_direct_effects = unknown_direct_effects,
+                           .collect_direct_effects = collect_direct_effects,
                            .get_data = no_data,
                            .get_property_count = no_properties,
                            .get_property = no_property,
@@ -153,8 +222,8 @@ static node_vtbl_t vtbl = {.type = NODE_INDEX_ACCESS,
                            .generate_indented_goat_code = generate_indented_goat_code,
                            .generate_bytecode = generate_bytecode,
                            .generate_bytecode_assign = generate_bytecode_assign,
-                           .can_generate_c_code = cannot_generate_c_code,
-                           .generate_c_code = no_c_code,
+                           .can_generate_c_code = can_generate_c_code,
+                           .generate_c_code = generate_c_code,
                            .generate_indented_c_code = no_indented_c_code,
                            .generate_bytecode_deferred = no_deferred_bytecode};
 
