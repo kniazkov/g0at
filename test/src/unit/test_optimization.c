@@ -92,7 +92,9 @@ bool test_optimization_modes() {
         code_builder_t *code = create_code_builder();
         data_builder_t *data = create_data_builder();
         generate_bytecode_from_node(root, code, data);
-        ASSERT(code->size == (disabled ? 24 : 8));
+        /* The saved callee precedes x; ROTATE restores the CALL stack contract. */
+        ASSERT(code->size == (disabled ? 25 : 9));
+        ASSERT(opcode_count(code, ROTATE) == 1);
         ASSERT(opcode_count(code, CHECKVAR) == (disabled ? 2 : 0));
         ASSERT(opcode_count(code, TRUE) == disabled);
         ASSERT(opcode_count(code, JIF) == disabled);
@@ -226,8 +228,10 @@ bool test_unused_bindings() {
         ASSERT(!STRCMP(printed.data, cases[i].printed));
         FREE_STRING(printed);
         if (i == 0) {
-            ASSERT(code->size == 5 && code->instructions[0].opcode == ILOAD32
-                   && code->instructions[0].arg1 == 5);
+            /* Resolve println before its folded argument, then move that argument below it. */
+            ASSERT(code->size == 6 && code->instructions[0].opcode == VLOAD
+                   && code->instructions[1].opcode == ILOAD32 && code->instructions[1].arg1 == 5
+                   && code->instructions[2].opcode == ROTATE && code->instructions[2].arg1 == 1);
             const node_t *deleted = get_node_child(get_node_child(root, 0), 0);
             ASSERT(is_deletion(deleted) && get_node_child_count(deleted) == 1);
             string_value_t dot = generate_graph_dot(root);

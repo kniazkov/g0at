@@ -77,7 +77,7 @@ In [function_object.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329
 
 The launcher visits the function list, generates available bodies, and patches addresses in the earlier `ARG` instructions. It repeats the pass: generating an outer body may create the first instruction site for an inner function. An empty body gets `NIL; RET`; the same implicit return is added if its final AST statement is not a `return`.
 
-A call is separate. [function_call.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/graph/function_call.c) generates arguments left to right, then the callee expression and `CALL`. The actual argument count goes into `arg0`; the executor pops the evaluated arguments and binds them to parameters in order. Deferred body generation does not mean deferred argument evaluation. A method call differs: when the callee is a member access, the generator emits `VLOAD obj`, `DUP`, `GETPROP`, and `CALLM` instead of `CALL`. The duplicate keeps the receiver under the function on the stack, and `CALLM` pops both, passing the receiver into the call (Section 10.8).
+A call first evaluates and retains the callee, then evaluates arguments left to right. Existing `ROTATE` instructions place each argument below the saved callee before `CALL`; `arg0` records the actual argument count. For member or index calls, the receiver is also retained below the callee and `CALLM` consumes both. Ordinary functions retain their method receiver; a callable user object selects its `"()"` function only after arguments and receives itself as `this`. See [callable user objects](../../operator-call.md) for ordering and failure semantics. Deferred body generation does not defer argument evaluation.
 
 <a id="section-8-7"></a>
 

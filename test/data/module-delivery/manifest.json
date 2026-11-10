@@ -2,8 +2,8 @@
   "original": "scripts/check_module_delivery.py",
   "base": "3c6f1d95b94a5343c6a1db2e26a20be1ced3b918",
   "originalSha256": "649f50cbbd4aaef2b3d6e12ec7cc67c33d7d66a1b2e96fe514e54501c4590186",
-  "mainHash": "06ab143298bb8cd0a951a60efd33587c0ea89c17e438d3b2113043d0703b713b",
-  "bytecodeSha256": "ba0a5dd1d608878e46e3d18c707bb2e3a1d21a53e6e62a93114485b051e83ccf",
+  "mainHash": "3ac1d62b391ff5e5dbad755c224b84ff1a615484bb600fa9cdbecef0267de40f",
+  "bytecodeSha256": "f797ece3896908d80566cf08c7ab39bd3d5f20509c6e71b14307d359d0a1293a",
   "files": {
     "alternate.goat": "70272f6ebf050eb65077b5bd38829b591fbe5ebf092f5ea0b9d762654697becc",
     "delivery.goat": "edcde8c5982023a0fae91b5de102301e8699c961bad75109fd5c9f9d847dc86f",

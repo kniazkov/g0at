@@ -1,0 +1,4 @@
+original:changed
+second:changed
+c:3
+w:3

@@ -1,0 +1,15 @@
+// A receiver is saved before even ignored explicit arguments can replace its binding.
+const savedReceiver = func(s) {
+    var t = s;
+    return t.trim(t = "changed") + ":" + t;
+};
+// Evaluate receiver expressions and explicit arguments once, left to right.
+const nestedReceiver = func(s) {
+    var i = 0;
+    const result = s.substring(i++, i++ + 2).substring(i++);
+    return result + ":" + i;
+};
+println(savedReceiver(" original "));
+println(savedReceiver(" second "));
+println(nestedReceiver("abcdef"));
+println(nestedReceiver("uvwxyz"));

@@ -127,9 +127,8 @@ c_generated_expression_t c_string_method_call(const node_t *site,
     c_value_type_t *types = ALLOC(count * sizeof(*types));
     source_builder_t *prelude = create_source_builder();
     bool success = true;
-    /* CALLM evaluates explicit operands first, then the receiver. Plain calls are left-to-right. */
-    for (size_t step = 0; step < count; step++) {
-        size_t i = member_call(site) ? (step + 1) % count : step;
+    /* Match CALLM: retain the receiver before evaluating explicit arguments. */
+    for (size_t i = 0; i < count; i++) {
         c_generated_expression_t expr = generate_c_code_from_node(argument(site, i), context);
         if (!expr.success) {
             destroy_c_expression(&expr);

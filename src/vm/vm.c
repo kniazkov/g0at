@@ -1049,6 +1049,14 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
 static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     require_object_stack_size(thread->data_stack, (size_t)instr.arg0 + 1);
     object_t *func = pop_object_from_stack(thread->data_stack);
+    if (func->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+        static object_static_string_t key;
+        return execute_user_operator(runtime,
+                                     thread,
+                                     func,
+                                     get_static_string_object(&key, U"()"),
+                                     instr.arg0);
+    }
     bool result = call_object(func, instr.arg0, NULL, thread);
     // The ID of the following instruction was set inside the call method
     DECREF(func);
@@ -1060,6 +1068,17 @@ static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread
     require_object_stack_size(thread->data_stack, (size_t)instr.arg0 + 2);
     object_t *func = pop_object_from_stack(thread->data_stack);
     object_t *receiver = pop_object_from_stack(thread->data_stack);
+    if (func->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+        /* A callable property value is its own receiver, not the containing object.
+           Select its handler now, after the arguments, just as for a plain call. */
+        static object_static_string_t key;
+        DECREF(receiver);
+        return execute_user_operator(runtime,
+                                     thread,
+                                     func,
+                                     get_static_string_object(&key, U"()"),
+                                     instr.arg0);
+    }
     bool result = call_object(func, instr.arg0, receiver, thread);
     // The ID of the following instruction was set inside the call method
     DECREF(func);

@@ -12,13 +12,26 @@ The final C-only CI is checked separately.
 
 The files in this directory come from the unchanged original at
 `3c6f1d95b94a5343c6a1db2e26a20be1ced3b918`. `manifest.json` records its SHA-256,
-the exact source/descriptor fixture hashes, and the two existing producer goldens.
+the exact source/descriptor fixture hashes, and the two current producer goldens.
 The producer checks explicitly use `--optimize none`, matching the original
 module compiler. Unified source compilation now defaults to optimization; its
 optimized bytecode is not expected to match these unoptimized frozen hashes:
 
-- Portable main hash: `06ab143298bb8cd0a951a60efd33587c0ea89c17e438d3b2113043d0703b713b`.
-- Bytecode SHA-256: `ba0a5dd1d608878e46e3d18c707bb2e3a1d21a53e6e62a93114485b051e83ccf`.
+- Portable main hash: `3ac1d62b391ff5e5dbad755c224b84ff1a615484bb600fa9cdbecef0267de40f`.
+- Bytecode SHA-256: `f797ece3896908d80566cf08c7ab39bd3d5f20509c6e71b14307d359d0a1293a`.
+
+Issue #501 changes call generation to evaluate and save the callee before its
+arguments, using the existing `ROTATE` instruction. The producer goldens above
+were refreshed with the public `goat build --optimize none` command from the
+unchanged source and descriptor fixtures. Required/off/auto builds retain equal
+portable bytes and identity. The dependency hashes also change because the leaf
+and middle modules contain calls. This is a compiler-output change, not a module
+format, opcode, or fixture-input change; the independent format-v1 vectors stay
+unchanged. The original migration goldens were main hash
+`06ab143298bb8cd0a951a60efd33587c0ea89c17e438d3b2113043d0703b713b`
+and bytecode SHA-256
+`ba0a5dd1d608878e46e3d18c707bb2e3a1d21a53e6e62a93114485b051e83ccf`;
+these remain historical parity evidence rather than current compiler output.
 
 `leaf2.goat`, `leaf1.goat`, `middle.goat`, and `delivery.goat` are the exact
 original source strings, extracted without executing the producer. The alternate
@@ -41,7 +54,7 @@ the corresponding group with a fresh graph and environment.
 | Original operation/check | CTest suffix | Contract retained |
 | --- | --- | --- |
 | Build leaf versions 2 and 1, middle `release`, delivery `opaque-release` | `producer`, `end-to-end` | Real compiler outputs, complete dependency graph, successful build with empty stdout, no initializer effects during compilation |
-| Build required/off/auto delivery archives | `producer`, `end-to-end` | Equal main hash and bytecode; off has no native part; auto has native part; original cross-platform main/bytecode goldens |
+| Build required/off/auto delivery archives | `producer`, `end-to-end` | Equal main hash and bytecode; off has no native part; auto has native part; cross-platform main/bytecode goldens |
 | Inspect every produced archive | `producer`, `end-to-end` | Every ZIP entry deflated; independent portable hash and native-library SHA-256 checks |
 | Read actual Goat PE/ELF machine | `producer`, `end-to-end` | Native target architecture/bits match executable rather than test-runner pointer width; PE i686/x86-64, little-endian ELF64 x86-64/AArch64 |
 | Copy entire staging tree to delivery; copy required/off app; build replacement identity | `producer`, `dependencies`, `end-to-end` | Independent graph under `delivered/modules`, opaque versions, bytecode-only copy, distinct valid leaf2 for identity conflict |
