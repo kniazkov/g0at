@@ -598,3 +598,8 @@ target_link_libraries(operator_logical_testing PRIVATE goat_validation m)
 add_executable(operator_index_testing src/component/operator_index_testing.c
   src/unit/analysis_test_support.c)
 target_link_libraries(operator_index_testing PRIVATE goat_validation m)
+
+# Retained targets, early checks and compound/update writeback (#500).
+add_executable(operator_update_testing src/component/operator_update_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(operator_update_testing PRIVATE goat_validation m)

@@ -1,6 +1,6 @@
 /** @file update_expression.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Prefix and postfix numeric updates.
+ * @brief Prefix and postfix read-modify-write updates.
  */
 #include "update_expression.h"
 
@@ -12,6 +12,7 @@
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
+#include "compound_assignment.h"
 #include "lib/memory/allocate.h"
 #include "lib/memory/arena.h"
 #include "lib/strings/string_ext.h"
@@ -38,15 +39,20 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const lattice_element_t *old = calculate_expression(expr->operand, state, arena);
     const lattice_element_t *value =
         lattice_update(arena, old, update_is_decrement(node->vtbl->type));
-    variable_t *var = (variable_t *)expr->operand;
-    if (var->declarator && var->declarator != get_builtin_declarator()
-        && var->declarator->base.vtbl->type == NODE_CONSTANT_DECLARATOR)
+    variable_t *var =
+        expr->operand->base.vtbl->type == NODE_VARIABLE ? (variable_t *)expr->operand : NULL;
+    if (var && !var->dynamic_lookup && var->declarator
+        && var->declarator != get_builtin_declarator()
+        && var->declarator->base.vtbl->type == NODE_CONSTANT_DECLARATOR) {
+        state->control_flow = FLOW_UNREACHABLE;
         return make_bottom_element();
+    }
     if (state->control_flow != FLOW_NORMAL || value->type == LATTICE_BOTTOM)
         return make_bottom_element();
-    if (lattice_may_dispatch_operator(old))
+    if (!var || var->dynamic_lookup || lattice_may_dispatch_operator(old))
         forget_abstract_values(state);
-    if (var->declarator && var->declarator != get_builtin_declarator())
+    if (var && !var->dynamic_lookup && var->declarator
+        && var->declarator != get_builtin_declarator())
         set_in_abstract_state_at(state, var->declarator, value, node);
     return update_is_postfix(node->vtbl->type) ? old : value;
 }
@@ -72,16 +78,21 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
 /** @brief Implements node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     expression_t *operand = ((unary_expression_t *)node)->operand;
-    instr_index_t first = generate_bytecode_from_expression(operand, code, data);
+    retained_target_t address = generate_retained_target_read(&operand->base, code, data);
     bool postfix = update_is_postfix(node->vtbl->type);
-    if (postfix)
+    if (postfix) {
+        /* Preserve the old reference below the retained address, not a deep copy.
+         * [address, old] -> [old, address, old] before invoking the handler. */
         add_instruction(code, (instruction_t){.opcode = DUP});
+        if (address.count)
+            add_instruction(code, (instruction_t){.opcode = ROTATE, .arg1 = address.count + 1});
+    }
     add_instruction(code,
                     (instruction_t){.opcode = update_is_decrement(node->vtbl->type) ? DEC : INC});
-    generate_bytecode_assign_from_node(&operand->base, code, data);
+    generate_retained_target_write(&operand->base, address, code, data);
     if (postfix)
         add_instruction(code, (instruction_t){.opcode = POP});
-    return first;
+    return address.first;
 }
 
 /** @brief Implements node_vtbl_t::analyze_reachability. */
@@ -91,7 +102,8 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     const lattice_element_t *old = visit_reachable_node(target, state, collector);
     const lattice_element_t *value =
         lattice_update((*state)->arena, old, update_is_decrement(node->vtbl->type));
-    const declarator_t *decl = ((variable_t *)target)->declarator;
+    const variable_t *var = target->vtbl->type == NODE_VARIABLE ? (variable_t *)target : NULL;
+    const declarator_t *decl = var && !var->dynamic_lookup ? var->declarator : NULL;
     if (decl && decl != get_builtin_declarator()
         && decl->base.vtbl->type == NODE_CONSTANT_DECLARATOR)
         value = make_bottom_element();
@@ -99,7 +111,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
         (*state)->control_flow = FLOW_UNREACHABLE;
     if ((*state)->control_flow != FLOW_NORMAL)
         return make_bottom_element();
-    if (lattice_may_dispatch_operator(old))
+    if (!var || var->dynamic_lookup || lattice_may_dispatch_operator(old))
         forget_abstract_values(*state);
     if (decl && decl != get_builtin_declarator())
         set_in_abstract_state(*state, decl, value);
@@ -109,6 +121,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 /** @brief Implements node_vtbl_t::collect_direct_effects. */
 static void
 collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    collect_node_direct_effects(get_node_child(node, 0), summary, arena);
     record_function_access(summary,
                            get_node_child(node, 0),
                            FUNCTION_CAPTURE_READ | FUNCTION_CAPTURE_WRITE,
@@ -122,7 +135,10 @@ static bool can_generate_c_code(const node_t *node,
     const node_t *target = get_node_child(node, 0);
     if (!context || !context->graph || !target || target->vtbl->type != NODE_VARIABLE)
         return false;
-    const declarator_t *decl = ((const variable_t *)target)->declarator;
+    const variable_t *var = (const variable_t *)target;
+    if (var->dynamic_lookup)
+        return false;
+    const declarator_t *decl = var->declarator;
     c_value_type_t type = c_expression_type(context, target);
     return decl && decl->base.vtbl->type != NODE_CONSTANT_DECLARATOR
            && (type == C_VALUE_INT64 || type == C_VALUE_DOUBLE)

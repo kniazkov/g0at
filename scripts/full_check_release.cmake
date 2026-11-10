@@ -79,5 +79,6 @@ set(release_labels
   operator-comparison
   operator-logical
   operator-index
+  operator-update
 )
 list(JOIN release_labels "|" release_labels)
