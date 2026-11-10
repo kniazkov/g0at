@@ -33,6 +33,8 @@ void record_function_access(function_summary_t *summary,
         return;
     }
     const variable_t *variable = (const variable_t *)node;
+    if (is_arguments_name(variable->name) && access == FUNCTION_CAPTURE_READ)
+        return;
     const declarator_t *decl = variable->declarator;
     if (!decl || variable->dynamic_lookup) {
         summary->direct_effects |= FUNCTION_EFFECT_UNKNOWN;

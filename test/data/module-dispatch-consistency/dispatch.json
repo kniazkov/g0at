@@ -83,12 +83,12 @@
     "name": "extra-arguments",
     "source": "const add = func(a, b) { return a + b; }; var count = 0; const side = func() { count += 1; return {}; }; println(add(2, 3, side())); println(count);",
     "expected": "5\n1\n",
-    "calls": 1,
+    "calls": 0,
     "mode": "auto",
     "fail": false,
     "files": {},
     "diagnostic": null,
-    "resolutions": null,
+    "resolutions": 0,
     "id": "integration.module_dispatch.extra-arguments.auto",
     "configuration": {
       "specializations": [
@@ -1349,12 +1349,12 @@
     "name": "extra-arguments",
     "source": "const add = func(a, b) { return a + b; }; var count = 0; const side = func() { count += 1; return {}; }; println(add(2, 3, side())); println(count);",
     "expected": "5\n1\n",
-    "calls": 1,
+    "calls": 0,
     "mode": "required",
     "fail": false,
     "files": {},
     "diagnostic": null,
-    "resolutions": null,
+    "resolutions": 0,
     "id": "integration.module_dispatch.extra-arguments.required",
     "configuration": {
       "specializations": [
@@ -2990,5 +2990,125 @@
       "bindingFailure": false
     },
     "retries": 1
+  },
+  {
+    "name": "actual-vector",
+    "source": "const f = func(a, b) { return arguments.length; }; println(f()); println(f(null)); println(f(null,37,\"ok\",true));",
+    "expected": "0\n1\n4\n",
+    "calls": 3,
+    "mode": "auto",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": 3,
+    "id": "integration.module_dispatch.actual-vector.auto",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "null",
+              "null"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "null",
+              "null"
+            ]
+          }
+        },
+        {
+          "specializationId": 2,
+          "functionId": 1,
+          "symbol": "goat_fn_2_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "null",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "null",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "actual-vector",
+        "actual-vector"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
+  },
+  {
+    "name": "actual-vector",
+    "source": "const f = func(a, b) { return arguments.length; }; println(f()); println(f(null)); println(f(null,37,\"ok\",true));",
+    "expected": "0\n1\n4\n",
+    "calls": 3,
+    "mode": "required",
+    "fail": false,
+    "files": {},
+    "diagnostic": null,
+    "resolutions": 3,
+    "id": "integration.module_dispatch.actual-vector.required",
+    "configuration": {
+      "specializations": [
+        {
+          "specializationId": 1,
+          "functionId": 1,
+          "symbol": "goat_fn_1_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "null",
+              "null"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "null",
+              "null"
+            ]
+          }
+        },
+        {
+          "specializationId": 2,
+          "functionId": 1,
+          "symbol": "goat_fn_2_v1",
+          "signature": {
+            "id": "goat.adapter.v1",
+            "arguments": [
+              "null",
+              "integer"
+            ],
+            "result": "integer"
+          },
+          "when": {
+            "argumentTypes": [
+              "null",
+              "integer"
+            ]
+          }
+        }
+      ],
+      "actions": [
+        "actual-vector",
+        "actual-vector"
+      ],
+      "resolverFailure": false,
+      "bindingFailure": false
+    }
   }
 ]

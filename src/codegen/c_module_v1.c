@@ -201,7 +201,8 @@ static void bridge(source_builder_t *builder) {
     add_static_source(
         builder,
         3,
-        U"case GOAT_MODULE_NULL: if (args[i].payload) return GOAT_MODULE_BAD_REQUEST; break;");
+        U"case GOAT_MODULE_NULL: if (args[i].payload) return GOAT_MODULE_BAD_REQUEST; "
+        U"values[i].type = GOAT_NATIVE_NULL; break;");
     add_static_source(
         builder,
         3,

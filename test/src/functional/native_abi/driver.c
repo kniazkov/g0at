@@ -124,6 +124,11 @@ int test_native_abi(goat_native_query_v2_t query) {
            && result.value.real == -4.5);
     args[2].type = UINT32_MAX;
     args[2].reserved = UINT32_MAX;
+    assert(test_invoke(mixed->invoke, GOAT_NATIVE_ABI_VERSION, 3, args, &result)
+           == GOAT_NATIVE_BAD_REQUEST);
+    assert(test_invoke(constant->invoke, GOAT_NATIVE_ABI_VERSION, 3, args, &result)
+           == GOAT_NATIVE_BAD_REQUEST);
+    args[2] = (goat_native_value_v2_t){.type = GOAT_NATIVE_NULL};
     assert(test_invoke(mixed->invoke, GOAT_NATIVE_ABI_VERSION, 3, args, &result) == GOAT_NATIVE_OK
            && result.value.real == 4.5);
     assert(test_invoke(constant->invoke, GOAT_NATIVE_ABI_VERSION, 0, 0, &result) == GOAT_NATIVE_OK

@@ -142,6 +142,8 @@ void analyze_access(node_t *node, arena_t *errors, compilation_error_t **list) {
                                          && !same_source_tree(node, &var->declarator->base))
                                  ? ACCESS_PROOF_UNKNOWN
                                  : ACCESS_PROOF_ALLOWED;
+        if (is_arguments_name(var->name))
+            node->access_proof = ACCESS_PROOF_ALLOWED;
         if (var->name.length == 4 && !MEMCMP(var->name.data, U"this", 4))
             node->access_proof = ACCESS_PROOF_UNKNOWN;
     } else if (type == NODE_MEMBER_ACCESS || type == NODE_INDEX_ACCESS) {
@@ -202,7 +204,19 @@ static bool
 needs_checks(const node_t *node, const node_t *function, const c_expression_context_t *context) {
     if (node != function && node->vtbl->type == NODE_FUNCTION_OBJECT)
         return false;
+    if (arguments_literal_index(node) != SIZE_MAX)
+        return false;
     bool primitive_receiver = false;
+    if (node->vtbl->type == NODE_MEMBER_ACCESS) {
+        const member_access_t *member = (const member_access_t *)node;
+        const node_t *object = replacement_original(get_node_child(node, 0));
+        while (object->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
+            object = replacement_original(get_node_child(object, 0));
+        if (object->vtbl->type == NODE_VARIABLE
+            && is_arguments_name(((const variable_t *)object)->name) && member->name.length == 6
+            && !MEMCMP(member->name.data, U"length", 6))
+            return false;
+    }
     if (context
         && (node->vtbl->type == NODE_MEMBER_ACCESS || node->vtbl->type == NODE_INDEX_ACCESS)) {
         for (const c_expression_proof_t *proof = context->head; proof; proof = proof->next)

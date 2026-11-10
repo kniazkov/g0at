@@ -150,7 +150,7 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
         }
         if (success) {
             arguments[i] = c_capture_operand(prelude, context, &argument, argument.type);
-            if (i >= parameters)
+            if (i >= parameters && !context->module_definition)
                 add_source(prelude, 0, U"(void)%s;", arguments[i].data);
         }
         destroy_c_expression(&argument);
@@ -161,8 +161,39 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
         init_string_builder(&call, 64);
         append_substring(&call, callee->name.data, callee->name.length);
         append_char(&call, U'(');
-        if (context->module_definition)
-            append_string(&call, U"g_context");
+        if (context->module_definition) {
+            string_value_t vector = format_string(U"g_args%zu", context->temporary_count++);
+            if (count) {
+                add_source(prelude, 0, U"const goat_native_value_v2_t %s[] = {", vector.data);
+                for (size_t i = 0; i < count; i++) {
+                    c_value_type_t argument_type =
+                        c_generation_expression_type(context, get_node_child(node, i + 1));
+                    const gchar_t *tag = argument_type == C_VALUE_INT64    ? U"GOAT_NATIVE_I64"
+                                         : argument_type == C_VALUE_DOUBLE ? U"GOAT_NATIVE_F64"
+                                         : argument_type == C_VALUE_BOOL   ? U"GOAT_NATIVE_BOOL"
+                                         : argument_type == C_VALUE_CHAR   ? U"GOAT_NATIVE_CHAR"
+                                                                           : U"GOAT_NATIVE_STRING";
+                    const gchar_t *field = argument_type == C_VALUE_INT64    ? U"integer"
+                                           : argument_type == C_VALUE_DOUBLE ? U"real"
+                                           : argument_type == C_VALUE_BOOL   ? U"boolean"
+                                           : argument_type == C_VALUE_CHAR   ? U"character"
+                                                                             : U"string";
+                    add_source(prelude,
+                               1,
+                               U"{.type = %s, .value.%s = %s%s},",
+                               tag,
+                               field,
+                               argument_type == C_VALUE_STRING ? U"&" : U"",
+                               arguments[i].data);
+                }
+                add_static_source(prelude, 0, U"};");
+            }
+            string_value_t hidden =
+                format_string(U"g_context, %zu, %s", count, count ? vector.data : U"0");
+            append_string_value(&call, hidden);
+            FREE_STRING(hidden);
+            FREE_STRING(vector);
+        }
         for (size_t i = 0; i < parameters; i++) {
             if (i || context->module_definition)
                 append_string(&call, U", ");
@@ -204,7 +235,9 @@ void c_emit_prototype(const function_summary_t *summary,
     append_substring(&declaration, name.data, name.length);
     append_char(&declaration, U'(');
     if (with_allocator)
-        append_string(&declaration, U"const goat_native_context_v2_t *");
+        append_string(
+            &declaration,
+            U"const goat_native_context_v2_t *, uint32_t, const goat_native_value_v2_t *");
     else if (!summary->parameter_count)
         append_string(&declaration, U"void");
     for (size_t i = 0; i < summary->parameter_count; i++) {

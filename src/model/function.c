@@ -257,12 +257,30 @@ static string_value_t dynamic_to_string_notation(const object_t *obj) {
     return dynamic_to_string(obj);
 }
 
+/** @brief Classifies actual values without coercion or user-visible conversion. */
+static uint32_t native_argument_type(const object_t *argument) {
+    return is_integer_object(argument)            ? GOAT_NATIVE_I64
+           : is_real_object(argument)             ? GOAT_NATIVE_F64
+           : argument->vtbl->type == TYPE_BOOLEAN ? GOAT_NATIVE_BOOL
+           : is_character_object(argument)        ? GOAT_NATIVE_CHAR
+           : argument->vtbl->type == TYPE_STRING  ? GOAT_NATIVE_STRING
+           : argument == get_null_object()        ? GOAT_NATIVE_NULL
+                                                  : GOAT_NATIVE_INVALID;
+}
+
 /** @brief Selects an exact formal-parameter signature without consuming arguments. */
 static const goat_native_entry_v2_t *select_native_entry(const object_dynamic_function_t *function,
                                                          uint16_t count,
                                                          object_stack_t *stack) {
     if (count < function->arg_count)
         return NULL;
+    /* Extras are part of the native call payload too. Reject unsupported objects before
+       entering any adapter, without invoking conversion methods or consuming values. */
+    for (uint32_t i = 0; i < count; i++) {
+        if (native_argument_type(peek_object_from_stack(stack, count - 1 - i))
+            == GOAT_NATIVE_INVALID)
+            return NULL;
+    }
     for (uint32_t i = 0; i < get_native_function_entry_count(function->native_function); i++) {
         const goat_native_entry_v2_t *entry =
             get_native_function_entry(function->native_function, i);
@@ -271,12 +289,7 @@ static const goat_native_entry_v2_t *select_native_entry(const object_dynamic_fu
         size_t j = 0;
         for (; j < function->arg_count; j++) {
             object_t *arg = peek_object_from_stack(stack, count - 1 - j);
-            uint32_t type = is_integer_object(arg)            ? GOAT_NATIVE_I64
-                            : is_real_object(arg)             ? GOAT_NATIVE_F64
-                            : arg->vtbl->type == TYPE_BOOLEAN ? GOAT_NATIVE_BOOL
-                            : is_character_object(arg)        ? GOAT_NATIVE_CHAR
-                            : arg->vtbl->type == TYPE_STRING  ? GOAT_NATIVE_STRING
-                                                              : GOAT_NATIVE_INVALID;
+            uint32_t type = native_argument_type(arg);
             if (entry->parameter_types[j] != type)
                 break;
         }
@@ -311,13 +324,12 @@ static uint32_t GOAT_NATIVE_CALL native_request_exit(void *state,
 /** @brief Commits one native result; backend failures never execute the body a second time. */
 static bool
 invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_t *thread) {
-    goat_native_value_v2_t *args =
-        entry->parameter_count ? CALLOC(entry->parameter_count * sizeof(*args)) : NULL;
+    goat_native_value_v2_t *args = count ? CALLOC(count * sizeof(*args)) : NULL;
     native_memory_t memory = {.thread = thread, .exit_callback = native_request_exit};
     goat_native_context_v2_t native_context = init_native_context(&memory);
-    for (uint32_t i = 0; i < entry->parameter_count; i++) {
+    for (uint32_t i = 0; i < count; i++) {
         object_t *arg = peek_object_from_stack(thread->data_stack, count - 1 - i);
-        args[i].type = entry->parameter_types[i];
+        args[i].type = native_argument_type(arg);
         if (args[i].type == GOAT_NATIVE_I64)
             args[i].value.integer = get_object_integer_value(arg).value;
         else if (args[i].type == GOAT_NATIVE_F64)
@@ -326,7 +338,7 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
             args[i].value.boolean = get_object_boolean_value(arg) ? 1 : 0;
         else if (args[i].type == GOAT_NATIVE_CHAR)
             args[i].value.character = (uint32_t)get_object_integer_value(arg).value;
-        else {
+        else if (args[i].type == GOAT_NATIVE_STRING) {
             string_value_t string = convert_object_to_string(arg);
             goat_native_string_view_v2_t *view =
                 goat_native_allocate(&native_context, sizeof(*view));
@@ -338,11 +350,7 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
     goat_native_value_v2_t result = {0};
     thread->native_attempts++;
     size_t execution_depth = process_execution_suspend(thread->process);
-    uint32_t status = entry->invoke(GOAT_NATIVE_ABI_VERSION,
-                                    &native_context,
-                                    entry->parameter_count,
-                                    args,
-                                    &result);
+    uint32_t status = entry->invoke(GOAT_NATIVE_ABI_VERSION, &native_context, count, args, &result);
     process_execution_resume(thread->process, execution_depth);
     FREE(args);
     if (memory.host_exception && status == GOAT_NATIVE_HOST_EXCEPTION) {

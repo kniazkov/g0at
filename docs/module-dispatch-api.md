@@ -14,7 +14,10 @@
 исходного файла. Для каждого вызова заново проверяются все подходящие записи:
 точные скалярные типы и декларативные сравнения. Проверки не исполняют Goat-код,
 не вызывают преобразования объектов, перегрузки или callback. Недостающие параметры
-получают null; лишние аргументы уже вычислены, но не добавляют формальных слотов.
+получают null в проекции для проверок; лишние аргументы не добавляют формальных слотов.
+Сам адаптер получает исходное фактическое число аргументов и все представимые значения,
+без дополнения null и без отбрасывания лишних значений. Непредставимое значение, в том
+числе лишний объект, переводит вызов на VM до resolver/входа в адаптер.
 Нет совпадения — VM получает те же значения без повторного вычисления. Более одного
 совпадения — ошибка, а не выбор первой записи. Обнаружимое пересечение отвергается
 ещё при привязке. Неприменимость одного вызова не отключает следующие вызовы.
@@ -68,8 +71,10 @@ through that module's immutable function table.
 Ordinary VM checks, including saved declaring-file failure, precede selection.
 Every call retests all relevant entries using exact scalar types and declarative
 comparisons. Guards execute no Goat code, object conversion, overload or callback.
-Missing parameters become null; extra arguments are already evaluated but add no
-formal slots. No match falls back with the same values, without reevaluation.
+Missing parameters become null in the guard projection; extras add no formal slots.
+The adapter receives the original actual count and every representable value, without
+null padding or discarded extras. An unrepresentable actual value, including an extra
+object, selects the VM before resolver or adapter entry. No match falls back with the same values, without reevaluation.
 Multiple matches are an error, never first-record priority. Detectable overlap is
 rejected at binding. An inapplicable call does not disable subsequent calls.
 

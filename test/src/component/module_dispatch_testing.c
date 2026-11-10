@@ -55,9 +55,33 @@ static uint32_t GOAT_MODULE_CALL second(uint32_t abi,
                                         const goat_module_value_v1 *args,
                                         goat_module_value_v1 *result) {
     (void)context;
-    assert(abi == GOAT_MODULE_ABI_VERSION && count == 2);
+    assert(abi == GOAT_MODULE_ABI_VERSION && count <= 2);
     ++calls;
-    *result = args[1];
+    *result = count > 1 ? args[1] : (goat_module_value_v1){0};
+    return GOAT_MODULE_SUCCESS;
+}
+
+/** Assert the actual vector, independently of the formal guard signature. */
+static uint32_t GOAT_MODULE_CALL actual_vector(uint32_t abi,
+                                               const goat_module_context_v1 *context,
+                                               uint32_t count,
+                                               const goat_module_value_v1 *args,
+                                               goat_module_value_v1 *result) {
+    (void)context;
+    assert(abi == GOAT_MODULE_ABI_VERSION);
+    assert(count == 0 || count == 1 || count == 4);
+    if (count) {
+        assert(args[0].tag == GOAT_MODULE_NULL && !args[0].payload && !args[0].reserved);
+    }
+    if (count == 4) {
+        assert(args[1].tag == GOAT_MODULE_INTEGER && args[1].payload == 37);
+        assert(args[2].tag == GOAT_MODULE_STRING);
+        const goat_module_string_v1 *text = (const void *)(uintptr_t)args[2].payload;
+        assert(text->length == 2 && text->data[0] == 'o' && text->data[1] == 'k');
+        assert(args[3].tag == GOAT_MODULE_BOOLEAN && args[3].payload == 1);
+    }
+    ++calls;
+    *result = (goat_module_value_v1){GOAT_MODULE_INTEGER, 0, count};
     return GOAT_MODULE_SUCCESS;
 }
 
@@ -231,6 +255,7 @@ static goat_module_adapter_v1 lookup(const char *action) {
         goat_module_adapter_v1 adapter;
     } entries[] = {{"first", first},
                    {"second", second},
+                   {"actual-vector", actual_vector},
                    {"sum", sum},
                    {"negative", negative},
                    {"positive", positive},

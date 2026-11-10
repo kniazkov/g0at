@@ -269,7 +269,113 @@ static void access_errors(scenario_run_t *run, state_t *state) {
     }
 }
 
-/** @brief Arguments stay in the VM without disabling an unrelated native specialization. */
+/** @brief Every counted legacy native entry reads its own immutable actual payload. */
+static void native_argument_scalars(scenario_run_t *run, state_t *state) {
+    const char *work = scenario_work_directory(scenario_run_context(run));
+    const char *code = "const zero=func(){return arguments.length;};\n"
+                       "const count=func(n){return arguments.length;};\n"
+                       "const read=func(n){n=n+1;return arguments[0]+arguments.length;};\n"
+                       "const caller=func(n){return read(n,n+1,\"x\")+arguments[0];};\n"
+                       "println(zero());println(zero(null,4));\n"
+                       "println(count());println(count(7,8,9));println(count(7,null));\n"
+                       "println(count(7,{}));println(read(4,5,null));println(caller(4));\n"
+                       "const text=func(n){n=\"changed\";return arguments[0];};\n"
+                       "const boolean=func(n){n=!n;return arguments[0];};\n"
+                       "const character=func(n){n='z';return arguments[0];};\n"
+                       "const real=func(n){n=n+1.0;return arguments[0];};\n"
+                       "println(text(\"original\"));println(boolean(true));\n"
+                       "println(character('x'));println(real(2.5));\n"
+                       "const missing=func(n){arguments[0];return 99;};\n"
+                       "const beyond=func(n){arguments[9];return 99;};\n"
+                       "const invalid=func(n){arguments[null];return 99;};\n"
+                       "try{missing();}catch(e){println(e); }\n"
+                       "try{beyond(1);}catch(e){println(e); }\n"
+                       "try{invalid(1);}catch(e){println(e); }\n";
+    const char *expected = "0\n2\n0\n3\n2\n2\n7\n11\noriginal\ntrue\nx\n2.5\n"
+                           "INVALID_ARGUMENT\nINVALID_ARGUMENT\nINVALID_ARGUMENT\n";
+    for (size_t mode = 0; mode < 2; mode++) {
+        const char *directory = language_join(run, work, mode ? "arguments-all" : "arguments-none");
+        language_directory(run, directory);
+        const char *source = language_join(run, directory, "program.goat");
+        const char *binary = language_join(run, directory, "program.gbin");
+        const char *report_path = language_join(run, directory, "native.report");
+        const char *optimization = mode ? "all" : "none";
+        const char *const *environment = NULL;
+        language_write(run, source, code, strlen(code));
+        CHECK(COMMAND("--lang", "en", "--native", "off", "--optimize", optimization, source),
+              expected,
+              strlen(expected));
+        /* Native execution requires full optimization; retain the unoptimized VM matrix. */
+        if (!mode) {
+            CHECK(COMMAND("--lang",
+                          "en",
+                          "--compile",
+                          "--native",
+                          "off",
+                          "--optimize",
+                          optimization,
+                          source),
+                  "",
+                  0);
+            language_remove(run, source);
+            environment = language_environment(run, true);
+            CHECK(COMMAND("--lang", "en", "--run", "--native", "off", binary),
+                  expected,
+                  strlen(expected));
+            continue;
+        }
+        CHECK(COMMAND("--lang",
+                      "en",
+                      "--native",
+                      "required",
+                      "--optimize",
+                      optimization,
+                      "--save-native",
+                      report_path,
+                      source),
+              expected,
+              strlen(expected));
+        size_t size;
+        const char *report = language_read(run, report_path, &size);
+        field(run, report, "attempts", "10");
+        field(run, report, "succeeded", "10");
+        field(run, report, "retries", "0");
+        CHECK(COMMAND("--lang",
+                      "en",
+                      "--compile",
+                      "--native",
+                      "required",
+                      "--optimize",
+                      optimization,
+                      source),
+              "",
+              0);
+        language_remove(run, source);
+        environment = language_environment(run, true);
+        CHECK(COMMAND("--lang", "en", "--run", "--native", "off", binary),
+              expected,
+              strlen(expected));
+        CHECK(COMMAND("--lang",
+                      "en",
+                      "--run",
+                      "--native",
+                      "required",
+                      "--save-native",
+                      report_path,
+                      binary),
+              expected,
+              strlen(expected));
+        report = language_read(run, report_path, &size);
+        field(run, report, "preparation", "ready");
+        field(run, report, "attempts", "10");
+        field(run, report, "succeeded", "10");
+        field(run, report, "retries", "0");
+    }
+    puts(
+        "[ ok ] native arguments length and original slots preserve reassignment and nested calls");
+}
+
+/** @brief Native arguments owners preserve actual arity; boxed escapes use shared VM storage. */
 static void native_arguments(scenario_run_t *run, state_t *state) {
     const char *work = scenario_work_directory(scenario_run_context(run));
     const char *directory = language_join(run, work, "native-arguments");
@@ -281,19 +387,33 @@ static void native_arguments(scenario_run_t *run, state_t *state) {
     const char *descriptor = language_join(run, directory, "library.gmod");
     const char *modules = language_join(run, directory, "modules");
     const char *module_code =
-        "external inspect = func(n) { if (!!arguments) return n; return 99; };\n"
-        "external snapshot = func(x,y) { return arguments; };\n"
-        "external numeric = func(n) { return n + 1; };\n"
-        "numeric(1);\n";
+        "external zero = func() { return arguments.length; };\n"
+        "external count = func(n) { return arguments.length; };\n"
+        "external change = func(n) { n = n + 1; return n + arguments.length; };\n"
+        "external nested = func(n) { return count(n,n+1,null) + arguments.length; };\n"
+        "external snapshot = func(x,y) { x = 99; return arguments; };\n"
+        "external capture = func(x) { const saved=arguments; "
+        "return func(y) { println(arguments); return saved; }; };\n"
+        /* Only arguments-owning functions seed native specializations. */
+        "zero(); count(1); change(1); nested(1);\n";
     const char *module_descriptor = "{\"formatVersion\":1,\"name\":\"arguments-test\","
                                     "\"version\":\"1\",\"main\":\"library.goat\"}";
     const char *code = "const lib = import \"arguments-test@1\";\n"
-                       "println(lib.inspect());\n"
-                       "println(lib.inspect(7,8,9));\n"
-                       "println(lib.numeric(41));\n"
-                       "println(lib.snapshot(4,5,6));\n"
-                       "println(lib.snapshot());\n";
-    const char *expected = "99\n7\n42\n[4,5,6]\n[ ]\n";
+                       "println(lib.zero()); println(lib.zero(4,null));\n"
+                       "println(lib.count()); println(lib.count(7,8,9));\n"
+                       "println(lib.count(7,null)); println(lib.count(7,{}));\n"
+                       "println(lib.change(4,5)); println(lib.nested(4,5));\n"
+                       "var trace=0; const tick=func(n){trace=trace*10+n;return n;};\n"
+                       "println(lib.count(tick(1),tick(2),tick(3))); println(trace);\n"
+                       "const saved=lib.snapshot(4,5,6); const escaped=lib.capture(8,9);\n"
+                       "for(var i=0;i<3000;i++){var trash={var cycle=null;};trash.cycle=trash;}\n"
+                       "println(saved); println(escaped(20,21,22)); println(escaped());\n"
+                       "try { saved[0]=10; } catch(e) { println(e); }\n"
+                       "try { saved.push(10); } catch(e) { println(e); }\n"
+                       "println(saved); println(lib.snapshot());\n";
+    const char *expected = "0\n2\n0\n3\n2\n2\n7\n5\n3\n123\n"
+                           "[4,5,6]\n[20,21,22]\n[8,9]\n[ ]\n[8,9]\n"
+                           "IMMUTABLE_OBJECT\nIMMUTABLE_OBJECT\n[4,5,6]\n[ ]\n";
     const char *const *environment = NULL;
     language_write(run, descriptor, module_descriptor, strlen(module_descriptor));
     static const char *invalid[] = {"var arguments = 1;", "if (false) println(arguments);"};
@@ -322,36 +442,112 @@ static void native_arguments(scenario_run_t *run, state_t *state) {
     CHECK(COMMAND("--lang", "en", "build", descriptor, "--native", "auto", "--module-dir", modules),
           "",
           0);
-    language_write(run, source, code, strlen(code));
-    CHECK(COMMAND("--lang", "en", "--compile", "--native", "auto", "--module-dir", modules, source),
-          "",
-          0);
-    language_remove(run, source);
+    /* Both optimizer modes execute source and serialized images with the same module. */
+    for (size_t mode = 0; mode < 2; mode++) {
+        const char *optimization = mode ? "all" : "none";
+        environment = NULL;
+        language_write(run, source, code, strlen(code));
+        CHECK(COMMAND("--lang",
+                      "en",
+                      "--native",
+                      "off",
+                      "--optimize",
+                      optimization,
+                      "--module-dir",
+                      modules,
+                      source),
+              expected,
+              strlen(expected));
+        /* Native execution requires full optimization; retain the unoptimized VM matrix. */
+        if (!mode) {
+            CHECK(COMMAND("--lang",
+                          "en",
+                          "--compile",
+                          "--native",
+                          "off",
+                          "--optimize",
+                          optimization,
+                          "--module-dir",
+                          modules,
+                          source),
+                  "",
+                  0);
+            language_remove(run, source);
+            language_remove(run, library);
+            environment = language_environment(run, true);
+            CHECK(COMMAND("--lang",
+                          "en",
+                          "--run",
+                          "--native",
+                          "off",
+                          "--module-dir",
+                          modules,
+                          binary),
+                  expected,
+                  strlen(expected));
+            language_remove(run, binary);
+            language_write(run, library, module_code, strlen(module_code));
+            continue;
+        }
+        CHECK(COMMAND("--lang",
+                      "en",
+                      "--native",
+                      "auto",
+                      "--optimize",
+                      optimization,
+                      "--save-native",
+                      report_path,
+                      "--module-dir",
+                      modules,
+                      source),
+              expected,
+              strlen(expected));
+        size_t size;
+        const char *report = language_read(run, report_path, &size);
+        field(run, report, "attempts", "10");
+        field(run, report, "succeeded", "10");
+        field(run, report, "retries", "0");
+        CHECK(COMMAND("--lang",
+                      "en",
+                      "--compile",
+                      "--native",
+                      "auto",
+                      "--optimize",
+                      optimization,
+                      "--module-dir",
+                      modules,
+                      source),
+              "",
+              0);
+        language_remove(run, source);
+        /* The module source is absent on every persisted run, and no compiler is available. */
+        language_remove(run, library);
+        environment = language_environment(run, true);
+        CHECK(COMMAND("--lang", "en", "--run", "--native", "off", "--module-dir", modules, binary),
+              expected,
+              strlen(expected));
+        CHECK(COMMAND("--lang",
+                      "en",
+                      "--run",
+                      "--native",
+                      "auto",
+                      "--save-native",
+                      report_path,
+                      "--module-dir",
+                      modules,
+                      binary),
+              expected,
+              strlen(expected));
+        report = language_read(run, report_path, &size);
+        field(run, report, "preparation", "ready");
+        field(run, report, "attempts", "10");
+        field(run, report, "succeeded", "10");
+        field(run, report, "retries", "0");
+        language_write(run, library, module_code, strlen(module_code));
+    }
     language_remove(run, library);
     language_remove(run, descriptor);
-    environment = language_environment(run, true);
-    CHECK(COMMAND("--lang", "en", "--run", "--native", "off", "--module-dir", modules, binary),
-          expected,
-          strlen(expected));
-    CHECK(COMMAND("--lang",
-                  "en",
-                  "--run",
-                  "--native",
-                  "auto",
-                  "--save-native",
-                  report_path,
-                  "--module-dir",
-                  modules,
-                  binary),
-          expected,
-          strlen(expected));
-    size_t size;
-    const char *report = language_read(run, report_path, &size);
-    field(run, report, "preparation", "ready");
-    field(run, report, "attempts", "2");
-    field(run, report, "succeeded", "2");
-    field(run, report, "retries", "0");
-    puts("[ ok ] persisted arguments use VM alongside a successful native sibling");
+    puts("[ ok ] native arguments owners preserve arity without retry; boxed escapes survive GC");
 }
 
 static void body(scenario_run_t *run, void *opaque) {
@@ -360,6 +556,7 @@ static void body(scenario_run_t *run, void *opaque) {
     if (state->index) {
         access_errors(run, state);
         native_arguments(run, state);
+        native_argument_scalars(run, state);
     } else
         native_loops(run, state);
 }

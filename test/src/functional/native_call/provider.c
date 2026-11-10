@@ -22,7 +22,7 @@ static uint32_t GOAT_NATIVE_CALL identity(uint32_t version,
     void *early = goat_native_allocate(allocator, 31);
     goat_native_deallocate(allocator, early);
     calls++;
-    if (version != GOAT_NATIVE_ABI_VERSION || count != 1 || args[0].reserved)
+    if (version != GOAT_NATIVE_ABI_VERSION || count < 1 || args[0].reserved)
         return GOAT_NATIVE_BAD_REQUEST;
     *result = args[0];
     return GOAT_NATIVE_OK;
@@ -58,7 +58,7 @@ static uint32_t GOAT_NATIVE_CALL constant(uint32_t version,
     void *early = goat_native_allocate(allocator, 31);
     goat_native_deallocate(allocator, early);
     calls++;
-    if (version != GOAT_NATIVE_ABI_VERSION || count || args)
+    if (version != GOAT_NATIVE_ABI_VERSION || (count && !args))
         return GOAT_NATIVE_BAD_REQUEST;
     *result = (goat_native_value_v2_t){.type = GOAT_NATIVE_I64, .value.integer = 42};
     return GOAT_NATIVE_OK;
@@ -128,6 +128,31 @@ static uint32_t GOAT_NATIVE_CALL malformed_boolean(uint32_t version,
     return GOAT_NATIVE_OK;
 }
 
+/** @brief Checks every original actual value, including ignored and null extras. */
+static uint32_t GOAT_NATIVE_CALL actual_payload(uint32_t version,
+                                                const goat_native_context_v2_t *context,
+                                                uint32_t count,
+                                                const goat_native_value_v2_t *args,
+                                                goat_native_value_v2_t *result) {
+    (void)context;
+    calls++;
+    if (version != GOAT_NATIVE_ABI_VERSION || count != 6 || !args || args[0].type != GOAT_NATIVE_I64
+        || args[0].value.integer != 17 || args[1].type != GOAT_NATIVE_F64
+        || args[1].value.real != 2.5 || args[2].type != GOAT_NATIVE_BOOL
+        || args[2].value.boolean != 1 || args[3].type != GOAT_NATIVE_CHAR
+        || args[3].value.character != 'x' || args[4].type != GOAT_NATIVE_STRING
+        || !args[4].value.string || args[4].value.string->length != 2
+        || args[4].value.string->data[0] != 'o' || args[4].value.string->data[1] != 'k'
+        || args[5].type != GOAT_NATIVE_NULL || args[5].value.integer != 0)
+        return GOAT_NATIVE_BAD_REQUEST;
+    for (uint32_t i = 0; i < count; i++) {
+        if (args[i].reserved)
+            return GOAT_NATIVE_BAD_REQUEST;
+    }
+    *result = args[0];
+    return GOAT_NATIVE_OK;
+}
+
 static const uint32_t boolean_args[] = {GOAT_NATIVE_BOOL};
 static const uint32_t integer[] = {GOAT_NATIVE_I64};
 static const uint32_t real[] = {GOAT_NATIVE_F64};
@@ -143,7 +168,8 @@ static const goat_native_entry_v2_t entries[] = {
     {6, 5, 1, GOAT_NATIVE_I64, integer, identity, NULL, GOAT_NATIVE_PURE},
     {7, 90, 0, GOAT_NATIVE_I64, NULL, counter, NULL, 0},
     {8, 6, 1, GOAT_NATIVE_I64, integer, limited, NULL, GOAT_NATIVE_PURE},
-    {9, 7, 1, GOAT_NATIVE_BOOL, boolean_args, malformed_boolean, NULL, GOAT_NATIVE_PURE}};
+    {9, 7, 1, GOAT_NATIVE_BOOL, boolean_args, malformed_boolean, NULL, GOAT_NATIVE_PURE},
+    {10, 8, 1, GOAT_NATIVE_I64, integer, actual_payload, NULL, GOAT_NATIVE_PURE}};
 static const goat_native_module_v2_t module = {GOAT_NATIVE_ABI_VERSION,
                                                sizeof(goat_native_module_v2_t),
                                                sizeof(goat_native_value_v2_t),

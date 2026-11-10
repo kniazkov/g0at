@@ -169,6 +169,23 @@ static bool fallback(void) {
     return true;
 }
 
+static bool actual_argument_transport(void) {
+    bytecode_t *code = compile(U"var f=func(n){return n;};"
+                               U"var a=f(17,2.5,true,'x',\"ok\",null);"
+                               U"var b=f(23,{});var c=f(29,func(){return 1;});"
+                               U"var d=f();");
+    ASSERT(code && bind_function(code, 0, 8));
+    int64_t before = calls();
+    process_t *proc = create_process();
+    ASSERT(!run(proc, code) && calls() == before + 1);
+    ASSERT(proc->main_thread->native_attempts == 1 && proc->main_thread->native_successes == 1);
+    ASSERT(integer_variable(proc, U"a", 17) && integer_variable(proc, U"b", 23)
+           && integer_variable(proc, U"c", 29) && variable(proc, U"d") == get_null_object());
+    free_bytecode(code);
+    destroy_process(proc);
+    return true;
+}
+
 static bool evaluation_and_identity(void) {
     bytecode_t *code =
         compile(U"var trace=0;var tick=func(n){trace=trace*10+n;return n;};"
@@ -452,6 +469,41 @@ static bool retry_exception(void) {
     return true;
 }
 
+/** @brief Generated adapters validate extras, not just their typed formal prefix. */
+static bool generated_actual_validation(void) {
+    const goat_native_entry_v2_t *entry = NULL;
+    for (uint32_t i = 0; i < get_native_library_entry_count(library); i++) {
+        const goat_native_entry_v2_t *candidate = get_native_library_entry(library, i);
+        if (candidate->function_id == 1 && candidate->parameter_count == 1
+            && candidate->parameter_types[0] == GOAT_NATIVE_I64)
+            entry = candidate;
+    }
+    ASSERT(entry);
+    goat_native_value_v2_t args[2] = {{.type = GOAT_NATIVE_I64, .value.integer = 17},
+                                      {.type = GOAT_NATIVE_NULL}};
+    goat_native_value_v2_t result = {0};
+    ASSERT(test_invoke(entry->invoke, GOAT_NATIVE_ABI_VERSION, 2, args, &result) == GOAT_NATIVE_OK);
+    ASSERT(result.type == GOAT_NATIVE_I64 && result.value.integer == 17);
+    goat_native_string_view_v2_t invalid_string = {.data = NULL, .length = 1};
+    const goat_native_value_v2_t invalid[] = {
+        {.type = GOAT_NATIVE_NULL, .reserved = 1},
+        {.type = GOAT_NATIVE_NULL, .value.integer = 1},
+        {.type = UINT32_MAX},
+        {.type = GOAT_NATIVE_BOOL, .value.boolean = 2},
+        {.type = GOAT_NATIVE_STRING, .value.string = NULL},
+        {.type = GOAT_NATIVE_STRING, .value.string = &invalid_string},
+    };
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
+        args[1] = invalid[i];
+        ASSERT(test_invoke(entry->invoke, GOAT_NATIVE_ABI_VERSION, 2, args, &result)
+               == GOAT_NATIVE_BAD_REQUEST);
+    }
+    args[1] = (goat_native_value_v2_t){.type = GOAT_NATIVE_NULL};
+    ASSERT(test_invoke(entry->invoke, GOAT_NATIVE_ABI_VERSION, 2, args, &result) == GOAT_NATIVE_OK);
+    ASSERT(result.type == GOAT_NATIVE_I64 && result.value.integer == 17);
+    return true;
+}
+
 bool test_native_calls(const char *provider, const char *generated, const char *marker) {
     remove(marker);
     test_output_start("native call");
@@ -474,6 +526,8 @@ bool test_native_calls(const char *provider, const char *generated, const char *
         {"exact numeric signatures and mixed argument order", exact_types},
         {"missing, nonnumeric and unavailable signatures fall back", fallback},
         {"evaluation order, extras, aliases, rebinding and builtins", evaluation_and_identity},
+        {"actual payload preserves extras and null; unsupported extras fall back",
+         actual_argument_transport},
         {"native call preserves context, stack and numeric edges", native_without_context},
         {"backend failures stop without retry or Goat catch", backend_failures},
         {"native failure preserves foreign callee origin and caller", foreign_native_origin},
@@ -526,6 +580,10 @@ bool test_native_calls(const char *provider, const char *generated, const char *
     } else {
         ok = false;
     }
+    bool validation = loaded.status == NATIVE_LIBRARY_OK && generated_actual_validation();
+    test_output_case(validation, "generated adapters reject malformed extra actual values");
+    passed += validation;
+    failed += !validation;
     destroy_native_library_result(&loaded);
     library = NULL;
     test_output_case(ok, "generated adapters execute through CALL with bytecode bodies disabled");

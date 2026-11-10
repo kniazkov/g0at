@@ -19,6 +19,7 @@
 #include "lib/memory/arena.h"
 #include "lib/strings/string_ext.h"
 #include "replacement.h"
+#include "variable.h"
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
@@ -99,9 +100,34 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
     return first;
 }
 
+/** @brief arguments belongs to the nearest function, not an outer lexical capture. */
+static bool arguments_length(const node_t *node) {
+    const member_access_t *member = (const member_access_t *)node;
+    const node_t *object = replacement_original(&member->object->base);
+    while (object->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
+        object = replacement_original(get_node_child(object, 0));
+    return !STRCMP(member->name.data, U"length") && object->vtbl->type == NODE_VARIABLE
+           && is_arguments_name(((const variable_t *)object)->name);
+}
+
+static c_generated_expression_t generate_c_code(const node_t *node,
+                                                c_generation_context_t *context) {
+    if (!arguments_length(node))
+        return c_string_length(node, context);
+    if (!context->module_definition) {
+        fail_c_generation(context, node, C_GENERATION_UNSUPPORTED);
+        return (c_generated_expression_t){0};
+    }
+    return (c_generated_expression_t){.success = true,
+                                      .type = C_VALUE_INT64,
+                                      .value = STATIC_STRING(U"((int64_t)g_argument_count)")};
+}
+
 /** @brief The immutable string length property, in host gchar_t units. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const member_access_t *member = (const member_access_t *)node;
+    if (arguments_length(node))
+        return make_integer_element();
     const lattice_element_t *value = calculate_expression(member->object, state, arena);
     if (!STRCMP(member->name.data, U"length")) {
         if (value->type == LATTICE_STRING_CONSTANT)
@@ -117,6 +143,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     const member_access_t *member = (const member_access_t *)node;
+    if (arguments_length(node))
+        return make_integer_element();
     const lattice_element_t *object =
         visit_reachable_node((node_t *)member->object, state, collector);
     return module_interface_member_at(object, member->name, (*state)->arena, node);
@@ -126,8 +154,9 @@ static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
     const member_access_t *member = (const member_access_t *)node;
-    return !STRCMP(member->name.data, U"length")
-           && c_expression_type(context, (const node_t *)member->object) == C_VALUE_STRING;
+    return arguments_length(node)
+           || (!STRCMP(member->name.data, U"length")
+               && c_expression_type(context, (const node_t *)member->object) == C_VALUE_STRING);
 }
 
 /** @brief Virtual table for member access expressions. */
@@ -157,7 +186,7 @@ static node_vtbl_t member_access_vtbl = {
     .generate_bytecode = generate_bytecode,
     .generate_bytecode_assign = generate_bytecode_assign,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = c_string_length,
+    .generate_c_code = generate_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
