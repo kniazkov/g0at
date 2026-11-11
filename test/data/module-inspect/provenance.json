@@ -35,5 +35,26 @@
     "Debug": 133,
     "Release": 133
   },
-  "frozen_platform_native_binaries": false
+  "frozen_platform_native_binaries": false,
+  "operator_image_correction_504": {
+    "reason": "Replace top-level instruction 3 NOP with END; prevent fallthrough into function-owned code.",
+    "recipe_baseline": "0c4de46b",
+    "recipe": "scripts/check_module_writer.py::function_image",
+    "independent_oracles": [
+      "docs/module-format-v1/reference.py",
+      "docs/module-format-v1/schema.py"
+    ],
+    "zlib": "1.3.2",
+    "previous_bytecode_sha256": "46014bdce37592fbfa940410c4d70c935ff41a18a0c798149b6dbb84f8bf6592",
+    "corrected_bytecode_sha256": "926f70bbcdfbd57e2d5cefda008f5797840063ef6bbf96c478b64493e498225b",
+    "current_blob_count": 72,
+    "current_blob_bytes": 59698,
+    "historical_validation_records_unchanged": true,
+    "declaration_tail_variants_corrected": true,
+    "local_debug_validation": {
+      "passed": 133,
+      "failed": 0,
+      "failure_reason": null
+    }
+  }
 }

@@ -1,5 +1,109 @@
 # Archive-local merge migration (#374)
 
+## Compact frozen corpus (#504)
+
+`cases.json` stores the same frozen expectations in a transparent JSON dictionary
+format, not a compressed binary or a recipe that runs `goat-merge`. The original
+2,915,551-byte file is represented by **208,444 bytes** (92.85% smaller). No input
+blob, expected output blob, assertion, scenario ID, case field, array order,
+snapshot entry or object-member order changed during this storage refactor.
+
+The versioned envelope has four fields:
+
+- `format`: exactly `module-merge-corpus-v1`.
+- `entries`: 224 shared `[path, literal_entry_object]` pairs, in first-use order.
+  Entry objects retain their original field order and all literal values.
+- `snapshots`: 171 distinct ordered arrays of zero-based entry indices.
+  A snapshot must not contain duplicate paths.
+- `cases`: all 196 original case objects, in their original order. Only object
+  values of `files`, `after` or `during` are replaced with a snapshot index.
+  Other fields are copied literally, including absent versus explicit null.
+
+There are **392 tree snapshots** (`196 files + 196 after`) and **399 total
+`files`/`after`/`during` fields**. The seven `during` values are five JSON nulls
+and two action strings, not trees. Expanded trees contain 22,634 ordered entries.
+References have only two levels, case to snapshot to literal entry; recursive
+references, inheritance, patch ordering and cycles are not part of the format.
+Each expansion creates independent owning JSON values, including nested entry
+objects, so constructor updates cannot mutate another case or snapshot.
+
+`test/support/merge_corpus.c` expands the tables in the existing C scenario
+runner. It validates even unused definitions, reference types/ranges, duplicate
+keys/paths/IDs, nesting and required structural fields. A 64 MiB input limit and
+an overflow-safe, pre-allocation 64 MiB owning-value/string budget bound repeated
+reference expansion. The loader neither invokes production writers nor derives
+expected hashes or outputs. Normal tests need only the checked-in compact JSON
+and blobs, not Python, Git history or a generated file in the source tree.
+
+Four C controls, included in the existing `module-merge-migration` label, check
+order-sensitive round-trip and deterministic interning, malformed data and
+expansion limits, deep-copy lifetime/isolation, and the complete frozen corpus.
+The integrity control pins the SHA-256 of the original ordered, minified JSON:
+
+`0701ea5f9d73658ea6c571673f65f72548dcb678fb3afe63f23044ad0df5ceea`
+
+Its size is 2,146,312 bytes. That value was recorded from the pre-compaction
+frozen document, independently of the compact representation. The original file
+SHA-256 is `1205e915fbe0095db9e90dbbd4d62422188f0331e7e595a5e0e856704d2d12d7`;
+its Git blob is `9e26e2b94fcb1d768d6cd30f19827d636299c5f1`. Provenance records
+both forms and their exact counts. Whitespace is excluded from the ordered
+JSON comparison; object and array order, JSON types and values are not.
+
+### Reproduce conversion and equivalence
+
+The existing runner also hosts C-only developer tools. `FROZEN` is a saved
+pre-compaction corpus, or an explicitly reviewed expanded document when editing
+fixtures. Packing verifies an order-sensitive round-trip before writing output.
+The verification mode compares against the supplied frozen document, not against
+any output produced by `goat-merge`:
+
+```sh
+runner=build/debug/module_merge_scenarios
+"$runner" --corpus-pack "$FROZEN" build/cases.compact.json
+"$runner" --corpus-verify "$FROZEN" build/cases.compact.json
+"$runner" --corpus-expand test/data/module-merge/cases.json build/cases.expanded.json
+sha256sum build/cases.expanded.json
+"$runner" --corpus-pack build/cases.expanded.json build/cases.repacked.json
+cmp test/data/module-merge/cases.json build/cases.repacked.json
+ctest --test-dir build/debug -L merge-corpus --output-on-failure
+ctest --test-dir build/debug -L module-merge-migration --output-on-failure
+```
+
+The corpus contains frozen expected results: legitimate changes still require
+independent review of those expectations and an explicit integrity-hash update.
+None of these commands automatically derives or updates that expected digest.
+
+## Operator image validation correction (#504)
+
+The independent function-image fixture previously used `NOP` at instruction 3,
+allowing top-level execution to fall through into the function-owned `NIL; RET`
+body, including variants with appended export-declaration tails. Instruction 3
+is now `END`; function entries, ownership, native payloads,
+and metadata tests are unchanged. This repairs an invalid independent format
+fixture, not a frozen compiler-produced executable.
+
+The authoritative recipe is `scripts/check_module_writer.py::function_image`
+at Git revision `0c4de46b`. Canonical metadata, significant hashes and compressed
+output archives were recomputed using that revision's independent
+`docs/module-format-v1/reference.py` and `schema.py`, with zlib **1.3.2**.
+Each original archive was reconstructed byte-for-byte before modification.
+Input ZIP metadata/order and all unaffected payload bytes were preserved.
+Content-addressed filenames, manifest entries, references and displayed expected
+hashes were updated together. Intentionally invalid metadata/native inputs retain
+their original defects and expected failure statuses. No production writer was
+used to generate expected bytes, and no assertion was weakened.
+
+
+Current #504 Debug verification: all 59 writer cases, all 133 inspector cases,
+and 194 of 196 merge cases pass. Both merge socket cases fail before invoking
+the tool because `socket(AF_UNIX, SOCK_STREAM, 0)` returns `EPERM` in this
+execution environment; they were not skipped or counted as passes. All four
+frozen-sample integrity/self-test aliases pass. All three corpus SHA-256 manifests
+verify. These are local results, not claims about other platforms or Release.
+
+The historical migration/parity results below describe the original corpus;
+they are not new validation results for these corrected bytes.
+
 `cases.json` contains **196 independently selectable semantic scenario IDs**:
 194 calls captured while every original assertion in `check_module_merge.py`
 passed, plus the two unchanged Unix-socket contracts whose fixture creation is
@@ -13,7 +117,7 @@ Inputs were built by the original `pack`, `function_image`, `native_archive`,
 wall-clock timestamps were fixed to 1980-01-01; malformed JSON, stale supplied
 hashes, member ordering, exact Unicode/NUL text, bytecode and opaque native
 payloads remain unchanged. The corpus contains 128 content-addressed blobs,
-97,424 bytes total, guarded by SHA256SUMS and runtime SHA checks.
+97,455 bytes total after the #504 correction, guarded by SHA256SUMS and runtime SHA checks.
 
 The original `success()` assertions independently validated output normalization,
 canonical metadata, significant hashes, native payload hashes, ordering,

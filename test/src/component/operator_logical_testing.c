@@ -598,8 +598,10 @@ static void wire_case(void) {
         code_builder_t *b = create_code_builder();
         data_builder_t *d = create_data_builder();
         if (mode) {
-            add_instruction(b, (instruction_t){.opcode = NIL});
-            add_instruction(b, (instruction_t){.opcode = NIL});
+            /* Completion mode must consume a selection made by LAND, not
+             * hand-constructed sentinel slots. TRUE takes the RHS path. */
+            add_instruction(b, (instruction_t){.opcode = TRUE});
+            add_instruction(b, (instruction_t){.opcode = LAND, .arg1 = 4});
         }
         add_instruction(b, (instruction_t){.opcode = TRUE});
         add_instruction(b, (instruction_t){.opcode = BOOL, .arg0 = mode});
@@ -642,6 +644,10 @@ static void wire_case(void) {
         add_instruction(b, (instruction_t){.opcode = END});
         bytecode_t *code = link_code_and_data(b, d);
         assert(code);
+        /* These deliberately forged selections are rejected on loading. Keep
+         * the direct VM check too: internal callers still get a safe error. */
+        assert(!validate_bytecode_image(code));
+        assert(!decode_bytecode_image(code->buffer, code->buffer_size));
         process_t *p = create_process();
         assert(run(p, code) != 0);
         assert(p->main_thread->exception.value == get_exception_invalid_operation());

@@ -75,6 +75,7 @@ set(release_labels
   native-performance-controls
   native-continuation
   native-operators
+  module-operators
   operator-dispatch
   operator-analysis
   operator-arithmetic

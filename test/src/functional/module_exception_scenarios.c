@@ -98,11 +98,17 @@ fixture(scenario_run_t *r, configuration_t *c, unsigned padding, bool external, 
         else if (rule == 29 && file == 0)
             mode = FUNCTION;
         if (mode == CATCH || mode == REPLACE) {
-            op(i, 54, entry + 5);
+            /* A failed child throws at GETPROP, but the hypothetical normal
+             * edge must also discard its result before joining the catch edge.
+             * Keep rule 26's explicit THROW and replacement trace offsets. */
+            unsigned discard = mode == CATCH && rule != 26;
+            op(i, 54, entry + 5 + discard);
             op(i, 15, rule == 26 ? 0 : 5);
             op(i, rule == 26 ? 55 : 19, 0);
+            if (discard)
+                op(i, 5, 0);
             op(i, 53, 0);
-            op(i, 3, entry + (mode == REPLACE ? 12 : 10));
+            op(i, 3, entry + (mode == REPLACE ? 12 : 10) + discard);
             op(i, 5, 0);
             op(i, 15, 3);
             op(i, 23, 0);

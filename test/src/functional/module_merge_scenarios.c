@@ -12,6 +12,7 @@
 #include "test/support/inspect_report.h"
 #include "test/support/language_execution.h"
 #include "test/support/merge_constructor.h"
+#include "test/support/merge_corpus.h"
 #include "test/support/merge_terminal.h"
 #include "test/support/registry.h"
 
@@ -896,6 +897,13 @@ int main(int argc, char **argv) {
         return 1;
     }
 #endif
+    if (argc > 1 && !strncmp(argv[1], "--corpus-", 9)) {
+        int result = merge_corpus_tool(argc, argv);
+#ifdef _WIN32
+        free_fs_arguments(argc, argv);
+#endif
+        return result;
+    }
     int result = 1;
     bool keep = false, sockets = false, valid = true;
     for (int i = 9; i < argc; i++) {
@@ -925,9 +933,8 @@ int main(int argc, char **argv) {
         size_t size = 0;
         bool loaded = file && read_fs_regular_file(file, 64 * 1024 * 1024, &data, &size, &e);
         clear_fs_error(&e);
-        char error[512];
-        yyjson_mut_doc *doc =
-            loaded ? inspect_report_parse(data, size, error, sizeof(error)) : NULL;
+        char error[512] = "file read failed";
+        yyjson_mut_doc *doc = loaded ? merge_corpus_expand(data, size, error, sizeof(error)) : NULL;
         jval_t *cases = get(yyjson_mut_doc_get_root(doc), "cases");
         size_t count = yyjson_mut_arr_size(cases);
         if (valid && count) {
@@ -969,7 +976,7 @@ int main(int argc, char **argv) {
             FREE(definitions);
             FREE(configs);
         } else
-            fputs("Cannot load merge corpus or executable paths\n", stderr);
+            fprintf(stderr, "Cannot load merge corpus or executable paths: %s\n", error);
         yyjson_mut_doc_free(doc);
         FREE(data);
         FREE(file);

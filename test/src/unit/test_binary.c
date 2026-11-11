@@ -125,18 +125,19 @@ static bool declaration_rejection(void) {
     uint32_t id = add_data_to_data_segment(data, &declaration, sizeof(declaration));
     data->descriptors[id].kind = DATA_DECLARATION;
     data->descriptors[id].count = 1;
+    add_instruction(builder, (instruction_t){.opcode = NIL});
     add_instruction(builder, (instruction_t){.opcode = DVAR, .arg1 = id});
     add_instruction(builder, (instruction_t){.opcode = BLOAD, .arg1 = id});
     add_instruction(builder, (instruction_t){.opcode = END});
     bytecode_t *code = link_code_and_data(builder, data);
     destroy_code_builder(builder);
     destroy_data_builder(data);
-    instruction_t original = ((instruction_t *)code->instructions)[0];
+    instruction_t original = ((instruction_t *)code->instructions)[1];
     data_descriptor_t descriptor = ((data_descriptor_t *)code->data_descriptors)[id];
     for (unsigned test = 0; test < 13; test++) {
         declaration_descriptor_t altered = declaration;
-        ((instruction_t *)code->instructions)[0] = original;
-        ((instruction_t *)code->instructions)[1].opcode = BLOAD;
+        ((instruction_t *)code->instructions)[1] = original;
+        ((instruction_t *)code->instructions)[2].opcode = BLOAD;
         ((data_descriptor_t *)code->data_descriptors)[id] = descriptor;
         switch (test) {
             case 1:
@@ -158,16 +159,16 @@ static bool declaration_rejection(void) {
                 ((data_descriptor_t *)code->data_descriptors)[id].size--;
                 break;
             case 7:
-                ((instruction_t *)code->instructions)[0].arg1 = UINT32_MAX;
+                ((instruction_t *)code->instructions)[1].arg1 = UINT32_MAX;
                 break;
             case 8:
-                ((instruction_t *)code->instructions)[0].opcode = BLOAD;
+                ((instruction_t *)code->instructions)[1].opcode = BLOAD;
                 break; /* No declaration. */
             case 9:
-                ((instruction_t *)code->instructions)[0].arg0 = 1;
+                ((instruction_t *)code->instructions)[1].arg0 = 1;
                 break;
             case 10:
-                ((instruction_t *)code->instructions)[1].opcode =
+                ((instruction_t *)code->instructions)[2].opcode =
                     DCONST; /* Duplicate declaration identity. */
                 break;
             case 12:
@@ -286,8 +287,10 @@ static bool instruction_rejection(void) {
         ASSERT(rejected(code->buffer, code->buffer_size)); /* Between functions. */
         instructions[8].arg1 = 9;
         bytecode_t *valid = decode_bytecode_image(code->buffer, code->buffer_size);
-        ASSERT(valid); /* A control target within the same function is allowed. */
-        free_bytecode(valid);
+        /* Same-owner addresses are necessary, but no longer sufficient: this
+         * mutation replaces the function's only value producer with a branch.
+         * The target RET has no result (and logical completion is absent). */
+        ASSERT(!valid);
         instructions[3] = (instruction_t){.opcode = branches[i], .arg1 = 8};
         ASSERT(rejected(code->buffer, code->buffer_size)); /* Top-level to function. */
     }

@@ -458,6 +458,11 @@ foreach(information_id IN LISTS information_ids)
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data"
     "${PROJECT_SOURCE_DIR}/docs/module-format-v1/vectors")
 endforeach()
+foreach(corpus_control roundtrip invalid isolation integrity)
+  goat_scenario(module_merge_corpus.${corpus_control} "module-merge-migration;merge-corpus" TIMEOUT 60 COMMAND
+    "$<TARGET_FILE:module_merge_scenarios>" --corpus-test "${corpus_control}"
+    "${PROJECT_SOURCE_DIR}/test/data/module-merge/cases.json")
+endforeach()
 include("${PROJECT_SOURCE_DIR}/test/data/module-merge/case-ids.cmake")
 foreach(module_merge_case IN LISTS module_merge_case_ids)
   goat_scenario(integration.module_merge.${module_merge_case} "integration;module-merge-migration" TIMEOUT 120 COMMAND
@@ -726,7 +731,7 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1917 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1918 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
   message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (including four safe native retry cases for #316); found ${goat_integration_count}")
 endif()
@@ -882,4 +887,13 @@ foreach(operator_case arithmetic comparison logical index call unwind)
   goat_scenario(native.operators.${operator_case} "native;native-operators;language-roundtrip" TIMEOUT 200 COMMAND
     "$<TARGET_FILE:native_operator_testing>" "native.operators.${operator_case}" "$<TARGET_FILE:goat>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()
+
+foreach(operator_case semantics trace initializer)
+  foreach(optimization optimized unoptimized)
+    goat_scenario(module.operators.${operator_case}.${optimization}
+      "module;module-operators;language-roundtrip" TIMEOUT 200 COMMAND
+      "$<TARGET_FILE:module_operator_scenarios>" "module.operators.${operator_case}.${optimization}"
+      "$<TARGET_FILE:goat>" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+  endforeach()
 endforeach()

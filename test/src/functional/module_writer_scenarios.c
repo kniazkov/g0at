@@ -279,7 +279,7 @@ static void memory(scenario_run_t *r, void *arg) {
             char hash[65];
             format_binary_sha256(zip.data, zip.size, hash);
             REQUIRE(
-                !strcmp(hash, "98617e59853dee57926692a6698f67c341eb69e9cc118e7b55ec746f3a6c5102"));
+                !strcmp(hash, "b84d1cdbbbbd0583f47789f466841b853b47ed39e64a1c3feb77f58eda230e2f"));
             equal(r,
                   "native permutations and idempotence",
                   output(r, c, fixture(r, c, "native-profile")),

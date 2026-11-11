@@ -1,0 +1,4 @@
+Uncaught exception: { }
+  at operator_handlers@1: implementation.goat:7:25, explode
+  at operator_app@1: app.goat:2:62, exercise
+  at operator_app@1: app.goat:3:1, <top-level>

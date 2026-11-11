@@ -1,0 +1,9 @@
+const r=import "operator_receivers";const h=import "operator_handlers";
+const exercise=func(){
+ const own={external value=4;};own["+"]=h.arithmetic;if(own+2!=47)throw "own";
+ const value={var number=17;};const saved=r.exercise(value);
+ for(var i=0;i<3000;i++){var garbage={var cycle=null;};garbage.cycle=garbage;}
+ if(saved[0]!=value||saved[0].number!=17)throw "lifetime";
+ try{saved[0]=0;throw "mutable";}catch(e){println(e);}
+ try{r.obj+1;throw "visible";}catch(e){println(e);}
+};exercise();println("ok");

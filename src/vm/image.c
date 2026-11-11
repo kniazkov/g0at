@@ -60,6 +60,350 @@ static const bytecode_location_t *location_at(const bytecode_t *c, uint32_t inst
     return NULL;
 }
 
+/* Check the producer's saved logical-selection protocol independently of runtime
+ * values. The completion consumes receiver, selected function and RHS. Jumping
+ * into that region would manufacture or consume another expression's selection.
+ * This is validation only: executable bytes and v1 opcode numbers stay unchanged. */
+static bool validate_logical_regions(const bytecode_t *c, uint32_t *region) {
+    uint32_t *ends = ALLOC(c->instructions_count * sizeof(*ends));
+    size_t depth = 0;
+    bool valid = true;
+    for (size_t i = 0; valid && i < c->instructions_count; ++i) {
+        instruction_t in = c->instructions[i];
+        region[i] = depth ? ends[depth - 1] : 0;
+        if (in.opcode == LAND || in.opcode == LOR) {
+            uint32_t end = in.arg1;
+            valid = end > i + 1 && end < c->instructions_count
+                    && c->instructions[end - 1].opcode == BOOL && c->instructions[end - 1].arg0 == 1
+                    && (!depth || end < ends[depth - 1]);
+            if (valid)
+                ends[depth++] = end;
+        } else if (in.opcode == BOOL && in.arg0) {
+            valid = depth && ends[depth - 1] == i + 1;
+            if (valid)
+                --depth;
+        }
+    }
+    valid = valid && !depth;
+    for (size_t i = 0; valid && i < c->instructions_count; ++i) {
+        instruction_t in = c->instructions[i];
+        switch (in.opcode) {
+            case JUMP:
+            case JIF:
+            case ITER_NEXT:
+            case LAND:
+            case LOR:
+                valid = region[i] == region[in.arg1];
+                break;
+            /* Unwind transfers can leave an expression, but cannot enter a
+             * saved selection that their source did not establish. */
+            case LOOP_JUMP:
+            case TRY:
+            case FINALLY_ENTER:
+            case FINALLY_LEAVE: {
+                uint32_t ancestor = region[i];
+                while (ancestor && ancestor != region[in.arg1])
+                    ancestor = region[ancestor];
+                valid = ancestor == region[in.arg1];
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    for (size_t i = 0; valid && i < c->file_count; ++i)
+        valid = !region[c->files[i].entry];
+    for (size_t i = 0; valid && i < c->function_count; ++i)
+        valid = !region[c->functions[i].body];
+    FREE(ends);
+    return valid;
+}
+
+/* An instruction has one exact operand height and lexical scope chain. Scope
+ * records retain their entry height so break/continue and finally exits cannot
+ * erase validation information. Cleanup uses the same saved scope with a tag;
+ * all potential cleanup/handler paths are checked, including exceptional ones. */
+#define STACK_UNREACHED UINT64_MAX
+#define CLEANUP_SCOPE UINT32_C(0x80000000)
+#define SCOPE_ID(scope) ((scope) & ~CLEANUP_SCOPE)
+
+typedef struct {
+    uint64_t height;
+    uint32_t scope;
+} operand_state_t;
+
+typedef struct {
+    uint64_t height, floor;
+    uint32_t parent;
+} operand_scope_t;
+
+static bool merge_stack(uint32_t destination,
+                        uint64_t height,
+                        uint32_t scope,
+                        operand_state_t *states,
+                        uint32_t *queue,
+                        size_t *tail) {
+    operand_state_t *old = states + destination;
+    if (old->height != STACK_UNREACHED)
+        return old->height == height && old->scope == scope;
+    *old = (operand_state_t){height, scope};
+    queue[(*tail)++] = destination;
+    return true;
+}
+
+static bool validate_operand_stack(const bytecode_t *c, const uint32_t *region) {
+    if (c->instructions_count > SIZE_MAX / sizeof(operand_state_t)
+        || c->instructions_count + 1 > SIZE_MAX / sizeof(operand_scope_t))
+        return false;
+    operand_state_t *states = ALLOC(c->instructions_count * sizeof(*states));
+    operand_scope_t *scopes = CALLOC((c->instructions_count + 1) * sizeof(*scopes));
+    uint64_t *floors = CALLOC(c->instructions_count * sizeof(*floors));
+    uint32_t *queue = ALLOC(c->instructions_count * sizeof(*queue));
+    for (size_t i = 0; i < c->instructions_count; ++i)
+        states[i].height = STACK_UNREACHED;
+    size_t head = 0, tail = 0;
+    bool valid = true;
+    for (size_t i = 0; valid && i < c->file_count; ++i)
+        valid = merge_stack(c->files[i].entry, 0, 0, states, queue, &tail);
+    for (size_t i = 0; valid && i < c->function_count; ++i)
+        valid = merge_stack(c->functions[i].body, 0, 0, states, queue, &tail);
+    while (valid && head < tail) {
+        uint32_t i = queue[head++];
+        uint64_t height = states[i].height;
+        uint32_t scope = states[i].scope;
+        instruction_t in = c->instructions[i];
+        uint64_t need = 0, pop = 0, push = 0;
+        switch (in.opcode) {
+            case NIL:
+            case TRUE:
+            case FALSE:
+            case ILOAD32:
+            case ILOAD64:
+            case RLOAD:
+            case SLOAD:
+            case CLOAD:
+            case VLOAD:
+            case FUNC:
+            case LEAVE:
+            case BLOAD:
+            case MODULE_INCLUDE:
+            case MODULE_IMPORT:
+            case MODULE_MAIN:
+            case MODULE_DIR:
+                push = 1;
+                break;
+            case POP:
+            case VAR:
+            case CONST:
+            case DVAR:
+            case DCONST:
+            case JIF:
+                need = pop = 1;
+                break;
+            case DUP:
+                need = 1;
+                push = 1;
+                break;
+            case DUPN:
+                need = push = in.arg1;
+                break;
+            case ROTATE:
+            case CHECKINDEX:
+                need = (uint64_t)in.arg1 + 1;
+                break;
+            case STORE:
+            case BSTORE:
+            case GETPROP:
+            case CHECKPROP:
+            case UPLUS:
+            case UMINUS:
+            case INC:
+            case DEC:
+            case LNOT:
+            case BNOT:
+            case SNAPSHOT:
+                need = 1;
+                break;
+            case BOOL:
+                need = in.arg0 ? 3 : 1;
+                pop = in.arg0 ? 2 : 0;
+                break;
+            case SETPROP:
+                need = 2;
+                pop = 1;
+                break;
+            case BAND:
+            case BOR:
+            case BXOR:
+            case SHL:
+            case SHR:
+            case ADD:
+            case SUB:
+            case MUL:
+            case DIVIDE:
+            case MODULO:
+            case POWER:
+            case LESS:
+            case LEQ:
+            case GREATER:
+            case GREQ:
+            case EQUAL:
+            case DIFF:
+                need = 2;
+                pop = 1;
+                break;
+            case GETINDEX:
+            case SETINDEX:
+                need = (uint64_t)in.arg1 + (in.opcode == SETINDEX ? 2 : 1);
+                pop = need - 1;
+                break;
+            case ARRAY:
+                need = pop = in.arg1;
+                push = 1;
+                break;
+            case INHERIT:
+                need = pop = in.arg1;
+                break;
+            case CALL:
+            case CALLM:
+                need = (uint64_t)in.arg0 + (in.opcode == CALLM ? 2 : 1);
+                pop = need - 1;
+                break;
+            case LAND:
+            case LOR:
+                need = 1;
+                push = 1;
+                break;
+            case ITER_NEXT:
+                need = 1;
+                push = 1;
+                break;
+            case RET:
+            case THROW:
+                need = 1;
+                break;
+            default:
+                break;
+        }
+        uint64_t floor = region[i] ? floors[region[i]] : 0;
+        if (in.opcode == BOOL && in.arg0) {
+            /* Only the matching completion may consume the protected pair. */
+            valid = floor >= 2 && height == floor + 1;
+            floor -= valid ? 2 : 0;
+        }
+        uint64_t scope_floor = scope ? scopes[SCOPE_ID(scope)].floor : 0;
+        /* ITER_NEXT only reads the snapshot retained immediately below the
+         * loop boundary. All other operands must be above every saved prefix. */
+        if (in.opcode == ITER_NEXT && scope && !(scope & CLEANUP_SCOPE)
+            && c->instructions[scope - 1].opcode == LOOP_ENTER && height == scope_floor
+            && scope_floor)
+            --scope_floor;
+        if (floor < scope_floor)
+            floor = scope_floor;
+        valid = valid && height >= floor && height - floor >= need;
+        if (!valid)
+            break;
+        height = height - pop + push;
+        bool fallthrough = true, has_branch = false;
+        uint64_t branch = height;
+        uint32_t branch_scope = scope;
+        switch (in.opcode) {
+            case ENTER:
+            case INHERIT:
+            case LOOP_ENTER:
+                scopes[i + 1] = (operand_scope_t){height,
+                                                  in.opcode == LOOP_ENTER ? height : scope_floor,
+                                                  scope};
+                scope = i + 1;
+                break;
+            case LEAVE:
+            case RESTORE:
+                valid = scope && !(scope & CLEANUP_SCOPE);
+                if (valid)
+                    scope = scopes[scope].parent;
+                break;
+            case END:
+            case RET:
+            case THROW:
+                fallthrough = false;
+                break;
+            case FINALLY_END:
+                valid = scope && (scope & CLEANUP_SCOPE);
+                fallthrough = false;
+                break;
+            case JUMP:
+                fallthrough = false;
+                has_branch = true;
+                break;
+            case LOOP_JUMP: {
+                uint32_t loop = scope;
+                while (loop
+                       && ((loop & CLEANUP_SCOPE)
+                           || c->instructions[SCOPE_ID(loop) - 1].opcode != LOOP_ENTER))
+                    loop = scopes[SCOPE_ID(loop)].parent;
+                valid = loop != 0;
+                if (valid) {
+                    branch = scopes[loop].height;
+                    branch_scope = loop;
+                }
+                fallthrough = false;
+                has_branch = true;
+                break;
+            }
+            case FINALLY_LEAVE:
+                valid = scope && !(scope & CLEANUP_SCOPE)
+                        && c->instructions[scope - 1].opcode == FINALLY_ENTER;
+                if (valid) {
+                    branch = scopes[scope].height;
+                    branch_scope = scopes[scope].parent;
+                }
+                fallthrough = false;
+                has_branch = true;
+                break;
+            case JIF:
+                has_branch = true;
+                break;
+            case LAND:
+            case LOR:
+                floors[in.arg1] = height;
+                has_branch = true;
+                branch = height - 1;
+                break;
+            case ITER_NEXT:
+                valid = scope && !(scope & CLEANUP_SCOPE)
+                        && c->instructions[scope - 1].opcode == LOOP_ENTER;
+                has_branch = true;
+                branch = height - 1;
+                break;
+            case TRY:
+            case FINALLY_ENTER:
+                scopes[i + 1] = (operand_scope_t){height, height, scope};
+                scope = i + 1;
+                has_branch = true;
+                if (in.opcode == TRY)
+                    branch = height + 1;
+                else
+                    branch_scope = scope | CLEANUP_SCOPE;
+                break;
+            default:
+                break;
+        }
+        if (valid && has_branch)
+            valid = merge_stack(in.arg1, branch, branch_scope, states, queue, &tail);
+        if (valid && fallthrough) {
+            const bytecode_location_t *here = location_at(c, i);
+            const bytecode_location_t *next = location_at(c, i + 1);
+            valid = next && here->file == next->file && here->function == next->function
+                    && merge_stack(i + 1, height, scope, states, queue, &tail);
+        }
+    }
+    FREE(queue);
+    FREE(floors);
+    FREE(scopes);
+    FREE(states);
+    return valid;
+}
+
 bool validate_bytecode_image(bytecode_t *c) {
     const uint8_t *b = c->buffer;
     size_t size = c->buffer_size;
@@ -360,7 +704,10 @@ bool validate_bytecode_image(bytecode_t *c) {
         if (!next || next->function != c->locations[location_id].function)
             return false;
     }
-    return true;
+    uint32_t *regions = CALLOC(c->instructions_count * sizeof(*regions));
+    bool checked = validate_logical_regions(c, regions) && validate_operand_stack(c, regions);
+    FREE(regions);
+    return checked;
 }
 
 bytecode_t *decode_bytecode_image(const void *data, size_t size) {

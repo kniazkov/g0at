@@ -631,7 +631,8 @@ static void builtin_policy_case(void) {
 
 static bool
 fail_initializer(module_file_t *file, context_t *frame, void *data, exception_t *failure) {
-    (void)data;
+    if (data)
+        ++*(unsigned *)data;
     object_t *payload = object(module_file_process(file), get_root_object());
     *failure = (exception_t){payload, capture_exception_trace(frame, module_file_entry(file))};
     return false;
@@ -812,6 +813,146 @@ static void failed_file_case(void) {
     clear_module_compilation_error(&error);
 }
 
+/** Real module images keep declaration identity even when a handler is installed
+ * on an object belonging to another module and file. */
+static void module_provenance_case(void) {
+    char empty[] = "external ready=true;";
+    char body[] = "private secret=42; external handler=func(x){"
+                  "const nested=func(){return secret;};"
+                  "if(nested()!=42) throw 901; x=null; return arguments;};";
+    module_source_t source[] = {
+        {.path = "owner.goat", .name = "owner.goat", .source = empty, .length = sizeof(empty) - 1},
+        {.path = "handler.goat",
+         .name = "handler.goat",
+         .source = body,
+         .length = sizeof(body) - 1}};
+    module_sources_t sources = {.files = source, .count = 2};
+    module_compilation_t *compilation = NULL;
+    module_compilation_error_t error = {0};
+    assert(compile_module_sources(&sources, &compilation, &error));
+    process_t *p = create_process();
+    thread_t *t = p->main_thread;
+    context_t *caller = t->context;
+    module_files_t *owner = NULL, *other = NULL;
+    assert(create_module_files_from_snapshot(p, compilation->metadata, compilation->code, &owner));
+    assert(create_module_files_from_snapshot(p, compilation->metadata, compilation->code, &other));
+    assert(module_files_identity(owner) != module_files_identity(other));
+    module_file_t *declaring = module_files_get(owner, 1);
+    assert(run_module_file(p, declaring) == 0);
+    object_t *handler_key = key(p, U"handler");
+    object_t *handler = get_object_property(module_file_scope(declaring), handler_key);
+    assert(handler && get_function_access(handler)->module == module_files_identity(owner));
+    assert(get_function_access(handler)->file_id == 1);
+    object_t *receiver = module_file_scope(module_files_get(other, 0));
+    field(p, receiver, U"+", handler, ACCESS_EXTERNAL);
+    object_t *operator_key = key(p, U"+");
+    operator_lookup_t selected = lookup_operator_handler(&caller->access, receiver, operator_key);
+    assert(selected.status == OPERATOR_FOUND && selected.function == handler);
+    object_t *argument = object(p, get_root_object());
+    field(p, argument, U"marker", get_static_integer_object(83), ACCESS_EXTERNAL);
+    push_object_onto_stack(t->data_stack, argument); /* Sole live value reference. */
+    fixture_t resume = compile(U"return null;");
+    assert(call_operator_handler(selected.function,
+                                 receiver,
+                                 1,
+                                 OPERATOR_RESULT_VALUE,
+                                 resume.resume,
+                                 t));
+    assert(t->context->module == module_files_identity(owner));
+    assert(t->context->access.file_id == 1 && t->context->operator_receiver == receiver);
+    clear_operator_lookup(&selected);
+    DECREF(operator_key);
+    DECREF(handler_key);
+    collect_garbage(p);
+    assert(run(p, resume.code) == 0 && t->context == caller);
+    collect_garbage(p); /* Escaped array alone now roots the original object. */
+    object_t *array = peek_object_from_stack(t->data_stack, 0);
+    object_t *index = get_static_integer_object(0);
+    operation_result_t element = array->vtbl->get_index(p, array, (object_array_t){&index, 1});
+    assert(!element.is_exception && element.value == argument);
+    object_t *marker = key(p, U"marker");
+    assert(get_object_property(element.value, marker) == get_static_integer_object(83));
+    DECREF(marker);
+    DECREF(element.value);
+    array = pop_object_from_stack(t->data_stack);
+    DECREF(array);
+
+    /* The receiver's file fails independently. This must not poison an already
+       selected function whose declaring file is healthy. */
+    object_t *scope = NULL;
+    exception_t original = {0};
+    module_file_t *failed = module_files_get(other, 0);
+    unsigned initializer_calls = 0;
+    assert(initialize_module_file(failed,
+                                  caller,
+                                  fail_initializer,
+                                  &initializer_calls,
+                                  &scope,
+                                  &original)
+           == MODULE_INITIALIZE_FAILED);
+    assert(call_operator_handler(handler, receiver, 0, OPERATOR_RESULT_VALUE, resume.resume, t));
+    assert(t->context->module == module_files_identity(owner));
+    assert(run(p, resume.code) == 0 && !t->exception.value);
+    array = pop_object_from_stack(t->data_stack);
+    DECREF(array);
+
+    /* A failed dynamic caller is equally irrelevant to a healthy declaration.
+       Resume at the caller image's END, not an address from the owner's image. */
+    context_t *failed_caller = create_module_file_context(failed, caller);
+    t->context = failed_caller;
+    instr_index_t end = module_file_entry(failed);
+    while (module_file_bytecode(failed)->instructions[end].opcode != END) {
+        ++end;
+        assert(end < module_file_bytecode(failed)->instructions_count);
+    }
+    assert(call_operator_handler(handler, receiver, 0, OPERATOR_RESULT_VALUE, end, t));
+    assert(t->context->module == module_files_identity(owner));
+    assert(run(p, resume.code) == 0 && t->context == failed_caller && !t->exception.value);
+    array = pop_object_from_stack(t->data_stack);
+    DECREF(array);
+    t->context = destroy_context(failed_caller);
+    assert(t->context == caller);
+
+    collect_garbage(p);
+    for (unsigned attempt = 0; attempt < 2; ++attempt) {
+        exception_t repeated = {0};
+        assert(initialize_module_file(failed,
+                                      caller,
+                                      fail_initializer,
+                                      &initializer_calls,
+                                      &scope,
+                                      &repeated)
+               == MODULE_INITIALIZE_FAILED);
+        assert(!scope && initializer_calls == 1);
+        assert(repeated.value == original.value && repeated.trace == original.trace);
+        clear_exception(&repeated);
+    }
+
+    /* Conversely, installing a function from that failed file onto a healthy
+       receiver must preserve the cached value AND trace, without entering it. */
+    object_t *blocked =
+        create_function_object(p, NULL, 0, 0, module_file_scope(failed), NULL, true);
+    for (unsigned attempt = 0; attempt < 2; ++attempt) {
+        assert(!call_operator_handler(blocked,
+                                      module_file_scope(declaring),
+                                      0,
+                                      OPERATOR_RESULT_VALUE,
+                                      resume.resume,
+                                      t));
+        assert(t->context == caller && t->exception.value == original.value);
+        assert(t->exception.trace == original.trace);
+        const exception_trace_frame_t *origin = exception_trace_frame(t->exception.trace, 0);
+        assert(origin->module == module_files_identity(other) && origin->file_id == 0);
+        clear_exception(&t->exception);
+    }
+    DECREF(blocked);
+    clear_exception(&original);
+    destroy_process(p);
+    dispose(&resume);
+    free_module_compilation(compilation);
+    clear_module_compilation_error(&error);
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
     if (!strcmp(argv[1], "lookup"))
@@ -836,9 +977,10 @@ int main(int argc, char **argv) {
         result_error_trace_case();
     else if (!strcmp(argv[1], "builtin-policy"))
         builtin_policy_case();
-    else if (!strcmp(argv[1], "failed-file"))
+    else if (!strcmp(argv[1], "failed-file")) {
         failed_file_case();
-    else
+        module_provenance_case();
+    } else
         assert(!"unknown operator foundation case");
     assert(!get_allocated_memory_size());
     puts("Operator foundation checks passed");

@@ -1,0 +1,7 @@
+const code=include "implementation.goat";
+external arithmetic=code.arithmetic;
+external capture=code.capture;
+external factory=code.factory;
+external steal=code.steal;
+external explode=code.explode;
+external token=code.token;

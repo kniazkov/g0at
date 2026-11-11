@@ -378,6 +378,15 @@ platform, builds its archive with the independent test oracle and verifies that
 merge never loads it. No production behavior or hooks change. See
 [the complete map and validation](../data/module-merge/README.md).
 
+`merge_corpus.*` expands the compact frozen entry/snapshot tables without running
+any production writer or generating expectations. Every output node/string is
+independently owned, and a preflight budget bounds reference amplification.
+The same executable's `--corpus-pack`, `--corpus-expand` and `--corpus-verify`
+modes provide reproducible C-only conversion and order-sensitive frozen audits.
+Four `merge-corpus` controls preserve all 196 cases, 392 tree snapshots and 399
+`files`/`after`/`during` fields, including the full ordered-document SHA-256.
+
+
 ## Child-process migration (#375)
 
 `child_process_scenarios` uses the existing independent raw owner transport,

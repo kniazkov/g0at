@@ -10,8 +10,22 @@ original `reference.main_hash` implementation and original empty bytecode and
 native target vectors. Its `zipfile` wall-clock timestamp was fixed to
 1980-01-01 00:00:00, making the resulting archive bytes reproducible. All member
 names, ordering, JSON serialization, compression, bytecode, native payload,
-metadata and significant hashes remain those of the original function. No
+metadata and significant hashes originally matched the function exactly. The
+#504 correction below updates the invalid native fixture and dependent hashes. No
 Python, reference script or compiler is needed to consume these fixtures.
+
+## Independent image correction (#504)
+
+The native dependency's historical recipe allowed top-level `NOP` at instruction
+3 to fall into function-owned `NIL; RET`. It now uses `END`. The native payload,
+function records and all other bytecode bytes are unchanged. The dependency's
+significant hash and the root's dependency reference/significant hash were
+recomputed with the historical independent `reference.py` oracle. Both original
+ZIP envelopes were reconstructed byte-for-byte before modification. Manifests
+record the corrected archive sizes/checksums; resource boundaries remain derived
+from those actual sizes. No production tool generated expected fixture bytes. A separate Debug build with
+`GOAT_TEST_ALLOC_FAILURE=ON` passes all 17 memory scenarios for these corrected
+archives, including persistent/one-shot allocation failures and size boundaries.
 
 | File | Original construction / use |
 | --- | --- |
@@ -31,8 +45,8 @@ original deliberately non-loadable text, not a platform-specific executable.
 The descriptor's target is deliberately frozen to the original vector target:
 this suite preflights/retains native metadata and must never OS-load the payload.
 
-The valid root is 487 bytes / 468 expanded bytes; its dependency is 922 bytes /
-1105 expanded bytes. Thus the original exact-boundary limits are 922/1105,
+The valid root is 487 bytes / 468 expanded bytes; its dependency is 924 bytes /
+1105 expanded bytes. Thus the original exact-boundary limits are 924/1105,
 root archive rejection is at 486, root expanded rejection at 467, and dependency
 expanded rejection at 1104. Size limits use the **host's** reported `size_t` width,
 not the width of the fixture-generating machine. The huge archive's actual

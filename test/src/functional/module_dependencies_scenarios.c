@@ -121,7 +121,8 @@ static bytes_t archive(scenario_run_t *r,
     const uint32_t header[] = {1, 64, 208, 6, 0, 1, 1, 2, 64, 112, 112, 128, 160, 208};
     for (size_t i = 0; i < N(header); i++)
         number(image + 8 + 4 * i, header[i]);
-    const unsigned char ops[] = {1, 47, 5, 0, 7, 50};
+    /* END prevents top-level fallthrough into the function-owned NIL/RET body. */
+    const unsigned char ops[] = {1, 47, 5, 2, 7, 50};
     for (size_t i = 0; i < N(ops); i++)
         image[64 + i * 8] = ops[i];
     number(image + 68, 4);
