@@ -114,7 +114,42 @@ static bool test_contract_invalidation(void) {
     return true;
 }
 
+/** Scalar observations cannot select a custom-dispatch contract (#504). */
+static bool test_operator_contract_selection(void) {
+    arena_t *arena = create_arena(8);
+    yyjson_doc *doc =
+        raw("{\"analysis\":{\"summaries\":["
+            "{\"when\":{\"arguments\":[{\"type\":\"integer\"}]},"
+            "\"result\":{\"type\":\"integer\"},\"effects\":{\"may\":[],\"unknown\":false}},"
+            "{\"when\":{\"arguments\":[{\"type\":\"object\"}]},"
+            "\"effects\":{\"may\":[],\"unknown\":true}}]}}");
+    ASSERT(doc);
+    imported_function_t function = {"owner", "1", 1, yyjson_doc_get_root(doc)};
+    abstract_state_t *state = create_abstract_state(arena);
+    declarator_t captured = {0};
+    const lattice_element_t *domains[] = {make_integer_element(),
+                                          make_user_defined_object_element(),
+                                          make_top_element(),
+                                          make_not_null_element()};
+    for (size_t i = 0; i < sizeof(domains) / sizeof(*domains); ++i) {
+        set_in_abstract_state(state, &captured, make_integer_constant_element(arena, 7));
+        uint32_t effects;
+        const lattice_element_t *result =
+            interpret_imported_call(&function, &domains[i], 1, state, &effects);
+        ASSERT(result->type == (i ? LATTICE_TOP : LATTICE_INTEGER));
+        ASSERT(effects == (i ? FUNCTION_EFFECT_UNKNOWN : FUNCTION_EFFECT_NONE));
+        ASSERT(get_from_abstract_state(state, &captured)->type
+               == (i ? LATTICE_TOP : LATTICE_INTEGER_CONSTANT));
+        ASSERT(state->control_flow == FLOW_NORMAL);
+    }
+    destroy_abstract_state(state);
+    yyjson_doc_free(doc);
+    destroy_arena(arena);
+    return true;
+}
+
 bool test_module_interface_calls() {
+    ASSERT(test_operator_contract_selection());
     ASSERT(test_contract_invalidation());
     arena_t *arena = create_arena(8);
     yyjson_doc *doc =

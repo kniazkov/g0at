@@ -1,5 +1,36 @@
 # Independent public inspector corpus and scenarios (#372)
 
+## Operator image validation correction (#504)
+
+The independent function-image fixture previously used `NOP` at instruction 3,
+allowing top-level execution to fall through into the function-owned `NIL; RET`
+body, including variants with appended export-declaration tails. Instruction 3
+is now `END`; function entries, ownership, native payloads,
+and metadata tests are unchanged. This repairs an invalid independent format
+fixture, not a frozen compiler-produced executable.
+
+The authoritative recipe is `scripts/check_module_writer.py::function_image`
+at Git revision `0c4de46b`. Canonical metadata, significant hashes and compressed
+output archives were recomputed using that revision's independent
+`docs/module-format-v1/reference.py` and `schema.py`, with zlib **1.3.2**.
+Each original archive was reconstructed byte-for-byte before modification.
+Input ZIP metadata/order and all unaffected payload bytes were preserved.
+Content-addressed filenames, manifest entries, references and displayed expected
+hashes were updated together. Intentionally invalid metadata/native inputs retain
+their original defects and expected failure statuses. No production writer was
+used to generate expected bytes, and no assertion was weakened.
+
+
+Current #504 Debug verification: all 59 writer cases, all 133 inspector cases,
+and 194 of 196 merge cases pass. Both merge socket cases fail before invoking
+the tool because `socket(AF_UNIX, SOCK_STREAM, 0)` returns `EPERM` in this
+execution environment; they were not skipped or counted as passes. All four
+frozen-sample integrity/self-test aliases pass. All three corpus SHA-256 manifests
+verify. These are local results, not claims about other platforms or Release.
+
+The historical migration/parity results below describe the original corpus;
+they are not new validation results for these corrected bytes.
+
 `test/src/functional/module_inspect_scenarios.c` replaces
 `scripts/check_module_inspect.py` with **133 independently selectable CTest IDs**:
 `integration.module_inspect.text-001` through `text-070`, and `json-071` through

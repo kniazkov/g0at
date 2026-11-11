@@ -196,7 +196,44 @@ static void mutation_case(void) {
     destroy_arena(f.arena);
 }
 
+/** Arguments retain their container type, never sampled arity or element facts. */
+static void arguments_summary_case(void) {
+    fixture_t f =
+        analyze_source(U"const capture=func(x){x=99; return arguments;};\n"
+                       U"var empty=capture();\nvar one=capture(1);\nvar extra=capture(1, {});",
+                       true);
+    for (size_t row = 2; row <= 4; ++row)
+        assert(write_at(&f, row)->value->type == LATTICE_ARRAY);
+    bool found = false;
+    for (const analysis_event_t *e = f.events->head; e; e = e->next) {
+        if (e->kind != ANALYSIS_FUNCTION_SUMMARY || !e->function_summary)
+            continue;
+        const function_summary_t *summary = e->function_summary;
+        found = true;
+        assert(summary->return_type->type == LATTICE_ARRAY);
+        assert(summary->effects == FUNCTION_EFFECT_NONE);
+        assert(summary->c_support != FUNCTION_C_SUPPORTED);
+    }
+    assert(found);
+    destroy_arena(f.arena);
+    f = analyze_source(U"const capture=func(){return arguments[0]+1;};\n"
+                       U"var scalar=capture(1);\nvar custom=capture({});",
+                       true);
+    found = false;
+    for (const analysis_event_t *e = f.events->head; e; e = e->next) {
+        if (e->kind != ANALYSIS_FUNCTION_SUMMARY || !e->function_summary)
+            continue;
+        found = true;
+        assert(e->function_summary->return_type->type == LATTICE_TOP);
+        assert(e->function_summary->effects & FUNCTION_EFFECT_UNKNOWN);
+        assert(e->function_summary->c_support != FUNCTION_C_SUPPORTED);
+    }
+    assert(found);
+    destroy_arena(f.arena);
+}
+
 static void polymorphic_case(void) {
+    arguments_summary_case();
     fixture_t f =
         analyze_source(U"const f=func(a){return a+1;};\nvar numeric=f(3);\nvar object=f({});",
                        true);
@@ -247,6 +284,7 @@ static void runtime_program(const gchar_t *source) {
         generate_bytecode_from_node(f.root, builder, data);
         deferred(f.root, builder, data);
         bytecode_t *code = link_code_and_data(builder, data);
+        assert(validate_bytecode_image(code));
         process_t *p = create_process();
         assert(run(p, code) == 0);
 
@@ -260,6 +298,17 @@ static void runtime_program(const gchar_t *source) {
 }
 
 static void runtime_case(void) {
+    /* Dead operands/conditional arms still have a one-value wire stack shape. */
+    runtime_program(U"var result=false; var effects=0; "
+                    U"try {var x=(true+1)+(effects=1);} "
+                    U"catch(e){result=e==Exceptions.INVALID_OPERATION;} "
+                    U"result=result && effects==0;");
+    runtime_program(U"var effects=0; const select=func(){effects++; return true;}; "
+                    U"const fail=func(){throw \"bad\";}; "
+                    U"var a=select()?7:fail(); var b=false?fail():9; "
+                    U"var c=true?(false?2:3):4; "
+                    U"var result=a==7 && b==9 && c==3 && effects==1;");
+
     /* INVALID_OPERATION remains catchable, not a fatal compile-time diagnostic.
      * No user operator execution is expected until the later VM issues. */
     runtime_program(U"var result=false; try { const a={}; a+1; } "

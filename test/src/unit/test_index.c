@@ -116,15 +116,23 @@ bool test_index_dispatch(void) {
     for (int store = 0; store < 2; store++) {
         process_t *proc = create_process();
         object_stack_t *stack = proc->main_thread->data_stack;
-        push_object_onto_stack(stack, get_static_integer_object(99));
-        if (store)
-            push_object_onto_stack(stack, get_static_integer_object(100));
-        push_object_onto_stack(stack, &matrix);
-        push_object_onto_stack(stack, get_static_integer_object(4));
-        push_object_onto_stack(stack, get_static_integer_object(2));
+        object_t *key = create_string_object(proc, (string_value_t){U"matrix", 6, false});
+        ASSERT(create_object_property(proc->main_thread->context->data, key, &matrix, false)
+               == MSTAT_OK);
+        DECREF(key);
         code_builder_t *builder = create_code_builder();
         data_builder_t *data = create_data_builder();
-        add_instruction(builder, (instruction_t){.opcode = store ? SETINDEX : GETINDEX, .arg1 = 2});
+        add_instruction(builder, (instruction_t){.opcode = ILOAD32, .arg1 = 99});
+        if (store)
+            add_instruction(builder, (instruction_t){.opcode = ILOAD32, .arg1 = 100});
+        add_instruction(
+            builder,
+            (instruction_t){.opcode = VLOAD, .arg1 = add_string_to_data_segment(data, U"matrix")});
+        add_instruction(builder, (instruction_t){.opcode = ILOAD32, .arg1 = 4});
+        add_instruction(builder, (instruction_t){.opcode = ILOAD32, .arg1 = 2});
+        size_t access =
+            add_instruction(builder,
+                            (instruction_t){.opcode = store ? SETINDEX : GETINDEX, .arg1 = 2});
         add_instruction(builder, (instruction_t){.opcode = END});
         bytecode_t *code = link_code_and_data(builder, data);
         destroy_code_builder(builder);
@@ -133,7 +141,7 @@ bool test_index_dispatch(void) {
         ASSERT(write_binary_file(path, code->buffer, code->buffer_size));
         bytecode_t *saved = read_image(path);
         ASSERT(saved);
-        ASSERT(saved->instructions[0].arg1 == 2);
+        ASSERT(saved->instructions[access].arg1 == 2);
         ASSERT(run(proc, saved) == 0);
         ASSERT(stack->size == 2);
         ASSERT(get_object_integer_value(peek_object_from_stack(stack, 0)).value

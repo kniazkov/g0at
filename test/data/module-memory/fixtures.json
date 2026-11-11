@@ -12,24 +12,24 @@
   "fixtures": {
     "dep": {
       "file": "dep.gbin",
-      "size": 922,
+      "size": 924,
       "expanded": 1105,
-      "sha256": "0746c5cd0ad1703f37680f6b7106c28474bbaf6f2ba9cc89ca0946541e6e71b7",
+      "sha256": "b9b4422821984822f3b03d5ae40ff528572101ac12c000cbc165b2d831d1594a",
       "record": {
         "name": "dep",
         "version": "1",
-        "hash": "78c26d6b53437c8f46b251c47e65faa3112245bb46fd4ce848ccf6a6c0cc76df"
+        "hash": "2931b76a2723301d06b1a26ad7a9b3f4e44757d406f11907317fec9fd7278036"
       }
     },
     "root": {
       "file": "root.gbin",
       "size": 487,
       "expanded": 468,
-      "sha256": "f9b438d84d6617022bfb951ffeb6a372e358b10e6683c70852f7df0cabba1fd7",
+      "sha256": "7b1ea137c0b0645e010f24383e8e564e341e4442777b1cf68dbb53b4bd72a5e4",
       "record": {
         "name": "app",
         "version": "1",
-        "hash": "590caa079e3aeedbc1233e26b905ef93cf03a5682022b9882b111f88cb5d3ce1"
+        "hash": "0f98eb5ef0f783a8dc6f6d537126607a21f8200c12f84616c7b4e24f6637c37a"
       }
     },
     "plain": {
@@ -109,5 +109,11 @@
         "hash": "043066561bcc8c66a81e95b4205438ce37b9896174ec43438cc0a7487a8ccada"
       }
     }
+  },
+  "operator_image_correction_504": {
+    "recipe": "scripts/check_module_memory.py::archive(native=True)",
+    "change": "Instruction 3 NOP becomes END, retaining function-owned NIL/RET. Root dependency identity and significant hash updated.",
+    "independent_oracle": "0c4de46b:docs/module-format-v1/reference.py",
+    "original_envelopes_reconstructed_exactly": true
   }
 }

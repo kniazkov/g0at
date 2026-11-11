@@ -1,0 +1,7 @@
+const h=import "operator_handlers";
+const exercise=func(){
+ var first=null,second=null;
+ try{import "operator_failed";}catch(e){first=e;}
+ try{import "operator_failed";}catch(e){second=e;}
+ if(first!=h.token||second!=first)throw "initializer identity";
+};exercise();println("ok");

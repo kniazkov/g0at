@@ -665,5 +665,53 @@
         "fail": true
       }
     ]
+  },
+  {
+    "id": "integration.module_interface.operator-arguments-contract",
+    "name": "operator-arguments-contract",
+    "operations": [
+      {
+        "mode": "compile",
+        "name": "library",
+        "code": "var counter=0; external handler=func(other){counter+=1; return arguments;}; external capture=func(x){x=99; return arguments;}; capture(1); capture(); external forward=func(x){return x+1;}; forward(2); external make=func(handler){return {this[\"+\"]=handler;};}; make(handler); external calls=func(){return counter;};",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "modules/library/1.gbin"
+      },
+      {
+        "mode": "remove",
+        "path": "sources/library-1"
+      },
+      {
+        "mode": "compile",
+        "name": "app",
+        "code": "const lib=import \"library@1\"; external handler=lib.handler; const object={this[\"+\"]=lib.handler;}; external direct=object+3; external dispatched=lib.forward(lib.make(lib.handler)); external empty=lib.capture(); external extra=lib.capture(3, object); println(direct[0]); println(dispatched.length); println(dispatched[0]); println(empty.length); println(extra.length); println(extra[0]); println(extra[1]==object); println(lib.calls()); var denied=false; try {lib.forward(object);} catch(e) {denied=e==Exceptions.ACCESS_DENIED;} println(denied); var invalid=false; try {lib.forward({});} catch(e) {invalid=e==Exceptions.INVALID_OPERATION;} println(invalid);",
+        "version": "1",
+        "files": {},
+        "dependencies": null,
+        "fail": false
+      },
+      {
+        "mode": "metadata",
+        "path": "app.gbin"
+      },
+      {
+        "mode": "remove",
+        "path": "sources/app-1"
+      },
+      {
+        "mode": "invoke",
+        "command": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "3\n1\n1\n0\n2\n3\ntrue\n2\ntrue\ntrue\n",
+        "fail": false
+      }
+    ]
   }
 ]

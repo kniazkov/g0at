@@ -1,0 +1,4 @@
+const h=import "operator_handlers";
+const own={};own["+"]=h.explode;
+println("initializer-once");
+own+1;

@@ -1,0 +1,14 @@
+const h=import "operator_handlers";
+external obj={private hidden=9;external value=3;external read=func(){return this.hidden;};};
+obj["+"]=h.arithmetic;obj["()"]=h.capture;
+external child=obj -> {};
+external exercise=func(value){
+ if(obj+1!=45||child+2!=46)throw "arithmetic";
+ obj["+"]=obj.read;if(obj+1!=9)throw "private";
+ obj["+"]=h.steal;try{obj+1;throw "stolen";}catch(e){println(e);}
+ obj["+"]=h.factory(20);if(obj+2!=25)throw "closure";
+ const saved=obj(value,2,3);
+ if(saved.length!=3||saved[0]!=value||saved[2]!=3)throw "arguments";
+ obj["+"]=h.explode;try{obj+1;throw "absent";}catch(e){if(e!=h.token)throw "identity";}
+ return saved;
+};

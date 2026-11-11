@@ -11,6 +11,8 @@
 #include "lib/files/binary_file.h"
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
+#include "lib/wire/wire.h"
+#include "module/module_hash.h"
 #include "vm/module_writer.h"
 
 #include <assert.h>
@@ -21,6 +23,229 @@
 #    include <fcntl.h>
 #    include <io.h>
 #endif
+
+/* Independent little-endian producer, with no descriptors or function records.
+ * These vectors exercise semantic validation through both public entry points. */
+static void operator_image_check(const instruction_t *instructions, size_t count, bool valid) {
+    uint8_t image[1024] = {0};
+    size_t file_offset = 64 + count * 8, location_offset = file_offset + 16;
+    size_t size = location_offset + 24;
+    assert(size <= sizeof(image));
+    memcpy(image, "GOATBC01", 8);
+    const uint32_t header[] = {1,
+                               64,
+                               (uint32_t)size,
+                               (uint32_t)count,
+                               0,
+                               1,
+                               0,
+                               1,
+                               64,
+                               (uint32_t)file_offset,
+                               (uint32_t)file_offset,
+                               (uint32_t)location_offset,
+                               (uint32_t)location_offset,
+                               (uint32_t)size};
+    for (size_t i = 0; i < sizeof(header) / sizeof(*header); ++i)
+        write_le32(image + 8 + i * 4, header[i]);
+    for (size_t i = 0; i < count; ++i) {
+        image[64 + i * 8] = instructions[i].opcode;
+        image[66 + i * 8] = (uint8_t)instructions[i].arg0;
+        image[67 + i * 8] = (uint8_t)(instructions[i].arg0 >> 8);
+        write_le32(image + 68 + i * 8, instructions[i].arg1);
+    }
+    write_le32(image + file_offset + 4, (uint32_t)count);
+    write_le32(image + location_offset + 4, (uint32_t)count);
+    uint8_t original[1024];
+    memcpy(original, image, size);
+    bytecode_t *decoded = decode_bytecode_image(image, size);
+    assert((decoded != NULL) == valid);
+    if (decoded) {
+        assert(!memcmp(decoded->buffer, image, size));
+        free_bytecode(decoded);
+    }
+    const char *pattern = "{\"formatVersion\":1,\"bytecodeVersion\":1,\"name\":\"operators\","
+                          "\"version\":\"0\",\"main\":0,\"files\":[{\"name\":\"operators.goat\","
+                          "\"entry\":0,\"external\":false}],\"functions\":[],\"mainHash\":\"%s\"}";
+    char json[512], hash[65];
+    snprintf(json,
+             sizeof(json),
+             pattern,
+             "0000000000000000000000000000000000000000000000000000000000000000");
+    yyjson_doc *metadata = yyjson_read(json, strlen(json), 0);
+    assert(metadata && !goat_module_main_hash(metadata, image, size, hash));
+    yyjson_doc_free(metadata);
+    snprintf(json, sizeof(json), pattern, hash);
+    metadata = yyjson_read(json, strlen(json), 0);
+    assert(metadata);
+    module_writer_input_t input = {.metadata = metadata, .bytecode = {image, size}};
+    module_writer_error_t error = {0};
+    void *first = NULL, *second = NULL;
+    size_t first_size = 0, second_size = 0;
+    module_writer_status_t status = module_write_memory(&input, NULL, &first, &first_size, &error);
+    assert(status == (valid ? MODULE_WRITER_OK : MODULE_WRITER_VALIDATION));
+    if (valid) {
+        assert(!module_write_memory(&input, NULL, &second, &second_size, &error));
+        assert(first_size == second_size && !memcmp(first, second, first_size));
+    } else {
+        assert(!first && !first_size);
+    }
+    assert(!memcmp(original, image, size));
+    free_module_writer_bytes(first);
+    free_module_writer_bytes(second);
+    clear_module_writer_error(&error);
+    yyjson_doc_free(metadata);
+}
+
+static void operator_checks(void) {
+    /* Both zero and multiple index operands are valid for user handlers. */
+    instruction_t indices[] = {{.opcode = NIL},
+                               {.opcode = NIL},
+                               {.opcode = NIL},
+                               {.opcode = CHECKINDEX, .arg1 = 2},
+                               {.opcode = DUPN, .arg1 = 3},
+                               {.opcode = GETINDEX, .arg1 = 2},
+                               {.opcode = ROTATE, .arg1 = 3},
+                               {.opcode = SETINDEX, .arg1 = 2},
+                               {.opcode = POP},
+                               {.opcode = END}};
+    operator_image_check(indices, sizeof(indices) / sizeof(*indices), true);
+    instruction_t empty[] = {{.opcode = NIL},
+                             {.opcode = GETINDEX},
+                             {.opcode = NIL},
+                             {.opcode = CHECKINDEX},
+                             {.opcode = SETINDEX},
+                             {.opcode = POP},
+                             {.opcode = END}};
+    operator_image_check(empty, sizeof(empty) / sizeof(*empty), true);
+    instruction_t logical[] = {{.opcode = NIL},
+                               {.opcode = LAND, .arg1 = 7},
+                               {.opcode = NIL},
+                               {.opcode = LOR, .arg1 = 6},
+                               {.opcode = NIL},
+                               {.opcode = BOOL, .arg0 = 1},
+                               {.opcode = BOOL, .arg0 = 1},
+                               {.opcode = POP},
+                               {.opcode = END}};
+    operator_image_check(logical, sizeof(logical) / sizeof(*logical), true);
+    logical[5].arg0 = 0; /* Missing nested completion. */
+    operator_image_check(logical, sizeof(logical) / sizeof(*logical), false);
+    logical[5].arg0 = 1;
+    logical[3].arg1 = 7; /* Shared completion loses one selection. */
+    operator_image_check(logical, sizeof(logical) / sizeof(*logical), false);
+    logical[3].arg1 = 6;
+    logical[4] = (instruction_t){.opcode = JUMP, .arg1 = 7}; /* Escape selection. */
+    operator_image_check(logical, sizeof(logical) / sizeof(*logical), false);
+    instruction_t orphan[] = {{.opcode = NIL},
+                              {.opcode = NIL},
+                              {.opcode = NIL},
+                              {.opcode = BOOL, .arg0 = 1},
+                              {.opcode = END}};
+    operator_image_check(orphan, sizeof(orphan) / sizeof(*orphan), false);
+    const opcode_t counts[] = {GETINDEX, SETINDEX, CHECKINDEX, DUPN, ROTATE, ARRAY};
+    for (size_t i = 0; i < sizeof(counts) / sizeof(*counts); ++i) {
+        instruction_t malformed[] = {{.opcode = NIL},
+                                     {.opcode = counts[i], .arg1 = UINT32_MAX},
+                                     {.opcode = END}};
+        operator_image_check(malformed, 3, false);
+        malformed[1].arg1 = 2;
+        operator_image_check(malformed, 3, false);
+    }
+    for (unsigned method = 0; method < 2; ++method) {
+        instruction_t call[] = {{.opcode = NIL},
+                                {.opcode = method ? CALLM : CALL, .arg0 = 2},
+                                {.opcode = END}};
+        operator_image_check(call, 3, false);
+        call[1].arg0 = UINT16_MAX;
+        operator_image_check(call, 3, false);
+    }
+    instruction_t join[] = {{.opcode = NIL},
+                            {.opcode = JIF, .arg1 = 4},
+                            {.opcode = NIL},
+                            {.opcode = JUMP, .arg1 = 4},
+                            {.opcode = END}};
+    operator_image_check(join, 5, false); /* Inconsistent incoming stack heights. */
+    instruction_t branch_count[] = {{.opcode = JUMP, .arg1 = 2},
+                                    {.opcode = END},
+                                    {.opcode = CHECKINDEX},
+                                    {.opcode = END}};
+    operator_image_check(branch_count, 4, false); /* A target is not an unknown stack. */
+    instruction_t lost_selection[] = {{.opcode = NIL},
+                                      {.opcode = LAND, .arg1 = 8},
+                                      {.opcode = POP},
+                                      {.opcode = POP},
+                                      {.opcode = NIL},
+                                      {.opcode = NIL},
+                                      {.opcode = NIL},
+                                      {.opcode = BOOL, .arg0 = 1},
+                                      {.opcode = END}};
+    operator_image_check(lost_selection, 9, false);
+    instruction_t loop_count[] = {{.opcode = LOOP_ENTER},
+                                  {.opcode = LOOP_JUMP, .arg1 = 2},
+                                  {.opcode = GETINDEX, .arg1 = UINT32_MAX},
+                                  {.opcode = END}};
+    operator_image_check(loop_count, 4, false);
+    loop_count[2].arg1 = 0;
+    operator_image_check(loop_count, 4, false);
+    loop_count[2] = (instruction_t){.opcode = RESTORE};
+    operator_image_check(loop_count, 4, true);
+    instruction_t finally_count[] = {{.opcode = FINALLY_ENTER, .arg1 = 4},
+                                     {.opcode = FINALLY_LEAVE, .arg1 = 2},
+                                     {.opcode = CHECKINDEX, .arg1 = UINT32_MAX},
+                                     {.opcode = END},
+                                     {.opcode = FINALLY_END},
+                                     {.opcode = END}};
+    operator_image_check(finally_count, 6, false);
+    finally_count[2].arg1 = 0;
+    operator_image_check(finally_count, 6, false);
+    finally_count[2] = (instruction_t){.opcode = NIL};
+    operator_image_check(finally_count, 6, true);
+    instruction_t lost_try_prefix[] = {{.opcode = NIL},
+                                       {.opcode = TRY, .arg1 = 5},
+                                       {.opcode = POP},
+                                       {.opcode = NIL},
+                                       {.opcode = THROW},
+                                       {.opcode = POP},
+                                       {.opcode = POP},
+                                       {.opcode = END}};
+    operator_image_check(lost_try_prefix, 8, false);
+    instruction_t lost_loop_prefix[] = {{.opcode = NIL},
+                                        {.opcode = LOOP_ENTER},
+                                        {.opcode = POP},
+                                        {.opcode = LOOP_JUMP, .arg1 = 4},
+                                        {.opcode = POP},
+                                        {.opcode = END}};
+    operator_image_check(lost_loop_prefix, 6, false);
+    instruction_t lost_cleanup_prefix[] = {{.opcode = NIL},
+                                           {.opcode = FINALLY_ENTER, .arg1 = 4},
+                                           {.opcode = FINALLY_LEAVE, .arg1 = 6},
+                                           {.opcode = END},
+                                           {.opcode = POP},
+                                           {.opcode = FINALLY_END},
+                                           {.opcode = END}};
+    operator_image_check(lost_cleanup_prefix, 7, false);
+    instruction_t ancestor_exit[] = {{.opcode = NIL},
+                                     {.opcode = LAND, .arg1 = 17},
+                                     {.opcode = LOOP_ENTER},
+                                     {.opcode = NIL},
+                                     {.opcode = LAND, .arg1 = 11},
+                                     {.opcode = LOOP_JUMP, .arg1 = 12},
+                                     {.opcode = NIL},
+                                     {.opcode = NOP},
+                                     {.opcode = NOP},
+                                     {.opcode = NOP},
+                                     {.opcode = BOOL, .arg0 = 1},
+                                     {.opcode = POP},
+                                     {.opcode = RESTORE},
+                                     {.opcode = NIL},
+                                     {.opcode = NOP},
+                                     {.opcode = NOP},
+                                     {.opcode = BOOL, .arg0 = 1},
+                                     {.opcode = POP},
+                                     {.opcode = END}};
+    operator_image_check(ancestor_exit, 19, true);
+    assert(!get_allocated_memory_size());
+}
 
 static void api_checks(void) {
     void *data = (void *)(uintptr_t)1;
@@ -59,6 +284,7 @@ static void api_checks(void) {
 int main(int argc, char **argv) {
     if (argc == 1) {
         api_checks();
+        operator_checks();
         puts("Writer API checks passed");
         return 0;
     }

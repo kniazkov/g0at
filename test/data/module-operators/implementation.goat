@@ -1,0 +1,7 @@
+const secret=41;
+external arithmetic=func(rhs){return this.value+secret+rhs;};
+external capture=func(first){first=null;return arguments;};
+external factory=func(seed){return func(rhs){return seed+rhs+this.value;};};
+external steal=func(){return this.hidden;};
+external token={};
+external explode=func(){throw token;};

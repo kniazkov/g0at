@@ -1,0 +1,3 @@
+const h=import "operator_handlers";
+const exercise=func(){const own={};own["+"]=h.explode;return own+1;};
+exercise();

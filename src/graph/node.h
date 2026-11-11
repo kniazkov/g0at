@@ -416,8 +416,16 @@ static inline bool generate_indented_c_code_from_node(const node_t *node,
 /** @brief Generates bytecode from a node. */
 static inline instr_index_t
 generate_bytecode_from_node(node_t *node, code_builder_t *code, data_builder_t *data) {
-    if (node_has_flag(node, NODE_FLAG_UNREACHABLE))
-        return BAD_INSTR_INDEX;
+    if (node_has_flag(node, NODE_FLAG_UNREACHABLE)) {
+        /* Retained parents still require one operand on every bytecode edge.
+         * This placeholder is never evaluated: reachability proved that the
+         * expression is excluded by a branch or an earlier throwing operand.
+         * Keep statements omitted, but preserve expression stack contracts for
+         * value-independent image validation and serialized execution. */
+        return is_expression(node->vtbl->type)
+                   ? add_instruction(code, (instruction_t){.opcode = NIL})
+                   : BAD_INSTR_INDEX;
+    }
     bytecode_location_t saved = code->location;
     if (node->position && node->position->begin) {
         if (node->position->begin->row > UINT32_MAX || node->position->begin->column > UINT32_MAX)

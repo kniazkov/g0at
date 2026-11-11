@@ -78,5 +78,6 @@ compiler-less persisted execution. A native flag alone is not evidence that a
 function entered native code.
 
 This change does not add opcodes, change precedence, overload ordinary assignment
-or property-dot access, migrate old bytecode, or rewrite executable images. The
-broader cross-module analysis/serialization matrix remains a separate task.
+or property-dot access, migrate old bytecode, or rewrite executable images. See
+[cross-module ownership, analysis and serialization](module-operators.md) for the
+module persistence contracts and their additional regression matrix.

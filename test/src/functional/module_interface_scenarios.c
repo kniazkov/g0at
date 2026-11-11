@@ -252,6 +252,29 @@ check_metadata(scenario_run_t *r, const char *name, const char *filename, yyjson
             }
             REQUIRE(found);
         }
+    } else if (!strcmp(name, "operator-arguments-contract")) {
+        if (app) {
+            equal(r, yyjson_obj_get(fields, "dispatched"), "{\"mutable\":false}");
+            equal(r, yyjson_obj_get(fields, "empty"), "{\"mutable\":false,\"type\":\"array\"}");
+            equal(r, yyjson_obj_get(fields, "extra"), "{\"mutable\":false,\"type\":\"array\"}");
+            equal(r,
+                  yyjson_obj_get(yyjson_obj_get(fields, "handler"), "functionRef"),
+                  "{\"module\":\"library\",\"version\":\"1\",\"functionId\":1}");
+        } else {
+            yyjson_val *a = summaries(r, export_function(r, doc, "capture"), true), *v;
+            size_t i, n;
+            yyjson_arr_foreach(a, i, n, v) {
+                equal(r, yyjson_obj_get(v, "result"), "{\"type\":\"array\"}");
+                equal(r, yyjson_obj_get(v, "effects"), "{\"may\":[],\"unknown\":false}");
+            }
+            a = summaries(r, export_function(r, doc, "forward"), true);
+            yyjson_arr_foreach(a, i, n, v) {
+                equal(r,
+                      yyjson_obj_get(yyjson_obj_get(v, "when"), "arguments"),
+                      "[{\"type\":\"integer\"}]");
+                equal(r, yyjson_obj_get(v, "result"), "{\"type\":\"integer\"}");
+            }
+        }
     } else if (!strcmp(name, "callback-contract")) {
         if (!app)
             REQUIRE(!yyjson_obj_get(export_function(r, doc, "apply"), "analysis"));

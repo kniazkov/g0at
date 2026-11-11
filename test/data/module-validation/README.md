@@ -2,10 +2,33 @@
 
 `test/src/functional/module_validation_scenarios.c` replaces
 `scripts/check_module_validation.py` from baseline
-`e95f826f8aaa0e6f557dbdd6618e06e2efe4e4e2` without production/schema/vector changes.
+`e95f826f8aaa0e6f557dbdd6618e06e2efe4e4e2`. That historical migration made no
+production/schema/vector changes.
 There are **62 stable CTest IDs**, label `module-validation-migration`:
 53 ordinary archive cases, four real file cases, four constructor/role cases,
 and the component API assertions. [Complete mapping](cases.md).
+
+## Independent image correction (#504)
+
+The historical `image()` recipe used `ARG; FUNC; POP; NOP; NIL; RET`, with the
+last two instructions owned by the function. Instruction 3 is now `END` so the
+top-level path cannot fall into the function. The same correction applies to
+export-declaration-tail variants and to the independent runtime images in the
+search, dependencies and graph scenario runners.
+
+Fifty embedded input archives were updated. Significant hashes and expected
+metadata hashes were independently recomputed with the historical `reference.py`
+and `schema.py` from the baseline above, using the original native-free hash
+projection. Archive sizes, timestamps, order and all unrelated bytes are retained.
+For CRC-negative inputs, each existing CRC is adjusted by the old/new data CRC
+XOR, preserving the exact deliberate mismatch. Malformed JSON, opcode and schema
+faults, truncation, allowed statuses, complete ordered diagnostic objects and
+resource-limit boundaries are unchanged. No production validator or writer
+supplied expected results; no assertion was relaxed.
+
+Current #504 Debug verification passes all 62 validation cases and each of the
+search, dependencies and graph scenarios (65 CTest cases total). The parity
+claims below refer to the original migration corpus.
 
 ## Contracts and provenance
 

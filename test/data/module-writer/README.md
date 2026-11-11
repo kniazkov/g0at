@@ -1,17 +1,55 @@
 # Deterministic module writer migration (#367)
 
+## Operator image validation correction (#504)
+
+The independent function-image fixture previously used `NOP` at instruction 3,
+allowing top-level execution to fall through into the function-owned `NIL; RET`
+body, including variants with appended export-declaration tails. Instruction 3
+is now `END`; function entries, ownership, native payloads,
+and metadata tests are unchanged. This repairs an invalid independent format
+fixture, not a frozen compiler-produced executable.
+
+The authoritative recipe is `scripts/check_module_writer.py::function_image`
+at Git revision `0c4de46b`. Canonical metadata, significant hashes and compressed
+output archives were recomputed using that revision's independent
+`docs/module-format-v1/reference.py` and `schema.py`, with zlib **1.3.2**.
+Each original archive was reconstructed byte-for-byte before modification.
+Input ZIP metadata/order and all unaffected payload bytes were preserved.
+Content-addressed filenames, manifest entries, references and displayed expected
+hashes were updated together. Intentionally invalid metadata/native inputs retain
+their original defects and expected failure statuses. No production writer was
+used to generate expected bytes, and no assertion was weakened.
+
+
+Current #504 Debug verification: all 59 writer cases, all 133 inspector cases,
+and 194 of 196 merge cases pass. Both merge socket cases fail before invoking
+the tool because `socket(AF_UNIX, SOCK_STREAM, 0)` returns `EPERM` in this
+execution environment; they were not skipped or counted as passes. All four
+frozen-sample integrity/self-test aliases pass. All three corpus SHA-256 manifests
+verify. These are local results, not claims about other platforms or Release.
+
+The historical migration/parity results below describe the original corpus;
+they are not new validation results for these corrected bytes.
+
+The corrected full-native profile SHA-256 is
+`b84d1cdbbbbd0583f47789f466841b853b47ed39e64a1c3feb77f58eda230e2f`.
+The six positive native cases and five related negative inputs were repaired;
+all seeded payloads/permutations and the empty-format golden remain unchanged.
+The current corpus contains 51 blobs totaling 2,223,744 bytes.
+
 `test/src/functional/module_writer_scenarios.c` replaces
 `scripts/check_module_writer.py` at baseline
 `0c4de46b` with **59 independently selectable CTest IDs**, label
 `module-writer-migration`. [Complete scenario map](cases.md).
 There are 34 memory cases, 24 publication cases and one API case.
-No production code, schema or existing golden/sample file is changed.
+The original #367 migration changed no production code, schema or existing
+golden/sample file. The #504 correction above updates its independent fixtures.
 
 ## Fixture provenance and independent expectations
 
 `scenarios.json` records the original argument combinations, allowed status sets,
 limits, exact input archive bytes and expected parts. `blobs/` contains **51 unique
-content-addressed files, 2,223,738 bytes total**: 28 unique inputs, four complete
+content-addressed files, 2,223,744 bytes total**: 28 unique inputs, four complete
 expected output archives and shared canonical metadata/bytecode/native parts.
 `SHA256SUMS` covers every blob, and the C reader verifies each blob against its
 SHA-256 filename before use. Test data are read-only; no update mode is provided.

@@ -450,7 +450,9 @@ add_executable(module_delivery_scenarios src/functional/module_delivery_scenario
 target_link_libraries(module_delivery_scenarios PRIVATE goat_language_execution_support goat_format_oracle goat_inspect_report_support yyjson)
 add_dependencies(module_delivery_scenarios goat goat-inspect goat-merge)
 
-add_executable(module_merge_scenarios src/functional/module_merge_scenarios.c support/merge_terminal.c support/merge_constructor.c)
+add_executable(module_merge_scenarios src/functional/module_merge_scenarios.c
+  support/merge_terminal.c support/merge_constructor.c support/merge_corpus.c
+  src/support/module_merge_corpus_testing.c)
 target_link_libraries(module_merge_scenarios PRIVATE goat_language_execution_support goat_format_oracle goat_inspect_report_support yyjson)
 add_dependencies(module_merge_scenarios goat-merge goat-inspect)
 
@@ -616,3 +618,7 @@ target_link_libraries(native_continuation_testing PRIVATE goat_validation m)
 add_executable(native_operator_testing src/functional/native_operator_testing.c)
 target_link_libraries(native_operator_testing PRIVATE goat_language_execution_support)
 add_dependencies(native_operator_testing goat)
+
+add_executable(module_operator_scenarios src/functional/module_operator_scenarios.c)
+target_link_libraries(module_operator_scenarios PRIVATE goat_language_execution_support)
+add_dependencies(module_operator_scenarios goat)

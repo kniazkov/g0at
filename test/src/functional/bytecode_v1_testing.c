@@ -316,8 +316,11 @@ static void bytecode_body(scenario_run_t *run, void *user) {
                            artifact_size,
                            false);
     source = language_join(run, work, "roundtrip.goat");
-    const char program[] = "const outer=func(n){const inner=func(x){return x+1;};return inner(n);};"
-                           "const unused=func(){return 99;};println(outer(41));";
+    const char program[] =
+        "const outer=func(n){const inner=func(x){return x+1;};return inner(n);};"
+        "const unused=func(){return 99;};println(outer(41));"
+        "println(true && {while(true){true && {break;};}});"
+        "println(true && {while(true){true && {try{break;}finally{print(\"F\");}};}});";
     language_write(run, source, program, sizeof(program) - 1);
     const char *optimizations[] = {"none", "all"};
     for (unsigned i = 0; i < 2; ++i) {
@@ -342,7 +345,7 @@ static void bytecode_body(scenario_run_t *run, void *user) {
                                                         language_join(run, work, "roundtrip.gbin"),
                                                         NULL},
                                   NULL);
-        language_check(run, result, 0, "42\n", 3, "", 0);
+        language_check(run, result, 0, "42\nfalse\nFfalse\n", 16, "", 0);
     }
     printf("[ ok ] Bytecode v1: independent numeric/string/function image, %u corruptions, shared "
            "codec\n",
