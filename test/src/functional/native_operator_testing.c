@@ -12,7 +12,7 @@
 #include <string.h>
 
 typedef struct {
-    const char *exe, *fixture;
+    const char *exe, *fixture, *directory;
     unsigned long long bound, attempts, successes;
 } state_t;
 
@@ -63,7 +63,7 @@ static void native_report(scenario_run_t *run, const char *path, const state_t *
 static void body(scenario_run_t *run, void *opaque) {
     const state_t *state = opaque;
     const char *data =
-        language_join(run, scenario_data_directory(scenario_run_context(run)), "native-operators");
+        language_join(run, scenario_data_directory(scenario_run_context(run)), state->directory);
     char name[96];
     snprintf(name, sizeof(name), "%s.goat", state->fixture);
     size_t code_size, expected_size;
@@ -75,8 +75,11 @@ static void body(scenario_run_t *run, void *opaque) {
     const char *binary = language_join(run, work, "program.gbin");
     const char *report = language_join(run, work, "native.txt");
     const char *const *environment = NULL;
-    language_write(run, source, code, code_size);
+    const char *empty = language_join(run, work, "no-tools");
+    language_directory(run, empty);
     for (size_t optimization = 0; optimization < 2; optimization++) {
+        language_write(run, source, code, code_size);
+        environment = NULL;
         CHECK(COMMAND("--lang",
                       "en",
                       "--native",
@@ -84,7 +87,28 @@ static void body(scenario_run_t *run, void *opaque) {
                       "--optimize",
                       optimization ? "all" : "none",
                       source));
+        language_check(run,
+                       COMMAND("--lang",
+                               "en",
+                               "--compile",
+                               "--native",
+                               "off",
+                               "--optimize",
+                               optimization ? "all" : "none",
+                               source),
+                       0,
+                       "",
+                       0,
+                       "",
+                       0);
+        language_remove(run, source);
+        scenario_require(run, !language_exists(run, source), "source still exists");
+        environment = language_environment_override(run, "PATH", empty);
+        CHECK(COMMAND("--lang", "en", "--run", "--native", "off", binary));
     }
+    /* Standalone native execution requires the supported --optimize all mode. */
+    language_write(run, source, code, code_size);
+    environment = NULL;
     for (size_t mode = 0; mode < 2; mode++) {
         CHECK(COMMAND("--lang",
                       "en",
@@ -102,8 +126,11 @@ static void body(scenario_run_t *run, void *opaque) {
                    0,
                    "",
                    0);
+    size_t before_size;
+    const char *before = language_read(run, binary, &before_size);
     language_remove(run, source);
-    environment = language_environment(run, true);
+    scenario_require(run, !language_exists(run, source), "source still exists");
+    environment = language_environment_override(run, "PATH", empty);
     CHECK(COMMAND("--lang", "en", "--run", "--native", "off", binary));
     for (size_t mode = 0; mode < 2; mode++) {
         CHECK(COMMAND("--lang",
@@ -111,11 +138,22 @@ static void body(scenario_run_t *run, void *opaque) {
                       "--run",
                       "--native",
                       mode ? "required" : "auto",
+                      "--cc",
+                      "goat-missing-compiler-for-test",
                       "--save-native",
                       report,
                       binary));
         native_report(run, report, state);
     }
+    size_t after_size;
+    const char *after = language_read(run, binary, &after_size);
+    scenario_require_bytes(run,
+                           "operator archive unchanged",
+                           before,
+                           before_size,
+                           after,
+                           after_size,
+                           false);
 }
 
 int main(int argc, char **argv) {
@@ -127,9 +165,17 @@ int main(int argc, char **argv) {
     }
 #endif
     int result = 1;
-    static const char *names[] = {"arithmetic", "comparison", "logical", "index", "call", "unwind"};
+    static const char *names[] = {"arithmetic",
+                                  "comparison",
+                                  "logical",
+                                  "index",
+                                  "call",
+                                  "unwind",
+                                  "examples",
+                                  "composition"};
+    const size_t count = sizeof(names) / sizeof(names[0]);
     if (argc == 2 && !strcmp(argv[1], "--list")) {
-        for (size_t i = 0; i < 6; i++)
+        for (size_t i = 0; i < count; i++)
             printf("native.operators.%s\n", names[i]);
         result = 0;
     } else if (argc == 5 || argc == 6) {
@@ -137,19 +183,32 @@ int main(int argc, char **argv) {
         char *exe = absolute_fs_path(argv[2], &error);
         clear_fs_error(&error);
         if (exe) {
-            state_t states[6];
-            scenario_definition_t definitions[6];
-            char ids[6][80];
-            for (size_t i = 0; i < 6; i++) {
+            state_t states[8];
+            scenario_definition_t definitions[8];
+            char ids[8][80];
+            for (size_t i = 0; i < count; i++) {
                 snprintf(ids[i], sizeof(ids[i]), "native.operators.%s", names[i]);
-                static const unsigned long long counts[6][3] =
-                    {{3, 14, 14}, {2, 4, 4}, {6, 5, 5}, {7, 16, 16}, {6, 7, 7}, {4, 12, 11}};
-                states[i] = (state_t){exe, names[i], counts[i][0], counts[i][1], counts[i][2]};
+                static const unsigned long long counts[8][3] = {{3, 15, 15},
+                                                                {2, 4, 4},
+                                                                {6, 5, 5},
+                                                                {7, 16, 16},
+                                                                {6, 7, 7},
+                                                                {4, 12, 11},
+                                                                {6, 8, 8},
+                                                                {4, 49, 33}};
+                states[i] =
+                    (state_t){exe,
+                              i == 6 ? "program" : names[i],
+                              i == 6 ? "../../docs/book/examples/31-operators" : "native-operators",
+                              counts[i][0],
+                              counts[i][1],
+                              counts[i][2]};
                 definitions[i] = (scenario_definition_t){ids[i], 180000, body, &states[i], NULL};
             }
             scenario_options_t options = {.build_directory = argv[3], .data_directory = argv[4]};
             const char *selection[] = {argv[1], argc == 6 ? argv[5] : NULL};
-            result = scenario_registry_main(definitions, 6, argc == 6 ? 2 : 1, selection, &options);
+            result =
+                scenario_registry_main(definitions, count, argc == 6 ? 2 : 1, selection, &options);
             FREE(exe);
         }
     } else {

@@ -1,0 +1,38 @@
+const exercise = func() {
+    const error = {};
+    const value = {};
+    const box = {};
+    const callable = {};
+    var saved = null;
+    var log = 0;
+    value["+"] = func(rhs) {
+        log = log * 10 + 3;
+        saved = arguments;
+        for (var j = 0; j < 500; j++) {
+            var garbage = { var cycle = null; };
+            garbage.cycle = garbage;
+        }
+        if (rhs) throw error;
+        return this;
+    };
+    box["[]"] = func() { log = log * 10 + 2; return value; };
+    callable["()"] = func(fail) {
+        log = log * 10 + 1;
+        try { return box[] + fail; }
+        finally { log = log * 10 + 4; }
+    };
+    for (var i = 0; i < 8; i++) {
+        log = 0;
+        if (callable(false) != value || log != 1234) throw "success order";
+        if (saved.length != 1 || saved[0] != false) throw "success arguments";
+        log = 0;
+        try { callable(true); throw "missing exception"; }
+        catch (e) {
+            if (e != error) throw "exception identity";
+            log = log * 10 + 5;
+        }
+        if (log != 12345 || saved[0] != true) throw "unwind order";
+    }
+    println("nested calls, allocations and exceptions: ok");
+};
+exercise();
