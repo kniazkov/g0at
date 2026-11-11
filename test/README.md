@@ -381,3 +381,20 @@ optimization disabled/enabled, directly linked and stored/decoded; the harness
 checks stack/context restoration, immutable bytecode, and allocation balance.
 Direct abstract evaluation and reachability tests verify that constant-target
 preflight does not evaluate the RHS. Native integration remains tracked in #503.
+
+## Operator-overloading integration matrix
+
+`ctest --test-dir build --output-on-failure -L operator-overloading` selects the
+core argument fixtures, operator component suites, native continuations and
+source/saved-module integration scenarios. The existing Linux and Windows UCRT64
+CI selections retain these suites through their original labels.
+
+`native.operators.*` compares source and saved VM execution with optimization
+`none` and `all`, then source and persisted `auto`/`required` native execution.
+Standalone native mode requires optimization `all`. Persisted runs remove the
+source, use an empty tool search path, and assert unchanged archive bytes.
+Exact native entry/completion counts and zero retries prevent complete VM
+fallback or replay from masquerading as native coverage. The shared book example
+and repeated nested call/index/arithmetic exception/allocation fixture run in this matrix.
+See the [57-decision coverage map](../docs/operator-overloading-coverage.md) for
+specific contracts, source-review constraints and cross-module coverage.

@@ -883,7 +883,7 @@ foreach(continuation_case mixed unwind escape trace strict-bool recursion no-rep
     "$<TARGET_FILE:native_continuation_testing>" "${continuation_case}")
 endforeach()
 
-foreach(operator_case arithmetic comparison logical index call unwind)
+foreach(operator_case arithmetic comparison logical index call unwind examples composition)
   goat_scenario(native.operators.${operator_case} "native;native-operators;language-roundtrip" TIMEOUT 200 COMMAND
     "$<TARGET_FILE:native_operator_testing>" "native.operators.${operator_case}" "$<TARGET_FILE:goat>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
@@ -896,4 +896,13 @@ foreach(operator_case semantics trace initializer)
       "$<TARGET_FILE:module_operator_scenarios>" "module.operators.${operator_case}.${optimization}"
       "$<TARGET_FILE:goat>" "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
   endforeach()
+endforeach()
+
+# One discoverable gate for the final operator/arguments integration matrix (#505).
+# Preserve existing labels so Linux and Windows CI continue running these tests.
+get_property(operator_tests DIRECTORY PROPERTY TESTS)
+foreach(operator_test IN LISTS operator_tests)
+  if(operator_test MATCHES "^(component[.]operator_|component[.]native_continuation[.]|native[.]operators[.]|native[.]index$|integration[.]module_dispatch[.]actual-vector[.]|module[.]operators[.]|core[.](unit|analysis|functional)$)")
+    set_property(TEST ${operator_test} APPEND PROPERTY LABELS operator-overloading)
+  endif()
 endforeach()

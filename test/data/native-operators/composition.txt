@@ -1,0 +1,1 @@
+nested calls, allocations and exceptions: ok

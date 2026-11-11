@@ -151,8 +151,9 @@ are true. Printing uses `[1,"text",true]`; cyclic array references become `[...]
 and cyclic dictionary references become `{...}`. Garbage collection traverses
 elements and reclaims unreachable cycles, including mixed array/object cycles.
 
-Arrays execute only in the VM for now, with no native representation or ABI.
-Automatic mode keeps this work in the VM. Newlines do not terminate expressions:
+Array values use the shared runtime, not a general typed native array ABI.
+Native operator continuations can use that runtime (see below).
+Newlines do not terminate expressions:
 use a semicolon between separate expressions `a; [1]`, since `a[1]` is indexing.
 
 Arrays inherit from the built-in `Array` prototype, which inherits from `Object`.
@@ -208,23 +209,102 @@ methods retain ordinary array behavior; `slice()` and `clone()` create independe
 mutable arrays. A retained array survives returns, closures and exception
 unwinding under the ordinary object-lifetime rules.
 
-The binding works in the VM, with and without optimization, and in saved
-bytecode. Functions that need it at runtime stay in the VM when native execution is enabled;
-unrelated eligible functions can still run natively. Native argument capture is
-a separate step, [#502](https://github.com/kniazkov/g0at/issues/502), and is not
-claimed by this VM implementation.
+The binding preserves the same observable values in VM and mixed native execution,
+including saved modules. [Native arguments](../../native-arguments.md) describes
+typed lowering of proven counts and element reads; unsupported typed expressions
+use the shared runtime. [Native operator continuations](../../native-operators.md)
+support operator-bearing functions without changing their language semantics.
 
-The internal [operator dispatch foundation](../../operator-dispatch-api.md)
-adds checked handler selection and deferred result completion. Its explicit
-handler receiver is separate from ordinary calls and their scope-local `this`.
-[Arithmetic and bitwise handlers](../../operator-arithmetic.md), including unary
-`+`, `-`, `~` and independent `++`/`--`, are connected to VM instructions.
-Comparison, logical and index handlers are covered by their dedicated implementation steps; object calls remain a later step.
+## Operator overloading
 
-The [operator analysis rules](../../operator-analysis.md) preserve possible
-handler effects, exceptions and logical right-hand sides while keeping proven
-built-in scalar paths. This analysis preparation does not enable new runtime
-operator dispatch.
+Run the [complete example](../examples/31-operators/program.goat): vector dot product,
+matrix indexing and a callable object.
+
+Only user-defined objects participate. Handlers are ordinary properties named by
+the operator, found through ordinary object/prototype lookup. Binary dispatch uses
+only the saved left operand, never the right operand. Built-in values retain their
+existing behavior. A handler must be a function: Goat functions, closures and
+built-in functions qualify, but an object with `"()"` does not. A function's own
+argument restrictions still apply.
+
+At handler entry, `this` is the original object, even for an inherited handler;
+`arguments` contains only the actual arguments listed below. The ordinary
+scope-local `this` and method access rules still apply inside nested scopes (see
+[dispatch](../../operator-dispatch-api.md)). Defining an operator grants no extra
+access to private data.
+
+| Expression / property | Actual arguments | Result | If property is absent |
+|---|---|---|---|
+| Binary `+ - * / % ** & \| ^ << >>` / same sign | Right operand | Any value | `INVALID_OPERATION` |
+| Unary `+ - ~` / same sign | None | Any value | `INVALID_OPERATION` |
+| `++ --` / same sign | None | New value to write back | `INVALID_OPERATION`; no `+ 1` / `- 1` fallback |
+| `== !=` / same sign | Right operand | Strict boolean | Negate opposite handler; identity if both absent |
+| `< <= > >=` / same sign | Right operand | Strict boolean | `INVALID_OPERATION`; no inference from other comparisons |
+| `&& \|\|` / same sign | Right operand, evaluated even if the left is decisive | Strict boolean | Ordinary truth conversion and short-circuiting |
+| `!` / `"!"` | None | Strict boolean | Ordinary logical negation |
+| `a[i,j]` / `"[]"` | `i, j` separately, in order | Any value | Ordinary index read |
+| `a[i,j] = v` / `"[]="` | `i, j, v` | Expression returns `v`; handler return ignored | Ordinary index write |
+| `a(x,y)` / `"()"` | `x, y` | Any value | `INVALID_OPERATION` |
+
+The same `"+"` or `"-"` handles unary and binary forms: `arguments.length`
+distinguishes no argument from an explicit `null`. Empty indexing is legal:
+`a[]` passes no arguments and `a[] = v` passes only `v`. Without a handler,
+ordinary index arity checks still apply. Comparisons, logical binary handlers and
+`!` reject every non-boolean return with `INVALID_OPERATION`.
+
+| Lookup outcome | Meaning |
+|---|---|
+| Absent throughout the prototype search | Use the fallback in the table above. |
+| Present but not a function, including `null` or a callable object | `INVALID_OPERATION`; do not continue into prototypes, use an opposite equality handler, or fall back. |
+| Present but inaccessible | Ordinary access error; never treat it as missing. |
+| Function found | Call with the original receiver and validate the result where required. |
+
+Even `a == a` invokes a defined equality handler. In contrast, internal property
+key lookup uses object identity and never invokes overloaded equality. `if`,
+`while`, built-in logical paths and truth conversion (`!!`) do not invoke `"!"`.
+Only explicit negation does; `!(!a)` is distinct from the truth-conversion operator.
+
+### Evaluation, effects and assignment
+
+Operands, indices and call arguments are evaluated once, left to right. An
+exception stops subsequent evaluation. The receiver is saved before subsequent
+operands: reassigning its source variable does not replace that saved object.
+
+| Operation | Handler selection time |
+|---|---|
+| Ordinary binary operation | After both operands; right-side mutation can replace the current handler. |
+| `&&` / `\|\|` | Before the right operand; retain the selected function or built-in path. A non-function or access error prevents right-side evaluation. |
+| Index read | After all indices. |
+| Index write | At writeback, after indices and the right side; compound writes also wait for the arithmetic handler. |
+| Object call | After all arguments. |
+
+`a += b` calls `"+"`, then writes the result back; `"+="` is not used.
+Complex targets are evaluated once. For `a[i()] += f()`, the order is receiver,
+index, read, `f()`, addition on the read value, then write to the saved target.
+The setter is selected last, so replacement during the right side or addition
+is visible. Prefix `++`/`--` returns the new written value; postfix returns the
+old value, without deep copying. A constant variable target is rejected before
+the right side or arithmetic/update handler; this does not freeze its object.
+
+Handlers may mutate objects and external state. Exceptions retain their original
+value and trace, and completed effects are not rolled back, including when a
+later setter fails. An operator proven invalid remains a catchable runtime error;
+it is not a compilation failure, and a dead branch does not throw it. Analysis
+must preserve potential handler effects.
+
+Dot access and plain `=` are not overloadable. Dot access does not invoke index
+handlers; there is no new special bypass for square-bracket access. Handler
+lookup itself is ordinary property lookup, not recursive user indexing. Existing
+operator spelling, precedence and associativity are fixed; arbitrary properties
+do not introduce operators. Existing opcodes and the bytecode format version are
+retained; execution does not rewrite the bytecode image.
+
+Further reading: [arithmetic](../../operator-arithmetic.md),
+[comparisons](../../operator-comparisons.md), [logical operators](../../operator-logical.md),
+[indexing](../../operator-index.md), [calls](../../operator-call.md),
+[compound assignments](../../compound-assignment.md), [analysis](../../operator-analysis.md),
+[module boundaries](../../module-operators.md), and the
+[57-decision coverage matrix](../../operator-overloading-coverage.md).
 
 ## Object.clone()
 
