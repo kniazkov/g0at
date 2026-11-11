@@ -56,6 +56,15 @@ bool get_native_library_query(void *handle, goat_native_query_v2_t *query, char 
     return true;
 }
 
+bool get_native_continuation_query(void *handle, goat_native_continuation_query_t *query) {
+    FARPROC address = GetProcAddress((HMODULE)handle, "goat_native_continuation_query");
+    if (!address)
+        return false;
+    _Static_assert(sizeof(*query) == sizeof(address), "Windows function pointer representation");
+    memcpy(query, &address, sizeof(*query));
+    return true;
+}
+
 bool close_native_library_handle_checked(void *handle, char **diagnostic) {
     if (FreeLibrary((HMODULE)handle))
         return true;

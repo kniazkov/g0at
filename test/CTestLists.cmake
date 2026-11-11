@@ -872,3 +872,14 @@ foreach(operator_case matrix order property bypass lookup lifetime continuation 
   goat_suite(component.operator_call.${operator_case} "component;operator-call"
     "$<TARGET_FILE:operator_call_testing>" "${operator_case}")
 endforeach()
+
+foreach(continuation_case mixed unwind escape trace strict-bool recursion no-replay range host-cancel cancel-backend)
+  goat_suite(component.native_continuation.${continuation_case} "component;native-continuation"
+    "$<TARGET_FILE:native_continuation_testing>" "${continuation_case}")
+endforeach()
+
+foreach(operator_case arithmetic comparison logical index call unwind)
+  goat_scenario(native.operators.${operator_case} "native;native-operators;language-roundtrip" TIMEOUT 200 COMMAND
+    "$<TARGET_FILE:native_operator_testing>" "native.operators.${operator_case}" "$<TARGET_FILE:goat>"
+    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+endforeach()

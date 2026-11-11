@@ -1,0 +1,10 @@
+const exercise=func(){
+ var log=0;const exception={};const a={};
+ a["+"]=func(x){log=log*10+2;try{throw exception;}finally{log=log*10+3;}};
+ const lhs=func(){log=log*10+1;return a;};
+ try{lhs()+9;throw 1;}catch(e){if(e!=exception)throw 2;log=log*10+4;}finally{log=log*10+5;}
+ if(log!=12345)throw 3;
+ const f=func(n){try{if(n==0)return 9;return f(n-1);}finally{log++;}};
+ log=0;if(f(8)!=9||log!=9)throw 4;
+ const fixed=a;log=0;try{fixed+=lhs();throw 5;}catch(e){println(e);if(log!=0)throw 6;}
+};exercise();println("ok");

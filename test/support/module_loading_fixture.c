@@ -215,14 +215,17 @@ const char *loading_fixture_root(loading_fixture_t *f) {
     return f->root;
 }
 
-const char *loading_build(loading_fixture_t *f,
-                          const char *name,
-                          const char *source,
-                          const char *mode,
-                          const char *dependency) {
+static const char *build_sources(loading_fixture_t *f,
+                                 const char *name,
+                                 const char *source,
+                                 const char *mode,
+                                 const char *dependency,
+                                 const char *include_source) {
     scenario_run_t *r = f->run;
     module_execution_project_t *p = module_execution_project(f->suite, name);
     module_execution_put(p, "main.goat", source);
+    if (include_source)
+        module_execution_put(p, "helper.goat", include_source);
     if (dependency) {
         archive_t *dep = read_archive(f, dependency);
         const char *depname = str(r, root(dep), "name"), *version = str(r, root(dep), "version");
@@ -264,6 +267,27 @@ const char *loading_build(loading_fixture_t *f,
     return archive;
 }
 
+const char *loading_build(loading_fixture_t *f,
+                          const char *name,
+                          const char *source,
+                          const char *mode,
+                          const char *dependency) {
+    return build_sources(f, name, source, mode, dependency, NULL);
+}
+
+const char *loading_two_file_base(loading_fixture_t *f) {
+    return build_sources(f,
+                         "two-file-base",
+                         "external f=func(x){return x*x;}; include \"helper.goat\"; println(f(7));",
+                         "required",
+                         NULL,
+                         "println(42);");
+}
+
+static uint32_t fixture_u32(const unsigned char *p) {
+    return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
+}
+
 const char *loading_base(loading_fixture_t *f) {
     if (!f->base)
         f->base = loading_build(f,
@@ -291,6 +315,8 @@ const char *loading_custom(loading_fixture_t *f,
     archive_t *a = read_archive(f, original);
     yyjson_mut_val *v = variant(r, a), *specs = yyjson_mut_obj_get(v, "specializations");
     REQUIRE(yyjson_mut_is_arr(specs));
+    if (!strcmp(kind, "continuation-empty-only") || !strcmp(kind, "continuation-data-only"))
+        REQUIRE(yyjson_mut_arr_clear(specs));
     if (nonmatching)
         for (size_t i = 0; i < yyjson_mut_arr_size(specs); i++) {
             yyjson_mut_val *spec = yyjson_mut_arr_get(specs, i), *args = yyjson_mut_arr(a->doc),
@@ -383,6 +409,65 @@ const char *loading_custom(loading_fixture_t *f,
         for (size_t i = 0; i < blob_size; i++)
             ok = ok && fprintf(file, "%s%u", i ? "," : "", (unsigned)blob[i]) >= 0;
         ok = ok && fputs("};", file) >= 0;
+    }
+    if (!strncmp(kind, "continuation-", 13)) {
+        if (!strcmp(kind, "continuation-data") || !strcmp(kind, "continuation-data-only")) {
+            ok = ok
+                 && fputs("\nGOAT_MODULE_EXPORT const unsigned char "
+                          "goat_native_continuation_query[] = {1};",
+                          file)
+                        >= 0;
+        } else {
+            ok = ok
+                 && fputs("\n#include \"goat/native_continuation.h\"\n"
+                          "static uint32_t GOAT_NATIVE_CALL fixture_continuation("
+                          "const goat_native_continuation_context_t *c,uint32_t pc)"
+                          "{(void)c;(void)pc;return GOAT_NATIVE_FAILED;}\n"
+                          "GOAT_MODULE_EXPORT const goat_native_continuation_module_t *"
+                          "GOAT_NATIVE_CALL goat_native_continuation_query(uint32_t version) {"
+                          "(void)version;",
+                          file)
+                        >= 0;
+            if (!strcmp(kind, "continuation-cross-file")) {
+                part_t *bytecode = part(r, a, "bytecode.bin");
+                const unsigned char *bytes = bytecode->bytes;
+                REQUIRE(bytecode->size >= 64 && fixture_u32(bytes + 28) == 2
+                        && fixture_u32(bytes + 32) == 1);
+                size_t functions = fixture_u32(bytes + 52), files = fixture_u32(bytes + 48);
+                REQUIRE(functions + 32 <= bytecode->size && files + 32 <= bytecode->size);
+                const unsigned char *function = bytes + functions;
+                uint32_t body = fixture_u32(function + 12), count = fixture_u32(bytes + 20);
+                uint32_t file_id = fixture_u32(function + 4);
+                REQUIRE(file_id < 2);
+                const unsigned char *owner = bytes + files + 16 * file_id;
+                uint32_t end = fixture_u32(owner) + fixture_u32(owner + 4);
+                REQUIRE(body < end && end < count);
+                /* The old image-wide boundary accepted this range; own-file validation must not. */
+                ok = ok
+                     && fprintf(
+                            file,
+                            "static const goat_native_continuation_entry_t "
+                            "entry={%u,%u,%u,%u,fixture_continuation};"
+                            "static const goat_native_continuation_module_t table={1,sizeof(table),"
+                            "sizeof(entry),1,&entry}; return &table;}",
+                            fixture_u32(function),
+                            fixture_u32(function + 8),
+                            body,
+                            count - body)
+                            >= 0;
+            } else if (!strcmp(kind, "continuation-unreadable")) {
+                ok =
+                    ok && fputs("return (const goat_native_continuation_module_t *)1;}", file) >= 0;
+            } else {
+                ok = ok
+                     && fprintf(file,
+                                "static const goat_native_continuation_module_t table = {%u,"
+                                "sizeof(goat_native_continuation_module_t),"
+                                "sizeof(goat_native_continuation_entry_t),0,0}; return &table;}",
+                                !strcmp(kind, "continuation-version") ? 2u : 1u)
+                            >= 0;
+            }
+        }
     }
     for (size_t i = 0; i < yyjson_mut_arr_size(specs); i++) {
         if (!strcmp(kind, "symbol-missing") && i + 1 == yyjson_mut_arr_size(specs))

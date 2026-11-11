@@ -73,6 +73,8 @@ set(release_labels
   native-strings-migration
   native-saturation-migration
   native-performance-controls
+  native-continuation
+  native-operators
   operator-dispatch
   operator-analysis
   operator-arithmetic

@@ -20,6 +20,7 @@
 #include "thread.h"
 #include "transfer.h"
 #include "vm/gc.h"
+#include "vm/vm.h"
 
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t static_to_string(const object_t *obj) {
@@ -176,7 +177,7 @@ typedef struct {
     function_access_t access;
 
     /**
-     * @brief The function was created in a context where native execution was disabled.
+     * @brief The function was created in a context where scalar specialization was disabled.
      *
      * Functions created inside a method body resolve names through the receiver via their
      * closure, so a native specialization would bypass that resolution. The flag survives the
@@ -434,11 +435,9 @@ static bool dynamic_call_impl(object_t *obj,
         else if (status != MODULE_NATIVE_FALLBACK)
             return status == MODULE_NATIVE_COMPLETE;
     }
-    /* A method call resolves names through the receiver, which a native specialization does not
-       model. Keep such calls on the bytecode path until receiver-aware name resolution exists.
-       The same holds for functions created inside a method body: their closure inherits the
-       method context, so native execution would bypass the receiver, even after the closure
-       escapes to an outer scope. */
+    /* Scalar specializations do not model receiver-aware lookup. Exclude methods and their
+       captured closures from that fast path. A continuation driver below preserves ordinary
+       VM lookup in its real call frame and is safe for both kinds of function. */
     const goat_native_entry_v2_t *entry =
         operator_receiver || module_native || receiver || thread->context->native_disabled
                 || dfobj->native_disabled
@@ -490,11 +489,11 @@ static bool dynamic_call_impl(object_t *obj,
         ctx->operator_receiver = receiver;
         INCREF(receiver);
     }
-    /* The method body resolves names through the receiver, so every call made from it, and every
-       function created in it, must stay on the bytecode path. The same holds for a closure that
-       itself was created inside a method body, even after it escapes to an outer scope. */
-    ctx->native_disabled =
-        receiver || dfobj->native_disabled ? true : (ctx->native_disabled | retry);
+    /* Receiver-sensitive closures cannot use scalar specialization. Independently resolved
+       helpers may still use native code; only a resource-retry barrier disables descendants.
+       Continuation drivers preserve VM name resolution and may execute either kind of frame. */
+    ctx->native_disabled = ctx->native_disabled || retry;
+    ctx->native_receiver_scope = receiver || dfobj->native_disabled;
     ctx->control_flow = FLOW_RETURN;
     ctx->jump_address[0] = thread->instr_id + 1;
     uint16_t index;
@@ -522,6 +521,18 @@ static bool dynamic_call_impl(object_t *obj,
     ctx->unwinding_index = ret_value_index;
     thread->context = ctx;
     thread->instr_id = dfobj->first_instr_id;
+    const goat_native_continuation_entry_t *continuation =
+        get_native_function_continuation(dfobj->native_function);
+    if (continuation && !ctx->native_disabled && native_stack_has_headroom()) {
+        /* Each invocation needs a distinct root: recursive calls must not unregister one
+           another. A runtime GC callback can run after CALL popped this function. */
+        object_t *roots = create_read_only_array_object(thread->process, (object_array_t){&obj, 1});
+        add_gc_root(thread->process, roots);
+        bool completed = vm_run_native_continuation(thread, continuation);
+        remove_gc_root(thread->process, roots);
+        DECREF(roots);
+        return completed;
+    }
     return true;
 }
 

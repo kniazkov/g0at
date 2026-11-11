@@ -48,6 +48,16 @@ bool get_native_library_query(void *handle, goat_native_query_v2_t *query, char 
     return true;
 }
 
+bool get_native_continuation_query(void *handle, goat_native_continuation_query_t *query) {
+    dlerror();
+    void *address = dlsym(handle, "goat_native_continuation_query");
+    if (dlerror() || !address)
+        return false;
+    _Static_assert(sizeof(*query) == sizeof(address), "POSIX function pointer representation");
+    memcpy(query, &address, sizeof(*query));
+    return true;
+}
+
 bool close_native_library_handle_checked(void *handle, char **diagnostic) {
     if (!dlclose(handle))
         return true;

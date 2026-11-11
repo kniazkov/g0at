@@ -40,6 +40,10 @@ struct context_t {
 
     /** @brief Inherited by retry descendants, discarded on return or exception unwinding. */
     bool native_disabled;
+    /** @brief Receiver-sensitive lexical scope; disables typed closures, not safe callees. */
+    bool native_receiver_scope;
+    /** @brief Stops escaping throws while this function has an active native C driver. */
+    bool native_context_boundary;
 
     /** @brief Stops VM transfers at a synchronously executed file initializer. */
     bool file_initialization_boundary;

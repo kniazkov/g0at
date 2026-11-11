@@ -4,6 +4,7 @@
  */
 #include "module_loading.h"
 
+#include "codegen/native_artifact.h"
 #include "lib/hash/sha256.h"
 #include "lib/memory/allocate.h"
 #include "model/module_library.h"
@@ -24,7 +25,7 @@ typedef struct {
     module_library_t *library;
     module_loading_statistics_t statistics;
     char *failure;
-    bool corrupt;
+    bool corrupt, has_continuations;
 } loading_module_t;
 
 struct loading_run_t {
@@ -102,6 +103,11 @@ static void fail_module(loading_module_t *module, const char *reason, bool corru
     FREE(message);
 }
 
+static void observe_load(module_library_stage_t stage, bool completed, void *state) {
+    if (stage == MODULE_LIBRARY_LOAD && completed)
+        *(bool *)state = true;
+}
+
 static void load_selected(loading_module_t *module) {
     loading_run_t *run = module->run;
     if (run->cleaner_failed)
@@ -166,11 +172,18 @@ static void load_selected(loading_module_t *module) {
         goto done;
     }
     module->statistics.loader_attempts++;
-    module_library_result_t loaded = load_module_library(path, module->metadata, module->variant);
-    if (!loaded.library) {
+    bool image_opened = false;
+    module_library_result_t loaded = load_module_library_observed(path,
+                                                                  module->metadata,
+                                                                  module->variant,
+                                                                  observe_load,
+                                                                  &image_opened);
+    if (!loaded.valid) {
+        bool corrupt = image_opened && module->has_continuations;
+        release_module_library(loaded.library);
         fail_module(module,
                     loaded.diagnostic ? loaded.diagnostic : "native OS loading failed",
-                    false);
+                    corrupt);
     } else {
         module->library = loaded.library;
         module->statistics.loaded = true;
@@ -266,14 +279,13 @@ module_loading_result_t prepare_module_snapshot_native(module_snapshot_t *snapsh
             yyjson_arr_get(yyjson_obj_get(yyjson_doc_get_root(module->metadata), "native"),
                            module->variant);
         size_t specializations = yyjson_arr_size(yyjson_obj_get(variant, "specializations"));
-        if (i == 0 && options->mode == NATIVE_REQUIRED
-            && (selected != GOAT_NATIVE_OK || !specializations)) {
+        if (i == 0 && options->mode == NATIVE_REQUIRED && selected != GOAT_NATIVE_OK) {
             outcome = result(MODULE_LOADING_REQUIRED,
                              0,
                              "main module has no own compatible native specialization");
             goto failed;
         }
-        if (selected != GOAT_NATIVE_OK || !specializations) {
+        if (selected != GOAT_NATIVE_OK) {
             module->variant = SIZE_MAX;
             continue;
         }
@@ -291,6 +303,32 @@ module_loading_result_t prepare_module_snapshot_native(module_snapshot_t *snapsh
         if (!module->payload.data) {
             outcome = result(MODULE_LOADING_BINDING, i, "validated native payload is unavailable");
             goto failed;
+        }
+        /* Inspect only the already selected host-compatible artifact. Older scalar-only
+         * modules retain lazy loading; continuation images need binding before FUNC. */
+        char *artifact_error = NULL;
+        native_artifact_t *artifact =
+            open_native_artifact_bytes(module->payload.data, module->payload.size, &artifact_error);
+        FREE(artifact_error);
+        module->has_continuations =
+            artifact && native_artifact_has_symbol(artifact, "goat_native_continuation_query");
+        bool callable_query =
+            artifact && native_artifact_has_function(artifact, "goat_native_continuation_query");
+        close_native_artifact(artifact);
+        if (module->has_continuations && !callable_query) {
+            outcome = result(MODULE_LOADING_BINDING,
+                             i,
+                             "native continuation query export is not a valid function");
+            goto failed;
+        }
+        if (!specializations && !module->has_continuations) {
+            module->variant = SIZE_MAX;
+            if (i == 0 && options->mode == NATIVE_REQUIRED) {
+                outcome = result(MODULE_LOADING_REQUIRED,
+                                 0,
+                                 "main module has no own compatible native function");
+                goto failed;
+            }
         }
     }
     run->cleanup = options->cleanup;
@@ -310,6 +348,49 @@ module_loading_result_t prepare_module_snapshot_native(module_snapshot_t *snapsh
             yyjson_arr_get(yyjson_obj_get(yyjson_doc_get_root(module->metadata), "native"),
                            module->variant);
         module->statistics.bound_functions = goat_module_native_function_count(variant);
+        if (module->has_continuations) {
+            load_selected(module);
+            if (!module->library) {
+                if (options->mode == NATIVE_REQUIRED || module->corrupt) {
+                    process->native_failed = true;
+                    return result(MODULE_LOADING_BINDING,
+                                  i,
+                                  module->failure ? module->failure : "native loading failed");
+                }
+                module->statistics.bound_functions = 0;
+                continue;
+            }
+            size_t bound = bind_module_library_continuations(
+                module->library,
+                module_files_bytecode(module_snapshot_files(snapshot, i)));
+            if (bound == SIZE_MAX) {
+                process->native_failed = true;
+                return result(MODULE_LOADING_BINDING,
+                              i,
+                              "native continuation does not match immutable bytecode");
+            }
+            /* Count the union of scalar and continuation function identities. */
+            bytecode_t *code = module_files_bytecode(module_snapshot_files(snapshot, i));
+            yyjson_val *specs = yyjson_obj_get(variant, "specializations");
+            for (size_t j = 0; j < code->function_count; ++j) {
+                const bytecode_function_t *function = code->functions + j;
+                if (!get_bytecode_native_function(code, function->instruction))
+                    continue;
+                bool scalar = false;
+                for (size_t k = 0; k < yyjson_arr_size(specs); ++k)
+                    scalar |=
+                        yyjson_get_uint(yyjson_obj_get(yyjson_arr_get(specs, k), "functionId"))
+                        == function->id;
+                if (!scalar)
+                    module->statistics.bound_functions++;
+            }
+            if (i == 0 && options->mode == NATIVE_REQUIRED && !module->statistics.bound_functions) {
+                process->native_failed = true;
+                return result(MODULE_LOADING_REQUIRED,
+                              i,
+                              "main module has no own compatible native function");
+            }
+        }
         if (!bind_module_files_native(module_snapshot_files(snapshot, i),
                                       variant,
                                       options->mode == NATIVE_REQUIRED,

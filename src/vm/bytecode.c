@@ -253,6 +253,32 @@ bool bind_bytecode_native_function(bytecode_t *code,
         if (get_native_function_entry(function, i)->parameter_count
             != code->instructions[instruction].arg0)
             return false;
+    const goat_native_continuation_entry_t *continuation =
+        get_native_function_continuation(function);
+    if (continuation) {
+        const bytecode_function_t *identity = NULL;
+        for (size_t i = 0; i < code->function_count; i++)
+            if (code->functions[i].instruction == instruction)
+                identity = &code->functions[i];
+        if (!identity || identity->file >= code->file_count)
+            return false;
+        const bytecode_file_t *file = &code->files[identity->file];
+        if (file->first > code->instructions_count
+            || file->count > code->instructions_count - file->first || identity->body < file->first
+            || identity->body >= file->first + file->count)
+            return false;
+        uint32_t end = file->first + file->count;
+        if (identity)
+            for (size_t i = 0; i < code->function_count; i++)
+                if (code->functions[i].body > identity->body && code->functions[i].body < end)
+                    end = code->functions[i].body;
+        if (!identity || continuation->function_instruction != instruction
+            || continuation->function_id != identity->id
+            || continuation->first_instruction != identity->body
+            || continuation->first_instruction >= code->instructions_count
+            || continuation->instruction_count != end - continuation->first_instruction)
+            return false;
+    }
     if (!code->native_functions) {
         if (!function)
             return true;

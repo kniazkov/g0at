@@ -220,6 +220,57 @@ const char *loading_normal_case_name(size_t index) {
     return index < loading_normal_case_count() ? cases[index].name : NULL;
 }
 
+/* Exercise optional capability corruption independently from scalar guard selection. */
+static void continuation_controls(scenario_run_t *r,
+                                  loading_fixture_t *f,
+                                  const char *runner,
+                                  const char *mode) {
+    const char *kinds[] = {"continuation-data",
+                           "continuation-data-only",
+                           "continuation-version",
+                           "continuation-unreadable",
+                           "continuation-empty",
+                           "continuation-empty-only",
+                           "continuation-cross-file"};
+    for (size_t i = 0; i < sizeof(kinds) / sizeof(*kinds); ++i) {
+        const char *base = i == 6 ? loading_two_file_base(f) : loading_base(f);
+        const char *archive = loading_custom(f, kinds[i], base, kinds[i], false);
+        bool scalar_empty = i == 5;
+        bool rejected = i < 4 || i == 6 || (scalar_empty && !strcmp(mode, "required"));
+        loading_owner_t *owner = loading_owner_start(r,
+                                                     runner,
+                                                     loading_fixture_root(f),
+                                                     kinds[i],
+                                                     archive,
+                                                     mode,
+                                                     "run",
+                                                     NULL);
+        yyjson_val *result = loading_owner_end(owner, rejected ? 3 : 0, true, false);
+        REQUIRE(yyjson_is_obj(result));
+        loading_owner_expect_output(owner, rejected ? "" : "49\n64\n");
+        if (rejected) {
+            REQUIRE(number(r, result, "prepare") != 0);
+            /* Cross-file range rejection follows extraction, unlike invalid exports rejected
+               by preflight. Expose its scope so loading_owner_end waits for real cleanup. */
+            yyjson_val *directory = yyjson_obj_get(result, "directory");
+            REQUIRE(yyjson_is_str(directory));
+            if (i == 6)
+                REQUIRE(yyjson_get_len(directory));
+            if (i < 2) {
+                REQUIRE(!yyjson_get_len(directory));
+                no_cleaner(r, owner);
+            }
+            no_native_call(r, owner);
+        } else if (scalar_empty) {
+            REQUIRE(number(r, result, "native_successes") == 0);
+            no_native_call(r, owner);
+        } else {
+            REQUIRE(number(r, result, "native_successes") == 2);
+            loading_owner_expect_calls(owner, "LCC");
+        }
+    }
+}
+
 void loading_normal_case_run(scenario_run_t *r,
                              loading_fixture_t *f,
                              const char *runner,
@@ -569,4 +620,6 @@ void loading_normal_case_run(scenario_run_t *r,
             REQUIRE(number(r, result, "writes") == (!strcmp(c->detail, "silent") ? 0 : 1));
             break;
     }
+    if (c->kind == VALID)
+        continuation_controls(r, f, runner, c->mode);
 }

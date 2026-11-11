@@ -6,6 +6,7 @@
 #include "native_library_platform.h"
 
 #include <goat/native_abi.h>
+#include <goat/native_continuation.h>
 #include <stdbool.h>
 
 typedef struct native_library_t native_library_t;
@@ -53,3 +54,18 @@ bool get_native_library_query(void *handle, goat_native_query_v2_t *query, char 
 
 /** @brief Registers one owned resource, released after the final OS handle is closed. */
 void set_native_library_cleanup(native_library_t *library, void *resource, void (*cleanup)(void *));
+
+/** @brief Optional independent continuation table; absent in scalar-only libraries. */
+uint32_t get_native_library_continuation_count(const native_library_t *library);
+const goat_native_continuation_entry_t *
+get_native_library_continuation(const native_library_t *library, uint32_t index);
+const goat_native_continuation_entry_t *
+get_native_function_continuation(const native_function_descriptor_t *function);
+/** @brief Optional symbol lookup; absence is not an error. */
+bool get_native_continuation_query(void *handle, goat_native_continuation_query_t *query);
+
+/** @brief Copies checked continuation metadata and consumes an owned external image reference. */
+native_function_descriptor_t *
+create_native_continuation_descriptor(const goat_native_continuation_entry_t *entry,
+                                      void *owner,
+                                      void (*release_owner)(void *));

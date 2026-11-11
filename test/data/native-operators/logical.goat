@@ -1,0 +1,16 @@
+const exercise=func(){
+ const a={};var log=0;
+ a["&&"]=func(x){log=log*10+2;return x;};
+ const rhs=func(){log=log*10+1;a["&&"]=func(x){throw 90;};return true;};
+ if(!(a&&rhs())||log!=12)throw 1;
+ a["||"]=func(x){return false;}; if(a||true)throw 2;
+ a["!"]=func(){return false;};if(!a)throw 3;
+ var effects=0;const tick=func(){effects++;return true;};
+ if(false&&tick())throw 4; if(!(true||tick())||effects!=0)throw 5;
+ a["&&"]=7;try{a&&tick();throw 6;}catch(e){println(e);if(effects!=0)throw 7;}
+ a["!"]=func(){return 1;};try{!a;throw 8;}catch(e){println(e);}
+ a["||"]=func(x){return {};};try{a||tick();throw 10;}catch(e){println(e);if(effects!=1)throw 11;}
+ const absent={};var chosen=0;
+ const install=func(){absent["||"]=func(x){chosen++;return false;};return true;};
+ if(!(absent||install())||chosen!=0)throw 12;
+};exercise();println("ok");

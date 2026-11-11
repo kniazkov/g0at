@@ -12,6 +12,7 @@
 #pragma once
 
 #include "bytecode.h"
+typedef struct goat_native_continuation_entry_t goat_native_continuation_entry_t;
 #include "model/module_files.h"
 #include "model/process.h"
 
@@ -49,3 +50,6 @@ operation_result_t spawn_program_thread(thread_t *caller,
  * Self/cyclic waits and waits during dynamic initialization are rejected.
  */
 operation_result_t join_program_thread(thread_t *caller, uint64_t id);
+
+/** @brief Execute an already-entered function using native PC dispatch. Never replays. */
+bool vm_run_native_continuation(thread_t *thread, const goat_native_continuation_entry_t *entry);

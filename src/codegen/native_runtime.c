@@ -23,6 +23,7 @@ static const struct {
     size_t size;
 } files[] = {{"unicode.h", unicode_data, sizeof(unicode_data)},
              {"native_abi.h", native_abi_data, sizeof(native_abi_data)},
+             {"native_continuation.h", native_continuation_data, sizeof(native_continuation_data)},
              {"native_runtime.h", native_runtime_data, sizeof(native_runtime_data)},
              {"native_strings.h", native_strings_data, sizeof(native_strings_data)},
              {"module_abi.h", module_abi_data, sizeof(module_abi_data)},

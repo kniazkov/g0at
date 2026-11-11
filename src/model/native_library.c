@@ -19,6 +19,8 @@ struct native_library_t {
     void (*cleanup)(void *);
     uint32_t entry_count;
     goat_native_entry_v2_t *entries;
+    uint32_t continuation_count;
+    goat_native_continuation_entry_t *continuations;
 };
 
 struct native_function_descriptor_t {
@@ -26,6 +28,10 @@ struct native_function_descriptor_t {
     native_library_t *library;
     uint32_t entry_count;
     const goat_native_entry_v2_t **entries;
+    const goat_native_continuation_entry_t *continuation;
+    goat_native_continuation_entry_t owned_continuation;
+    void *continuation_owner;
+    void (*release_continuation_owner)(void *);
 };
 
 char *copy_native_library_diagnostic(const char *text) {
@@ -181,6 +187,34 @@ static const char *validate_duplicates(native_library_t *library) {
     return error;
 }
 
+/** @brief Snapshot a bounded, sorted optional table before exposing executable pointers. */
+static const char *snapshot_continuations(native_library_t *library) {
+    goat_native_continuation_query_t query;
+    if (!get_native_continuation_query(library->handle, &query))
+        return NULL;
+    const goat_native_continuation_module_t *module = query(GOAT_NATIVE_CONTINUATION_VERSION);
+    if (!module || (uintptr_t)module % _Alignof(goat_native_continuation_module_t)
+        || module->version != GOAT_NATIVE_CONTINUATION_VERSION
+        || module->struct_size != sizeof(*module)
+        || module->entry_size != sizeof(goat_native_continuation_entry_t)
+        || module->entry_count > 65536 || (!module->entry_count) != (!module->entries)
+        || (module->entries
+            && (uintptr_t)module->entries % _Alignof(goat_native_continuation_entry_t)))
+        return "Invalid native continuation table";
+    library->continuation_count = module->entry_count;
+    if (module->entry_count)
+        library->continuations = CALLOC(module->entry_count * sizeof(*library->continuations));
+    for (uint32_t i = 0; i < module->entry_count; i++) {
+        goat_native_continuation_entry_t entry = module->entries[i];
+        if (!entry.function_id || !entry.invoke || !entry.instruction_count
+            || entry.instruction_count > UINT32_MAX - entry.first_instruction
+            || (i && library->continuations[i - 1].function_id >= entry.function_id))
+            return "Invalid native continuation entry";
+        library->continuations[i] = entry;
+    }
+    return NULL;
+}
+
 native_library_result_t load_native_library(const char *path) {
     native_library_result_t result = {.status = NATIVE_LIBRARY_OPEN_FAILED};
 #if !defined(__linux__) && !defined(_WIN32)
@@ -235,6 +269,9 @@ native_library_result_t load_native_library(const char *path) {
     error = validate_duplicates(library);
     if (error)
         goto invalid;
+    error = snapshot_continuations(library);
+    if (error)
+        goto invalid;
     result.status = NATIVE_LIBRARY_OK;
     result.library = library;
     return result;
@@ -260,6 +297,7 @@ void release_native_library(native_library_t *library) {
         FREE((void *)library->entries[i].binding_name);
     }
     FREE(library->entries);
+    FREE(library->continuations);
     close_native_library_handle(library->handle);
     if (library->cleanup)
         library->cleanup(library->resource);
@@ -289,13 +327,18 @@ native_function_descriptor_t *create_native_function_descriptor(native_library_t
         return NULL;
     for (uint32_t i = 0; i < library->entry_count; i++)
         count += library->entries[i].function_id == function_id;
-    if (!count)
+    const goat_native_continuation_entry_t *continuation = NULL;
+    for (uint32_t i = 0; i < library->continuation_count; i++)
+        if (library->continuations[i].function_id == function_id)
+            continuation = &library->continuations[i];
+    if (!count && !continuation)
         return NULL;
     native_function_descriptor_t *function = CALLOC(sizeof(*function));
     atomic_init(&function->references, 1);
     function->library = retain_native_library(library);
     function->entry_count = count;
-    function->entries = ALLOC(count * sizeof(*function->entries));
+    function->continuation = continuation;
+    function->entries = count ? ALLOC(count * sizeof(*function->entries)) : NULL;
     uint32_t next = 0;
     for (uint32_t i = 0; i < library->entry_count; i++)
         if (library->entries[i].function_id == function_id)
@@ -315,6 +358,8 @@ void release_native_function_descriptor(native_function_descriptor_t *function) 
         return;
     FREE(function->entries);
     release_native_library(function->library);
+    if (function->release_continuation_owner)
+        function->release_continuation_owner(function->continuation_owner);
     FREE(function);
 }
 
@@ -327,7 +372,27 @@ get_native_function_entry(const native_function_descriptor_t *function, uint32_t
     return function && index < function->entry_count ? function->entries[index] : NULL;
 }
 
+uint32_t get_native_library_continuation_count(const native_library_t *library) {
+    return library ? library->continuation_count : 0;
+}
+
+const goat_native_continuation_entry_t *
+get_native_library_continuation(const native_library_t *library, uint32_t index) {
+    return library && index < library->continuation_count ? &library->continuations[index] : NULL;
+}
+
+const goat_native_continuation_entry_t *
+get_native_function_continuation(const native_function_descriptor_t *function) {
+    return function ? function->continuation : NULL;
+}
+
 #if !defined(__linux__) && !defined(_WIN32)
+bool get_native_continuation_query(void *handle, goat_native_continuation_query_t *query) {
+    (void)handle;
+    (void)query;
+    return false;
+}
+
 bool close_native_library_handle_checked(void *handle, char **diagnostic) {
     (void)handle;
     (void)diagnostic;
@@ -349,4 +414,20 @@ void set_native_library_cleanup(native_library_t *library,
     assert(library && !library->cleanup && cleanup);
     library->resource = resource;
     library->cleanup = cleanup;
+}
+
+native_function_descriptor_t *
+create_native_continuation_descriptor(const goat_native_continuation_entry_t *entry,
+                                      void *owner,
+                                      void (*release_owner)(void *)) {
+    if (!entry || !entry->invoke || !entry->function_id || !entry->instruction_count
+        || entry->instruction_count > UINT32_MAX - entry->first_instruction)
+        return NULL;
+    native_function_descriptor_t *function = CALLOC(sizeof(*function));
+    atomic_init(&function->references, 1);
+    function->owned_continuation = *entry;
+    function->continuation = &function->owned_continuation;
+    function->continuation_owner = owner;
+    function->release_continuation_owner = release_owner;
+    return function;
 }

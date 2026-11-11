@@ -1,0 +1,11 @@
+const exercise=func(){
+ const a={};const b={};var calls=0;
+ a["=="]=func(x){calls++;return false;};
+ if(a==a||!(a!=b)||calls!=2)throw 1;
+ a["!="]=func(x){return true;};if(a==b||!(a!=b))throw 2;
+ a["<"]=func(x){return true;};a["<="]=a["<"];a[">"]=a["<"];a[">="]=a["<"];
+ if(!(a<b)||!(a<=b)||!(a>b)||!(a>=b))throw 3;
+ a["=="]=func(x){return 1;};try{a==b;throw 4;}catch(e){println(e);}
+ a["!="]=null;try{a!=b;throw 6;}catch(e){println(e);}
+ const c={};if(c!=c||c==b)throw 8;
+};exercise();println("ok");
