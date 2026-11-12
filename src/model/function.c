@@ -10,6 +10,7 @@
 #include "common_methods.h"
 #include "context.h"
 #include "lib/memory/allocate.h"
+#include "lib/wire/wire.h"
 #include "module_files.h"
 #include "module_native.h"
 #include "native_library.h"
@@ -400,6 +401,133 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
     return true;
 }
 
+/** @brief Reads only a descriptor wholly contained in the immutable bytecode image. */
+static const data_descriptor_t *
+receiver_proof_data(const bytecode_t *code, uint32_t id, uint32_t kind, size_t item_size) {
+    if (id >= code->data_descriptor_count)
+        return NULL;
+    uintptr_t base = (uintptr_t)code->buffer, data = (uintptr_t)code->data;
+    if (data < base || data - base > code->buffer_size)
+        return NULL;
+    size_t available = code->buffer_size - (size_t)(data - base);
+    const data_descriptor_t *descriptor = code->data_descriptors + id;
+    if (descriptor->kind != kind || descriptor->offset > available
+        || descriptor->size > available - descriptor->offset
+        || descriptor->count > descriptor->size / item_size)
+        return NULL;
+    return descriptor;
+}
+
+/** @brief Proves a small straight-line module body cannot observe its member receiver.
+ * This is not an adapter purity claim: external adapters may intentionally have effects.
+ * Only parameter reads and scalar expressions qualify. Captures, calls, object access,
+ * nested scopes and unknown instructions conservatively retain receiver-aware VM execution.
+ */
+static bool module_body_ignores_receiver(module_files_t *module,
+                                         const object_dynamic_function_t *function) {
+    const bytecode_t *code = module ? module_files_bytecode(module) : NULL;
+    if (!code)
+        return false;
+    const bytecode_function_t *entry = NULL;
+    for (size_t i = 0; i < code->function_count; ++i)
+        if (code->functions[i].id == function->function_id
+            && code->functions[i].body == function->first_instr_id
+            && code->functions[i].file == function->access.file_id)
+            entry = code->functions + i;
+    if (!entry || entry->parameter_count != function->arg_count || entry->file >= code->file_count
+        || entry->body >= code->instructions_count)
+        return false;
+    const bytecode_file_t *file = code->files + entry->file;
+    if (file->first > code->instructions_count
+        || file->count > code->instructions_count - file->first || entry->body < file->first
+        || entry->body - file->first >= file->count)
+        return false;
+    size_t end = (size_t)file->first + file->count;
+    for (size_t i = 0; i < code->function_count; ++i)
+        if (code->functions[i].body > entry->body && code->functions[i].body < end)
+            end = code->functions[i].body;
+    for (size_t pc = entry->body; pc < end; ++pc) {
+        instruction_t instruction = code->instructions[pc];
+        switch (instruction.opcode) {
+            case RET:
+                return true;
+            case VLOAD: {
+                const data_descriptor_t *name =
+                    receiver_proof_data(code, instruction.arg1, DATA_STRING, sizeof(gchar_t));
+                if (!name)
+                    return false;
+                const gchar_t *text = (const gchar_t *)(code->data + name->offset);
+                if ((name->count == 4 && !MEMCMP(text, U"this", 4))
+                    || (name->count == 9 && !MEMCMP(text, U"arguments", 9)))
+                    return false;
+                bool parameter = false;
+                if (entry->parameter_count) {
+                    const data_descriptor_t *vector = receiver_proof_data(code,
+                                                                          entry->parameters,
+                                                                          DATA_PARAMETERS,
+                                                                          sizeof(uint32_t));
+                    if (!vector || vector->count != entry->parameter_count)
+                        return false;
+                    for (size_t i = 0; i < entry->parameter_count; ++i) {
+                        uint32_t id = read_le32(code->data + vector->offset + i * 4);
+                        const data_descriptor_t *candidate =
+                            receiver_proof_data(code, id, DATA_STRING, sizeof(gchar_t));
+                        if (!candidate)
+                            return false;
+                        if (candidate->count == name->count
+                            && !MEMCMP(text,
+                                       (const gchar_t *)(code->data + candidate->offset),
+                                       name->count))
+                            parameter = true;
+                    }
+                }
+                if (!parameter)
+                    return false;
+                break;
+            }
+            case NOP:
+            case ARG:
+            case POP:
+            case DUP:
+            case NIL:
+            case TRUE:
+            case FALSE:
+            case ILOAD32:
+            case ILOAD64:
+            case RLOAD:
+            case SLOAD:
+            case CLOAD:
+            case UPLUS:
+            case UMINUS:
+            case INC:
+            case DEC:
+            case LNOT:
+            case BNOT:
+            case BAND:
+            case BOR:
+            case BXOR:
+            case SHL:
+            case SHR:
+            case ADD:
+            case SUB:
+            case MUL:
+            case DIVIDE:
+            case MODULO:
+            case POWER:
+            case LESS:
+            case LEQ:
+            case GREATER:
+            case GREQ:
+            case EQUAL:
+            case DIFF:
+                break;
+            default:
+                return false;
+        }
+    }
+    return false;
+}
+
 /** @brief Chooses native execution before allocating a bytecode call context. */
 static bool dynamic_call_impl(object_t *obj,
                               uint16_t arg_count,
@@ -421,8 +549,10 @@ static bool dynamic_call_impl(object_t *obj,
     module_files_t *module = find_module_files(thread->process, dfobj->access.module);
     bool module_native = module_files_native(module) != NULL;
     bool retry = false;
-    if (!operator_receiver && !receiver && !thread->context->native_disabled
-        && !dfobj->native_disabled) {
+    if (!operator_receiver
+        && (!receiver
+            || (receiver == dfobj->closure && module_body_ignores_receiver(module, dfobj)))
+        && !thread->context->native_disabled && !dfobj->native_disabled) {
         module_native_call_status_t status = call_module_native(module,
                                                                 dfobj->access.file_id,
                                                                 dfobj->function_id,
