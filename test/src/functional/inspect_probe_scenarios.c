@@ -493,6 +493,10 @@ static void completed(scenario_run_t *r, jval_t *p) {
 static void fixture_crashed(case_t *c, jval_t *p) {
     scenario_run_t *r = c->s->r;
     REQUIRE(strstr(events(c), "\ncrash\n"));
+#ifdef __linux__
+    /* Require the real fixture to establish its core policy before SIGABRT. */
+    REQUIRE(strstr(events(c), "\ncrash-core-disabled\ncrash\n"));
+#endif
 #ifdef _WIN32
     REQUIRE(yyjson_mut_is_int(get(p, "exitCode"))
             && yyjson_mut_get_sint(get(p, "exitCode")) == 0xc0000005LL);

@@ -1,0 +1,87 @@
+name: Inspect crash diagnostics
+on:
+  push:
+    branches: [ci/509-probe-crash-stress]
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: 'Exact baseline commit used for BOTH fixture and scenario assertions'
+        required: true
+        default: '00cf3b7df9fb57c03c34b8be30c4e1bc96c56a5f'
+        type: string
+permissions:
+  contents: read
+jobs:
+  crash-stress:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+        variant: [baseline, patched]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select baseline or patched fixture and matching assertions
+        env:
+          BASELINE_REF: ${{ inputs.baseline_ref || '00cf3b7df9fb57c03c34b8be30c4e1bc96c56a5f' }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          mkdir -p build/ci
+          git rev-parse HEAD > build/ci/head.txt
+          baseline=$(git rev-parse --verify "${BASELINE_REF}^{commit}")
+          printf '%s\n' "$baseline" > build/ci/baseline.txt
+          if [ "$VARIANT" = baseline ]; then
+            git restore --source="$baseline" -- test/src/component/inspect_probe_library.c test/src/functional/inspect_probe_scenarios.c
+          fi
+          sha256sum test/src/component/inspect_probe_library.c test/src/functional/inspect_probe_scenarios.c > build/ci/fixture-sha256.txt
+          git diff > build/ci/fixture-diff.patch
+      - name: Build focused inspector targets
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+        run: |
+          set -o pipefail
+          cmake -S . -B build/probe -DCMAKE_BUILD_TYPE="$CONFIGURATION" 2>&1 | tee build/ci/configure.log
+          cmake --build build/probe --target inspect_probe_scenarios --parallel 4 2>&1 | tee build/ci/build.log
+      - name: Record host policy and stress the four strict crash cases
+        run: |
+          set -o pipefail
+          {
+            date -u --iso-8601=ns
+            uname -a
+            cc --version
+            ulimit -a
+            for file in /proc/sys/kernel/core_pattern /proc/sys/kernel/core_pipe_limit /proc/sys/fs/suid_dumpable /proc/loadavg; do
+              printf '\n%s\n' "$file"
+              cat "$file" || true
+            done
+          } > build/ci/host-policy.log 2>&1
+          (
+            while :; do
+              date -u --iso-8601=ns
+              cat /proc/uptime /proc/loadavg
+              ps -eo pid,ppid,stat,etimes,comm,wchan:32
+              for pid in $(pgrep -x 'goat-inspect|inspect_probe_t' || true); do
+                printf 'PID=%s\n' "$pid"
+                grep -E '^(Name|State|PPid|CoreDumping|Threads):' "/proc/$pid/status" || true
+                cat "/proc/$pid/schedstat" || true
+              done
+              sleep 1
+            done
+          ) > build/ci/process-timeline.log 2>&1 &
+          observer=$!
+          trap 'kill "$observer" 2>/dev/null || true; wait "$observer" 2>/dev/null || true' EXIT
+          cmake -DBUILD_DIR=build/probe -P scripts/check_inspect_crash_stress.cmake 2>&1 | tee build/ci/stress-console.log
+      - name: Preserve evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspect-crash-${{ matrix.variant }}-${{ matrix.configuration }}
+          path: |
+            build/ci/
+            build/probe/crash-diagnostics/
+            build/probe/Testing/
+            build/probe/scenario-*/
+          if-no-files-found: warn
