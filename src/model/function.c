@@ -418,10 +418,12 @@ receiver_proof_data(const bytecode_t *code, uint32_t id, uint32_t kind, size_t i
     return descriptor;
 }
 
-/** @brief Proves a small straight-line module body cannot observe its member receiver.
+/** @brief Proves a bounded module body does not observe the changed member this.
+ * Only used when receiver equals closure, so bare name lookup remains identical.
+ * arguments, lexical writes and ordinary calls do not expose this. Reject explicit
+ * this, aliased object writes, scope-object escapes and closures capturing the frame.
+ * Scan every instruction, including code beyond a return reached on another branch.
  * This is not an adapter purity claim: external adapters may intentionally have effects.
- * Only parameter reads and scalar expressions qualify. Captures, calls, object access,
- * nested scopes and unknown instructions conservatively retain receiver-aware VM execution.
  */
 static bool module_body_ignores_receiver(module_files_t *module,
                                          const object_dynamic_function_t *function) {
@@ -446,49 +448,54 @@ static bool module_body_ignores_receiver(module_files_t *module,
     for (size_t i = 0; i < code->function_count; ++i)
         if (code->functions[i].body > entry->body && code->functions[i].body < end)
             end = code->functions[i].body;
+    bool has_return = false;
     for (size_t pc = entry->body; pc < end; ++pc) {
         instruction_t instruction = code->instructions[pc];
         switch (instruction.opcode) {
             case RET:
-                return true;
-            case VLOAD: {
+                has_return = true;
+                break;
+            case JUMP:
+            case JIF:
+            case LAND:
+            case LOR:
+                if (instruction.arg1 < entry->body || instruction.arg1 >= end)
+                    return false;
+                break;
+            case VLOAD:
+            case STORE:
+            case CHECKVAR:
+            case BLOAD:
+            case BSTORE:
+            case CHECKBOUND: {
+                uint32_t name_id = instruction.arg1;
+                if (instruction.opcode == BLOAD || instruction.opcode == BSTORE
+                    || instruction.opcode == CHECKBOUND) {
+                    const data_descriptor_t *declaration =
+                        receiver_proof_data(code, name_id, DATA_DECLARATION, sizeof(uint32_t));
+                    if (!declaration || declaration->size < sizeof(declaration_descriptor_t))
+                        return false;
+                    name_id = read_le32(code->data + declaration->offset + 4);
+                }
                 const data_descriptor_t *name =
-                    receiver_proof_data(code, instruction.arg1, DATA_STRING, sizeof(gchar_t));
+                    receiver_proof_data(code, name_id, DATA_STRING, sizeof(gchar_t));
                 if (!name)
                     return false;
                 const gchar_t *text = (const gchar_t *)(code->data + name->offset);
-                if ((name->count == 4 && !MEMCMP(text, U"this", 4))
-                    || (name->count == 9 && !MEMCMP(text, U"arguments", 9)))
-                    return false;
-                bool parameter = false;
-                if (entry->parameter_count) {
-                    const data_descriptor_t *vector = receiver_proof_data(code,
-                                                                          entry->parameters,
-                                                                          DATA_PARAMETERS,
-                                                                          sizeof(uint32_t));
-                    if (!vector || vector->count != entry->parameter_count)
-                        return false;
-                    for (size_t i = 0; i < entry->parameter_count; ++i) {
-                        uint32_t id = read_le32(code->data + vector->offset + i * 4);
-                        const data_descriptor_t *candidate =
-                            receiver_proof_data(code, id, DATA_STRING, sizeof(gchar_t));
-                        if (!candidate)
-                            return false;
-                        if (candidate->count == name->count
-                            && !MEMCMP(text,
-                                       (const gchar_t *)(code->data + candidate->offset),
-                                       name->count))
-                            parameter = true;
-                    }
-                }
-                if (!parameter)
+                if (name->count == 4 && !MEMCMP(text, U"this", 4))
                     return false;
                 break;
             }
+            case GETPROP:
+            case GETINDEX:
+            case CALL:
+            case BOOL:
             case NOP:
             case ARG:
             case POP:
             case DUP:
+            case DUPN:
+            case ROTATE:
             case NIL:
             case TRUE:
             case FALSE:
@@ -525,7 +532,7 @@ static bool module_body_ignores_receiver(module_files_t *module,
                 return false;
         }
     }
-    return false;
+    return has_return;
 }
 
 /** @brief Chooses native execution before allocating a bytecode call context. */

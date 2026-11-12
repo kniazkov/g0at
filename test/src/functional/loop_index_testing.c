@@ -33,7 +33,9 @@ static int compare_names(const void *a, const void *b) {
 }
 
 static bool selected(const char *name, bool index) {
-    static const char *prefixes[] = {"index_",
+    /* Member receiver identity must survive source regeneration and saved VM images too. */
+    static const char *prefixes[] = {"method_this_",
+                                     "index_",
                                      "array_",
                                      "inheritance_",
                                      "loops_",

@@ -11,7 +11,7 @@ framework; input fixtures remain read-only in `test/data/functional`.
 | Same: compile (do not execute) an infinite loop | `native.for` |
 | Same: persisted `native_modes/loops.goat`, source removed and CC unavailable; ready, 12 attempts/successes and zero retries | `native.for` |
 | Same: `native_modes/long_loops.goat`, million iterations and shallow calls; 3 native attempts/successes, zero retries | `native.for` |
-| `check_index.py`: `index_*`, `array_*`, `inheritance_*`, `loops_*`, `switch_*`, `compound_*`, `iteration_*`, `flat_*`, `conditional_*`, `finally_*`, `access_*` | `native.index` |
+| `check_index.py`: `method_this_*`, `index_*`, `array_*`, `inheritance_*`, `loops_*`, `switch_*`, `compound_*`, `iteration_*`, `flat_*`, `conditional_*`, `finally_*`, `access_*` | `native.index` |
 | Same: positive output, source round trip, saved VM after deleting source; `none` and `all`, compiler unavailable | `native.index` |
 | Same: negative fixtures compiled at both optimization levels with exact status/stdout/stderr | `native.index` |
 | Same: nine invalid access declarations in English and Russian | `native.index` |
