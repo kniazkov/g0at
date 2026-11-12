@@ -117,3 +117,36 @@ and package test diagnostics. There is no retry; a failure stops the series.
 This adds six clean builds across the three profiles, distinct from the thirty
 warm packaging repetitions. It does not run the complete full-check test suite
 in each clean tree; the standard CI suites remain in the original build trees.
+
+## Bounded synchronization-handle experiment
+
+`scripts/check_windows_make_sync.cmake` now runs near the beginning of each
+Windows CI profile, before the expensive project build. The
+`make-sync-handles-<MSYSTEM>` artifact records the exact compiler, Make and CMake
+versions and twelve small launches: direct child, `cmake -E env`, CMake
+`execute_process`, and recursive Make, each with output synchronization disabled,
+`target`, and `recurse`. Each launch retains four Make workers and has a
+30-second bound. A nonzero exit or timeout fails the diagnostic; it is not
+retried. The helper records only the relevant Make environment, PID and sync
+handle metadata, not the full process environment.
+
+GNU Make on Windows exports a numeric `--sync-mutex` handle in `MAKEFLAGS`.
+The probe checks whether that handle is valid in each child and queries its
+object type without waiting on, acquiring, releasing or closing the inherited
+object. An isolated self-control must identify a newly created local mutex;
+the direct-child baselines require no exported handle with synchronization off
+and a valid mutex with synchronization on. The experiment clears inherited
+Make flags only at its own top level, not inside the launcher chain.
+A missing/invalid handle or a type other than `Mutant` after an
+intermediate launcher would identify an inheritance boundary worth investigating.
+A valid mutex throughout would reject that simple explanation for these launches.
+Neither result alone proves the cause of the historical CPack stall: this is a
+small isolated boundary experiment, not the full CPack process chain or a wait
+stack captured from the stalled process.
+
+Do not infer the behavior of the installed CMake from a newer source revision.
+In particular, the inspected CMake v4.4.3 bundled libuv launch path requests
+inherited handles; a later restricted-handle launch implementation does not
+establish what happened in the failed run. The existing preinstall/direct-CPack
+workaround is deliberately unchanged. Issue #507 remains open until the actual
+wait mechanism and a validated correction are established.

@@ -558,6 +558,17 @@ jobs:
       - name: Check local full-check orchestration
         shell: msys2 {0}
         run: cmake -P test/full_check_driver.cmake
+      - name: Inspect Windows Make synchronization handle inheritance
+        shell: msys2 {0}
+        timeout-minutes: 7
+        run: cmake -P scripts/check_windows_make_sync.cmake
+      - name: Preserve Windows Make synchronization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: make-sync-handles-${{ matrix.msystem }}
+          path: build/ci/windows-make-sync/probe.log
+          if-no-files-found: warn
       - name: Build Debug binaries
         shell: msys2 {0}
         run: |
