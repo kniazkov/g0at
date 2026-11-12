@@ -53,7 +53,7 @@ context_t *create_context_with_protos_in_file(process_t *process,
     init_function_access_in_file(&ctx->access, module, file_id);
     add_function_access_domain(&ctx->access, get_object_access_domain(ctx->data));
     ctx->arguments = NULL;
-    ctx->operator_receiver = NULL;
+    ctx->call_receiver = NULL;
     ctx->operator_call = false;
     ctx->operator_policy = OPERATOR_RESULT_VALUE;
     ctx->operator_origin = BAD_INSTR_INDEX;
@@ -90,7 +90,7 @@ context_t *destroy_context(context_t *context) {
        by a closure). */
     DECREF(context->data);
     DECREFIF(context->arguments);
-    DECREFIF(context->operator_receiver);
+    DECREFIF(context->call_receiver);
     DECREFIF(context->pending_value);
     release_exception_trace(context->pending_trace);
     release_module_identity(context->module);

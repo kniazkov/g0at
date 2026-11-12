@@ -1,0 +1,7 @@
+var list = [func() { return this; }];
+println(list[0]() == list);
+var f = list[0];
+println(f() != list);
+list.push(func() { return this.length; });
+println(list[1]());
+println(list.length);

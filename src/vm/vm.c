@@ -247,8 +247,8 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     const data_descriptor_t *descriptor = runtime->code->data_descriptors + string_id;
     const gchar_t *name = (const gchar_t *)(runtime->code->data + descriptor->offset);
     object_t *constant = NULL;
-    if (descriptor->count == 4 && !MEMCMP(name, U"this", 4) && thread->context->operator_receiver) {
-        constant = thread->context->operator_receiver;
+    if (descriptor->count == 4 && !MEMCMP(name, U"this", 4) && thread->context->call_receiver) {
+        constant = thread->context->call_receiver;
     } else if (descriptor->count == 9 && !MEMCMP(name, U"arguments", 9)) {
         constant = get_context_arguments(thread->context);
         if (!constant)
@@ -389,6 +389,13 @@ static bool exec_GETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
+/** @brief Only explicit writes to this use own storage; lexical STORE is unchanged. */
+static bool is_current_this(const thread_t *thread, const object_t *object) {
+    return object
+           == (thread->context->call_receiver ? thread->context->call_receiver
+                                              : thread->context->data);
+}
+
 /** @brief Executes @ref SETPROP. */
 static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
@@ -399,7 +406,9 @@ static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     object_t *obj = pop_object_from_stack(thread->data_stack);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
     operation_result_t result =
-        write_accessible_property_result(&thread->context->access, obj, key, value);
+        is_current_this(thread, obj)
+            ? write_accessible_own_property_result(&thread->context->access, obj, key, value)
+            : write_accessible_property_result(&thread->context->access, obj, key, value);
     DECREF(obj);
     if (result.is_exception)
         return dispatch_exception(
@@ -419,7 +428,9 @@ static bool exec_write_check(runtime_t *runtime, instruction_t instr, thread_t *
     object_t *receiver = instr.opcode == CHECKVAR ? thread->context->data
                                                   : peek_object_from_stack(thread->data_stack, 0);
     operation_result_t result =
-        check_accessible_property_write(&thread->context->access, receiver, key);
+        instr.opcode != CHECKVAR && is_current_this(thread, receiver)
+            ? write_accessible_own_property_result(&thread->context->access, receiver, key, NULL)
+            : check_accessible_property_write(&thread->context->access, receiver, key);
     if (result.is_exception)
         return dispatch_exception(
             runtime,
@@ -508,11 +519,18 @@ static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thr
     }
     clear_operator_lookup(&selected);
     object_array_t indices = {stack->objects + receiver_index + 1, count};
-    operation_result_t result = access_index(thread->process,
-                                             &thread->context->access,
-                                             receiver,
-                                             indices,
-                                             store ? stack->objects[receiver_index - 1] : NULL);
+    operation_result_t result =
+        store && count == 1 && is_current_this(thread, receiver)
+                && receiver->vtbl->set_index == common_set_index
+            ? write_accessible_own_property_result(&thread->context->access,
+                                                   receiver,
+                                                   indices.items[0],
+                                                   stack->objects[receiver_index - 1])
+            : access_index(thread->process,
+                           &thread->context->access,
+                           receiver,
+                           indices,
+                           store ? stack->objects[receiver_index - 1] : NULL);
     size_t base = receiver_index - (store ? 1 : 0);
     while (stack->size > base) {
         object_t *operand = pop_object_from_stack(stack);

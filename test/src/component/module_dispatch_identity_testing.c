@@ -65,7 +65,11 @@ static void cleanup_identity(void *state) {
 
 /** Invoked by the component driver, separately from its configurable call fixtures. */
 void test_module_dispatch_identity(void) {
-    char source[] = "external f = func(x) { return x; }; external result = f(7);";
+    /* f's closure is precisely the module-file scope used by this.f(8). Even that
+     * receiver must bypass the scalar module adapter: it has no receiver channel. */
+    char source[] = "external scope = this;"
+                    "external f = func(x) { if (x == 8 && this != scope) throw 73; return x; };"
+                    "external result = f(7); external methodResult = this.f(8);";
     module_source_t file = {.path = "identity.goat",
                             .name = "identity.goat",
                             .source = source,
@@ -125,7 +129,8 @@ void test_module_dispatch_identity(void) {
             assert(module_files_identity(modules[i]) != module_files_identity(modules[j]));
     }
     yyjson_doc_free(variant);
-    object_static_string_t result_key = {0}, function_key = {0};
+    object_static_string_t result_key = {0}, function_key = {0}, method_result_key = {0};
+    object_t *method_result_name = get_static_string_object(&method_result_key, U"methodResult");
     object_t *result_name = get_static_string_object(&result_key, U"result");
     object_t *function_name = get_static_string_object(&function_key, U"f");
     /* Every instance contains identical function ID, instruction and bytes, yet resolves its
@@ -136,6 +141,13 @@ void test_module_dispatch_identity(void) {
             get_own_field_cell(module_file_scope(module_files_main(modules[i])), result_name);
         assert(result
                && get_object_integer_value(result->object).value == (int64_t)(107 + 100 * i));
+        field_cell_t *method_result =
+            get_own_field_cell(module_file_scope(module_files_main(modules[i])),
+                               method_result_name);
+        /* The VM method returns 8; the deliberately distinguishable adapter would return
+         * 108/208/308. Plain f(7) above still took its module's native entry. */
+        assert(method_result && get_object_integer_value(method_result->object).value == 8);
+        assert(identity_calls[i] == 1);
     }
     process_execution_enter(process);
     thread_t *thread = process->main_thread;

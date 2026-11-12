@@ -117,7 +117,7 @@ Built-in property indexing still requires exactly one index; arrays require one 
 
 Compound assignments and `++`/`--` retain variable/property/index targets once. For `a[i()] += f()`, read before `f()`, apply the ordinary operator to the old value, then select the setter immediately before writing. A constant variable fails before the RHS/operator. Prefix returns the new value; postfix returns the old reference without a deep copy, even if the handler mutated it. Empty and multiple indices are supported by the handlers. See [compound assignment and update ordering](../../compound-assignment.md).
 
-Outside operator handlers, `this` retains its ordinary current-scope semantics. See [Section 10.8](10-contexts-and-closures.md#section-10-8).
+In `obj.method()` and `obj["method"]()`, `this` is the receiver, including for inherited methods. In a plain `f()` it is the call scope; extracting a function does not bind a receiver. See [Section 10.8](10-contexts-and-closures.md#section-10-8).
 
 Indexing reuses `GETINDEX`/`SETINDEX` with their index counts and the shared operator continuation. Native handler integration belongs to #503. C/CTest coverage includes plain/optimized execution, source reconstruction, freshly decoded bytecode, immutable images, GC and exceptions.
 

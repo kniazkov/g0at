@@ -31,8 +31,8 @@ struct context_t {
     /** @brief Owned immutable snapshot of this call's actual values, or NULL outside a call. */
     object_t *arguments;
 
-    /** @brief Owned explicit this for this operator frame only, never inherited by scopes. */
-    object_t *operator_receiver;
+    /** @brief Owned explicit this for a method/operator frame, never inherited by new scopes. */
+    object_t *call_receiver;
     /** @brief Post-return contract; discarded, not executed, during exception unwinding. */
     bool operator_call;
     operator_result_policy_t operator_policy;

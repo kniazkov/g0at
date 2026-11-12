@@ -339,3 +339,4 @@ thread_exported_native_precision
 thread_exported_shared_capture
 
 native_arguments_snapshot
+method_this_receiver

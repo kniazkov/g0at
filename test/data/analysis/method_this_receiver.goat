@@ -1,0 +1,7 @@
+const inspect = func() {
+    var receiver = this;
+    return receiver;
+};
+inspect();
+var items = [inspect];
+var result = items[0]();

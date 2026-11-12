@@ -421,8 +421,8 @@ static bool dynamic_call_impl(object_t *obj,
     module_files_t *module = find_module_files(thread->process, dfobj->access.module);
     bool module_native = module_files_native(module) != NULL;
     bool retry = false;
-    if (!operator_receiver && (!receiver || receiver == dfobj->closure)
-        && !thread->context->native_disabled && !dfobj->native_disabled) {
+    if (!operator_receiver && !receiver && !thread->context->native_disabled
+        && !dfobj->native_disabled) {
         module_native_call_status_t status = call_module_native(module,
                                                                 dfobj->access.file_id,
                                                                 dfobj->function_id,
@@ -485,8 +485,8 @@ static bool dynamic_call_impl(object_t *obj,
     inherit_function_access(&ctx->access, &dfobj->access);
     add_inherited_receiver_access(&ctx->access, receiver, &dfobj->access);
     create_object_property(ctx->data, get_this_key(), ctx->data, true);
-    if (operator_receiver) {
-        ctx->operator_receiver = receiver;
+    if (receiver) {
+        ctx->call_receiver = receiver;
         INCREF(receiver);
     }
     /* Receiver-sensitive closures cannot use scalar specialization. Independently resolved
@@ -536,7 +536,7 @@ static bool dynamic_call_impl(object_t *obj,
     return true;
 }
 
-/** @brief Ordinary calls keep their existing scope-local this binding. */
+/** @brief Member calls bind this to the receiver; plain calls keep scope-local this. */
 static bool dynamic_call(object_t *obj, uint16_t count, object_t *receiver, thread_t *thread) {
     return dynamic_call_impl(obj, count, receiver, thread, false);
 }

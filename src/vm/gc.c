@@ -18,8 +18,8 @@
 static void mark_objects_in_context_and_stack(thread_t *thread) {
     for (context_t *ctx = thread->context; ctx; ctx = ctx->previous) {
         mark_object(ctx->data);
-        if (ctx->operator_receiver)
-            mark_object(ctx->operator_receiver);
+        if (ctx->call_receiver)
+            mark_object(ctx->call_receiver);
         if (ctx->arguments)
             mark_object(ctx->arguments);
         if (ctx->module)

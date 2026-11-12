@@ -3,6 +3,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Source-file tests against structured analysis observations.
  */
+#include "analysis/abstract_state.h"
 #include "analysis/analysis.h"
 #include "analysis/c_contract.h"
 #include "analysis/c_expression.h"
@@ -10,6 +11,7 @@
 #include "analysis/lattice.h"
 #include "cli/options.h"
 #include "graph/declarations.h"
+#include "graph/variable.h"
 #include "lib/files/file_system.h"
 #include "lib/files/io.h"
 #include "lib/memory/allocate.h"
@@ -421,6 +423,24 @@ static bool run_case(const char *directory, const char *name) {
     return passed;
 }
 
+/** Both analysis entry points must admit non-object method receivers such as arrays. */
+static bool check_this_receiver_lattice(void) {
+    long before = get_allocated_memory_size();
+    arena_t *arena = create_arena(16);
+    abstract_state_t *state = create_abstract_state(arena);
+    node_t *node = (node_t *)create_variable_node(arena, (string_view_t){U"this", 4});
+    bool passed = true;
+    for (int dynamic = 0; dynamic < 2; dynamic++) {
+        ((variable_t *)node)->dynamic_lookup = dynamic != 0;
+        passed = passed && calculate_node(node, state, arena)->type == LATTICE_TOP;
+        passed =
+            passed && node->vtbl->analyze_reachability(node, &state, NULL)->type == LATTICE_TOP;
+    }
+    destroy_abstract_state(state);
+    destroy_arena(arena);
+    return passed && get_allocated_memory_size() == before;
+}
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         FPRINTF(stderr, "Usage: analysis_testing <fixture-directory>\n");
@@ -441,7 +461,9 @@ int main(int argc, char **argv) {
         test_output_summary("Analysis", 0, 1);
         return 1;
     }
-    size_t total = 0, passed = 0;
+    bool receiver_lattice = check_this_receiver_lattice();
+    test_output_case(receiver_lattice, "this receiver lattice (direct and dynamic lookup)");
+    size_t total = 1, passed = receiver_lattice ? 1 : 0;
     bool valid = true;
     while (FGETS(line, sizeof(line), list)) {
         char name[128], extra;

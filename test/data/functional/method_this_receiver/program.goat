@@ -1,0 +1,26 @@
+const Base = {
+    var x = 1;
+    const set = func(v) { this.x = v; return this; };
+};
+var a = Base -> {};
+var b = Base -> {};
+println(a.set(10) == a);
+println(a.x);
+println(Base.x);
+println(b["set"](20) == b);
+println(b.x);
+println(a.x);
+println(Base.x);
+const Fixed = {
+    const x = 7;
+    const set = func(v) { this.x = v; return this.x; };
+};
+var child = Fixed -> {};
+println(child.set(9));
+println(Fixed.x);
+try { Fixed.set(8); } catch(e) { println(e); }
+var own = { var x = 3; };
+own.set = Base.set;
+println(own["set"](30) == own);
+println(own.x);
+println(Base.x);

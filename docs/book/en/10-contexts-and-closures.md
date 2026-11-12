@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/10-contexts-and-closures.md) · [Previous chapter](09-vm-and-values.md) · [Next chapter](11-memory-management.md)
 
-Section 10.8 is updated for indexed access and `this` in every scope. Other sections describe: [commit ae26b84, method calls and the `this` constant](https://github.com/kniazkov/g0at/tree/ae26b849471233f3329214f3c170a7a26a756118).
+Section 10.8 is updated for receiver-bound method calls (#528), indexed access and scope-local ordinary calls. Other sections describe: [commit ae26b84, method calls and the `this` constant](https://github.com/kniazkov/g0at/tree/ae26b849471233f3329214f3c170a7a26a756118).
 
 <a id="section-10-1"></a>
 
@@ -139,47 +139,34 @@ It helps to ask two separate questions: where `RET` returns control, and who ret
 
 ## 10.8. Method calls: the receiver and `this`
 
-A method call passes the receiver, the object on which the method is invoked, into the call. `CALLM` hands it to `dynamic_call`, which builds the call's data object from a list of prototypes: for a method call the list contains the function's closure followed by the receiver; an ordinary call keeps only the closure. Name lookup through `VLOAD` therefore checks own properties, then the closure's environment, then the receiver's properties. An update of an undeclared name inside a method body (Section 7.6) is resolved by the same walk: `STORE` finds an existing property through the chain or creates one in the call's own data.
+**For `obj.method()` and `obj["method"]()`, `this` denotes `obj`, including when the function is inherited.** This intentionally replaces the earlier scope-local `this` behavior of method calls. The function still has a separate activation object for parameters and local declarations; they do not become receiver properties.
 
-**In Goat, `this` is the object of the current scope. This differs fundamentally from the familiar Java and JavaScript semantics.** In a Java instance method, `this` denotes the current class instance. In JavaScript, an ordinary property call `obj.method()` supplies `obj` as `this` to an unbound ordinary function; arrow functions have lexical `this`. In Goat, even inside `obj.method()`, `this` denotes a separate call-context object, **not `obj`**. The receiver is accessible through that context's prototypes: `this.x` can find its property, but `this == obj` is false.
+`CALLM` passes the retained receiver to the function. Bare-name lookup and assignment keep their existing rules: the activation object's own properties, the function's closure and the receiver participate in the existing lookup order. Changing the meaning of `this` does not change captures, access rights or lookup of names without `this`.
 
-No function call is required: `this` works at the top level, in an object block `{ ... }`, in nested blocks and in ordinary functions. Every new context has its own `this`; leaving a block restores the previous current context. Variables, parameters and constants cannot be named `this`; assigning the `"this"` property raises `PROPERTY_IS_CONSTANT`.
-
-```goat
-var obj = {
-    this["x"] = 1;
-    this[true] = 2;
-    var inner = {
-        var x = 3;
-        this[false] = 4;
-    };
-};
-println(obj.x);             // 1
-println(obj[true]);         // 2
-println(obj.inner[false]);  // 4
-println(obj.inner.this == obj.inner); // true
-
-obj.inspect = func() {
-    println(this == obj);   // false: a separate call context
-    println(this.x);        // 1: found through a prototype
-    this["local"] = 9;      // a new property of the call context
-    return this;
-};
-var context = obj.inspect();
-println(context.local);     // 9
-println(obj.local);         // null
-```
-
-**Important:** writes through `this` follow ordinary Goat property rules. An existing property may be updated on a prototype; a new property is created on the current object. Use `var x` or `const x` when a nested block needs its own `x` shadowing an outer property. The implicit declaration `x = 1` creates a constant; `this["x"] = 1` creates an ordinary mutable property when it does not exist yet.
-
-User-defined objects expose `this` as an implicit constant property without inserting a dictionary entry: an empty object stays empty and false. Call contexts retain their previously explicit `this` property for compatibility. Both forms refer to the object itself without requiring a strong reference cycle. See the [language reference](appendix-b-language.md#section-b-index) for indexed access.
+An ordinary `f()` has no receiver: its `this` remains its own call-scope object. Extracting `var f = obj.method` does not bind the function to `obj`; the eventual call syntax determines the receiver. Consequently, a method called on a different object receives that object without acquiring new private rights.
 
 ```goat
-const obj = {};
-obj.x = 0;
-obj.getX = func() { return ++x; };
-println(obj.getX());
-println(obj.getX());
+const Base = {
+    var x = 1;
+    const set = func(value) { this.x = value; return this; };
+};
+var obj = Base -> {};
+println(obj.set(10) == obj); // true
+println(obj.x);             // 10
+println(Base.x);            // 1
+obj["set"](20);
+println(obj.x);             // 20
+
+var f = obj.set;
+var scope = f(30);
+println(scope.x);           // 30
+println(obj.x);             // 20
 ```
 
-The method's body never names `obj`. Both calls still find `x` through the receiver's prototype and print `1`, then `2`. A function obtained from a factory and installed on an object behaves the same way: the receiver is determined by the object on which the method is called, not by where the function was created.
+`this.x` writes an own field of the receiver, not the inherited prototype's field. This own-field rule applies to explicit dot/index writes whose target is the current scope's `this` object, including an alias such as `const self = this` used in that same scope. Other objects and bare-name writes keep their existing rules. Existing access checks and checks on own constants still apply. Bare `x` is not rewritten as `this.x`; use explicit local declarations when local storage is intended.
+
+At the top level and in an object block, `this` continues to designate that scope's object. A nested object block has its own `this`; a nested function called as `f()` has its own call scope. Save an explicit `self` variable when an outer receiver is needed. Variables, parameters and constants cannot be named `this`; the `"this"` property remains constant.
+
+User-defined objects expose an implicit constant `this` property without adding a dictionary entry. The method's explicit receiver binding is kept separately from activation storage and retained as a garbage-collection root until the call frame is removed. Returning or throwing restores the caller's binding; recursive calls have independent frames.
+
+Built-in methods keep their existing receiver handling. A callable object stored in a property still receives itself, not the containing object, through its `"()"` handler. Native continuation execution uses the same VM call-frame rules; scalar specialization must not bypass receiver-dependent semantics. See the [language reference](appendix-b-language.md#section-b-index) and [callable objects](../../operator-call.md).

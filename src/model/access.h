@@ -201,6 +201,11 @@ operation_result_t write_accessible_property_result(const function_access_t *acc
                                                     object_t *object,
                                                     object_t *key,
                                                     object_t *value);
+/** @brief Explicit this writes retain access checks but never mutate a prototype slot. */
+operation_result_t write_accessible_own_property_result(const function_access_t *access,
+                                                        object_t *object,
+                                                        object_t *key,
+                                                        object_t *value);
 operation_result_t access_status_result(model_status_t status, object_t *value);
 /** @brief Specialized indices retain virtual semantics; dictionary indices use access checks. */
 operation_result_t access_index(process_t *process,

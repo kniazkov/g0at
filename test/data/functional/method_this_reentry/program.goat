@@ -1,0 +1,21 @@
+const Base = {
+    var x = 0;
+    const recur = func(n) {
+        this.x = this.x + 1;
+        if (n == 0) return this;
+        return this["recur"](n - 1);
+    };
+    const fail = func(v) { this.x = v; throw this; };
+};
+var a = Base -> {};
+var b = Base -> {};
+println(a.recur(4) == a);
+println(a.x);
+println(Base.x);
+try { b.fail(17); } catch(e) { println(e == b); }
+println(b.x);
+println(a.recur(1) == a);
+println(a.x);
+println(b["recur"](0) == b);
+println(b.x);
+println(Base.x);

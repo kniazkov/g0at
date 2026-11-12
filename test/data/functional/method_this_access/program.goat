@@ -1,0 +1,37 @@
+const Base = {
+    private var secret = 1;
+    protected var shared = 2;
+    public set = func(v) {
+        const alias = this;
+        alias.secret = v;
+        this["shared"] = v + 1;
+        return this.secret;
+    };
+    public get = func() { return this.secret; };
+    public getShared = func() { return this.shared; };
+    public lexical = func() { return secret; };
+};
+var a = Base -> {};
+var b = Base -> {};
+println(a.set(10));
+println(a.get());
+println(a.getShared());
+println(Base.get());
+println(Base.getShared());
+println(b.get());
+println(a.lexical());
+try { println(a.secret); } catch(e) { println(e); }
+const stranger = func() { this.secret = 99; };
+a.stranger = stranger;
+try { a.stranger(); } catch(e) { println(e); }
+println(a.get());
+println(Base.get());
+var locked = Base -> { const value = 7; };
+locked.write = func() { this.value = 8; };
+try { locked.write(); } catch(e) { println(e); }
+println(locked.value);
+var collision = Base -> { public var secret = 200; };
+println(collision.set(30));
+println(collision.get());
+println(collision.secret);
+println(Base.get());
