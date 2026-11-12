@@ -1,0 +1,35 @@
+name: Synthetic Make sync-handle experiment
+on:
+  push:
+    branches: [ci/507-sync-reuse-experiment]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {msystem: MINGW32, prefix: mingw-w64-i686}
+          - {msystem: MINGW64, prefix: mingw-w64-x86_64}
+          - {msystem: UCRT64, prefix: mingw-w64-ucrt-x86_64}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          install: >-
+            ${{ matrix.prefix }}-gcc
+            ${{ matrix.prefix }}-cmake
+            ${{ matrix.prefix }}-make
+      - name: Synthetic stale handle and token-only control
+        shell: msys2 {0}
+        run: cmake -P scripts/sync-reuse/run.cmake
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: synthetic-sync-reuse-${{ matrix.msystem }}
+          path: build/ci/sync-reuse/*.log
+          if-no-files-found: warn
