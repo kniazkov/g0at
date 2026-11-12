@@ -13,6 +13,9 @@
 #    include <sys/select.h>
 #    include <sys/types.h>
 #    include <unistd.h>
+#    ifdef __linux__
+#        include <sys/prctl.h>
+#    endif
 #endif
 
 static void mark(const char *event) {
@@ -31,6 +34,21 @@ static int mode_is(const char *expected) {
 }
 
 static void crash(void) {
+#ifdef __linux__
+    /* This fixture tests SIGABRT classification, not the host's core reporter.
+     * A piped core_pattern handler can delay terminal status beyond the probe
+     * deadline even with RLIMIT_CORE=0. Disable dumps only in this disposable
+     * worker, after descendant readiness, while preserving the real signal. */
+    if (prctl(PR_SET_DUMPABLE, 0L, 0L, 0L, 0L) < 0) {
+        perror("probe crash fixture: PR_SET_DUMPABLE");
+        _Exit(99);
+    }
+    if (prctl(PR_GET_DUMPABLE, 0L, 0L, 0L, 0L) != 0) {
+        fputs("probe crash fixture: core dumps remain enabled\n", stderr);
+        _Exit(99);
+    }
+    mark("crash-core-disabled");
+#endif
     mark("crash");
 #ifdef _WIN32
     /* UCRT abort() may wait for Windows Error Reporting. This fixture needs an
