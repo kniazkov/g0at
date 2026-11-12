@@ -135,7 +135,8 @@ The probe checks whether that handle is valid in each child and queries its
 object type without waiting on, acquiring, releasing or closing the inherited
 object. An isolated self-control must identify a newly created local mutex;
 the direct-child baselines require no exported handle with synchronization off
-and a valid mutex with synchronization on. The experiment clears inherited
+and a valid mutex with target synchronization. Recurse mode does not need to
+export a mutex to an ordinary (non-recursive) recipe. The experiment clears inherited
 Make flags only at its own top level, not inside the launcher chain.
 A missing/invalid handle or a type other than `Mutant` after an
 intermediate launcher would identify an inheritance boundary worth investigating.
@@ -150,3 +151,23 @@ inherited handles; a later restricted-handle launch implementation does not
 establish what happened in the failed run. The existing preinstall/direct-CPack
 workaround is deliberately unchanged. Issue #507 remains open until the actual
 wait mechanism and a validated correction are established.
+
+The first native probe run (43186144813, all three Windows profiles, CMake 4.4.3 and GNU Make
+4.4.1) found a valid `Mutant` in direct and recursive Make children, but Windows
+error 6 (invalid handle) after both `cmake -E env` and `execute_process`, while
+`MAKEFLAGS` still contained its numeric value. This establishes a real
+inheritance boundary in those installed binaries, not yet the wait object of
+the historical CPack stall. That diagnostic run also exposed an overly strict
+recurse-mode direct-child baseline, corrected to expect no exported mutex for
+an ordinary recipe in that mode.
+
+The follow-up probe also creates a tiny generated Makefiles/ZIP-CPack project
+with an always-run handle-reporting target. It runs the production-shaped
+preinstall/direct-CPack controls first, then the original outer package target
+with output sync off and on. All four commands have 30-second limits. Failed
+production-shaped controls fail CI; failures/timeouts of the two deliberately
+experimental outer-package paths are recorded, not interpreted as regression
+passes or hidden by a retry. No original path is used to produce a release.
+Optional `pacman -Q` and `ldd` output identifies installed package and linked
+library versions, since the executable may use a system library rather than
+the copy bundled in its upstream source tree.
