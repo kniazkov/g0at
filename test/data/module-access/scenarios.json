@@ -2980,5 +2980,120 @@
       "sources/library-1/main.goat": "external obj = (include \"impl.goat\").obj;",
       "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}"
     }
+  },
+  {
+    "id": "integration.module_multifile_access.init-import-receiver",
+    "group": "init",
+    "name": "init-import-receiver",
+    "auto": true,
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "7\n1\n20\n10\n7\n3\nACCESS_DENIED\nACCESS_DENIED\nFOREIGN_OBJECT\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/library-1/main.goat": "external Base = {\n    private var secret = 3;\n    external var items = null;\n    external var x = 0;\n    private init = func(a) {\n        if (a != null || arguments.length != 0) throw 1;\n        this.secret = 7;\n        this.items = [1];\n    };\n    external set = func() { this.items[0] = 7; };\n    external read = func() { return this.secret; };\n    external make = func() { var inner = { external var x = 10; }; this.x = 20; return inner; };\n};\nexternal make = func() { return Base -> {}; };\nexternal derive = func(fn) { return Base -> { external init = fn; }; };\nexternal spawn = func(proto) { return proto -> {}; };\n",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/app-1/main.goat": "const library = import \"library@1\";\nconst Base = library.Base;\nvar a = library.make(); var b = library.make();\na[\"set\"](); println(a.items[0]); println(b.items[0]);\nvar inner = a.make(); println(a.x); println(inner.x);\nprintln(a.read()); println(Base.read());\ntry { a.init(); } catch(e) { println(e); }\ntry { println(a.secret); } catch(e) { println(e); }\ntry { var foreign = Base -> { println(\"bad block\"); }; } catch(e) { println(e); }\n",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.init-import-body-rights",
+    "group": "init",
+    "name": "init-import-body-rights",
+    "auto": true,
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "7\n1\n20\n10\n7\n3\nACCESS_DENIED\nACCESS_DENIED\nFOREIGN_OBJECT\nACCESS_DENIED\n3\n",
+        "fail": false,
+        "diagnostic": ""
+      }
+    ],
+    "files": {
+      "sources/library-1/main.goat": "external Base = {\n    private var secret = 3;\n    external var items = null;\n    external var x = 0;\n    private init = func(a) {\n        if (a != null || arguments.length != 0) throw 1;\n        this.secret = 7;\n        this.items = [1];\n    };\n    external set = func() { this.items[0] = 7; };\n    external read = func() { return this.secret; };\n    external make = func() { var inner = { external var x = 10; }; this.x = 20; return inner; };\n};\nexternal make = func() { return Base -> {}; };\nexternal derive = func(fn) { return Base -> { external init = fn; }; };\nexternal spawn = func(proto) { return proto -> {}; };\n",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/app-1/main.goat": "const library = import \"library@1\";\nconst Base = library.Base;\nvar a = library.make(); var b = library.make();\na[\"set\"](); println(a.items[0]); println(b.items[0]);\nvar inner = a.make(); println(a.x); println(inner.x);\nprintln(a.read()); println(Base.read());\ntry { a.init(); } catch(e) { println(e); }\ntry { println(a.secret); } catch(e) { println(e); }\ntry { var foreign = Base -> { println(\"bad block\"); }; } catch(e) { println(e); }\nvar stranger = func() { this.secret = 99; };\nvar Derived = library.derive(stranger);\ntry { library.spawn(Derived); } catch(e) { println(e); }\nprintln(Base.read());\n",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
+  },
+  {
+    "id": "integration.module_multifile_access.init-import-trace",
+    "group": "init",
+    "name": "init-import-trace",
+    "auto": true,
+    "runtimeFail": true,
+    "operations": [
+      {
+        "mode": "compile",
+        "path": "sources/library-1/module.gmod",
+        "output": "modules/library/1.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "compile",
+        "path": "sources/app-1/module.gmod",
+        "output": "app.gbin",
+        "expected": "",
+        "fail": false,
+        "diagnostic": ""
+      },
+      {
+        "mode": "binary",
+        "path": "app.gbin",
+        "output": null,
+        "expected": "before\n",
+        "fail": true,
+        "diagnostic": "library@1: main.goat:2:48, init"
+      }
+    ],
+    "files": {
+      "sources/library-1/main.goat": "external Base = {\n    private init = func() { println(\"before\"); throw 73; };\n};\nexternal make = func() { return Base -> { println(\"bad block\"); }; };\n",
+      "sources/library-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"library\", \"version\": \"1\", \"main\": \"main.goat\"}",
+      "sources/app-1/main.goat": "(import \"library@1\").make();\n",
+      "sources/app-1/module.gmod": "{\"formatVersion\": 1, \"name\": \"app\", \"version\": \"1\", \"main\": \"main.goat\"}"
+    }
   }
 ]

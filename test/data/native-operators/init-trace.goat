@@ -1,0 +1,5 @@
+const Base = {
+    const init = func() { throw 73; };
+};
+const make = func() { return Base -> { println("unreachable"); }; };
+var obj = make();

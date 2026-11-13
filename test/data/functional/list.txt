@@ -645,3 +645,6 @@ init_diamond_repeat
 init_prepare_override
 init_reentrant
 init_nested_this_rights
+
+init_modes_state
+init_modes_nested

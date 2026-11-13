@@ -138,3 +138,7 @@ and `CHECKBOUND` check writes before the corresponding mutation; denied writes d
 silently create replacement fields. Operand validation and the full opcode inventory
 are defined by `src/vm/opcodes.h`, `src/vm/bytecode.c` and the format tables, not by a
 historical instruction count. Ready bytecode remains immutable; runtime caches live outside it.
+
+## Methods and init (#533)
+
+INHERIT consumes evaluated prototypes once, enters the object context and validates the whole init snapshot. Selected methods run with zero actual arguments and discarded results before the right-hand block. Continuations resume INHERIT without consuming prototypes again. LEAVE still returns the object; a return from the right block targets the enclosing function. No opcode layout/version change is made: valid saved images execute current semantics, not historical method-this behavior. Linked-image validation and unchanged-image/stack assertions cover the init continuation tests.

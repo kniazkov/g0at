@@ -1,0 +1,23 @@
+const exercise = func() {
+const Base = {
+    const init = func() { this.items = [1]; };
+    const set = func() { this.items[0] = 7; };
+};
+var a = Base -> {};
+var b = Base -> {};
+a["set"]();
+println(a.items[0]);
+println(b.items[0]);
+const Maker = {
+    const make = func() {
+        const inner = { this.x = 10; };
+        this.x = 20;
+        return inner;
+    };
+};
+var obj = Maker -> {};
+var inner = obj.make();
+println(obj.x);
+println(inner.x);
+};
+exercise();

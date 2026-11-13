@@ -164,3 +164,9 @@ Native execution must enforce the same restrictions. If access rights cannot be 
 The identified filtering and copying contradictions are resolved by the rules above. The actual status of each stage is in the [implementation plan](access-control-implementation-plan.md). Declaration, clone, flat, and filtering examples now execute in the VM; proven denials are diagnosed at compile time and unknown cases at runtime. Multi-file examples are exercised by #218 through actual archives, includes and imports. Adapted functions do not retain native specializations whose environment assumptions may have changed.
 
 Since #528, `copy.method()` binds `this` to `copy`; extracting and plainly calling the function remains unbound. Capture adaptation and lexical access rights remain separate from this receiver binding. See AC-05 and [chapter 10](10-contexts-and-closures.md).
+
+## Methods and init (#533)
+
+Automatic init selection includes private and protected own fields of real ancestors, including ancestors from imported modules. This does not grant the selected function new access rights: its original defining access metadata governs its body. Manual obj.init() still checks the field modifier. The init-import-receiver and init-import-body-rights module fixtures verify these rules in source/persisted VM and auto modes.
+
+The existing FOREIGN_OBJECT rule also applies: a library init cannot create or shadow fields on a receiver owned by another module. Use a factory in the defining module for module-owned construction. Automatic selection does not bypass this restriction.

@@ -731,7 +731,7 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1918 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1921 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
   message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (including four safe native retry cases for #316); found ${goat_integration_count}")
 endif()
@@ -883,7 +883,7 @@ foreach(continuation_case mixed unwind escape trace strict-bool recursion method
     "$<TARGET_FILE:native_continuation_testing>" "${continuation_case}")
 endforeach()
 
-foreach(operator_case arithmetic comparison logical index call unwind examples composition)
+foreach(operator_case arithmetic comparison logical index call unwind examples composition init-modes init-trace)
   goat_scenario(native.operators.${operator_case} "native;native-operators;language-roundtrip" TIMEOUT 200 COMMAND
     "$<TARGET_FILE:native_operator_testing>" "native.operators.${operator_case}" "$<TARGET_FILE:goat>"
     "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")

@@ -1,0 +1,4 @@
+Uncaught exception: 73
+  at program@0: program.goat:2:27, init
+  at program@0: program.goat:4:30, make
+  at program@0: program.goat:5:11, <top-level>

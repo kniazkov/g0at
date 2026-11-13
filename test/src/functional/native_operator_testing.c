@@ -21,7 +21,14 @@ typedef struct {
                      state->exe,                                                                   \
                      (const char *const[]){state->exe, __VA_ARGS__, NULL},                         \
                      environment)
-#define CHECK(result) language_check(run, result, 0, expected, expected_size, "", 0)
+#define CHECK(result)                                                                              \
+    language_check(run,                                                                            \
+                   result,                                                                         \
+                   expected_error_size ? 1 : 0,                                                    \
+                   expected,                                                                       \
+                   expected_size,                                                                  \
+                   expected_error,                                                                 \
+                   expected_error_size)
 
 static unsigned long long report_count(scenario_run_t *run, const char *report, const char *name) {
     size_t n = strlen(name);
@@ -70,6 +77,12 @@ static void body(scenario_run_t *run, void *opaque) {
     const char *code = language_read(run, language_join(run, data, name), &code_size);
     snprintf(name, sizeof(name), "%s.txt", state->fixture);
     const char *expected = language_read(run, language_join(run, data, name), &expected_size);
+    snprintf(name, sizeof(name), "%s.err", state->fixture);
+    const char *error_path = language_join(run, data, name);
+    size_t expected_error_size = 0;
+    const char *expected_error = language_exists(run, error_path)
+                                     ? language_read(run, error_path, &expected_error_size)
+                                     : "";
     const char *work = scenario_work_directory(scenario_run_context(run));
     const char *source = language_join(run, work, "program.goat");
     const char *binary = language_join(run, work, "program.gbin");
@@ -172,7 +185,9 @@ int main(int argc, char **argv) {
                                   "call",
                                   "unwind",
                                   "examples",
-                                  "composition"};
+                                  "composition",
+                                  "init-modes",
+                                  "init-trace"};
     const size_t count = sizeof(names) / sizeof(names[0]);
     if (argc == 2 && !strcmp(argv[1], "--list")) {
         for (size_t i = 0; i < count; i++)
@@ -183,19 +198,21 @@ int main(int argc, char **argv) {
         char *exe = absolute_fs_path(argv[2], &error);
         clear_fs_error(&error);
         if (exe) {
-            state_t states[8];
-            scenario_definition_t definitions[8];
-            char ids[8][80];
+            state_t states[10];
+            scenario_definition_t definitions[10];
+            char ids[10][80];
             for (size_t i = 0; i < count; i++) {
                 snprintf(ids[i], sizeof(ids[i]), "native.operators.%s", names[i]);
-                static const unsigned long long counts[8][3] = {{3, 15, 15},
-                                                                {2, 4, 4},
-                                                                {6, 5, 5},
-                                                                {7, 16, 16},
-                                                                {6, 7, 7},
-                                                                {4, 12, 11},
-                                                                {6, 8, 8},
-                                                                {4, 49, 33}};
+                static const unsigned long long counts[10][3] = {{3, 15, 15},
+                                                                 {2, 4, 4},
+                                                                 {6, 5, 5},
+                                                                 {7, 16, 16},
+                                                                 {6, 7, 7},
+                                                                 {4, 12, 11},
+                                                                 {6, 8, 8},
+                                                                 {4, 49, 33},
+                                                                 {2, 2, 2},
+                                                                 {1, 1, 0}};
                 states[i] =
                     (state_t){exe,
                               i == 6 ? "program" : names[i],

@@ -63,3 +63,7 @@ Both executions print `7`, `6`, `4.0`. Only the ZIP is moved; the run directory 
 The compiler emits `PURE_RETRY` only for a proven pure body that exhausts native resources. The host also requires a matching metadata purity proof. It reuses already evaluated arguments and disables native dispatch for the retried body and its descendants. Other errors never authorize replay. `--run` never rebuilds missing artifacts.
 
 Regression coverage includes `integration.unified_gbin`, `native.binary_program`, bytecode oracle tests, module validation, dispatch and delivery suites. See [delivery evidence](../../module-delivery-tests.md) for supported-platform verification.
+
+## Method and init semantics in existing images
+
+The this/init series keeps the instruction-image format and version. Reading a valid historical image does not preserve historical language behavior: CALLM uses the receiver as this and INHERIT executes the validated ancestor init chain before the right-hand block. Rebuild saved artifacts for the adopted semantics. Execution must not rewrite instruction/archive bytes; mode and continuation tests compare them before and after execution. Native adapters may drive VM continuations, and required does not promise native execution of every operation.
