@@ -622,3 +622,6 @@ add_dependencies(native_operator_testing goat)
 add_executable(module_operator_scenarios src/functional/module_operator_scenarios.c)
 target_link_libraries(module_operator_scenarios PRIVATE goat_language_execution_support)
 add_dependencies(module_operator_scenarios goat)
+
+add_executable(init_snapshot_testing src/component/init_snapshot_testing.c)
+target_link_libraries(init_snapshot_testing PRIVATE goat_validation m)

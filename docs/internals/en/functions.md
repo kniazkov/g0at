@@ -68,3 +68,43 @@ Calling through a mutable binding or generic function parameter is unsupported
 here; the recognized `sqrt` call is supported. The test checks the C-support event,
 not whether a host compiler happens to accept some generated text. Actual emission,
 loading and invocation need the [native](native.md) tests as well.
+
+## Internal init snapshots (#530)
+
+`model/init_snapshot.h` prepares constructor selection without invoking functions.
+It is not connected to `->`: automatic constructor execution belongs to #531.
+No syntax, ordinary method access, or visible object creation behavior changes here.
+
+`collect_init_snapshot(process, receiver)` excludes the receiver itself and follows
+only `get_inheritance_prototypes`, never lexical enclosing scopes. It uses iterative
+right-to-left postorder traversal, the reverse of property lookup on the real
+inheritance graph: bases before derived objects and independent `[A, B]` as `B, A`.
+Object identity is deduplicated, including diamonds and repeated direct prototypes.
+Only the selected own `init` field of each ancestor is read. Missing fields are
+skipped; a function stored on two different ancestors appears twice.
+
+Selection ignores the field's access modifier but grants no new rights to the
+function body. A present non-function (including null or an object with a `()`
+handler) returns an owned InvalidOperation exception and no snapshot. Collection
+never invokes a function, even if an earlier candidate is valid. A successful
+result therefore represents the entire validated chain before any future calls.
+
+The opaque snapshot owns a private read-only array containing the receiver and the
+concrete selected function objects. It registers that array as a process GC root;
+reference counts alone would not protect C-held values from tracing collection.
+Changes to ancestor fields cannot change an existing snapshot. Function closures
+and their original access metadata stay reachable through the selected functions.
+A later collection sees the new fields. Each live snapshot has its own root.
+
+Call under the process model lock with a live receiver belonging to that process.
+Collection has no user callbacks or GC safepoints. Borrowed receiver/function
+accessors are valid until `destroy_init_snapshot`; destroy the snapshot before its
+process. On failure, release the returned exception with `clear_exception`.
+Destruction unregisters the root and releases all references, without executing
+constructors. The collector uses an explicit traversal stack rather than C recursion.
+
+`component.init_snapshot.*` tests independent branches, chains, diamonds, repeated
+prototypes, shared functions, lexical exclusion, own fields, all access modifiers,
+non-function rejection without calls, immutable selection, concurrent snapshots,
+closure/receiver survival across GC and release, and deep inheritance. They run in
+Debug and Release CI via the `init-snapshot` label.
