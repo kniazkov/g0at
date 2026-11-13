@@ -170,3 +170,81 @@ At the top level and in an object block, `this` continues to designate that scop
 User-defined objects expose an implicit constant `this` property without adding a dictionary entry. The method's explicit receiver binding is kept separately from activation storage and retained as a garbage-collection root until the call frame is removed. Returning or throwing restores the caller's binding; recursive calls have independent frames.
 
 Built-in methods keep their existing receiver handling. A callable object stored in a property still receives itself, not the containing object, through its `"()"` handler. Native continuation execution uses the same VM call-frame rules; scalar specialization must not bypass receiver-dependent semantics. See the [language reference](appendix-b-language.md#section-b-index) and [callable objects](../../operator-call.md).
+
+### Nested scopes and an explicit capture
+
+These examples show the boundaries of `this`. An object block temporarily uses its own object; leaving it restores the method receiver. A plain nested function call creates its own call scope. A local name remains lexical.
+
+```goat
+var obj = {
+    var x = 1;
+    const f = func() {
+        const inner = {
+            this.x = 10;
+            this.y = 20;
+        };
+        this.x = 30;
+        return inner;
+    };
+};
+var inner = obj.f();
+println(obj.x);
+println(inner.x);
+println(inner.y);
+```
+
+Output:
+
+```text
+30
+10
+20
+```
+
+```goat
+var obj = {
+    var x = 1;
+    const f = func() {
+        var self = this;
+        var helper = func() {
+            this.x = 10;
+            self.x = 20;
+            return this.x;
+        };
+        println(helper());
+        println(this.x);
+    };
+};
+obj.f();
+println(obj.x);
+```
+
+Output:
+
+```text
+10
+20
+20
+```
+
+```goat
+var obj = {
+    var x = 1;
+    const f = func() {
+        var x = 7;
+        this.x = 9;
+        println(x);
+        println(this.x);
+    };
+};
+obj.f();
+```
+
+Output:
+
+```text
+7
+9
+```
+
+A returned closure can keep `self` after the method returns. Each ordinary call of that closure has a separate `this`; captured locals remain shared between its calls. The same boundaries apply to inherited methods and indexed calls. Nested object blocks do not inherit the receiver, and exception unwinding restores the enclosing frame without reverting field writes.

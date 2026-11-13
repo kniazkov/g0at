@@ -1,0 +1,26 @@
+var obj = {
+    var x = 1;
+    const f = func() {
+        const self = this;
+        const inner = {
+            this.x = 10;
+            const middle = this;
+            const leaf = {
+                this.x = 100;
+                println(this == middle);
+                println(this == self);
+            };
+            println(this == middle);
+            println(this.x);
+            println(leaf.x);
+            this.x = 20;
+        };
+        println(this == self);
+        println(this.x);
+        this.x = 30;
+        return inner;
+    };
+};
+var inner = obj.f();
+println(obj.x);
+println(inner.x);

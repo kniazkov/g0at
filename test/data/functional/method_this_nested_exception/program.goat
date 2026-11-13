@@ -1,0 +1,28 @@
+const holder = { var leaked = null; };
+const Base = {
+    var x = 1;
+    const f = func(v) {
+        const self = this;
+        try {
+            const inner = {
+                this.x = 10;
+                holder.leaked = this;
+                const leaf = { this.x = 100; throw this; };
+            };
+        } catch(e) {
+            println(e == self);
+            println(e.x);
+        }
+        println(this == self);
+        this.x = v;
+        return this;
+    };
+};
+var a = Base -> {};
+var b = Base -> {};
+println(a.f(20) == a);
+println(holder.leaked.x);
+println(b["f"](30) == b);
+println(a.x);
+println(b.x);
+println(Base.x);

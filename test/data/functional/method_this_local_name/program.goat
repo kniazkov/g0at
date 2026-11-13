@@ -1,0 +1,10 @@
+var obj = {
+    var x = 1;
+    const f = func() {
+        var x = 7;
+        this.x = 9;
+        println(x);
+        println(this.x);
+    };
+};
+obj.f();

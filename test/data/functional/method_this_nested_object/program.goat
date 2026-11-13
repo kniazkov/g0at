@@ -1,0 +1,15 @@
+var obj = {
+    var x = 1;
+    const f = func() {
+        const inner = {
+            this.x = 10;
+            this.y = 20;
+        };
+        this.x = 30;
+        return inner;
+    };
+};
+var inner = obj.f();
+println(obj.x);
+println(inner.x);
+println(inner.y);
