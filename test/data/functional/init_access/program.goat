@@ -1,0 +1,16 @@
+const Base = {
+    private var secret = 1;
+    protected var shared = 2;
+    private init = func() { this.secret = 7; this.shared = 8; };
+    public read = func() { return this.secret; };
+};
+var obj = Base -> { println(this.shared); };
+println(obj.read()); println(Base.read());
+try { obj.init(); } catch(e) { println(e); }
+const stranger = func() { this.secret = 99; };
+const Other = Base -> { public init = stranger; };
+try { var bad = Other -> { println("bad block"); }; } catch(e) { println(e); }
+const Protected = { protected init = func() { this.x = 10; }; };
+println((Protected -> {}).x);
+const Public = { public init = func() { this.x = 20; }; };
+println((Public -> {}).x);

@@ -1,0 +1,6 @@
+var Callable = {};
+Callable["()"] = func() { println("bad callable"); };
+const Null = { const init = null; };
+const Obj = { const init = Callable; };
+try { var x = Null -> { println("bad"); }; } catch(e) { println(e); }
+try { var x = Obj -> { println("bad"); }; } catch(e) { println(e); }

@@ -1,0 +1,3 @@
+Uncaught exception: INVALID_OPERATION
+  at program@0: program.goat:3:11, <top-level>
+  at program@0: program.goat:3:11, <top-level>

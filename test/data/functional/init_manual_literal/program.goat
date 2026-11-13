@@ -1,0 +1,7 @@
+var obj = {
+    var x = 1;
+    const init = func() { this.x = 7; return 99; };
+};
+println(obj.x);
+println(obj.init());
+println(obj.x);

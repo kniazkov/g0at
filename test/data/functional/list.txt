@@ -622,3 +622,16 @@ method_this_nested_levels
 method_this_escaping_self
 method_this_nested_dispatch
 method_this_nested_exception
+
+init_order
+init_manual_literal
+init_independent
+init_prevalidate
+init_lexical
+init_arguments_return
+init_right_return
+init_exception
+init_access
+init_snapshot_nested
+init_invalid_values
+init_prevalidate_uncaught

@@ -24,7 +24,7 @@
 
 static size_t entries, steps, effects;
 static bool fail_after_effect, invalid_pc, escaping_exception, language_failure;
-static bool host_cancellation, backend_failure;
+static bool host_cancellation, backend_failure, constructor_aborted;
 
 static uint32_t GOAT_NATIVE_CALL invoke(const goat_native_continuation_context_t *context,
                                         uint32_t pc) {
@@ -135,6 +135,7 @@ static void program(const gchar_t *source,
     thread_t *thread = process->main_thread;
     context_t *caller = thread->context;
     entries = steps = effects = 0;
+    size_t roots = process->gc_roots_size;
     int status = run(process, code);
     if (status && !failure)
         fprintf(stderr,
@@ -147,6 +148,7 @@ static void program(const gchar_t *source,
     assert(thread->native_attempts == entries && thread->native_retries == 0);
     assert(thread->native_successes == (failure || escaping_exception ? 0 : entries));
     assert(thread->data_stack->size == 0);
+    assert(process->gc_roots_size == roots);
     if (language_failure) {
         assert(thread->context == get_root_context());
         assert(thread->exception.value == get_static_integer_object(73));
@@ -156,7 +158,13 @@ static void program(const gchar_t *source,
         assert(origin->instruction < code->instructions_count);
         assert(code->instructions[origin->instruction].opcode == THROW);
     } else {
-        assert(thread->context == caller && !thread->exception.value);
+        assert(!thread->exception.value);
+        if (constructor_aborted) {
+            assert(thread->context != caller);
+            for (context_t *ctx = thread->context; ctx != get_root_context(); ctx = ctx->previous)
+                assert(!ctx->init_snapshot);
+        } else
+            assert(thread->context == caller);
         if (host_cancellation && !backend_failure) {
             assert(!process->native_failed && thread->native_status == GOAT_NATIVE_OK);
             assert(!thread->exception.trace);
@@ -266,6 +274,107 @@ int main(int argc, char **argv) {
                 1,
                 2,
                 4,
+                false);
+    } else if (!strcmp(argv[1], "init-vm") || !strcmp(argv[1], "init-method")) {
+        unsigned native = !strcmp(argv[1], "init-method");
+        program(U"var initialize=func(a){if(a!=null || arguments.length!=0)throw 1;"
+                U"mark();this.x=7;return 999;};"
+                U"var base={var init=initialize;};"
+                U"var obj=base->{if(this.x!=7)throw 2;mark();};"
+                U"if(obj.x!=7)throw 3;",
+                native,
+                native,
+                2,
+                false);
+    } else if (!strcmp(argv[1], "init-caller")) {
+        program(U"var factory=func(base){return base->{mark();};};"
+                U"var inner={const init=func(){mark();this.x=4;};};"
+                U"var base={const init=func(){mark();var self=this;"
+                U"var nested=inner->{};if(this!=self || nested.x!=4)throw 1;this.x=7;};};"
+                U"if(factory(base).x!=7 || factory(base).x!=7)throw 2;",
+                1,
+                2,
+                6,
+                false);
+    } else if (!strcmp(argv[1], "init-static")) {
+        program(U"var factory=func(base){return base->{this.x=7;};};"
+                U"var base={var init=mark;};if(factory(base).x!=7)throw 1;",
+                1,
+                1,
+                1,
+                false);
+    } else if (!strcmp(argv[1], "init-validation")) {
+        program(U"var factory=func(a,b){try{var v=[a,b]->{throw 2;};}"
+                U"catch(e){if(e!=\"INVALID_OPERATION\")throw 3;return 7;}return 99;};"
+                U"var a={const init=42;};var b={var init=mark;};"
+                U"if(factory(a,b)!=7)throw 1;",
+                1,
+                1,
+                0,
+                false);
+    } else if (!strcmp(argv[1], "init-return")) {
+        program(U"var factory=func(base){try{var obj=base->{return this.x+1;};"
+                U"return 99;}finally{mark();}};"
+                U"var base={const init=func(){this.x=6;return 100;};};"
+                U"if(factory(base)!=7)throw 1;",
+                1,
+                1,
+                1,
+                false);
+    } else if (!strcmp(argv[1], "init-unwind")) {
+        escaping_exception = true;
+        program(U"var factory=func(base){return base->{throw 2;};};"
+                U"var state={var leaked=null;};"
+                U"var base={const init=func(){state.leaked=this;this.x=7;mark();throw 73;};};"
+                U"var caught=false;try{factory(base);}catch(e){caught=e==73;}"
+                U"if(!caught || state.leaked.x!=7)throw 1;",
+                1,
+                1,
+                1,
+                false);
+    } else if (!strcmp(argv[1], "init-trace")) {
+        language_failure = true;
+        program(U"var factory=func(base){return base->{throw 2;};};"
+                U"var base={const init=func(){try{mark();throw 73;}finally{mark();}};};"
+                U"factory(base);",
+                1,
+                1,
+                2,
+                true);
+    } else if (!strcmp(argv[1], "init-native-trace")) {
+        language_failure = true;
+        program(U"var initialize=func(){mark();throw 73;};"
+                U"var base={var init=initialize;};var obj=base->{throw 2;};",
+                1,
+                1,
+                1,
+                true);
+    } else if (!strcmp(argv[1], "init-cancel-direct") || !strcmp(argv[1], "init-backend-direct")) {
+        host_cancellation = constructor_aborted = true;
+        backend_failure = !strcmp(argv[1], "init-backend-direct");
+        program(U"var initialize=func(){mark();};var base={var init=initialize;};"
+                U"var obj=base->{throw 2;};",
+                1,
+                1,
+                1,
+                true);
+    } else if (!strcmp(argv[1], "init-cancel")) {
+        host_cancellation = true;
+        program(U"var factory=func(base){return base->{};};"
+                U"var base={const init=func(){mark();};};factory(base);",
+                1,
+                1,
+                1,
+                true);
+    } else if (!strcmp(argv[1], "init-snapshot")) {
+        program(U"var original=func(){mark();this.x=this.x+10;};"
+                U"var a={var init=original;};"
+                U"var b={const init=func(){a.init=func(){this.x=100;};"
+                U"original=null;this.x=1;mark();};};"
+                U"var value=[a,b]->{};if(value.x!=11)throw 1;",
+                1,
+                1,
+                2,
                 false);
     } else if (!strcmp(argv[1], "no-replay")) {
         fail_after_effect = true;

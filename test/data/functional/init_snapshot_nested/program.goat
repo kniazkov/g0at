@@ -1,0 +1,16 @@
+const state = { var calls = 0; };
+const Inner = { const init = func() { this.x = 4; }; };
+var A = { var init = func() { this.x = this.x + 10; }; };
+const B = { const init = func() {
+    const self = this;
+    const nested = Inner -> { this.x = this.x + 1; };
+    println(nested.x); println(this == self);
+    this.x = 1;
+    state.calls = state.calls + 1;
+    A.init = func() { this.x = this.x + 100; };
+}; };
+var first = [A, B] -> {};
+var second = [A, B] -> {};
+println(first.x); println(second.x); println(state.calls);
+var copy = first.clone();
+println(state.calls); println(copy.x);

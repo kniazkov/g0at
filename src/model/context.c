@@ -55,6 +55,9 @@ context_t *create_context_with_protos_in_file(process_t *process,
     ctx->arguments = NULL;
     ctx->call_receiver = NULL;
     ctx->operator_call = false;
+    ctx->init_snapshot = NULL;
+    ctx->init_index = 0;
+    ctx->init_origin = BAD_INSTR_INDEX;
     ctx->operator_policy = OPERATOR_RESULT_VALUE;
     ctx->operator_origin = BAD_INSTR_INDEX;
     ctx->native_disabled = caller->native_disabled;
@@ -83,6 +86,7 @@ context_t *create_context(process_t *process, context_t *caller, object_t *proto
 }
 
 context_t *destroy_context(context_t *context) {
+    destroy_init_snapshot(context->init_snapshot);
     clear_function_access(&context->access, true);
     /* The `this` property is a weak self-reference (see create_property), so releasing the
        context's reference does not leave a cycle behind and never mutates the data object,

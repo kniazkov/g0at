@@ -248,3 +248,72 @@ Output:
 ```
 
 A returned closure can keep `self` after the method returns. Each ordinary call of that closure has a separate `this`; captured locals remain shared between its calls. The same boundaries apply to inherited methods and indexed calls. Nested object blocks do not inherit the receiver, and exception unwinding restores the enclosing frame without reverting field writes.
+
+## 10.9. Automatic init before the derived object's block
+
+`prototypes -> { ... }` first evaluates the prototypes and creates one target object.
+It then selects and validates the entire chain of own `init` fields on real ancestors,
+not lexical enclosing scopes. Bases run before derived objects; independent `[A, B]`
+run as `B, A`. Diamonds and repeated prototypes visit each object once. The same
+function stored on two different objects runs twice. A present non-function init,
+including null or a callable object, raises `INVALID_OPERATION` before any init runs.
+
+Each selected function receives the same target as `this` and no actual arguments.
+Formal parameters are allowed and receive null; `arguments` is empty. A bare or
+value-returning return exits only that init and its result is ignored. After all
+initializers, the right-hand block runs and the expression yields the object.
+An init declared in that block is for future descendants.
+
+```goat
+const Base = {
+    const init = func() { this.x = 1; println(1); return 999; };
+};
+var Derived = Base -> {
+    const init = func() { this.x = 2; println(2); };
+};
+println(0);
+var obj = Derived -> {
+    println(this.x);
+    this.x = 3;
+};
+println(obj.x);
+```
+
+Output (the first 1 comes from creating Derived):
+
+```text
+1
+0
+1
+2
+2
+3
+```
+
+Selection is a snapshot: replacing an ancestor's init during construction affects
+later constructions only. An exception stops the chain and skips the right-hand
+block, preserving its trace and previous side effects. A return in the right-hand
+block still exits the surrounding function. Automatic selection accepts public,
+protected and private init fields; the body retains ordinary method access rights.
+
+Object literals and `clone()` do not run init automatically. There is no deep copy.
+A manual `obj.init()` checks access, calls only the one method found by normal lookup,
+and returns its ordinary result:
+
+```goat
+var obj = {
+    var x = 1;
+    const init = func() { this.x = 7; return 99; };
+};
+println(obj.x);
+println(obj.init());
+println(obj.x);
+```
+
+Output:
+
+```text
+1
+99
+7
+```
