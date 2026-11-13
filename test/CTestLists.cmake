@@ -906,3 +906,8 @@ foreach(operator_test IN LISTS operator_tests)
     set_property(TEST ${operator_test} APPEND PROPERTY LABELS operator-overloading)
   endif()
 endforeach()
+
+foreach(init_snapshot_case order lexical validation ownership depth)
+  goat_suite(component.init_snapshot.${init_snapshot_case} "component;init-snapshot"
+    "$<TARGET_FILE:init_snapshot_testing>" "${init_snapshot_case}")
+endforeach()

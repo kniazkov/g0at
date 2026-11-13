@@ -73,6 +73,7 @@ set(release_labels
   native-strings-migration
   native-saturation-migration
   native-performance-controls
+  init-snapshot
   native-continuation
   native-operators
   module-operators
