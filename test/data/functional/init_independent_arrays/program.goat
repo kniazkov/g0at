@@ -1,0 +1,8 @@
+const Base = {
+    const init = func() { this.items = [0]; };
+};
+var a = Base -> {};
+var b = Base -> {};
+a.items[0] = 7;
+println(a.items[0]);
+println(b.items[0]);

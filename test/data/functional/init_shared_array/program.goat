@@ -1,0 +1,7 @@
+const shared = [0];
+const Base = { const init = func() { this.items = shared; }; };
+var a = Base -> {};
+var b = Base -> {};
+a.items[0] = 7;
+println(a.items[0]); println(b.items[0]); println(shared[0]);
+println(a.items == b.items);

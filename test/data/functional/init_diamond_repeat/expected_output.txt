@@ -1,0 +1,16 @@
+Base
+Base
+diamond
+Base
+Right
+Left
+repeat
+Base
+Left
+Right
+base-derived
+Base
+Left
+derived-base
+Base
+Left

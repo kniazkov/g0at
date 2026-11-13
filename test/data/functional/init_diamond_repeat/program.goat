@@ -1,0 +1,11 @@
+const Base = { const init = func() { println("Base"); }; };
+const Left = Base -> { const init = func() { println("Left"); }; };
+const Right = Base -> { const init = func() { println("Right"); }; };
+println("diamond");
+var a = [Left, Right] -> {};
+println("repeat");
+var b = [Left, Right, Left, Base] -> {};
+println("base-derived");
+var c = [Base, Left] -> {};
+println("derived-base");
+var d = [Left, Base] -> {};

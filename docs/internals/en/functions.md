@@ -138,3 +138,23 @@ construction, right-block return/finally, preserved throw origins, cancellation,
 backend failure, GC roots and immutable selection. Functional `init_*` fixtures
 also specify stdout/stderr and run with both optimization levels. Manual init calls,
 clone and object literals keep their ordinary behavior.
+
+## Constructor lifetime regressions (#532)
+
+The native continuation test driver can force GC after a VM constructor returns
+to its owning object context, before the next INHERIT step. It counts and asserts
+that these collections really occurred; the builtin `mark()` also forces GC inside
+init. `init-gc-closure` removes the ancestor's reference to a pending closure before
+both collections and verifies its captured value still contributes to the result.
+`init-gc-exception` additionally retains a leaked receiver, verifies earlier writes,
+and proves that later constructors and the right block do not execute.
+`init-gc-reentrant` recursively constructs the same prototype with separate receivers.
+All three require GC-root balance after run, empty operand stack, correct native
+entry/effect counts, no retry, unchanged bytecode and allocator balance after teardown.
+
+Functional fixtures `init_independent_arrays`, `init_shared_array`,
+`init_snapshot_replaced`, `init_shared_function` and `init_clone_once` provide the
+book's exact examples. `init_diamond_repeat`, `init_prepare_override`, `init_reentrant`
+and `init_nested_this_rights` specify the remaining order, dispatch, scope and access
+outputs. The existing `init_exception` fixture remains the explicit no-rollback
+stdout contract. No runtime changes were needed for these regressions.

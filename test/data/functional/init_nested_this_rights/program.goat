@@ -1,0 +1,21 @@
+const Base = {
+    var x = 1;
+    private var secret = 2;
+    const init = func() {
+        this.x = 7; this.secret = 8;
+        var self = this;
+        var inner = { this.x = 10; };
+        println(inner.x); println(this == self); println(this.x);
+    };
+    const read = func() { return this.secret; };
+};
+var obj = Base -> {};
+println(Base.x); println(Base.read()); println(obj.read());
+try { println(obj.secret); } catch(e) { println(e); }
+var locked = { const x = 3; const init = func() { this.x = 4; }; };
+try { locked.init(); } catch(e) { println(e); }
+println(locked.x);
+const Missing = Base -> {};
+println("through missing");
+var next = Missing -> {};
+println(next.x);

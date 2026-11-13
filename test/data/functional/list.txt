@@ -635,3 +635,13 @@ init_access
 init_snapshot_nested
 init_invalid_values
 init_prevalidate_uncaught
+
+init_independent_arrays
+init_shared_array
+init_snapshot_replaced
+init_shared_function
+init_clone_once
+init_diamond_repeat
+init_prepare_override
+init_reentrant
+init_nested_this_rights

@@ -1,0 +1,11 @@
+const A = {
+    var init = func() { println(1); };
+};
+const B = {
+    const init = func() {
+        A.init = func() { println(9); };
+        println(2);
+    };
+};
+var first = [A, B] -> {};
+var second = [A, B] -> {};
