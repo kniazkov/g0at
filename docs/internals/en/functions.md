@@ -72,8 +72,8 @@ loading and invocation need the [native](native.md) tests as well.
 ## Internal init snapshots (#530)
 
 `model/init_snapshot.h` prepares constructor selection without invoking functions.
-It is not connected to `->`: automatic constructor execution belongs to #531.
-No syntax, ordinary method access, or visible object creation behavior changes here.
+`INHERIT` consumes this snapshot before executing the right-hand block of `->`.
+The collector remains independent of execution and ordinary method access checks.
 
 `collect_init_snapshot(process, receiver)` excludes the receiver itself and follows
 only `get_inheritance_prototypes`, never lexical enclosing scopes. It uses iterative
@@ -108,3 +108,33 @@ prototypes, shared functions, lexical exclusion, own fields, all access modifier
 non-function rejection without calls, immutable selection, concurrent snapshots,
 closure/receiver survival across GC and release, and deep inheritance. They run in
 Debug and Release CI via the `init-snapshot` label.
+
+## Executing init snapshots (#531)
+
+`INHERIT` evaluates its prototype operands once, opens the ordinary object context,
+and collects the whole chain. An invalid field raises `INVALID_OPERATION` before
+any constructor or right-hand statement runs. The object context owns the snapshot,
+next index and original instruction address. It advances the index before invoking
+a selected function through the ordinary method mechanism with the receiver and
+zero actual arguments. Return values use `OPERATOR_RESULT_DISCARD`; missing formal
+arguments remain null and `arguments` is empty.
+
+Both synchronous functions and suspended VM/native continuation calls resume the
+same `INHERIT` instruction. Resumption consumes neither prototypes nor completed
+constructors again. Once exhausted, the snapshot is released and execution advances
+to the right-hand block. The owner remains `FLOW_NORMAL`: a return there still exits
+the surrounding function, while a return inside init only exits that method.
+
+Normal exception unwinding preserves the original trace, skips later constructors
+and the right-hand block, and destroys the owning context and snapshot. Existing
+field writes are not rolled back. Host exit and backend failure may bypass language
+unwinding; thread completion also releases outstanding snapshots. Ordinary method
+access metadata remains attached to selected functions. Automatic selection ignores
+only the access modifier on init, not restrictions inside its body.
+
+`component.native_continuation.init-*` checks VM and native constructors, native
+callers, synchronous builtins, validation before effects, ignored results, nested
+construction, right-block return/finally, preserved throw origins, cancellation,
+backend failure, GC roots and immutable selection. Functional `init_*` fixtures
+also specify stdout/stderr and run with both optimization levels. Manual init calls,
+clone and object literals keep their ordinary behavior.

@@ -1,0 +1,3 @@
+const A = { const init = func() { println(1); }; };
+const B = { const init = func() { println(2); }; };
+var obj = [A, B] -> {};

@@ -1,0 +1,14 @@
+const state = { var leaked = null; var count = 0; };
+const Last = { const init = func() { println("bad later"); }; };
+const Fail = { const init = func() {
+    state.leaked = this;
+    this.x = 17;
+    state.count = state.count + 1;
+    try { throw 73; } finally { println("init cleanup"); }
+}; };
+const First = { const init = func() { println("first"); }; };
+try { var obj = [Last, Fail, First] -> { println("bad block"); }; }
+catch(e) { println(e); }
+println(state.count); println(state.leaked.x);
+state.leaked.x = 18;
+println(state.leaked.x);

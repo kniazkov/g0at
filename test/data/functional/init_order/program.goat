@@ -1,0 +1,12 @@
+const Base = {
+    const init = func() { this.x = 1; println(1); return 999; };
+};
+var Derived = Base -> {
+    const init = func() { this.x = 2; println(2); };
+};
+println(0);
+var obj = Derived -> {
+    println(this.x);
+    this.x = 3;
+};
+println(obj.x);

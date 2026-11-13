@@ -1,0 +1,4 @@
+const A = { const init = 42; };
+const B = { const init = func() { println(2); }; };
+try { var obj = [A, B] -> { println("bad block"); }; }
+catch(e) { println(e); }

@@ -1192,8 +1192,36 @@ static bool exec_ENTER(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
+/** @brief Resumes a validated constructor chain through ordinary method call frames.
+ * The owning object context remains a normal block, so return in its right-hand
+ * body still targets the surrounding function. Each constructor gets its own frame.
+ */
+static bool advance_init_snapshot(runtime_t *runtime, thread_t *thread) {
+    context_t *context = thread->context;
+    object_array_t functions = get_init_snapshot_functions(context->init_snapshot);
+    if (context->init_index == functions.size) {
+        destroy_init_snapshot(context->init_snapshot);
+        context->init_snapshot = NULL;
+        thread->instr_id = context->init_origin + 1;
+        context->init_origin = BAD_INSTR_INDEX;
+        return true;
+    }
+    object_t *function = functions.items[context->init_index++];
+    bool result = call_operator_handler(function,
+                                        get_init_snapshot_receiver(context->init_snapshot),
+                                        0,
+                                        OPERATOR_RESULT_DISCARD,
+                                        context->init_origin,
+                                        thread);
+    /* Synchronous/native completion and suspended VM calls both resume INHERIT.
+       On failure the normal unwinder destroys the owner and releases the snapshot. */
+    return finish_call(runtime, thread, result);
+}
+
 /** @brief Evaluates an explicit prototype list without allocating a Goat array. */
 static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (thread->context->init_snapshot && thread->context->init_origin == thread->instr_id)
+        return advance_init_snapshot(runtime, thread);
     if (instr.arg0 > 1 || (!instr.arg0 && instr.arg1 != 1))
         return false;
     object_stack_t *stack = thread->data_stack;
@@ -1226,8 +1254,12 @@ static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thre
         DECREF(value);
     }
     thread->context = context;
-    thread->instr_id++;
-    return true;
+    init_snapshot_result_t selected = collect_init_snapshot(thread->process, context->data);
+    if (selected.exception.value)
+        return dispatch_exception(runtime, thread, selected.exception);
+    context->init_snapshot = selected.snapshot;
+    context->init_origin = thread->instr_id;
+    return advance_init_snapshot(runtime, thread);
 }
 
 /** @brief Takes an owned snapshot before opening the loop scope. */
@@ -1898,6 +1930,12 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
 
 /** @brief Completes one equal program thread, with the model lock held. */
 static void complete_program_thread(thread_t *thread, int status) {
+    /* A host exit or backend failure can terminate without language unwinding.
+       No constructor can resume after thread completion; release its GC roots now. */
+    for (context_t *ctx = thread->context; ctx && ctx != get_root_context(); ctx = ctx->previous) {
+        destroy_init_snapshot(ctx->init_snapshot);
+        ctx->init_snapshot = NULL;
+    }
     thread->execution_status = status;
     thread->finished = true;
     assert(thread->process->active_threads);

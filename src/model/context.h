@@ -11,6 +11,7 @@
 #include "common/control_flow.h"
 #include "common/types.h"
 #include "exception.h"
+#include "init_snapshot.h"
 #include "object.h"
 #include "operator.h"
 
@@ -35,6 +36,10 @@ struct context_t {
     object_t *call_receiver;
     /** @brief Post-return contract; discarded, not executed, during exception unwinding. */
     bool operator_call;
+    /** @brief Owned constructor chain while INHERIT waits for method returns. */
+    init_snapshot_t *init_snapshot;
+    size_t init_index;         /**< Next function, advanced before invocation to prevent replay. */
+    instr_index_t init_origin; /**< INHERIT instruction resumed after each discarded result. */
     operator_result_policy_t operator_policy;
     instr_index_t operator_origin;
 

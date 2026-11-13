@@ -1,0 +1,10 @@
+const Base = { const init = func() { this.x = 5; }; };
+const make = func() {
+    try {
+        var obj = Base -> { try return this.x + 2; finally println("block cleanup"); };
+        return 99;
+    } finally { println("function cleanup"); }
+};
+println(make());
+const plain = func() { var obj = {} -> { return 11; }; return 99; };
+println(plain());

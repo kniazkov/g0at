@@ -1,0 +1,11 @@
+const A = {
+    const init = func(a, b) {
+        println(a); println(b); println(arguments.length);
+        this.x = 7;
+        return;
+        println("bad return");
+    };
+};
+const B = { const init = func() { println(this.x); this.x = 8; return [1,2]; }; };
+var obj = [B, A] -> { println(this.x); };
+println(obj.x);
