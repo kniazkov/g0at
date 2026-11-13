@@ -274,6 +274,39 @@ operation_result_t write_accessible_property_result(const function_access_t *acc
                                 value ? value : get_null_object());
 }
 
+operation_result_t write_accessible_own_property_result(const function_access_t *access,
+                                                        object_t *object,
+                                                        object_t *key,
+                                                        object_t *value) {
+    property_lookup_t found = lookup_accessible_property(access, object, key, true);
+    if (object->vtbl->type != TYPE_USER_DEFINED_OBJECT || found.storage == object
+        || (found.status != MSTAT_OK && found.status != MSTAT_PROPERTY_NOT_FOUND))
+        return write_accessible_property_result(access, object, key, value);
+    model_status_t status;
+    if (found.cell) {
+        /* Inherited private slots keep their declaration domain: a method must
+         * neither update its prototype nor expose a formerly private field. */
+        if (get_object_module(object) != access->module)
+            status = MSTAT_FOREIGN_OBJECT;
+        else if (!value)
+            status = MSTAT_OK;
+        else {
+            field_cell_t *cell = create_object_field_in_file(object,
+                                                             key,
+                                                             value,
+                                                             false,
+                                                             found.cell->modifier,
+                                                             found.cell->module,
+                                                             found.cell->file_id,
+                                                             found.cell->domain,
+                                                             !get_own_field_cell(object, key));
+            status = cell ? MSTAT_OK : MSTAT_PROPERTY_ALREADY_EXISTS;
+        }
+    } else
+        status = create_accessible_property(access, object, key, value, false);
+    return access_status_result(status, value ? value : get_null_object());
+}
+
 operation_result_t access_index(process_t *process,
                                 const function_access_t *access,
                                 object_t *object,

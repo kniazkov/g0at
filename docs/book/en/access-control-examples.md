@@ -80,7 +80,7 @@ b.read = a.read;
 print(b.read(b));
 ```
 
-The first call returns 10; the last call is denied access to b's private x. Moving a method reference does not adapt its rights. This differs from the special method adaptation performed by clone/flat. The explicit argument matters: `this` denotes a lexical/call scope, not a Java/JS receiver that changes when the function is stored in b.
+The first call returns 10; the last call is denied access to b's private x. Moving a method reference does not adapt its rights. This differs from the special method adaptation performed by clone/flat. The explicit argument selects the object whose field is read. In a property call, `this` is the receiver (b for b's call), but that binding does not adapt the function's private access rights.
 
 <a id="ac-06"></a>
 
@@ -421,7 +421,7 @@ copy.inspect(copy);                   // transferred method has rights to the co
 box.inspect(copy);                    // original method gained no rights to the copy
 ```
 
-The object is passed explicitly: `this` denotes the current object scope, including a function-call scope; it is not the Java/JS receiver. `for (key in value)` uses the same rights, but snapshots only accessible own keys. A separate outside enumeration function uses its own rights. Rights do not remain with the caller after return or throw. Filtering also recurses into object keys; cycles abbreviate to `{...}`/`[...]`. If every field is hidden, the result is `{ }`. Hidden same-key cells in flat's internal inventory are neither enumerated nor printed even by an authorized observer; methods still access their own cells.
+The explicit argument lets this example observe an object other than the method's receiver. A property call binds `this` to its receiver; this does not change the observer function's access rights. `for (key in value)` uses the same rights, but snapshots only accessible own keys. A separate outside enumeration function uses its own rights. Rights do not remain with the caller after return or throw. Filtering also recurses into object keys; cycles abbreviate to `{...}`/`[...]`. If every field is hidden, the result is `{ }`. Hidden same-key cells in flat's internal inventory are neither enumerated nor printed even by an authorized observer; methods still access their own cells.
 
 ```goat
 var obj = {

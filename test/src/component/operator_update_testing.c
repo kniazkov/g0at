@@ -543,15 +543,16 @@ static void unwind_case(void) {
 }
 
 static void continuation_case(void) {
-    program(
-        U"var result=false;const old={};const box={};box.item=old;const other={};other.item=5;"
-        U"box[\"[]\"]=func(){collect();return this.item;};"
-        U"box[\"[]=\"]=func(k,v){try {this.item=v;}finally {other.item++;collect();}return 999;};"
-        U"old[\"+\"]=func(rhs){try {return other.item+=rhs;}finally {collect();}};"
-        U"const value=100+(box[11]+=7)*2;"
-        U"result=value==124 && box.item==12 && other.item==13;",
-        SETINDEX,
-        0);
+    /* Nested blocks own their this; retain the setter receiver explicitly across try/finally. */
+    program(U"var result=false;const old={};const box={};box.item=old;const other={};other.item=5;"
+            U"box[\"[]\"]=func(){collect();return this.item;};"
+            U"box[\"[]=\"]=func(k,v){const self=this;try {self.item=v;}finally "
+            U"{other.item++;collect();}return 999;};"
+            U"old[\"+\"]=func(rhs){try {return other.item+=rhs;}finally {collect();}};"
+            U"const value=100+(box[11]+=7)*2;"
+            U"result=value==124 && box.item==12 && other.item==13;",
+            SETINDEX,
+            0);
     program(U"var result=false;const box={};box.item=7;"
             U"box[\"[]\"]=func(){return this.item;};"
             U"box[\"[]=\"]=func(v){this.item=v;return null;};"

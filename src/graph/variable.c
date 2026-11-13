@@ -71,8 +71,9 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
         return expr->name.length == 8 ? make_boolean_element() : make_string_element();
     if (expr->dynamic_lookup)
         return make_top_element();
+    /* CALLM may bind an array (e.g. items[0]()), not only a user object. */
     if (expr->name.length == 4 && !MEMCMP(expr->name.data, U"this", 4))
-        return make_user_defined_object_element();
+        return make_top_element();
     if (expr->declarator == get_builtin_declarator()) {
         const builtin_function_t *builtin = find_builtin_function(expr->name);
         return builtin && !state->builtin_bindings_unknown
@@ -152,7 +153,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     if (is_arguments_name(var->name) || var->dynamic_lookup)
         return make_top_element();
     if (var->name.length == 4 && !MEMCMP(var->name.data, U"this", 4))
-        return make_user_defined_object_element();
+        return make_top_element();
     const declarator_t *decl = var->declarator;
     if (decl == get_builtin_declarator())
         return calculate_node(node, *state, (*state)->arena);

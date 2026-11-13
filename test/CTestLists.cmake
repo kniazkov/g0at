@@ -878,7 +878,7 @@ foreach(operator_case matrix order property bypass lookup lifetime continuation 
     "$<TARGET_FILE:operator_call_testing>" "${operator_case}")
 endforeach()
 
-foreach(continuation_case mixed unwind escape trace strict-bool recursion no-replay range host-cancel cancel-backend)
+foreach(continuation_case mixed unwind escape trace strict-bool recursion method-gc method-recursion method-unwind no-replay range host-cancel cancel-backend)
   goat_suite(component.native_continuation.${continuation_case} "component;native-continuation"
     "$<TARGET_FILE:native_continuation_testing>" "${continuation_case}")
 endforeach()

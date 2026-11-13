@@ -607,3 +607,10 @@ thread_invalid_arguments
 
 thread_entry_readiness
 thread_shared_spin_visibility
+
+method_this_receiver
+method_this_unbound
+method_this_reentry
+
+method_this_access
+method_this_array

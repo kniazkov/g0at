@@ -859,7 +859,7 @@ static void module_provenance_case(void) {
                                  resume.resume,
                                  t));
     assert(t->context->module == module_files_identity(owner));
-    assert(t->context->access.file_id == 1 && t->context->operator_receiver == receiver);
+    assert(t->context->access.file_id == 1 && t->context->call_receiver == receiver);
     clear_operator_lookup(&selected);
     DECREF(operator_key);
     DECREF(handler_key);

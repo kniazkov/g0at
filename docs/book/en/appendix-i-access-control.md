@@ -143,13 +143,13 @@ These rules apply to functions directly transferred as property values. Function
 | Function relationship | Copying result |
 | --- | --- |
 | Named capture of a transferred field | Refers to the corresponding new cell |
-| Access through `this` | Uses the current lexical context, including adapted transferred environments; it is not the method receiver |
+| Access through `this` | Uses the receiver of a property call; plain calls use their own call scope. Rights remain lexical |
 | Capture of an external variable | Remains shared with the original |
 | Explicit external reference to the original, such as `A.x` | Still addresses A; previously held access is retained |
 | Function inside a nested object | Is not adapted: the nested object stays shared |
 | Function lacking a private right | Does not gain it through copying |
 
-Copied methods modify transferred cells through captured names or adapted explicit construction-context references. The method body’s lexical `this` is not automatically the receiving object. Changing a copied cell does not change the original cell; nested mutable values remain shared.
+Copied methods modify transferred cells through captured names or adapted explicit construction-context references. A property call binds the method body’s `this` to the receiving object, independently of capture adaptation. Changing a copied cell does not change the original cell; nested mutable values remain shared.
 
 New rights correspond only to transferring existing rights to copied domains. An outside function stored in a property does not become a privileged method. The original method gains no access to the copy's private fields. However, a copied method retains previously permitted access to the original through an explicit external reference. This qualifies the earlier overly broad statement that a copy can never read the original's private fields.
 
@@ -163,4 +163,4 @@ Native execution must enforce the same restrictions. If access rights cannot be 
 
 The identified filtering and copying contradictions are resolved by the rules above. The actual status of each stage is in the [implementation plan](access-control-implementation-plan.md). Declaration, clone, flat, and filtering examples now execute in the VM; proven denials are diagnosed at compile time and unknown cases at runtime. Multi-file examples are exercised by #218 through actual archives, includes and imports. Adapted functions do not retain native specializations whose environment assumptions may have changed.
 
-`this` is lexical, not a JavaScript-style receiver. For copied methods, captured declarations and explicitly captured construction contexts are adapted; a method body’s own `this` is not automatically the copied object. See AC-05 and [chapter 10](10-contexts-and-closures.md).
+Since #528, `copy.method()` binds `this` to `copy`; extracting and plainly calling the function remains unbound. Capture adaptation and lexical access rights remain separate from this receiver binding. See AC-05 and [chapter 10](10-contexts-and-closures.md).

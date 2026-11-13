@@ -234,6 +234,39 @@ int main(int argc, char **argv) {
                 9,
                 9,
                 false);
+    } else if (!strcmp(argv[1], "method-gc")) {
+        /* The factory result has no caller variable: the method frame must root it. */
+        program(U"var method=func(){mark();if(this.tag!=73)throw 1;return this;};"
+                U"var factory=func(){return {var tag=73;var m=method;};};"
+                U"var value=factory().m();if(value.m()!=value)throw 2;"
+                U"if(value[\"m\"]()!=value)throw 3;",
+                1,
+                3,
+                3,
+                false);
+    } else if (!strcmp(argv[1], "method-recursion")) {
+        /* One function serves repeated receivers; nested returns must restore this. */
+        program(U"var method=func(n,expected){if(this!=expected)throw 1;mark();"
+                U"if(n!=0 && this.m(n-1,expected)!=this)throw 2;"
+                U"if(this!=expected)throw 3;return this;};"
+                U"var base={var m=method;};var a=base->{};var b=base->{};"
+                U"if(a.m(4,a)!=a || b[\"m\"](3,b)!=b)throw 4;",
+                1,
+                9,
+                9,
+                false);
+    } else if (!strcmp(argv[1], "method-unwind")) {
+        /* A VM-only method throws into a native method; neither frame may leak this. */
+        program(U"var method=func(expected){var receiver=this;try{receiver.fail(expected);throw 1;}"
+                U"catch(e){if(e!=73)throw 2;}"
+                U"finally{mark();}if(this!=expected)throw 3;return this;};"
+                U"var bomb=func(expected){if(this!=expected)throw 4;mark();throw 73;};"
+                U"var base={var m=method;var fail=bomb;};var a=base->{};var b=base->{};"
+                U"if(a.m(a)!=a || b.m(b)!=b)throw 5;",
+                1,
+                2,
+                4,
+                false);
     } else if (!strcmp(argv[1], "no-replay")) {
         fail_after_effect = true;
         program(U"var caller=func(){mark();return 1;};caller();", 1, 1, 1, true);

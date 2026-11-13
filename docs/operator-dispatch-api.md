@@ -39,8 +39,9 @@ This binding is separate from activation storage and lexical access rights:
 parameters and locals do not become receiver properties, and installing a
 function on an object does not grant unrelated private access.
 
-Ordinary `CALL` and `CALLM` keep their current scope-local `this` semantics.
-The operator binding belongs only to the handler's call frame. A nested block or
+Ordinary `CALL` keeps scope-local `this`; since #528, a function-valued `CALLM`
+binds `this` to its receiver as well. Extracted functions remain unbound.
+The explicit receiver binding belongs only to the callee's call frame. A nested block or
 object still has its own scope-local `this`, and a nested function gets its own
 call scope. To use the original receiver there or in an escaping closure, save
 `var self = this` in the handler first. The receiver is retained and marked while

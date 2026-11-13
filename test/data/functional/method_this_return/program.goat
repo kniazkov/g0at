@@ -11,4 +11,4 @@ const obj = {
 };
 const h = obj.get();
 println(h.this == h);
-println(h.this);
+println(h == obj);

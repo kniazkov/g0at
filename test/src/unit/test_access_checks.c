@@ -79,6 +79,28 @@ bool test_access_policy(void) {
     size_t field_count = get_object_field_count(a);
     ASSERT(write_accessible_property(&owner, a, new_key, NULL) == MSTAT_OK);
     ASSERT(get_object_field_count(a) == field_count && !get_own_field_cell(a, new_key));
+    /* Explicit-this own writes have a non-mutating preflight and the same module boundary. */
+    size_t child_count = get_object_field_count(b);
+    operation_result_t own_check = write_accessible_own_property_result(&child, b, pub->key, NULL);
+    ASSERT(!own_check.is_exception);
+    DECREF(own_check.value);
+    ASSERT(get_object_field_count(b) == child_count && !get_own_field_cell(b, pub->key));
+    ASSERT(pub->object == two);
+    own_check = write_accessible_own_property_result(outside, a, pub->key, one);
+    ASSERT(!own_check.is_exception && pub->object == one);
+    DECREF(own_check.value);
+    own_check = write_accessible_own_property_result(outside, a, new_key, one);
+    ASSERT(own_check.is_exception && !get_own_field_cell(a, new_key));
+    DECREF(own_check.value);
+    object_t *foreign_child =
+        create_user_defined_object_in_module(proc, (object_array_t){&a, 1}, foreign);
+    size_t foreign_count = get_object_field_count(foreign_child);
+    own_check = write_accessible_own_property_result(outside, foreign_child, pub->key, two);
+    ASSERT(own_check.is_exception);
+    DECREF(own_check.value);
+    ASSERT(get_object_field_count(foreign_child) == foreign_count
+           && !get_own_field_cell(foreign_child, pub->key) && pub->object == one);
+    DECREF(foreign_child);
     ASSERT(create_accessible_property(&owner, a, new_key, one, false) == MSTAT_OK);
     field_cell_t *other = field(proc, unrelated, U"secret", two, ACCESS_PRIVATE, false);
     ASSERT(!can_access_field(&owner, other));

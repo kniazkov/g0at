@@ -64,17 +64,55 @@ static void cleanup_identity(void *state) {
 }
 
 /** Invoked by the component driver, separately from its configurable call fixtures. */
-void test_module_dispatch_identity(void) {
-    char source[] = "external f = func(x) { return x; }; external result = f(7);";
+static void check_module_dispatch_identity(unsigned receiver_case) {
+    memset(identity_calls, 0, sizeof(identity_calls));
+    memset(identity_resolutions, 0, sizeof(identity_resolutions));
+    memset(identity_cleanups, 0, sizeof(identity_cleanups));
+    identity_failure = false;
+    /* f's closure is precisely the module-file scope used by this.f(8). Receiver-sensitive
+     * bodies must bypass the scalar module adapter: it has no receiver channel. */
+    bool native_method = receiver_case == 1 || receiver_case == 3 || receiver_case == 4;
+    char *source;
+    switch (receiver_case) {
+        case 0:
+            source = "external scope=this; external f=func(x){"
+                     "if(x==8 && this!=scope)throw 73;return x;};"
+                     "external result=f(7);external methodResult=this.f(8);";
+            break;
+        case 1:
+            source = "external f=func(x){return x;};"
+                     "external result=f(7);external methodResult=this.f(8);";
+            break;
+        case 2:
+            source = "external scope=this;external f=func(x){scope.value=x;return x;};"
+                     "external result=f(7);external methodResult=this.f(8);";
+            break;
+        case 3:
+            source = "external f=func(x){x=x+1;return x+arguments.length;};"
+                     "external result=f(7);external methodResult=this.f(8);";
+            break;
+        case 4:
+            source = "external f=func(x){return helper(x)+arguments.length;};"
+                     "external helper=func(x){return x;};"
+                     "external result=f(7);external methodResult=this.f(8);";
+            break;
+        default:
+            /* A first return is not the end of a branched body's receiver effects. */
+            source = "external scope=this;external f=func(x){if(x!=8)return x;"
+                     "if(this!=scope)throw 73;return x;};"
+                     "external result=f(7);external methodResult=this.f(8);";
+            break;
+    }
     module_source_t file = {.path = "identity.goat",
                             .name = "identity.goat",
                             .source = source,
-                            .length = sizeof(source) - 1};
+                            .length = strlen(source)};
     module_sources_t sources = {.files = &file, .count = 1};
     module_compilation_t *compilation = NULL;
     module_compilation_error_t error = {0};
     assert(compile_module_sources(&sources, &compilation, &error));
-    assert(compilation->code->function_count == 1 && compilation->code->functions[0].id == 1);
+    assert(compilation->code->function_count == (receiver_case == 4 ? 2 : 1)
+           && compilation->code->functions[0].id == 1);
     const char variant_text[] =
         "{\"goatAbiVersion\":1,\"specializations\":[{\"functionId\":1,"
         "\"specializationId\":1,\"symbol\":\"goat_fn_1_v1\","
@@ -125,7 +163,8 @@ void test_module_dispatch_identity(void) {
             assert(module_files_identity(modules[i]) != module_files_identity(modules[j]));
     }
     yyjson_doc_free(variant);
-    object_static_string_t result_key = {0}, function_key = {0};
+    object_static_string_t result_key = {0}, function_key = {0}, method_result_key = {0};
+    object_t *method_result_name = get_static_string_object(&method_result_key, U"methodResult");
     object_t *result_name = get_static_string_object(&result_key, U"result");
     object_t *function_name = get_static_string_object(&function_key, U"f");
     /* Every instance contains identical function ID, instruction and bytes, yet resolves its
@@ -136,6 +175,15 @@ void test_module_dispatch_identity(void) {
             get_own_field_cell(module_file_scope(module_files_main(modules[i])), result_name);
         assert(result
                && get_object_integer_value(result->object).value == (int64_t)(107 + 100 * i));
+        field_cell_t *method_result =
+            get_own_field_cell(module_file_scope(module_files_main(modules[i])),
+                               method_result_name);
+        /* Receiver-sensitive bodies return 8 in the VM; the safe parameter-only body
+         * uses its distinct adapter result. Plain f(7) always takes the native entry. */
+        assert(method_result
+               && get_object_integer_value(method_result->object).value
+                      == (native_method ? (int64_t)(108 + 100 * i) : 8));
+        assert(identity_calls[i] == (native_method ? 2 : 1));
     }
     process_execution_enter(process);
     thread_t *thread = process->main_thread;
@@ -158,7 +206,8 @@ void test_module_dispatch_identity(void) {
     }
     process_execution_leave(process);
     for (size_t i = 0; i < 3; ++i)
-        assert(identity_calls[i] == 3 && identity_resolutions[i] && !identity_cleanups[i]);
+        assert(identity_calls[i] == (native_method ? 4 : 3) && identity_resolutions[i]
+               && !identity_cleanups[i]);
     /* A backend contract failure is terminal even for an embedder attempting to reenter
      * an escaped function directly, or restart a completed module in the same process. */
     identity_failure = true;
@@ -172,16 +221,30 @@ void test_module_dispatch_identity(void) {
         reduce_object_stack(thread->data_stack, stack_size);
         assert(process->native_failed);
     }
-    assert(identity_calls[0] == 4 && identity_calls[1] == 3 && identity_calls[2] == 3);
+    assert(identity_calls[0] == (native_method ? 5 : 4)
+           && identity_calls[1] == (native_method ? 4 : 3)
+           && identity_calls[2] == (native_method ? 4 : 3));
     assert(thread->native_diagnostic && strstr(thread->native_diagnostic, "owner@1")
            && strstr(thread->native_diagnostic, "function 1"));
     process_execution_leave(process);
     assert(run_module_file(process, module_files_main(modules[0])) != 0);
-    assert(identity_calls[0] == 4 && identity_calls[1] == 3 && identity_calls[2] == 3);
+    assert(identity_calls[0] == (native_method ? 5 : 4)
+           && identity_calls[1] == (native_method ? 4 : 3)
+           && identity_calls[2] == (native_method ? 4 : 3));
     destroy_process(process);
     for (size_t i = 0; i < 3; ++i)
         assert(identity_cleanups[i] == 1);
     free_module_compilation(compilation);
     clear_module_compilation_error(&error);
     assert(!get_allocated_memory_size());
+}
+
+/** Cover receiver-sensitive bodies and safe scalar/arguments/helper-call adapters. */
+void test_module_dispatch_identity(void) {
+    check_module_dispatch_identity(0);
+    check_module_dispatch_identity(1);
+    check_module_dispatch_identity(2);
+    check_module_dispatch_identity(3);
+    check_module_dispatch_identity(4);
+    check_module_dispatch_identity(5);
 }

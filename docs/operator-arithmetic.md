@@ -25,8 +25,9 @@ late index setters and the complete ordering contract.
 
 Every handler may return any value, including a string, object or number. Its
 bare `this` is the original receiver, including when the property was inherited.
-The receiver is not included in `arguments`. Nested scopes retain the ordinary
-scope-local `this` rules explained in the [dispatch API](operator-dispatch-api.md).
+The receiver is not included in `arguments`. Ordinary property method calls now
+also bind `this` to their receiver; plain calls and nested object scopes retain
+the distinct rules explained in the [dispatch API](operator-dispatch-api.md).
 
 ## Evaluation and failures
 

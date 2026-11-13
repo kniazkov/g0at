@@ -12,7 +12,7 @@ At the PR #160 baseline, `src/model/user_defined_object.c` stores properties in 
 
 `src/builtins/flat.c` visits the source and its topology, keeps the first property found for each key, and excludes `Object`. Shadowed values are currently discarded. The new model must retain all transferred cells while separately selecting ordinary lookup winners.
 
-`src/model/function.c` stores a closure environment as `object_t *closure`. Method invocation creates a context incorporating the closure and receiver; `this` is associated with the current Goat context. Do not replace this with Java-like `this` or use the caller as the source of a method's rights. Captures need explicit links to cells, and executing functions need module/access-domain identity.
+`src/model/function.c` stores a closure environment as `object_t *closure`. Method invocation creates a separate context incorporating the closure and receiver. Since #528, property calls bind `this` to the receiver; plain calls retain scope-local `this`. This receiver binding must not replace lexical access-domain identity or use the caller as the source of a method's rights. Captures need explicit links to cells, and executing functions need module/access-domain identity.
 
 Property operations, key enumeration, and string conversion in `src/model/object.h` currently accept no access context. Checking only `GETPROP` would leave bypasses through indexing, built-ins, printing, and copying. A shared checking layer and a separate internal path for full-state transfer are required.
 

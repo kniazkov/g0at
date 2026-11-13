@@ -1,0 +1,18 @@
+var obj = {
+    var x = 1;
+    const set = func() { this.x = 10; return this; };
+};
+var f = obj.set;
+var scope = f();
+println(scope != obj);
+println(scope.x);
+println(scope.this == scope);
+println(obj.x);
+println(obj["set"]() == obj);
+println(obj.x);
+var other = { var x = 2; };
+other.set = f;
+println(other.set() == other);
+println(other.x);
+println(f() != other);
+println(other.x);
