@@ -614,3 +614,11 @@ method_this_reentry
 
 method_this_access
 method_this_array
+
+method_this_nested_object
+method_this_nested_function
+method_this_local_name
+method_this_nested_levels
+method_this_escaping_self
+method_this_nested_dispatch
+method_this_nested_exception

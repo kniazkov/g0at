@@ -1,0 +1,15 @@
+var obj = {
+    var x = 1;
+    const f = func() {
+        var self = this;
+        var helper = func() {
+            this.x = 10;
+            self.x = 20;
+            return this.x;
+        };
+        println(helper());
+        println(this.x);
+    };
+};
+obj.f();
+println(obj.x);

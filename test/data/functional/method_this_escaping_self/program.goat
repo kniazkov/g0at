@@ -1,0 +1,25 @@
+var obj = {
+    var x = 1;
+    var captured = 1000;
+    const f = func() {
+        const self = this;
+        var captured = 7;
+        return func(v) {
+            this.x = v;
+            self.x = self.x + 1;
+            captured = captured + 1;
+            println(this == self);
+            println(this.x);
+            println(captured);
+            return this;
+        };
+    };
+};
+var helper = obj.f();
+var first = helper(10);
+var second = helper(20);
+println(first == second);
+println(first.x);
+println(second.x);
+println(obj.x);
+println(obj.captured);

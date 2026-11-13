@@ -1,0 +1,23 @@
+const Base = {
+    var x = 1;
+    const f = func(v) {
+        const self = this;
+        var x = 7;
+        const inner = { this.x = v + 100; };
+        this.x = v;
+        println(x);
+        println(this == self);
+        return inner;
+    };
+};
+var a = Base -> {};
+var b = Base -> {};
+var ai = a.f(10);
+var bi = b["f"](20);
+var again = a["f"](30);
+println(a.x);
+println(b.x);
+println(Base.x);
+println(ai.x);
+println(bi.x);
+println(again.x);
