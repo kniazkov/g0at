@@ -23,6 +23,10 @@
 #include <string.h>
 
 static size_t entries, steps, effects;
+static process_t *gc_process;
+static bool force_init_gc;
+static size_t between_init_collections, inside_init_collections, pending_init_collections;
+static bool require_pending_init_gc;
 static bool fail_after_effect, invalid_pc, escaping_exception, language_failure;
 static bool host_cancellation, backend_failure, constructor_aborted;
 
@@ -38,6 +42,17 @@ static uint32_t GOAT_NATIVE_CALL invoke(const goat_native_continuation_context_t
         uint32_t next;
         ++steps;
         uint32_t status = context->step(context->state, pc, &next);
+        if (force_init_gc && status == GOAT_NATIVE_CONTINUE) {
+            context_t *owner = gc_process->main_thread->context;
+            /* The completed VM method has returned to its constructor owner.
+               Collect before the next INHERIT step can call the pending function. */
+            if (owner->init_snapshot && owner->init_index > 0) {
+                ++between_init_collections;
+                if (owner->init_index < get_init_snapshot_functions(owner->init_snapshot).size)
+                    ++pending_init_collections;
+                collect_garbage(gc_process);
+            }
+        }
         if (status != GOAT_NATIVE_CONTINUE)
             return status;
         if (fail_after_effect && effects)
@@ -50,6 +65,13 @@ static operation_result_t mark(object_t **arguments, uint16_t count, thread_t *t
     (void)arguments;
     assert(!count);
     ++effects;
+    if (force_init_gc) {
+        for (context_t *ctx = thread->context; ctx != get_root_context(); ctx = ctx->previous)
+            if (ctx->init_snapshot) {
+                ++inside_init_collections;
+                break;
+            }
+    }
     collect_garbage(thread->process);
     if (host_cancellation) {
         thread->process->exit_requested = true;
@@ -132,6 +154,7 @@ static void program(const gchar_t *source,
     }
     process_t *process = create_process();
     setup(process);
+    gc_process = process;
     thread_t *thread = process->main_thread;
     context_t *caller = thread->context;
     entries = steps = effects = 0;
@@ -149,6 +172,14 @@ static void program(const gchar_t *source,
     assert(thread->native_successes == (failure || escaping_exception ? 0 : entries));
     assert(thread->data_stack->size == 0);
     assert(process->gc_roots_size == roots);
+    if (force_init_gc) {
+        assert(between_init_collections > 0);
+        assert(inside_init_collections > 0);
+        if (require_pending_init_gc)
+            assert(pending_init_collections > 0);
+        collect_garbage(process);
+        assert(process->gc_roots_size == roots);
+    }
     if (language_failure) {
         assert(thread->context == get_root_context());
         assert(thread->exception.value == get_static_integer_object(73));
@@ -375,6 +406,44 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 2,
+                false);
+    } else if (!strcmp(argv[1], "init-gc-closure")) {
+        force_init_gc = require_pending_init_gc = true;
+        program(U"var factory=func(a,b){return [a,b]->{};};"
+                U"var make=func(value){return func(){mark();this.x=this.x+value;};};"
+                U"var a={var init=make(40);};"
+                U"var b={const init=func(){a.init=null;this.x=2;mark();};};"
+                U"var obj=factory(a,b);if(obj.x!=42)throw 1;mark();",
+                1,
+                1,
+                3,
+                false);
+    } else if (!strcmp(argv[1], "init-gc-exception")) {
+        force_init_gc = require_pending_init_gc = escaping_exception = true;
+        program(U"var factory=func(a,b,last){return [last,a,b]->{throw 2;};};"
+                U"var state={var leaked=null;};"
+                U"var make=func(value){return func(){mark();this.x=this.x+value;throw 73;};};"
+                U"var a={var init=make(40);};"
+                U"var b={const init=func(){a.init=null;state.leaked=this;this.x=2;mark();};};"
+                U"var last={const init=func(){mark();throw 3;};};"
+                U"var caught=false;try{factory(a,b,last);}catch(e){caught=e==73;}"
+                U"mark();if(!caught || state.leaked.x!=42)throw 1;"
+                U"state.leaked.x=43;if(state.leaked.x!=43)throw 4;",
+                1,
+                1,
+                3,
+                false);
+    } else if (!strcmp(argv[1], "init-gc-reentrant")) {
+        force_init_gc = true;
+        program(U"var factory=func(base){return base->{};};"
+                U"var state={var depth=0;var inner=null;};"
+                U"var base={const init=func(){this.depth=state.depth;mark();"
+                U"if(state.depth==0){state.depth=1;state.inner=factory(base);state.depth=0;}"
+                U"mark();};};var outer=factory(base);"
+                U"if(outer.depth!=0 || state.inner.depth!=1 || outer==state.inner)throw 1;",
+                1,
+                2,
+                4,
                 false);
     } else if (!strcmp(argv[1], "no-replay")) {
         fail_after_effect = true;

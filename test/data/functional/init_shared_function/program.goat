@@ -1,0 +1,4 @@
+const f = func() { println(7); };
+const A = { const init = f; };
+const B = { const init = f; };
+var obj = [A, B] -> {};

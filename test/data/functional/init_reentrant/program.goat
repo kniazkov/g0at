@@ -1,0 +1,14 @@
+const state = { var depth = 0; var inner = null; };
+const Base = { const init = func() {
+    this.depth = state.depth;
+    println(this.depth);
+    if (state.depth == 0) {
+        state.depth = 1;
+        state.inner = Base -> { println("inner block"); };
+        state.depth = 0;
+    }
+    println(this.depth);
+}; };
+var outer = Base -> { println("outer block"); };
+println(outer.depth); println(state.inner.depth);
+println(outer == state.inner);

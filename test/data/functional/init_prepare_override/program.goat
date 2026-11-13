@@ -1,0 +1,11 @@
+const Base = {
+    const init = func() { this.prepare(); println(this.x); };
+    const prepare = func() { this.x = 1; };
+};
+const Derived = Base -> {
+    const prepare = func() { this.x = 7; };
+    const init = func() { println(this.x); this.x = 9; };
+};
+println("create");
+var obj = Derived -> { println(this.x); };
+println(Base.x); println(Derived.x); println(obj.x);

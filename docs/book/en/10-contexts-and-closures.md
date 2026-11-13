@@ -317,3 +317,123 @@ Output:
 99
 7
 ```
+
+## 10.10. Constructor state, snapshots and repeated inheritance
+
+An array created by each init belongs to that object:
+
+```goat
+const Base = {
+    const init = func() { this.items = [0]; };
+};
+var a = Base -> {};
+var b = Base -> {};
+a.items[0] = 7;
+println(a.items[0]);
+println(b.items[0]);
+```
+
+Output:
+
+```text
+7
+0
+```
+
+Assigning an existing array deliberately shares it. No automatic copying occurs:
+
+```goat
+const shared = [0];
+const Base = { const init = func() { this.items = shared; }; };
+var a = Base -> {};
+var b = Base -> {};
+a.items[0] = 7;
+println(a.items[0]); println(b.items[0]); println(shared[0]);
+println(a.items == b.items);
+```
+
+Output:
+
+```text
+7
+7
+7
+true
+```
+
+The current chain keeps the selected function objects. Only the next construction sees replacements:
+
+```goat
+const A = {
+    var init = func() { println(1); };
+};
+const B = {
+    const init = func() {
+        A.init = func() { println(9); };
+        println(2);
+    };
+};
+var first = [A, B] -> {};
+var second = [A, B] -> {};
+```
+
+Output:
+
+```text
+2
+1
+2
+9
+```
+
+Deduplication is by ancestor object, not function identity:
+
+```goat
+const f = func() { println(7); };
+const A = { const init = f; };
+const B = { const init = f; };
+var obj = [A, B] -> {};
+```
+
+Output:
+
+```text
+7
+7
+```
+
+Cloning preserves ordinary clone behavior and does not rerun initialization:
+
+```goat
+const Base = {
+    const init = func() { this.x = 1; println(8); };
+};
+var a = Base -> {};
+a.x = 5;
+var b = a.clone();
+println(b.x);
+```
+
+Output:
+
+```text
+8
+5
+```
+
+A diamond runs the common ancestor once. Repeated direct prototypes also run
+once per object. Base init precedes derived init even when both appear in either
+order in the prototype list. Missing own init does not stop traversal.
+
+A base init calling `this.prepare()` uses ordinary lookup on the final receiver:
+a derived override can run before the derived init. Assignments to `this` create or
+update receiver fields without modifying ancestors; own constants and access checks
+still apply. An object block inside init has its own `this`, and leaving it restores
+the constructor receiver.
+
+Recursive construction, including constructing the same prototype from its init,
+uses separate snapshots and receivers. If an init saves `this` externally and then
+throws, that partial object remains usable with earlier writes intact; later init
+and the right-hand block are skipped. The runtime retains the receiver, pending
+functions and captured values across GC and releases the snapshot on success or
+exception. These lifetime guarantees do not imply rollback or deep copying.

@@ -1,0 +1,7 @@
+const Base = {
+    const init = func() { this.x = 1; println(8); };
+};
+var a = Base -> {};
+a.x = 5;
+var b = a.clone();
+println(b.x);
