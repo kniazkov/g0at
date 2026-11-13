@@ -439,3 +439,43 @@ println(b.x);
 поздние init и правый блок пропускаются. Runtime удерживает получателя, ожидающие
 функции и захваченные значения при GC и освобождает снимок при успехе или исключении.
 Эти гарантии времени жизни не означают откат или глубокое копирование.
+
+## 10.11. Примеры для разных режимов
+
+```goat
+const Base = {
+    const init = func() { this.items = [1]; };
+    const set = func() { this.items[0] = 7; };
+};
+var a = Base -> {};
+var b = Base -> {};
+a["set"]();
+println(a.items[0]);
+println(b.items[0]);
+```
+
+```text
+7
+1
+```
+
+```goat
+const Base = {
+    const make = func() {
+        const inner = { this.x = 10; };
+        this.x = 20;
+        return inner;
+    };
+};
+var obj = Base -> {};
+var inner = obj.make();
+println(obj.x);
+println(inner.x);
+```
+
+```text
+20
+10
+```
+
+Этот вывод проверяется в VM, сохранённом GBIN и путях native continuation. Счётчики native-входов проверяются отдельно; успех auto сам по себе не доказывает нативное исполнение. Полный контракт и границы совместимости описаны в [наследовании через прототипы](../../prototype-inheritance.md).

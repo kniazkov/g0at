@@ -117,6 +117,14 @@ static void program(const gchar_t *source,
     deferred(node, builder, data);
     bytecode_t *code = link_code_and_data(builder, data);
     assert(code && validate_bytecode_image(code));
+    /* Exercise the same checked decoder used for persisted instruction images,
+       before binding process-local continuation descriptors. */
+    bytecode_t *decoded = decode_bytecode_image(code->buffer, code->buffer_size);
+    assert(decoded && validate_bytecode_image(decoded));
+    assert(decoded->buffer_size == code->buffer_size);
+    assert(!memcmp(decoded->buffer, code->buffer, code->buffer_size));
+    free_bytecode(code);
+    code = decoded;
     assert(code->function_count >= native_functions);
     void *image = malloc(code->buffer_size);
     assert(image);

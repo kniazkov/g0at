@@ -146,3 +146,7 @@ retries=1
 Для примера `25-dispatch.goat` при нормальном запасе стека получаются `bound=1`, `attempts=4`, `succeeded=4`, `retries=0`. Оставшийся вызов `identity` исполняется байткодно и не является неуспешной нативной попыткой. При `--compile` исполнения нет, поэтому счётчики вызовов нулевые даже после успешной подготовки.
 
 Политика CLI и отчёт описаны в [native_execution.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/cli/native_execution.c); защита адаптера — в [c_adapter.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/codegen/c_adapter.c). [check_native_call.sh](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/scripts/check_native_call.sh) проверяет границу вызова, а [check_native_modes.sh](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/scripts/check_native_modes.sh) — режимы, эффекты и возврат в VM.
+
+## Методы и init (#533)
+
+Вызовы методов и init сохраняют семантику получателя через VM fallback и native continuations. Цепочка init проверяется до вызовов, завершённые эффекты не повторяются. Native-сценарии init-modes и init-trace проверяют точные bound/attempt/success в auto и required, включая сохранённый GBIN без компилятора и исходника. Это гибридное исполнение, а не нативное представление объектов.

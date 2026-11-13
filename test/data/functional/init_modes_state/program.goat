@@ -1,0 +1,9 @@
+const Base = {
+    const init = func() { this.items = [1]; };
+    const set = func() { this.items[0] = 7; };
+};
+var a = Base -> {};
+var b = Base -> {};
+a["set"]();
+println(a.items[0]);
+println(b.items[0]);

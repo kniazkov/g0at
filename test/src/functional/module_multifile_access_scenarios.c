@@ -4,6 +4,7 @@
  */
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
+#include "test/support/language_execution.h"
 #include "test/support/module_execution.h"
 #include "test/support/registry.h"
 #include "yyjson.h"
@@ -121,24 +122,27 @@ static void body(scenario_run_t *r, void *arg) {
         yyjson_val *failure = yyjson_obj_get(value, "fail");
         REQUIRE(yyjson_is_bool(failure));
         bool fail = yyjson_get_bool(failure);
+        bool runtime_failure = yyjson_get_bool(yyjson_obj_get(fixture, "runtimeFail"));
         const char *output = NULL;
         if (!binary) {
             const char *name = field(r, value, "output");
             parents(r, root, name);
             output = path(r, root, name);
         } else {
-            REQUIRE(!fail && yyjson_is_null(yyjson_obj_get(value, "output")));
+            REQUIRE((!fail || runtime_failure) && yyjson_is_null(yyjson_obj_get(value, "output")));
         }
         scenario_command_result_t host =
             module_execution_invoke(project, mode, input, output, expected, strlen(expected), fail);
         if (fail) {
             REQUIRE(*diagnostic && contains(host.err, host.err_size, diagnostic));
-            fs_error_t e = {0};
-            fs_info_t info;
-            bool exists = inspect_fs_path(output, false, &info, &e);
-            bool absent = !exists && e.status == FS_NOT_FOUND;
-            clear_fs_error(&e);
-            REQUIRE(absent);
+            if (!binary) {
+                fs_error_t e = {0};
+                fs_info_t info;
+                bool exists = inspect_fs_path(output, false, &info, &e);
+                bool absent = !exists && e.status == FS_NOT_FOUND;
+                clear_fs_error(&e);
+                REQUIRE(absent);
+            }
         }
         if (!binary && !fail)
             continue;
@@ -148,13 +152,16 @@ static void body(scenario_run_t *r, void *arg) {
         const char *sources[] = {binary ? path(r, root, "sources/app-1/module.gmod") : input,
                                  input};
         const char *optimizers[] = {"none", "all"};
+        bool automatic = yyjson_get_bool(yyjson_obj_get(fixture, "auto"));
+        size_t image_size = 0;
+        const char *image = automatic && binary ? language_read(r, input, &image_size) : NULL;
         for (size_t source = 0; source < (binary ? 2U : 1U); source++) {
-            for (size_t optimization = 0; optimization < 2; optimization++) {
+            for (size_t optimization = 0; optimization < (automatic ? 3U : 2U); optimization++) {
                 const char *args[] = {c->goat,
                                       "--native",
-                                      "off",
+                                      optimization == 2 ? "auto" : "off",
                                       "--optimize",
-                                      optimizers[optimization],
+                                      optimizers[optimization == 2 ? 1 : optimization],
                                       sources[source],
                                       NULL};
                 child_options_t options = {.executable = c->goat,
@@ -172,6 +179,8 @@ static void body(scenario_run_t *r, void *arg) {
                                        true);
                 if (fail) {
                     REQUIRE(actual.err_size > 0);
+                    if (runtime_failure)
+                        REQUIRE(contains(actual.err, actual.err_size, diagnostic));
                     const char *diagnostics[] = {"Access denied: read of x",
                                                  "Exactly one access modifier",
                                                  "Expected name with value assignment"};
@@ -181,6 +190,17 @@ static void body(scenario_run_t *r, void *arg) {
                 }
                 cli_count++;
             }
+        }
+        if (image) {
+            size_t after_size;
+            const char *after = language_read(r, input, &after_size);
+            scenario_require_bytes(r,
+                                   "module archive unchanged",
+                                   image,
+                                   image_size,
+                                   after,
+                                   after_size,
+                                   false);
         }
     }
     printf("%s: %zu compile/VM checks, %zu public CLI checks passed\n",

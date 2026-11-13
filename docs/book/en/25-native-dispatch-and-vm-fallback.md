@@ -146,3 +146,7 @@ The default for an ordinary source file is `off`. For `--run` of a saved `.gbin`
 For `25-dispatch.goat` with normal stack headroom, the values are `bound=1`, `attempts=4`, `succeeded=4`, and `retries=0`. The remaining `identity` call executes in bytecode and is not a failed native attempt. With `--compile`, there is no execution, so call counters remain zero even after successful preparation.
 
 CLI policy and reporting are in [native_execution.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/cli/native_execution.c); the adapter guard is in [c_adapter.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/codegen/c_adapter.c). [check_native_call.sh](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/scripts/check_native_call.sh) checks the call boundary, while [check_native_modes.sh](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/scripts/check_native_modes.sh) checks modes, effects, and VM fallback.
+
+## Methods and init (#533)
+
+Method and init calls preserve receiver semantics through VM fallback and native continuations. The init chain is validated before calls, and completed effects are not replayed. The init-modes and init-trace native scenarios assert exact bound/attempt/success counts in auto and required modes, including saved GBIN without a compiler or source file. This is hybrid execution, not a native object layout.

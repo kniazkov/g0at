@@ -437,3 +437,43 @@ throws, that partial object remains usable with earlier writes intact; later ini
 and the right-hand block are skipped. The runtime retains the receiver, pending
 functions and captured values across GC and releases the snapshot on success or
 exception. These lifetime guarantees do not imply rollback or deep copying.
+
+## 10.11. Cross-mode examples
+
+```goat
+const Base = {
+    const init = func() { this.items = [1]; };
+    const set = func() { this.items[0] = 7; };
+};
+var a = Base -> {};
+var b = Base -> {};
+a["set"]();
+println(a.items[0]);
+println(b.items[0]);
+```
+
+```text
+7
+1
+```
+
+```goat
+const Base = {
+    const make = func() {
+        const inner = { this.x = 10; };
+        this.x = 20;
+        return inner;
+    };
+};
+var obj = Base -> {};
+var inner = obj.make();
+println(obj.x);
+println(inner.x);
+```
+
+```text
+20
+10
+```
+
+These outputs are checked in VM, persisted GBIN and native continuation paths. Native entry counters are asserted separately; auto success alone does not prove native execution. See [prototype construction](../../prototype-inheritance.md) for the full contract and compatibility boundary.
