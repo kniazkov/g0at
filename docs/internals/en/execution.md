@@ -37,13 +37,14 @@ INCREF/DECREF account for owned runtime references. Type implementations may poo
 cleared shells, and static singletons need not have ordinary mutable counters.
 Cycles require reachability collection in addition to reference counting.
 collect_garbage() marks module file roots, launch-directory and string caches,
-explicit host roots, every thread's context chain, pending values, exceptions and
-operand stack, then sweeps the process object list.
+explicit host roots, each pending worker's callable, context chain, pending
+values, exceptions and operand stack, then sweeps the process object list.
 
-A local C pointer alone is not a GC root. add_gc_root() protects an external value
-until remove_gc_root(); duplicate registration is set-like, not counted. Do not
-independently unregister a root another owner still needs. Native descriptors have
-a separate ownership chain keeping OS-loaded code alive.
+A local C pointer alone is not a GC root. add_gc_root() registers a tracing
+root but does not acquire an owned reference. Duplicate registration is set-like,
+not counted. Native descriptors independently keep OS-loaded code alive.
+
+See the [ownership and tracing audit](memory-management.md) for the root table, collection boundaries, and limitations.
 
 ## Threads and initialization
 

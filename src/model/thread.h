@@ -57,7 +57,8 @@ struct thread_t {
 
     /** @brief OS execution handle, joined once by the VM after all program threads finish. */
     os_thread_t *worker;
-    /** @brief Retained callable until the worker starts, also visible to GC via its stack. */
+    /** @brief Owned, directly traced callable until the worker takes it under the execution lock.
+     */
     object_t *start_function;
     uint16_t start_argument_count;
     bool program_worker;

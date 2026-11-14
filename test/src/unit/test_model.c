@@ -777,3 +777,74 @@ bool test_string_builder_storage(void) {
     destroy_process(proc);
     return true;
 }
+
+bool test_gc_pending_thread_callable(void) {
+    code_builder_t *builder = create_code_builder();
+    data_builder_t *data = create_data_builder();
+    uint32_t capture_id = add_string_to_data_segment(data, U"captured");
+    add_instruction(builder, (instruction_t){.opcode = CALL});
+    add_instruction(builder, (instruction_t){.opcode = END});
+    add_instruction(builder, (instruction_t){.opcode = VLOAD, .arg1 = capture_id});
+    add_instruction(builder, (instruction_t){.opcode = RET});
+    bytecode_t *code = link_code_and_data(builder, data);
+    destroy_code_builder(builder);
+    destroy_data_builder(data);
+
+    process_t *proc = create_process();
+    size_t baseline = proc->objects.size;
+    thread_t *worker = create_thread(proc, create_context(proc, get_root_context(), NULL));
+    worker->program_worker = true;
+    object_t *root = get_root_object();
+    object_t *closure = create_user_defined_object(proc, (object_array_t){&root, 1});
+    object_t *key = create_string_object(proc, STATIC_STRING(U"captured"));
+    object_t *captured = create_integer_object(proc, 317);
+    create_object_property(closure, key, captured, true);
+    DECREF(key);
+    DECREF(captured);
+    worker->start_function = create_function_object(proc, NULL, 0, 2, closure, NULL, false);
+    DECREF(closure);
+    size_t before = proc->objects.size;
+    collect_garbage(proc);
+
+    /* Check liveness before touching the callable. In a failing build the sweep
+       may already have reclaimed it, so teardown must not release the stale slot. */
+    bool preserved = proc->objects.size == before;
+    if (preserved)
+        push_object_onto_stack(proc->main_thread->data_stack, worker->start_function);
+    worker->start_function = NULL;
+    destroy_thread(worker);
+
+    bool callable = false;
+    bool reclaimed = false;
+    if (preserved && run(proc, code) == 0 && proc->main_thread->data_stack->size == 1) {
+        object_t *result = pop_object_from_stack(proc->main_thread->data_stack);
+        int_value_t value = get_object_integer_value(result);
+        callable = value.has_value && value.value == 317;
+        DECREF(result);
+        collect_garbage(proc);
+        reclaimed = proc->objects.size == baseline;
+    }
+    destroy_process(proc);
+    free_bytecode(code);
+    ASSERT(preserved);
+    ASSERT(callable);
+    ASSERT(reclaimed);
+    return true;
+}
+
+bool test_gc_no_registered_threads(void) {
+    process_t *proc = create_process();
+    destroy_thread(proc->main_thread);
+    object_t *root = create_integer_object(proc, 317);
+    add_gc_root(proc, root);
+    collect_garbage(proc);
+    bool preserved = proc->objects.size == 1;
+    remove_gc_root(proc, root);
+    if (preserved)
+        DECREF(root);
+    bool reclaimed = proc->objects.size == 0;
+    destroy_process(proc);
+    ASSERT(preserved);
+    ASSERT(reclaimed);
+    return true;
+}

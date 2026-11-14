@@ -351,6 +351,8 @@ static test_description_t test_list[] = {
     {"access analysis", test_access_analysis},
     {"process launch", test_process_launch},
     {"process launch VM", test_process_launch_vm},
+    {"GC pending thread callable", test_gc_pending_thread_callable},
+    {"GC without registered threads", test_gc_no_registered_threads},
     {"root object call", test_root_object_call}};
 
 int get_number_of_tests() {
