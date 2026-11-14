@@ -9,9 +9,11 @@
 #include "codegen/linker.h"
 #include "lib/memory/allocate.h"
 #include "lib/numbers/split64.h"
+#include "model/builtin_function.h"
 #include "model/context.h"
 #include "model/object.h"
 #include "model/process.h"
+#include "model/string_builder.h"
 #include "model/thread.h"
 #include "test_macro.h"
 #include "vm/gc.h"
@@ -273,6 +275,7 @@ bool test_instance_of_function() {
         {U"Object", get_root_object},
         {U"Real", get_real_proto},
         {U"String", get_string_proto},
+        {U"StringBuilder", get_string_builder_proto},
     };
 
     for (size_t i = 0; i < sizeof(types) / sizeof(*types); i++) {
@@ -704,5 +707,73 @@ bool test_process_launch_vm(void) {
         destroy_process(proc);
     }
     free_bytecode(code);
+    return true;
+}
+
+/** @brief Storage growth, retained capacity, snapshots, clone ownership and GC/pool reuse. */
+bool test_string_builder_storage(void) {
+    process_t *proc = create_process();
+    object_t *proto = get_string_builder_proto();
+    object_t *obj = create_user_defined_object(proc, (object_array_t){&proto, 1});
+    add_gc_root(proc, obj);
+    object_t *key = create_string_object(proc, STATIC_STRING(U"init"));
+    const builtin_function_t *init =
+        ((builtin_function_object_t *)get_object_property(proto, key))->descriptor;
+    DECREF(key);
+    operation_result_t result = init->execute_method(obj, NULL, 0, proc->main_thread);
+    ASSERT(!result.is_exception && result.value == obj);
+    DECREF(result.value);
+    string_builder_t *buffer = get_string_builder_storage(obj);
+    ASSERT(buffer && buffer->length == 0);
+    key = create_string_object(proc, STATIC_STRING(U"append"));
+    const builtin_function_t *append =
+        ((builtin_function_object_t *)get_object_property(proto, key))->descriptor;
+    DECREF(key);
+    object_t *arg = create_string_object(proc, STATIC_STRING(U"abc😀"));
+    for (size_t i = 0; i < 1024; i++) {
+        result = append->execute_method(obj, &arg, 1, proc->main_thread);
+        ASSERT(!result.is_exception && result.value == obj);
+        DECREF(result.value);
+    }
+    DECREF(arg);
+    ASSERT(buffer->length == 4096 && buffer->capacity >= 4096);
+    size_t capacity = buffer->capacity;
+    gchar_t *data = buffer->data;
+    string_value_t snapshot = string_builder_snapshot(obj);
+    object_t *copy = clone_object(proc, obj);
+    add_gc_root(proc, copy);
+    ASSERT(get_string_builder_storage(copy)->data != data);
+    ASSERT(get_string_builder_storage(copy)->length == 4096);
+    key = create_string_object(proc, STATIC_STRING(U"clear"));
+    const builtin_function_t *clear =
+        ((builtin_function_object_t *)get_object_property(proto, key))->descriptor;
+    DECREF(key);
+    result = clear->execute_method(obj, NULL, 0, proc->main_thread);
+    ASSERT(!result.is_exception && result.value == obj);
+    DECREF(result.value);
+    ASSERT(buffer->length == 0 && buffer->capacity == capacity && buffer->data == data);
+    ASSERT(snapshot.length == 4096 && snapshot.data[3] == U'😀');
+    collect_garbage(proc);
+    ASSERT(get_string_builder_storage(copy)->length == 4096);
+    FREE_STRING(snapshot);
+    remove_gc_root(proc, copy);
+    DECREF(copy);
+    remove_gc_root(proc, obj);
+    DECREF(obj);
+    /* Reusing a pooled ordinary object must not resurrect native storage. */
+    object_t *root = get_root_object();
+    obj = create_user_defined_object(proc, (object_array_t){&root, 1});
+    ASSERT(!get_string_builder_storage(obj));
+    DECREF(obj);
+    /* A cyclic unreachable builder is reclaimed by tracing, including its native buffer. */
+    obj = create_user_defined_object(proc, (object_array_t){&proto, 1});
+    result = init->execute_method(obj, NULL, 0, proc->main_thread);
+    ASSERT(!result.is_exception);
+    DECREF(result.value);
+    key = create_string_object(proc, STATIC_STRING(U"cycle"));
+    ASSERT(create_object_property(obj, key, obj, false) == MSTAT_OK);
+    DECREF(key);
+    collect_garbage(proc);
+    destroy_process(proc);
     return true;
 }

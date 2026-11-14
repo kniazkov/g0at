@@ -15,6 +15,7 @@
 #include "object.h"
 #include "object_state.h"
 #include "process.h"
+#include "string_builder.h"
 #include "transfer.h"
 
 #include <assert.h>
@@ -37,6 +38,7 @@ typedef struct {
 
     /** @brief The state of the object (e.g., unmarked, marked, or zombie). */
     object_state_t state;
+    string_builder_t *string_builder; /**< Optional owned native builder storage. */
 
     /** @brief A vector storing the prototypes of the object. */
     vector_t *proto;
@@ -98,6 +100,11 @@ static void clear_fields(object_user_defined_t *uobj, bool deep) {
         FREE(cell);
     }
     clear_vector(uobj->fields);
+    if (uobj->string_builder) {
+        FREE(uobj->string_builder->data);
+        FREE(uobj->string_builder);
+        uobj->string_builder = NULL;
+    }
     release_module_identity(uobj->module);
     release_access_domain(uobj->domain);
     uobj->module = NULL;
@@ -210,6 +217,7 @@ static object_t *clone_in_module(process_t *process,
         (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size},
         module);
     copy->file_id = file_id;
+    copy_string_builder_storage(&copy->base, obj);
     copy->shadow_inherited = uobj->shadow_inherited;
     copy->inheritance_count = uobj->inheritance_count;
     transfer_t *transfer = relocate ? create_transfer(process) : NULL;
@@ -338,6 +346,7 @@ flat_object_with_access(process_t *process, object_t *source, const function_acc
     for (size_t i = 0; i < topology.size; i++)
         if (contains_storage(ancestors, topology.items[i]))
             flatten_storage(transfer, target, topology.items[i]);
+    copy_string_builder_storage(target, source);
     finish_transfer(transfer);
     destroy_transfer(transfer);
     destroy_vector(ancestors);
@@ -445,7 +454,11 @@ static string_value_t render_array_notation(notation_renderer_t *renderer, const
 
 /** @brief Appends a value's Goat notation, recursing into containers. */
 static void render_object_value_notation(notation_renderer_t *renderer, object_t *value) {
-    if (value->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+    if (get_string_builder_storage(value)) {
+        string_value_t text = string_builder_snapshot(value);
+        append_string_value(renderer->builder, text);
+        FREE_STRING(text);
+    } else if (value->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
         render_user_defined_object_notation(renderer, (object_user_defined_t *)value);
     } else if (value->vtbl->type == TYPE_ARRAY) {
         render_array_notation(renderer, value);
@@ -521,6 +534,8 @@ static string_value_t render_array_notation(notation_renderer_t *renderer, const
 }
 
 string_value_t object_to_string_with_access(const object_t *obj, const function_access_t *access) {
+    if (get_string_builder_storage(obj))
+        return string_builder_snapshot(obj);
     if (obj->vtbl->type != TYPE_USER_DEFINED_OBJECT && obj->vtbl->type != TYPE_ARRAY)
         return convert_object_to_string(obj);
     string_builder_t builder;
@@ -1034,4 +1049,29 @@ model_status_t initialize_field_cell(object_t *storage, field_cell_t *cell, obje
     model_status_t status = write_field(storage, cell, value);
     cell->is_constant = constant;
     return status;
+}
+
+string_builder_t *get_string_builder_storage(const object_t *obj) {
+    return obj->vtbl->type == TYPE_USER_DEFINED_OBJECT
+               ? ((object_user_defined_t *)obj)->string_builder
+               : NULL;
+}
+
+string_builder_t *initialize_string_builder_storage(object_t *obj) {
+    if (obj->vtbl->type != TYPE_USER_DEFINED_OBJECT)
+        return NULL;
+    object_user_defined_t *user = (object_user_defined_t *)obj;
+    if (!user->string_builder) {
+        user->string_builder = ALLOC(sizeof(*user->string_builder));
+        init_string_builder(user->string_builder, 0);
+    }
+    return user->string_builder;
+}
+
+void copy_string_builder_storage(object_t *target, const object_t *source) {
+    string_builder_t *original = get_string_builder_storage(source);
+    if (original) {
+        string_builder_t *copy = initialize_string_builder_storage(target);
+        append_substring(copy, original->data, original->length);
+    }
 }

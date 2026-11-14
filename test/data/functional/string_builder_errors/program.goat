@@ -1,0 +1,21 @@
+const twice = func(n) { return n * 2; };
+if (twice(21) != 42) throw "native seed";
+var b = StringBuilder -> {};
+b << "safe";
+try { b.length = 100; } catch (e) { println(e); }
+try { b["length"] = 100; } catch (e) { println(e); }
+try { b.append(); } catch (e) { println(e); }
+try { b.append(1, 2); } catch (e) { println(e); }
+try { b.clear(1); } catch (e) { println(e); }
+try { b.toString(1); } catch (e) { println(e); }
+try { StringBuilder.append("x"); } catch (e) { println(e); }
+try { StringBuilder.clear(); } catch (e) { println(e); }
+try { StringBuilder << "x"; } catch (e) { println(e); }
+var p = StringBuilder;
+try { p += "x"; } catch (e) { println(e); }
+try { StringBuilder.init(); } catch (e) { println(e); }
+try { StringBuilder.x = 1; } catch (e) { println(e); }
+println(str(b));
+println(b.length);
+const f = b.append;
+try { f("x"); } catch (e) { println(e); }

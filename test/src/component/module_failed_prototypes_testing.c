@@ -2,10 +2,12 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Rules 41--45 with cyclic file initialization and real VM copying.
  */
+#include "builtins/registry.h"
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
 #include "lib/wire/wire.h"
 #include "model/module_files.h"
+#include "model/string_builder.h"
 #include "model/thread.h"
 #include "vm/gc.h"
 #include "vm/vm.h"
@@ -309,6 +311,52 @@ static bool execute(module_file_t *file, context_t *frame, void *data, exception
     return true;
 }
 
+/** @brief Append propagates str's exact saved exception and trace before touching storage. */
+static void check_builder_failure(test_t *test, process_t *process) {
+    thread_t *thread = process->main_thread;
+    object_t *proto = get_string_builder_proto();
+    object_t *builder = create_user_defined_object(process, (object_array_t){&proto, 1});
+    add_gc_root(process, builder);
+    object_t *init_key = create_string_object(process, STATIC_STRING(U"init"));
+    object_t *init = get_object_property(proto, init_key);
+    assert(call_object(init, 0, builder, thread));
+    object_t *value = pop_object_from_stack(thread->data_stack);
+    assert(value == builder);
+    DECREF(value);
+    DECREF(init_key);
+    object_t *append_key = create_string_object(process, STATIC_STRING(U"append"));
+    object_t *append_method = get_object_property(proto, append_key);
+    push_object_onto_stack(thread->data_stack,
+                           create_string_object(process, STATIC_STRING(U"unchanged")));
+    assert(call_object(append_method, 1, builder, thread));
+    value = pop_object_from_stack(thread->data_stack);
+    DECREF(value);
+    DECREF(append_key);
+    object_t *argument = module_file_scope(test->first);
+    operation_result_t converted = builtin_str.execute(&argument, 1, thread);
+    assert(converted.is_exception && converted.value == test->payload && converted.trace);
+    const gchar_t *names[] = {U"append", U"+", U"<<"};
+    for (size_t i = 0; i < 3; i++) {
+        object_t *method_key =
+            create_string_object(process, (string_value_t){names[i], STRLEN(names[i]), false});
+        object_t *method = get_object_property(proto, method_key);
+        INCREF(argument);
+        push_object_onto_stack(thread->data_stack, argument);
+        assert(!call_object(method, 1, builder, thread));
+        assert(thread->exception.value == converted.value);
+        assert(thread->exception.trace == converted.trace);
+        assert(get_string_builder_storage(builder)->length == 9);
+        assert(get_object_integer_value(get_object_property(builder, get_string_length())).value
+               == 9);
+        assert(!STRCMP(get_string_builder_storage(builder)->data, U"unchanged"));
+        clear_exception(&thread->exception);
+        DECREF(method_key);
+    }
+    DECREF(converted.value);
+    remove_gc_root(process, builder);
+    DECREF(builder);
+}
+
 int main(int argc, char **argv) {
     assert(argc == 4);
 #ifdef _WIN32
@@ -375,8 +423,10 @@ int main(int argc, char **argv) {
         if (test.fail)
             assert(failure.value == payload && failure.trace == module_file_exception(first).trace);
     }
-    if (test.fail)
+    if (test.fail) {
         check_clone_guards(&test, observer);
+        check_builder_failure(&test, process);
+    }
     assert(test.calls[module_file_id(first)] == 1);
     assert(test.calls[(module_file_id(first) + 1) % 3] == 1);
     assert(test.calls[(module_file_id(first) + 2) % 3] == 0);

@@ -136,3 +136,6 @@ bool test_flat_method(void);
 bool test_process_launch(void);
 /** @brief Runtime launch constants use exact module/file identities. */
 bool test_process_launch_vm(void);
+
+/** @brief Builder storage ownership and lifecycle. */
+bool test_string_builder_storage(void);

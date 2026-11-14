@@ -10,6 +10,7 @@
 #include "lib/collections/pair.h"
 #include "lib/strings/string_ext.h"
 #include "object.h"
+#include "string_builder.h"
 
 /** @brief Global names of the built-in type prototypes. */
 static pair_t type_properties[] = {
@@ -23,6 +24,7 @@ static pair_t type_properties[] = {
     {U"Object", get_root_object},
     {U"Real", get_real_proto},
     {U"String", get_string_proto},
+    {U"StringBuilder", get_string_builder_proto},
 };
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */

@@ -1,0 +1,17 @@
+true
+0
+true
+true
+test 123
+test 123
+8
+true
+true
+true
+0
+true
+test 123! 456?7
+test 123! 456?7
+new
+true
+new!
