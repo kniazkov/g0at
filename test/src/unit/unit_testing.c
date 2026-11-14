@@ -11,6 +11,7 @@
 #include "unit/test_c_emission.h"
 #include "unit/test_file_system.h"
 #include "unit/test_list.h"
+#include "unit/test_model.h"
 #include "unit/test_native_call.h"
 #include "unit/test_native_pipeline.h"
 #include "unit/test_os_thread.h"
@@ -57,6 +58,11 @@ int main(int argc, char **argv) {
     if (cleanup_service_main(argc, argv, &cleanup_code))
         return cleanup_code;
     init_unicode_locale();
+    if (argc == 2 && !strcmp(argv[1], "--string-builder-tests")) {
+        size_t before = get_allocated_memory_size();
+        bool success = test_string_builder_storage();
+        return success && get_allocated_memory_size() == before ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
     if (argc == 2 && !strcmp(argv[1], "--file-system-tests"))
         return run_file_system_tests() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 2 && !strcmp(argv[1], "--os-thread-tests"))

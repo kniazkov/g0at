@@ -56,14 +56,15 @@ init_snapshot_result_t collect_init_snapshot(process_t *process, object_t *recei
         if (ancestor == receiver)
             continue;
         field_cell_t *cell = get_own_field_cell(ancestor, key);
-        if (!cell)
+        object_t *function = cell ? cell->object : get_object_property(ancestor, key);
+        if (!function)
             continue;
-        if (!is_function_object(cell->object)) {
+        if (!is_function_object(function)) {
             result.exception.value = get_exception_invalid_operation();
             INCREF(result.exception.value);
             break;
         }
-        append_to_vector(values, cell->object);
+        append_to_vector(values, function);
     }
     if (!result.exception.value) {
         init_snapshot_t *snapshot = ALLOC(sizeof(*snapshot));

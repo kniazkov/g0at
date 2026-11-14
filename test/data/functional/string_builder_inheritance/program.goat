@@ -1,0 +1,29 @@
+const twice = func(n) { return n * 2; };
+if (twice(21) != 42) throw "native seed";
+var parent = StringBuilder -> { this << "parent"; };
+var child = parent -> {};
+println(child.length);
+child << "child";
+println(str(parent));
+println(str(child));
+const A = StringBuilder -> {
+    const init = func() { this << "A"; };
+};
+const B = StringBuilder -> {
+    const init = func() { this << "B"; };
+};
+var diamond = [A, B, StringBuilder] -> { this << "!"; };
+println(str(diamond));
+println(diamond.length);
+var copy = parent.clone();
+copy << " copy";
+println(str(parent));
+println(str(copy));
+copy.clear();
+println(str(parent));
+parent.init();
+println(str(parent));
+var flat = parent.flat();
+flat << " flat";
+println(str(flat));
+println(str(parent));

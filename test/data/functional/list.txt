@@ -648,3 +648,8 @@ init_nested_this_rights
 
 init_modes_state
 init_modes_nested
+
+string_builder_basic
+string_builder_self_unicode
+string_builder_inheritance
+string_builder_errors

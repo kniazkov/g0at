@@ -287,6 +287,7 @@ static test_description_t test_list[] = {
     {"'sign' function", test_sign_function},
     {"'trim' method and function", test_trim_function},
     {"'instanceOf' method and function", test_instance_of_function},
+    {"StringBuilder storage", test_string_builder_storage},
     {"context cloning", test_context_cloning},
     {"context 'this' cycle release", test_context_this_cycle_release},
     {"context 'this' preserved", test_context_this_preserved},

@@ -1,0 +1,25 @@
+const twice = func(n) { return n * 2; };
+if (twice(21) != 42) throw "native seed";
+var b = StringBuilder -> {};
+b << "Ж😀" << chr(0) << 'x';
+println(b.length);
+const snapshot = str(b);
+b << b;
+println(b.length);
+println(str(b) == snapshot + snapshot);
+b += b;
+println(b.length);
+b.append(b);
+println(b.length);
+println(b.toString().charAt(2) == chr(0));
+b.clear();
+var i = 0;
+while (i < 2000) { b << 'я'; i += 1; }
+println(b.length);
+println(b.toString() == "я".repeat(2000));
+var obj = { var x = 1; };
+b.clear().append(obj);
+const old = str(b);
+obj.x = 2;
+println(str(b) == old);
+println(str(b) != str(obj));

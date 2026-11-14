@@ -123,3 +123,8 @@ Native lowering covers proven numeric/math calls, scalar conversions and support
   destroy modules while children remain. See [threads](../../module-serialization-api.md).
 - `__main__` and `__dir__` are contextual constants, not built-in functions. They retain
   declaration file/module context, including in re-exported functions. See [modules](modules.md).
+
+
+## StringBuilder
+
+[Mutable Unicode string builder](../../string-builder.md): the built-in prototype, constructor chain, append operators, read-only length and independent string snapshots.

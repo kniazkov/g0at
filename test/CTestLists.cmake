@@ -911,3 +911,10 @@ foreach(init_snapshot_case order lexical validation ownership depth)
   goat_suite(component.init_snapshot.${init_snapshot_case} "component;init-snapshot"
     "$<TARGET_FILE:init_snapshot_testing>" "${init_snapshot_case}")
 endforeach()
+
+goat_suite(native.string_builder "native;string-builder" "${CMAKE_COMMAND}"
+  "-DGOAT=$<TARGET_FILE:goat>" "-DDATA=${PROJECT_SOURCE_DIR}/test/data/functional"
+  "-DWORK=${CMAKE_BINARY_DIR}/ctest-string-builder"
+  -P "${CMAKE_CURRENT_SOURCE_DIR}/string_builder_modes.cmake")
+
+goat_suite(core.string_builder "core;string-builder" $<TARGET_FILE:unit_testing> --string-builder-tests)
