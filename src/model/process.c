@@ -47,6 +47,26 @@ process_t *create_process() {
     return process;
 }
 
+void enqueue_last_ref_release(object_t *obj) {
+    process_t *process = obj->process;
+    object_t **link = obj->vtbl->gc_link(obj);
+    assert(!*link);
+    *link = process->pending_releases;
+    process->pending_releases = obj;
+    if (process->draining_releases)
+        return;
+
+    process->draining_releases = true;
+    while (process->pending_releases) {
+        object_t *next = process->pending_releases;
+        object_t **next_link = next->vtbl->gc_link(next);
+        process->pending_releases = *next_link;
+        *next_link = NULL;
+        next->vtbl->finalize_last_ref(next);
+    }
+    process->draining_releases = false;
+}
+
 /** @brief Destroys all objects in the given list by calling their release function. */
 static void destroy_all_objects_in_the_list(object_list_t *list) {
     object_t *object = list->head;
@@ -58,6 +78,7 @@ static void destroy_all_objects_in_the_list(object_list_t *list) {
 }
 
 void destroy_process(process_t *process) {
+    assert(!process->draining_releases && !process->pending_releases);
     while (process->main_thread) {
         destroy_thread(process->main_thread);
     }

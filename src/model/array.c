@@ -34,6 +34,13 @@ static void dec_ref(object_t *obj) {
     if (array->state == DYING || --array->refs)
         return;
     array->state = DYING;
+    enqueue_last_ref_release(obj);
+}
+
+/** @brief Releases immediate owned values and then the dying array itself. */
+static void finalize_last_ref(object_t *obj) {
+    array_object_t *array = (array_object_t *)obj;
+    assert(array->state == DYING && !array->refs);
     for (size_t i = 0; i < array->count; i++)
         DECREF(array->items[i]);
     DECREF(array->length);
@@ -206,6 +213,7 @@ static object_array_t get_topology(const object_t *obj) {
 static object_vtbl_t vtbl = {.type = TYPE_ARRAY,
                              .inc_ref = inc_ref,
                              .dec_ref = dec_ref,
+                             .finalize_last_ref = finalize_last_ref,
                              .mark = mark,
                              .gc_link = gc_link,
                              .visit_gc_edges = visit_edges,

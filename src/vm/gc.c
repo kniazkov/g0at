@@ -103,6 +103,10 @@ static void sweep_unreachable_objects(process_t *proc) {
 
 /** @brief Performs garbage collection on the specified process. */
 void collect_garbage(process_t *proc) {
+    /* A reentrant request cannot inspect a partly finalized object graph or reuse its links.
+       An ordinary collection can only start at a stable boundary. */
+    if (proc->draining_releases)
+        return;
     mark_reachable_objects(proc);
     /* Correct counts before sweep can free any edge target or clear its mark.
        Reconciliation must not run ordinary last-reference destruction. */

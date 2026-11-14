@@ -38,7 +38,7 @@ typedef struct {
 
     /** @brief The state of the object (e.g., unmarked, marked, or zombie). */
     object_state_t state;
-    object_t *gc_next;                /**< Transient link during a process mark pass. */
+    object_t *gc_next;                /**< Transient link for marking or last-owner release. */
     string_builder_t *string_builder; /**< Optional owned native builder storage. */
 
     /** @brief A vector storing the prototypes of the object. */
@@ -114,11 +114,8 @@ static void clear_fields(object_user_defined_t *uobj, bool deep) {
 
 /** @brief Releases or clears a user-defined object with optional deep cleaning. */
 static void release_or_clear(object_user_defined_t *uobj, bool deep_cleaning) {
-    if (uobj->state == DYING) {
-        return;
-    }
     if (deep_cleaning) {
-        uobj->state = DYING;
+        assert(uobj->state == DYING && !uobj->refs);
         clear_fields(uobj, true);
         for (size_t index = 0; index < uobj->proto->size; index++) {
             DECREF((object_t *)uobj->proto->data[index]);
@@ -156,9 +153,15 @@ static void inc_ref(object_t *obj) {
 static void dec_ref(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     assert(uobj->state != ZOMBIE);
-    if (!(--uobj->refs)) {
-        release_or_clear(uobj, true);
-    }
+    if (uobj->state == DYING || --uobj->refs)
+        return;
+    uobj->state = DYING;
+    enqueue_last_ref_release(obj);
+}
+
+/** @brief Drops the dying object's immediate ownership and returns or frees its storage. */
+static void finalize_last_ref(object_t *obj) {
+    release_or_clear((object_user_defined_t *)obj, true);
 }
 
 /** @brief Marks once, placing immediate children on the collector's later worklist. */
@@ -716,6 +719,7 @@ static bool get_boolean_value(const object_t *obj) {
 static object_vtbl_t vtbl = {.type = TYPE_USER_DEFINED_OBJECT,
                              .inc_ref = inc_ref,
                              .dec_ref = dec_ref,
+                             .finalize_last_ref = finalize_last_ref,
                              .mark = mark,
                              .gc_link = gc_link,
                              .visit_gc_edges = visit_edges,

@@ -19,6 +19,24 @@ that reference, and do not unregister another owner's registration. Use a separa
 owned aggregate when independently nested callers must register the same value.
 GC-05 (#547) is responsible for the replacement external registration contract.
 
+### Last-owner release (GC-04)
+
+An array, user-defined object or dynamic function enters `DYING` and is queued
+once when its count reaches zero. The outermost release drains that process's
+allocation-free worklist synchronously. Nested reference drops, including
+those from a resource cleanup callback, enqueue zero-count graph objects for
+the outer drain rather than nesting another native stack frame. Do not
+retain a dying object or depend on the finalization order of independent
+children. Scalar leaf values retain their immediate release and pooling rules.
+
+The worklist shares the intrusive link with tracing under the execution lock
+(or exclusive host ownership); collecting during a release drain is not a safe
+point. Links are cleared before finalizing, including before a user-defined
+shell enters its pool. Cycle sweep and the final heap walk at process teardown
+remain shallow: they do not drop already-swept object references. Weak
+self-fields still do not own their target. Module/domain/native resources
+are released by their existing cleanup paths.
+
 ## Audit of owners at a potential collection boundary
 
 | Owner / edge | What retains it | Tracing and release | Synchronization |
