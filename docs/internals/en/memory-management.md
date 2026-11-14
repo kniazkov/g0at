@@ -53,10 +53,17 @@ single-process graph; #556 gates paths that can admit foreign objects.
 A managed object on the process list starts unmarked, becomes marked if reached,
 and surviving marks are reset for the next pass. A type may use an intermediate
 dying state while releasing edges and a zombie state for an empty pooled shell;
-neither is an accessible live value. Walking an object graph and dropping a deep
-last-reference chain still use recursion in this stage (#545, #546).
+neither is an accessible live value. Long last-reference chains still use
+recursive ordinary release (#546); that is separate from tracing.
 
-Mark begins from the roots above and delegates traversal to each object type.
+Mark uses a process-local LIFO worklist, not the C call stack. Arrays, user
+objects and dynamic functions each reserve one transient pointer; leaves need
+no worklist link. Mark when enqueuing, pop and clear the link before visiting
+immediate edges, and visit each reachable container at most once. All roots
+feed the same worklist. Tracing and refcount reconciliation use one edge inventory:
+a weak self field remains visible to tracing but does not contribute a count.
+The worklist performs no allocation, so allocation failure cannot leave a partial
+mark followed by sweep. Reconciliation and sweep start only after it drains.
 Once marking is complete, but before any object is freed or survivor mark cleared,
 each unmarked container/function subtracts its owned references to marked objects
 in the same process. Each owned edge is counted separately; weak object self

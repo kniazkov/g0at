@@ -9,7 +9,6 @@
 static object_vtbl_t character_proto_vtbl = {.type = TYPE_OTHER,
                                              .inc_ref = stub_memory_function,
                                              .dec_ref = stub_memory_function,
-                                             .mark = stub_memory_function,
                                              .sweep = no_sweep,
                                              .release = stub_memory_function,
                                              .compare = compare_object_addresses,

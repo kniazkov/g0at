@@ -59,7 +59,8 @@ static void dec_ref(object_t *obj) {
 }
 
 /** @brief Implements @ref object_vtbl_t::mark. */
-static void mark(object_t *obj) {
+static void mark(object_t *obj, object_t **pending) {
+    (void)pending;
     object_dynamic_character_t *diobj = (object_dynamic_character_t *)obj;
     assert(diobj->state != ZOMBIE);
     diobj->state = MARKED;

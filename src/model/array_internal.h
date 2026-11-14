@@ -12,6 +12,7 @@ typedef struct {
     bool read_only;       /**< Rejects every element mutation, including empty operations. */
     size_t refs;          /**< Strong reference count. */
     object_state_t state; /**< Tracing/destruction state. */
+    object_t *gc_next;    /**< Transient link during a process mark pass. */
     object_t **items;     /**< Owned element references. */
     size_t count;         /**< Current element count. */
     size_t capacity;      /**< Allocated element slots. */

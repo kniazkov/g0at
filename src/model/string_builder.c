@@ -185,7 +185,6 @@ static operation_result_t immutable_append(process_t *process, object_t *left, o
 static object_vtbl_t builder_proto_vtbl = {.type = TYPE_OTHER,
                                            .inc_ref = stub_memory_function,
                                            .dec_ref = stub_memory_function,
-                                           .mark = stub_memory_function,
                                            .sweep = no_sweep,
                                            .release = stub_memory_function,
                                            .compare = compare_object_addresses,

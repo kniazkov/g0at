@@ -109,21 +109,14 @@ bool add_function_field_capture(function_access_t *access, object_t *storage, fi
     return true;
 }
 
-void mark_function_access(const function_access_t *access) {
-    for (size_t i = 0; i < access->lexical_scopes->size; i++)
-        mark_object(access->lexical_scopes->data[i]);
-    for (size_t i = 0; i < access->captures->size; i++) {
-        field_capture_t *capture = access->captures->data[i];
-        mark_object(capture->storage);
-    }
-}
-
-void reconcile_swept_function_access(process_t *process, const function_access_t *access) {
+void visit_function_access_gc_edges(const function_access_t *access,
+                                    gc_edge_visitor_t visit,
+                                    void *data) {
     for (size_t i = 0; i < access->lexical_scopes->size; ++i)
-        drop_swept_reference(process, access->lexical_scopes->data[i]);
+        visit(access->lexical_scopes->data[i], true, data);
     for (size_t i = 0; i < access->captures->size; ++i) {
         const field_capture_t *capture = access->captures->data[i];
-        drop_swept_reference(process, capture->storage);
+        visit(capture->storage, true, data);
     }
 }
 

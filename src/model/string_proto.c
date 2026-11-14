@@ -192,7 +192,6 @@ static object_t *proto_get_property(const object_t *obj, const object_t *key) {
 static object_vtbl_t string_proto_vtbl = {.type = TYPE_OTHER,
                                           .inc_ref = stub_memory_function,
                                           .dec_ref = stub_memory_function,
-                                          .mark = stub_memory_function,
                                           .sweep = no_sweep,
                                           .release = stub_memory_function,
                                           .compare = compare_object_addresses,

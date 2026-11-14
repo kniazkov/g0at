@@ -101,7 +101,6 @@ static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, t
 static object_vtbl_t static_vtbl = {.type = TYPE_OTHER,
                                     .inc_ref = stub_memory_function,
                                     .dec_ref = stub_memory_function,
-                                    .mark = stub_memory_function,
                                     .sweep = no_sweep,
                                     .release = stub_memory_function,
                                     .compare = compare_object_addresses,
@@ -162,6 +161,7 @@ typedef struct {
 
     /** @brief The state of the object (unmarked, marked, zombie, or dying). */
     object_state_t state;
+    object_t *gc_next; /**< Transient link during a process mark pass. */
 
     /** @brief Array of argument name objects. */
     object_t **arg_names;
@@ -221,16 +221,29 @@ static void dec_ref(object_t *obj) {
     }
 }
 
-/** @brief Implements @ref object_vtbl_t::mark. */
-static void mark(object_t *obj) {
-    object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
-    if (dfobj->state == MARKED)
+/** @brief Marks once, placing immediate children on the collector's later worklist. */
+static void mark(object_t *obj, object_t **pending) {
+    object_dynamic_function_t *function = (object_dynamic_function_t *)obj;
+    if (function->state != UNMARKED)
         return;
-    dfobj->state = MARKED;
-    mark_object(dfobj->closure);
-    mark_function_access(&dfobj->access);
-    for (size_t i = 0; i < dfobj->arg_count; i++)
-        mark_object(dfobj->arg_names[i]);
+    assert(!function->gc_next);
+    function->state = MARKED;
+    function->gc_next = *pending;
+    *pending = obj;
+}
+
+/** @brief Accesses a queued object's worklist link. */
+static object_t **gc_link(object_t *obj) {
+    return &((object_dynamic_function_t *)obj)->gc_next;
+}
+
+/** @brief Lists immediate tracing edges and records weak self edges separately. */
+static void visit_edges(object_t *obj, gc_edge_visitor_t visit, void *data) {
+    object_dynamic_function_t *function = (object_dynamic_function_t *)obj;
+    visit(function->closure, true, data);
+    visit_function_access_gc_edges(&function->access, visit, data);
+    for (size_t i = 0; i < function->arg_count; ++i)
+        visit(function->arg_names[i], true, data);
 }
 
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
@@ -245,13 +258,8 @@ static void drop_marked_reference(object_t *obj) {
 
 /** @brief Reconciles each owned edge of a dead object once. */
 static void reconcile_edges(object_t *obj) {
-    object_dynamic_function_t *function = (object_dynamic_function_t *)obj;
-    if (function->state != UNMARKED)
-        return;
-    drop_swept_reference(obj->process, function->closure);
-    for (size_t i = 0; i < function->arg_count; ++i)
-        drop_swept_reference(obj->process, function->arg_names[i]);
-    reconcile_swept_function_access(obj->process, &function->access);
+    if (((object_dynamic_function_t *)obj)->state == UNMARKED)
+        visit_edges(obj, drop_owned_swept_edge, obj->process);
 }
 
 /** @brief Implements @ref object_vtbl_t::sweep. */
@@ -706,6 +714,8 @@ static object_vtbl_t dynamic_vtbl = {.type = TYPE_OTHER,
                                      .inc_ref = inc_ref,
                                      .dec_ref = dec_ref,
                                      .mark = mark,
+                                     .gc_link = gc_link,
+                                     .visit_gc_edges = visit_edges,
                                      .sweep = sweep,
                                      .drop_swept_reference = drop_marked_reference,
                                      .reconcile_swept_edges = reconcile_edges,

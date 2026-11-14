@@ -71,7 +71,8 @@ static void dec_ref(object_t *obj) {
 }
 
 /** @brief Implements @ref object_vtbl_t::mark. */
-static void mark(object_t *obj) {
+static void mark(object_t *obj, object_t **pending) {
+    (void)pending;
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
     assert(dsobj->state != ZOMBIE);
     dsobj->state = MARKED;
@@ -230,7 +231,6 @@ static bool get_boolean_value(const object_t *obj) {
 static object_vtbl_t static_string_vtbl = {.type = TYPE_STRING,
                                            .inc_ref = stub_memory_function,
                                            .dec_ref = stub_memory_function,
-                                           .mark = stub_memory_function,
                                            .sweep = no_sweep,
                                            .release = stub_memory_function,
                                            .compare = compare,

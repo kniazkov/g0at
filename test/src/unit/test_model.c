@@ -9,6 +9,7 @@
 #include "codegen/linker.h"
 #include "lib/memory/allocate.h"
 #include "lib/numbers/split64.h"
+#include "lib/threads/os_thread.h"
 #include "model/builtin_function.h"
 #include "model/context.h"
 #include "model/object.h"
@@ -956,5 +957,137 @@ bool test_gc_sweep_fields_and_functions(void) {
     good = good && proc->objects.size == baseline;
     destroy_process(proc);
     ASSERT(good);
+    return true;
+}
+
+typedef struct {
+    process_t *process;
+    object_t *root;
+    object_t *anchor;
+    size_t baseline;
+    size_t live;
+    bool ok;
+} iterative_gc_test_t;
+
+/** @brief Runs only the collector and bounded observations on a small OS stack. */
+static void *collect_on_small_stack(void *data) {
+    iterative_gc_test_t *test = data;
+    size_t live_bytes = get_allocated_memory_size();
+    test->ok = true;
+    for (size_t i = 0; i < 3; ++i) {
+#ifdef GOAT_TEST_ALLOC_FAILURE
+        allocation_fault_start(1);
+#endif
+        collect_garbage(test->process);
+#ifdef GOAT_TEST_ALLOC_FAILURE
+        size_t attempts = allocation_fault_stop();
+        test->ok = test->ok && attempts == 0 && !allocation_fault_triggered();
+#endif
+        test->ok = test->ok && test->process->objects.size == test->live
+                   && get_allocated_memory_size() == live_bytes;
+        if (!test->ok)
+            return NULL;
+        object_array_t elements = get_array_elements(test->anchor);
+        int_value_t marker = get_object_integer_value(elements.items[1]);
+        test->ok = elements.items[0] == test->root && marker.has_value && marker.value == 456789;
+    }
+
+    /* Drop the only outside owner. The strong back-edge prevents synchronous recursive
+       destruction; this test exercises marking/sweep, not the separate DECREF cascade. */
+    remove_gc_root(test->process, test->root);
+    DECREF(test->root);
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    allocation_fault_start(1);
+#endif
+    collect_garbage(test->process);
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    size_t attempts = allocation_fault_stop();
+    test->ok = test->ok && attempts == 0 && !allocation_fault_triggered();
+#endif
+    test->ok = test->ok && test->process->objects.size == test->baseline;
+    return NULL;
+}
+
+bool test_gc_iterative_mark(void) {
+    process_t *proc = create_process();
+    ASSERT(proc);
+    size_t baseline = proc->objects.size;
+    object_t *marker = create_integer_object(proc, 456789);
+    object_t *seed[] = {get_null_object(), marker};
+    object_t *anchor = create_array_object(proc, (object_array_t){seed, 2});
+    DECREF(marker);
+
+    object_t *arrays = anchor;
+    INCREF(arrays);
+    for (size_t i = 0; i < 24000; ++i) {
+        object_t *next = create_array_object(proc, (object_array_t){&arrays, 1});
+        DECREF(arrays);
+        arrays = next;
+    }
+
+    object_t *root_object = get_root_object();
+    object_static_string_t storage = {0};
+    object_t *child_key = get_static_string_object(&storage, U"next");
+    object_t *mixed = anchor;
+    INCREF(mixed);
+    for (size_t i = 0; i < 8000; ++i) {
+        object_t *container = create_user_defined_object(proc, (object_array_t){&root_object, 1});
+        ASSERT(create_object_property(container, child_key, mixed, true) == MSTAT_OK);
+        ASSERT(create_object_property(container, get_this_key(), container, true) == MSTAT_OK);
+        DECREF(mixed);
+        object_t *function = create_function_object(proc, NULL, 0, 0, container, NULL, false);
+        DECREF(container);
+        mixed = create_array_object(proc, (object_array_t){&function, 1});
+        DECREF(function);
+    }
+
+    enum { WIDTH = 2048 };
+
+    object_t **branches = ALLOC(WIDTH * sizeof(*branches));
+    for (size_t i = 0; i < WIDTH; ++i) {
+        object_t *values[] = {anchor, anchor, marker};
+        branches[i] = create_array_object(proc, (object_array_t){values, 3});
+    }
+    object_t *wide = create_array_object(proc, (object_array_t){branches, WIDTH});
+    for (size_t i = 0; i < WIDTH; ++i)
+        DECREF(branches[i]);
+    FREE(branches);
+    object_t *tops[] = {arrays, mixed, wide};
+    object_t *root = create_array_object(proc, (object_array_t){tops, 3});
+    DECREF(arrays);
+    DECREF(mixed);
+    DECREF(wide);
+    object_t *zero = get_integer_zero();
+    operation_result_t back =
+        anchor->vtbl->set_index(proc, anchor, (object_array_t){&zero, 1}, root);
+    ASSERT(!back.is_exception);
+    DECREF(back.value);
+    DECREF(anchor);
+    add_gc_root(proc, root);
+
+    iterative_gc_test_t test = {proc, root, anchor, baseline, proc->objects.size, false};
+    os_thread_t *worker;
+    os_thread_status_t status =
+        create_os_thread(&worker, collect_on_small_stack, &test, 256 * 1024);
+    if (status != OS_THREAD_OK) {
+        destroy_process(proc);
+        return false;
+    }
+    ASSERT(join_os_thread(worker, NULL) == OS_THREAD_OK);
+    bool discarded = destroy_os_thread(worker) == OS_THREAD_OK;
+    if (test.ok) {
+        /* A swept object from the pool must reenter the worklist with a clear link. */
+        size_t pooled = proc->user_defined_objects.size;
+        object_t *reused = create_user_defined_object(proc, (object_array_t){&root_object, 1});
+        test.ok = pooled > 0 && proc->user_defined_objects.size == pooled - 1;
+        add_gc_root(proc, reused);
+        collect_garbage(proc);
+        test.ok = test.ok && proc->objects.size == baseline + 1;
+        remove_gc_root(proc, reused);
+        DECREF(reused);
+        test.ok = test.ok && proc->objects.size == baseline;
+    }
+    destroy_process(proc);
+    ASSERT(discarded && test.ok);
     return true;
 }

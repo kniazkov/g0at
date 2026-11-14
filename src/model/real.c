@@ -71,7 +71,8 @@ static void dec_ref(object_t *obj) {
 }
 
 /** @brief Implements @ref object_vtbl_t::mark. */
-static void mark(object_t *obj) {
+static void mark(object_t *obj, object_t **pending) {
+    (void)pending;
     object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
     assert(drobj->state != ZOMBIE);
     drobj->state = MARKED;
@@ -258,7 +259,6 @@ static real_value_t dynamic_get_real_value(const object_t *obj) {
 static object_vtbl_t static_vtbl = {.type = TYPE_NUMBER,
                                     .inc_ref = stub_memory_function,
                                     .dec_ref = stub_memory_function,
-                                    .mark = stub_memory_function,
                                     .sweep = no_sweep,
                                     .release = stub_memory_function,
                                     .compare = compare_numeric_keys,

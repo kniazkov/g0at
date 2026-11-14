@@ -57,7 +57,7 @@ bool test_exceptions_object(void) {
         ASSERT(get_object_property(exceptions, key) == value);
         INCREF(value);
         DECREF(value);
-        value->vtbl->mark(value);
+        ASSERT(!value->vtbl->mark);
         ASSERT(!value->vtbl->sweep(value));
         object_t *copy = value->vtbl->clone(process, value);
         ASSERT(copy->vtbl->compare(copy, value) == 0);
@@ -73,7 +73,7 @@ bool test_exceptions_object(void) {
     ASSERT(exceptions->vtbl->clone(process, exceptions) == exceptions);
     INCREF(exceptions);
     DECREF(exceptions);
-    exceptions->vtbl->mark(exceptions);
+    ASSERT(!exceptions->vtbl->mark);
     ASSERT(!exceptions->vtbl->sweep(exceptions));
     object_array_t root_keys = get_object_keys(get_root_context()->data);
     size_t found = 0;

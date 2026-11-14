@@ -83,6 +83,9 @@ typedef struct {
     size_t size;
 } object_array_t;
 
+/** @brief Visits a tracing edge and whether it owns a reference. */
+typedef void (*gc_edge_visitor_t)(object_t *target, bool owned, void *data);
+
 /** @brief The virtual table structure for objects in Goat. */
 typedef struct {
     /** @brief The type of the object. */
@@ -104,8 +107,14 @@ typedef struct {
      */
     void (*dec_ref)(object_t *obj);
 
-    /** @brief Marking an object during garbage collection. */
-    void (*mark)(object_t *obj);
+    /** @brief Marks a managed object once and links non-leaves into the pending worklist. */
+    void (*mark)(object_t *obj, object_t **pending);
+
+    /** @brief Gets the pending-list link of a queued object that can have children. */
+    object_t **(*gc_link)(object_t *obj);
+
+    /** @brief Enumerates immediate tracing edges; never traverses them. */
+    void (*visit_gc_edges)(object_t *obj, gc_edge_visitor_t visit, void *data);
 
     /**
      * @brief Sweeping (cleaning up) an object during garbage collection.
@@ -328,11 +337,6 @@ struct object_t {
         ((object_t *)(obj))->vtbl->dec_ref((object_t *)(obj));                                     \
     }
 
-/** @brief Marks an object during garbage collection. */
-static inline void mark_object(object_t *obj) {
-    obj->vtbl->mark(obj);
-}
-
 /**
  * @brief Sweeps an object during garbage collection.
  * @return `true` if the object was destroyed or moved to object pool, `false` if it remains alive.
@@ -351,6 +355,12 @@ static inline void reconcile_swept_edges(object_t *obj) {
 static inline void drop_swept_reference(process_t *process, object_t *target) {
     if (target && target->process == process && target->vtbl->drop_swept_reference)
         target->vtbl->drop_swept_reference(target);
+}
+
+/** @brief Edge visitor for reconciling only owning edges after a complete mark. */
+static inline void drop_owned_swept_edge(object_t *target, bool owned, void *data) {
+    if (owned)
+        drop_swept_reference(data, target);
 }
 
 /** @brief Releases an object. */

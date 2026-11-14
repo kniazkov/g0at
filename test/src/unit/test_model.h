@@ -149,3 +149,6 @@ bool test_gc_no_registered_threads(void);
 bool test_gc_sweep_array_references(void);
 /** @brief Reconcile dead field, prototype, function, argument and capture edges. */
 bool test_gc_sweep_fields_and_functions(void);
+
+/** @brief Traces deep and shared cyclic graphs on a small stack, without an allocation. */
+bool test_gc_iterative_mark(void);
