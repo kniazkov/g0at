@@ -353,6 +353,8 @@ static test_description_t test_list[] = {
     {"process launch VM", test_process_launch_vm},
     {"GC pending thread callable", test_gc_pending_thread_callable},
     {"GC without registered threads", test_gc_no_registered_threads},
+    {"GC sweep reconciles array references", test_gc_sweep_array_references},
+    {"GC sweep reconciles field and function references", test_gc_sweep_fields_and_functions},
     {"root object call", test_root_object_call}};
 
 int get_number_of_tests() {

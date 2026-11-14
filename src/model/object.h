@@ -114,6 +114,12 @@ typedef struct {
      */
     bool (*sweep)(object_t *obj);
 
+    /** @brief Drop owned edges from an unmarked source, before any object is swept. */
+    void (*reconcile_swept_edges)(object_t *obj);
+
+    /** @brief Drop one dead-source edge only if this target is marked. Never destroy it. */
+    void (*drop_swept_reference)(object_t *obj);
+
     /** @brief Releasing (destroying) an object. */
     void (*release)(object_t *obj);
 
@@ -333,6 +339,18 @@ static inline void mark_object(object_t *obj) {
  */
 static inline bool sweep_object(object_t *obj) {
     return obj->vtbl->sweep(obj);
+}
+
+/** @brief Reconciles outgoing edges while all objects and survivor marks are intact. */
+static inline void reconcile_swept_edges(object_t *obj) {
+    if (obj->vtbl->reconcile_swept_edges)
+        obj->vtbl->reconcile_swept_edges(obj);
+}
+
+/** @brief Drops an owned edge to a survivor without traversing or freeing the target. */
+static inline void drop_swept_reference(process_t *process, object_t *target) {
+    if (target && target->process == process && target->vtbl->drop_swept_reference)
+        target->vtbl->drop_swept_reference(target);
 }
 
 /** @brief Releases an object. */
@@ -637,7 +655,7 @@ void enable_prototype_shadowing(object_t *obj);
  * The argument names array (`arg_names`) must be allocated by the caller before invoking this
  * function. Ownership of this array is transferred to the function object, and it will be freed
  * internally during object cleanup.
- * `arg_names`: Array of argument name objects. Ownership is transferred.
+ * `arg_names`: Ownership of the array is transferred; individual names are retained.
  * The optional native descriptor is retained independently of the bytecode.
  */
 object_t *create_function_object(process_t *process,

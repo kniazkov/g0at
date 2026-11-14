@@ -848,3 +848,113 @@ bool test_gc_no_registered_threads(void) {
     ASSERT(reclaimed);
     return true;
 }
+
+/** @brief Checks a dead array cycle with duplicate edges to one independently owned survivor. */
+static bool sweep_array_references(bool survivor_first) {
+    process_t *proc = create_process();
+    size_t baseline = proc->objects.size;
+    object_t *survivor = survivor_first ? create_array_object(proc, (object_array_t){0}) : NULL;
+    object_t *items[1031];
+    for (size_t i = 0; i < sizeof(items) / sizeof(*items); ++i)
+        items[i] = get_null_object();
+    object_t *a =
+        create_array_object(proc, (object_array_t){items, sizeof(items) / sizeof(*items)});
+    object_t *b = create_array_object(proc, (object_array_t){items, 2});
+    if (!survivor)
+        survivor = create_array_object(proc, (object_array_t){0});
+    object_t *length = get_object_property(a, get_string_length());
+    INCREF(length);
+    INCREF(survivor); /* Two independent outside owners; neither is the root table. */
+    add_gc_root(proc, survivor);
+    add_gc_root(proc, length);
+
+    object_t *zero = get_integer_zero();
+    object_t *one = create_integer_object(proc, 1);
+    object_t *two = create_integer_object(proc, 2);
+    operation_result_t writes[] = {
+        a->vtbl->set_index(proc, a, (object_array_t){&zero, 1}, b),
+        a->vtbl->set_index(proc, a, (object_array_t){&one, 1}, survivor),
+        a->vtbl->set_index(proc, a, (object_array_t){&two, 1}, survivor),
+        b->vtbl->set_index(proc, b, (object_array_t){&zero, 1}, a),
+        b->vtbl->set_index(proc, b, (object_array_t){&one, 1}, survivor),
+    };
+    bool good = true;
+    for (size_t i = 0; i < sizeof(writes) / sizeof(*writes); ++i) {
+        good = good && !writes[i].is_exception;
+        DECREF(writes[i].value);
+    }
+    DECREF(one);
+    DECREF(two);
+    DECREF(a);
+    DECREF(b);
+
+    collect_garbage(proc);
+    collect_garbage(proc);
+    good = good && proc->objects.size == baseline + 2;
+    remove_gc_root(proc, length);
+    DECREF(length);
+    good = good && proc->objects.size == baseline + 1;
+    DECREF(survivor);
+    good = good && proc->objects.size == baseline + 1;
+    remove_gc_root(proc, survivor);
+    DECREF(survivor);
+    good = good && proc->objects.size == baseline;
+    destroy_process(proc);
+    return good;
+}
+
+bool test_gc_sweep_array_references(void) {
+    ASSERT(sweep_array_references(true));
+    ASSERT(sweep_array_references(false));
+    return true;
+}
+
+bool test_gc_sweep_fields_and_functions(void) {
+    process_t *proc = create_process();
+    size_t baseline = proc->objects.size;
+    object_t *root = get_root_object();
+    object_t *live = create_user_defined_object(proc, (object_array_t){&root, 1});
+    object_t *key = create_string_object(proc, STATIC_STRING(U"dynamic-key"));
+    object_t *character = create_character_object(proc, U'中');
+    object_t *real = create_real_number_object(proc, 1234.5);
+    object_t *number = create_integer_object(proc, 9876543);
+    object_t *live_function = create_function_object(proc, NULL, 0, 0, live, NULL, false);
+    object_t *values[] = {live_function, live, key, character, real, number};
+    for (size_t i = 0; i < sizeof(values) / sizeof(*values); ++i)
+        add_gc_root(proc, values[i]);
+
+    object_t *dead = create_user_defined_object(proc, (object_array_t){&live, 1});
+    object_t **names = ALLOC(sizeof(*names));
+    names[0] = key;
+    object_t *function = create_function_object(proc, names, 1, 0, dead, NULL, false);
+    object_static_string_t capture_key_storage = {0};
+    object_static_string_t other_key_storage = {0};
+    object_t *capture_key = get_static_string_object(&capture_key_storage, U"captured");
+    object_t *other = get_static_string_object(&other_key_storage, U"other");
+    bool good = create_object_property(live, capture_key, get_null_object(), true) == MSTAT_OK;
+    function_access_t *access = get_function_access(function);
+    add_lexical_scope(access, live);
+    good = add_function_field_capture(access, live, get_own_field_cell(live, capture_key)) && good;
+    good = create_object_property(dead, key, function, true) == MSTAT_OK && good;
+    good = create_object_property(dead, get_this_key(), dead, true) == MSTAT_OK && good;
+    object_t *members[] = {character, real, number, live_function};
+    object_t *array = create_array_object(proc, (object_array_t){members, 4});
+    good = create_object_property(dead, other, array, true) == MSTAT_OK && good;
+    DECREF(array);
+    DECREF(function);
+    DECREF(dead);
+
+    collect_garbage(proc);
+    collect_garbage(proc);
+    good = good && proc->objects.size == baseline + sizeof(values) / sizeof(*values);
+    for (size_t i = 0; i < sizeof(values) / sizeof(*values); ++i) {
+        size_t before = proc->objects.size;
+        remove_gc_root(proc, values[i]);
+        DECREF(values[i]);
+        good = good && proc->objects.size + 1 == before;
+    }
+    good = good && proc->objects.size == baseline;
+    destroy_process(proc);
+    ASSERT(good);
+    return true;
+}

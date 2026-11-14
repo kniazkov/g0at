@@ -155,6 +155,9 @@ void add_inherited_receiver_access(function_access_t *access,
 /** @brief Adds one stable capture, validating that storage owns the cell. */
 bool add_function_field_capture(function_access_t *access, object_t *storage, field_cell_t *cell);
 void mark_function_access(const function_access_t *access);
+
+/** @brief Reconciles lexical/capture references in an unreachable function before sweep. */
+void reconcile_swept_function_access(process_t *process, const function_access_t *access);
 /** @brief deep=false frees metadata without dereferencing GC-managed objects during sweep. */
 void clear_function_access(function_access_t *access, bool deep);
 /** @brief Dynamic function metadata, or NULL for built-in/static functions. */

@@ -118,6 +118,15 @@ void mark_function_access(const function_access_t *access) {
     }
 }
 
+void reconcile_swept_function_access(process_t *process, const function_access_t *access) {
+    for (size_t i = 0; i < access->lexical_scopes->size; ++i)
+        drop_swept_reference(process, access->lexical_scopes->data[i]);
+    for (size_t i = 0; i < access->captures->size; ++i) {
+        const field_capture_t *capture = access->captures->data[i];
+        drop_swept_reference(process, capture->storage);
+    }
+}
+
 void clear_function_access(function_access_t *access, bool deep) {
     if (deep)
         for (size_t i = 0; i < access->lexical_scopes->size; i++) {

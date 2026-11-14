@@ -77,6 +77,16 @@ static void mark(object_t *obj) {
     dsobj->state = MARKED;
 }
 
+/** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
+static void drop_marked_reference(object_t *obj) {
+    object_dynamic_string_t *string = (object_dynamic_string_t *)obj;
+    if (string->state == MARKED) {
+        assert(string->refs > 1);
+        if (string->refs > 1)
+            --string->refs;
+    }
+}
+
 /** @brief Implements @ref object_vtbl_t::sweep. */
 static bool sweep(object_t *obj) {
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
@@ -307,6 +317,7 @@ static object_vtbl_t dynamic_string_vtbl = {.type = TYPE_STRING,
                                             .dec_ref = dec_ref,
                                             .mark = mark,
                                             .sweep = sweep,
+                                            .drop_swept_reference = drop_marked_reference,
                                             .release = release,
                                             .compare = compare,
                                             .clone = clone,

@@ -76,6 +76,16 @@ static void mark(object_t *obj) {
     diobj->state = MARKED;
 }
 
+/** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
+static void drop_marked_reference(object_t *obj) {
+    object_dynamic_integer_t *integer = (object_dynamic_integer_t *)obj;
+    if (integer->state == MARKED) {
+        assert(integer->refs > 1);
+        if (integer->refs > 1)
+            --integer->refs;
+    }
+}
+
 /** @brief Implements @ref object_vtbl_t::sweep. */
 static bool sweep(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
@@ -408,6 +418,7 @@ static object_vtbl_t dynamic_vtbl = {.type = TYPE_NUMBER,
                                      .dec_ref = dec_ref,
                                      .mark = mark,
                                      .sweep = sweep,
+                                     .drop_swept_reference = drop_marked_reference,
                                      .release = release,
                                      .compare = compare_numeric_keys,
                                      .clone = clone,

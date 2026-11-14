@@ -56,11 +56,16 @@ dying state while releasing edges and a zombie state for an empty pooled shell;
 neither is an accessible live value. Walking an object graph and dropping a deep
 last-reference chain still use recursion in this stage (#545, #546).
 
-Mark begins from the roots above and delegates edge traversal to object types.
-Sweep iterates the process's live list, clears marks on survivors and discards
-unmarked objects with type-specific callbacks. Objects being swept must not re-enter
-collection. GC-02 (#544) owns the correction for live targets of swept edges;
-the current sweep is not a guarantee that all survivor refcounts were adjusted.
+Mark begins from the roots above and delegates traversal to each object type.
+Once marking is complete, but before any object is freed or survivor mark cleared,
+each unmarked container/function subtracts its owned references to marked objects
+in the same process. Each owned edge is counted separately; weak object self
+fields and borrowed lookup topology contribute no references.
+This pass does not invoke normal last-reference destruction: every marked target
+keeps at least one reference from its traced owner. Dead-to-dead edges are not
+dereferenced after reclamation begins. Sweep then only resets marks and discards
+unmarked objects via their type-specific shallow cleanup. No phase admits recursive
+collection.
 Process teardown is separate: it assumes execution has ended, destroys thread
 records and forcibly releases the heap and pools. Its success does not prove safe
 collection during execution.

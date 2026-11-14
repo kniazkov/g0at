@@ -144,3 +144,8 @@ bool test_string_builder_storage(void);
 bool test_gc_pending_thread_callable(void);
 /** @brief An empty thread registry still allows collection of process-owned state. */
 bool test_gc_no_registered_threads(void);
+
+/** @brief Reclaim dead array cycles and reconcile their edges in either allocation order. */
+bool test_gc_sweep_array_references(void);
+/** @brief Reconcile dead field, prototype, function, argument and capture edges. */
+bool test_gc_sweep_fields_and_functions(void);
