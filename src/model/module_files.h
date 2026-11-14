@@ -81,7 +81,8 @@ bool module_file_external(const module_file_t *file);
  */
 context_t *create_module_file_context(module_file_t *file, context_t *caller);
 /** Internal process lifecycle: mark scopes before GC; free after all objects. */
-void mark_module_files(const process_t *process);
+/** @brief Visits per-image cache entries, module scopes and saved exception values. */
+void visit_module_file_gc_roots(const process_t *process, gc_edge_visitor_t visit, void *data);
 void destroy_module_files(process_t *process);
 
 /** @brief Runtime state, separate from immutable bytecode and shared by all includes. */

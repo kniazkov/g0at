@@ -38,6 +38,7 @@ typedef struct {
 
     /** @brief The state of the object (e.g., unmarked, marked, or zombie). */
     object_state_t state;
+    object_t *gc_next;                /**< Transient link during a process mark pass. */
     string_builder_t *string_builder; /**< Optional owned native builder storage. */
 
     /** @brief A vector storing the prototypes of the object. */
@@ -160,21 +161,33 @@ static void dec_ref(object_t *obj) {
     }
 }
 
-/** @brief Implements @ref object_vtbl_t::mark. */
-static void mark(object_t *obj) {
-    object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    assert(uobj->state != ZOMBIE);
-    if (uobj->state == UNMARKED) {
-        uobj->state = MARKED;
-        for (size_t i = 0; i < uobj->fields->size; i++) {
-            field_cell_t *cell = uobj->fields->data[i];
-            mark_object(cell->key);
-            mark_object(cell->object);
-        }
-        for (size_t index = 0; index < uobj->proto->size; index++) {
-            mark_object((object_t *)uobj->proto->data[index]);
-        }
+/** @brief Marks once, placing immediate children on the collector's later worklist. */
+static void mark(object_t *obj, object_t **pending) {
+    object_user_defined_t *user = (object_user_defined_t *)obj;
+    assert(user->state != ZOMBIE);
+    if (user->state != UNMARKED)
+        return;
+    assert(!user->gc_next);
+    user->state = MARKED;
+    user->gc_next = *pending;
+    *pending = obj;
+}
+
+/** @brief Accesses a queued object's worklist link. */
+static object_t **gc_link(object_t *obj) {
+    return &((object_user_defined_t *)obj)->gc_next;
+}
+
+/** @brief Lists immediate tracing edges and records weak self edges separately. */
+static void visit_edges(object_t *obj, gc_edge_visitor_t visit, void *data) {
+    object_user_defined_t *user = (object_user_defined_t *)obj;
+    for (size_t i = 0; i < user->fields->size; ++i) {
+        const field_cell_t *cell = user->fields->data[i];
+        visit(cell->key, true, data);
+        visit(cell->object, cell->object != obj, data);
     }
+    for (size_t i = 0; i < user->proto->size; ++i)
+        visit(user->proto->data[i], true, data);
 }
 
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
@@ -189,17 +202,8 @@ static void drop_marked_reference(object_t *obj) {
 
 /** @brief Reconciles each owned edge of a dead object once. */
 static void reconcile_edges(object_t *obj) {
-    object_user_defined_t *user = (object_user_defined_t *)obj;
-    if (user->state != UNMARKED)
-        return;
-    for (size_t i = 0; i < user->fields->size; ++i) {
-        const field_cell_t *cell = user->fields->data[i];
-        drop_swept_reference(obj->process, cell->key);
-        if (cell->object != obj)
-            drop_swept_reference(obj->process, cell->object);
-    }
-    for (size_t i = 0; i < user->proto->size; ++i)
-        drop_swept_reference(obj->process, user->proto->data[i]);
+    if (((object_user_defined_t *)obj)->state == UNMARKED)
+        visit_edges(obj, drop_owned_swept_edge, obj->process);
 }
 
 /** @brief Implements @ref object_vtbl_t::sweep. */
@@ -713,6 +717,8 @@ static object_vtbl_t vtbl = {.type = TYPE_USER_DEFINED_OBJECT,
                              .inc_ref = inc_ref,
                              .dec_ref = dec_ref,
                              .mark = mark,
+                             .gc_link = gc_link,
+                             .visit_gc_edges = visit_edges,
                              .sweep = sweep,
                              .drop_swept_reference = drop_marked_reference,
                              .reconcile_swept_edges = reconcile_edges,

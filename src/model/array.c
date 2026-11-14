@@ -40,15 +40,28 @@ static void dec_ref(object_t *obj) {
     release(obj);
 }
 
-/** @brief Marks each element once, including cycles through other containers. */
-static void mark(object_t *obj) {
+/** @brief Marks once, placing immediate children on the collector's later worklist. */
+static void mark(object_t *obj, object_t **pending) {
     array_object_t *array = (array_object_t *)obj;
     if (array->state != UNMARKED)
         return;
+    assert(!array->gc_next);
     array->state = MARKED;
-    mark_object(array->length);
-    for (size_t i = 0; i < array->count; i++)
-        mark_object(array->items[i]);
+    array->gc_next = *pending;
+    *pending = obj;
+}
+
+/** @brief Accesses a queued object's worklist link. */
+static object_t **gc_link(object_t *obj) {
+    return &((array_object_t *)obj)->gc_next;
+}
+
+/** @brief Lists immediate tracing edges and records weak self edges separately. */
+static void visit_edges(object_t *obj, gc_edge_visitor_t visit, void *data) {
+    array_object_t *array = (array_object_t *)obj;
+    visit(array->length, true, data);
+    for (size_t i = 0; i < array->count; ++i)
+        visit(array->items[i], true, data);
 }
 
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
@@ -63,12 +76,8 @@ static void drop_marked_reference(object_t *obj) {
 
 /** @brief Reconciles each owned edge of a dead object once. */
 static void reconcile_edges(object_t *obj) {
-    array_object_t *array = (array_object_t *)obj;
-    if (array->state != UNMARKED)
-        return;
-    drop_swept_reference(obj->process, array->length);
-    for (size_t i = 0; i < array->count; ++i)
-        drop_swept_reference(obj->process, array->items[i]);
+    if (((array_object_t *)obj)->state == UNMARKED)
+        visit_edges(obj, drop_owned_swept_edge, obj->process);
 }
 
 /** @brief Sweeps unreachable arrays without dereferencing already swept children. */
@@ -198,6 +207,8 @@ static object_vtbl_t vtbl = {.type = TYPE_ARRAY,
                              .inc_ref = inc_ref,
                              .dec_ref = dec_ref,
                              .mark = mark,
+                             .gc_link = gc_link,
+                             .visit_gc_edges = visit_edges,
                              .sweep = sweep,
                              .drop_swept_reference = drop_marked_reference,
                              .reconcile_swept_edges = reconcile_edges,

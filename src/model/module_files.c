@@ -276,15 +276,15 @@ context_t *create_module_file_context(module_file_t *file, context_t *caller) {
     return context;
 }
 
-void mark_module_files(const process_t *process) {
+void visit_module_file_gc_roots(const process_t *process, gc_edge_visitor_t visit, void *data) {
     for (module_files_t *set = process->module_files; set; set = set->next) {
         for (size_t i = 0; i < set->code->data_descriptor_count; ++i)
             if (set->strings[i])
-                mark_object(set->strings[i]);
+                visit(set->strings[i], true, data);
         for (size_t i = 0; i < set->code->file_count; ++i) {
-            mark_object(set->files[i].scope);
+            visit(set->files[i].scope, true, data);
             if (set->files[i].failure.value)
-                mark_object(set->files[i].failure.value);
+                visit(set->files[i].failure.value, true, data);
         }
     }
 }
