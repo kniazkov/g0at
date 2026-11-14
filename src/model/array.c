@@ -51,6 +51,26 @@ static void mark(object_t *obj) {
         mark_object(array->items[i]);
 }
 
+/** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
+static void drop_marked_reference(object_t *obj) {
+    array_object_t *array = (array_object_t *)obj;
+    if (array->state == MARKED) {
+        assert(array->refs > 1);
+        if (array->refs > 1)
+            --array->refs;
+    }
+}
+
+/** @brief Reconciles each owned edge of a dead object once. */
+static void reconcile_edges(object_t *obj) {
+    array_object_t *array = (array_object_t *)obj;
+    if (array->state != UNMARKED)
+        return;
+    drop_swept_reference(obj->process, array->length);
+    for (size_t i = 0; i < array->count; ++i)
+        drop_swept_reference(obj->process, array->items[i]);
+}
+
 /** @brief Sweeps unreachable arrays without dereferencing already swept children. */
 static bool sweep(object_t *obj) {
     array_object_t *array = (array_object_t *)obj;
@@ -179,6 +199,8 @@ static object_vtbl_t vtbl = {.type = TYPE_ARRAY,
                              .dec_ref = dec_ref,
                              .mark = mark,
                              .sweep = sweep,
+                             .drop_swept_reference = drop_marked_reference,
+                             .reconcile_swept_edges = reconcile_edges,
                              .release = release,
                              .compare = compare_object_addresses,
                              .clone = clone,

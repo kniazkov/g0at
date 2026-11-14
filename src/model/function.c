@@ -23,6 +23,8 @@
 #include "vm/gc.h"
 #include "vm/vm.h"
 
+#include <assert.h>
+
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t static_to_string(const object_t *obj) {
     builtin_function_object_t *sfobj = (builtin_function_object_t *)obj;
@@ -229,6 +231,27 @@ static void mark(object_t *obj) {
     mark_function_access(&dfobj->access);
     for (size_t i = 0; i < dfobj->arg_count; i++)
         mark_object(dfobj->arg_names[i]);
+}
+
+/** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
+static void drop_marked_reference(object_t *obj) {
+    object_dynamic_function_t *function = (object_dynamic_function_t *)obj;
+    if (function->state == MARKED) {
+        assert(function->refs > 1);
+        if (function->refs > 1)
+            --function->refs;
+    }
+}
+
+/** @brief Reconciles each owned edge of a dead object once. */
+static void reconcile_edges(object_t *obj) {
+    object_dynamic_function_t *function = (object_dynamic_function_t *)obj;
+    if (function->state != UNMARKED)
+        return;
+    drop_swept_reference(obj->process, function->closure);
+    for (size_t i = 0; i < function->arg_count; ++i)
+        drop_swept_reference(obj->process, function->arg_names[i]);
+    reconcile_swept_function_access(obj->process, &function->access);
 }
 
 /** @brief Implements @ref object_vtbl_t::sweep. */
@@ -684,6 +707,8 @@ static object_vtbl_t dynamic_vtbl = {.type = TYPE_OTHER,
                                      .dec_ref = dec_ref,
                                      .mark = mark,
                                      .sweep = sweep,
+                                     .drop_swept_reference = drop_marked_reference,
+                                     .reconcile_swept_edges = reconcile_edges,
                                      .release = release,
                                      .compare = compare_object_addresses,
                                      .clone = clone_singleton,

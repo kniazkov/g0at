@@ -82,6 +82,10 @@ static void sweep_unreachable_objects(process_t *proc) {
 /** @brief Performs garbage collection on the specified process. */
 void collect_garbage(process_t *proc) {
     mark_reachable_objects(proc);
+    /* Correct counts before sweep can free any edge target or clear its mark.
+       Reconciliation must not run ordinary last-reference destruction. */
+    for (object_t *obj = proc->objects.head; obj; obj = obj->next)
+        reconcile_swept_edges(obj);
     sweep_unreachable_objects(proc);
 }
 

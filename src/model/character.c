@@ -65,6 +65,16 @@ static void mark(object_t *obj) {
     diobj->state = MARKED;
 }
 
+/** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
+static void drop_marked_reference(object_t *obj) {
+    object_dynamic_character_t *character = (object_dynamic_character_t *)obj;
+    if (character->state == MARKED) {
+        assert(character->refs > 1);
+        if (character->refs > 1)
+            --character->refs;
+    }
+}
+
 /** @brief Implements @ref object_vtbl_t::sweep. */
 static bool sweep(object_t *obj) {
     object_dynamic_character_t *diobj = (object_dynamic_character_t *)obj;
@@ -216,6 +226,7 @@ static object_vtbl_t character_vtbl = {.type = TYPE_CHARACTER,
                                        .dec_ref = dec_ref,
                                        .mark = mark,
                                        .sweep = sweep,
+                                       .drop_swept_reference = drop_marked_reference,
                                        .release = release,
                                        .compare = compare,
                                        .clone = clone,

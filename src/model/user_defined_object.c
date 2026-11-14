@@ -177,6 +177,31 @@ static void mark(object_t *obj) {
     }
 }
 
+/** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
+static void drop_marked_reference(object_t *obj) {
+    object_user_defined_t *user = (object_user_defined_t *)obj;
+    if (user->state == MARKED) {
+        assert(user->refs > 1);
+        if (user->refs > 1)
+            --user->refs;
+    }
+}
+
+/** @brief Reconciles each owned edge of a dead object once. */
+static void reconcile_edges(object_t *obj) {
+    object_user_defined_t *user = (object_user_defined_t *)obj;
+    if (user->state != UNMARKED)
+        return;
+    for (size_t i = 0; i < user->fields->size; ++i) {
+        const field_cell_t *cell = user->fields->data[i];
+        drop_swept_reference(obj->process, cell->key);
+        if (cell->object != obj)
+            drop_swept_reference(obj->process, cell->object);
+    }
+    for (size_t i = 0; i < user->proto->size; ++i)
+        drop_swept_reference(obj->process, user->proto->data[i]);
+}
+
 /** @brief Implements @ref object_vtbl_t::sweep. */
 static bool sweep(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
@@ -689,6 +714,8 @@ static object_vtbl_t vtbl = {.type = TYPE_USER_DEFINED_OBJECT,
                              .dec_ref = dec_ref,
                              .mark = mark,
                              .sweep = sweep,
+                             .drop_swept_reference = drop_marked_reference,
+                             .reconcile_swept_edges = reconcile_edges,
                              .release = release,
                              .compare = compare_object_addresses,
                              .clone = clone,
