@@ -14,8 +14,12 @@
 
 #include <string.h>
 
-/** @brief Marks the objects on a thread's data stack and context data. */
-static void mark_objects_in_context_and_stack(thread_t *thread) {
+/** @brief Marks the thread's owned values and execution state. */
+static void mark_thread_roots(thread_t *thread) {
+    /* The spawned callable is not on the operand stack. The worker takes ownership
+       from this slot only after entering the process execution lock. */
+    if (thread->start_function)
+        mark_object(thread->start_function);
     for (context_t *ctx = thread->context; ctx; ctx = ctx->previous) {
         mark_object(ctx->data);
         if (ctx->call_receiver)
@@ -48,10 +52,12 @@ static void mark_reachable_objects(process_t *proc) {
         mark_object(proc->gc_roots[index]);
     }
     thread_t *thread = proc->main_thread;
-    do {
-        mark_objects_in_context_and_stack(thread);
-        thread = thread->next;
-    } while (thread != proc->main_thread);
+    if (thread) {
+        do {
+            mark_thread_roots(thread);
+            thread = thread->next;
+        } while (thread != proc->main_thread);
+    }
 }
 
 /**

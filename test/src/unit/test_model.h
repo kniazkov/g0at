@@ -139,3 +139,8 @@ bool test_process_launch_vm(void);
 
 /** @brief Builder storage ownership and lifecycle. */
 bool test_string_builder_storage(void);
+
+/** @brief A queued worker's callable and closure survive GC until startup takes ownership. */
+bool test_gc_pending_thread_callable(void);
+/** @brief An empty thread registry still allows collection of process-owned state. */
+bool test_gc_no_registered_threads(void);
