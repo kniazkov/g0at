@@ -161,7 +161,7 @@ typedef struct {
 
     /** @brief The state of the object (unmarked, marked, zombie, or dying). */
     object_state_t state;
-    object_t *gc_next; /**< Transient link during a process mark pass. */
+    object_t *gc_next; /**< Transient link for marking or last-owner release. */
 
     /** @brief Array of argument name objects. */
     object_t **arg_names;
@@ -216,9 +216,17 @@ static void inc_ref(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::dec_ref. */
 static void dec_ref(object_t *obj) {
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
-    if (!(--dfobj->refs)) {
-        clear(dfobj, true);
-    }
+    if (dfobj->state == DYING || --dfobj->refs)
+        return;
+    dfobj->state = DYING;
+    enqueue_last_ref_release(obj);
+}
+
+/** @brief Drops immediate function ownership and disposes of its descriptors. */
+static void finalize_last_ref(object_t *obj) {
+    object_dynamic_function_t *function = (object_dynamic_function_t *)obj;
+    assert(function->state == DYING && !function->refs);
+    clear(function, true);
 }
 
 /** @brief Marks once, placing immediate children on the collector's later worklist. */
@@ -713,6 +721,7 @@ static bool dynamic_call(object_t *obj, uint16_t count, object_t *receiver, thre
 static object_vtbl_t dynamic_vtbl = {.type = TYPE_OTHER,
                                      .inc_ref = inc_ref,
                                      .dec_ref = dec_ref,
+                                     .finalize_last_ref = finalize_last_ref,
                                      .mark = mark,
                                      .gc_link = gc_link,
                                      .visit_gc_edges = visit_edges,

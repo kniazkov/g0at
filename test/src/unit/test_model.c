@@ -12,6 +12,7 @@
 #include "lib/threads/os_thread.h"
 #include "model/builtin_function.h"
 #include "model/context.h"
+#include "model/native_continuation_descriptor.h"
 #include "model/object.h"
 #include "model/process.h"
 #include "model/string_builder.h"
@@ -1089,5 +1090,145 @@ bool test_gc_iterative_mark(void) {
     }
     destroy_process(proc);
     ASSERT(discarded && test.ok);
+    return true;
+}
+
+/** @brief Releases the only owner of an acyclic graph from a small native stack. */
+static void *release_on_small_stack(void *data) {
+    iterative_gc_test_t *test = data;
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    allocation_fault_start(1);
+#endif
+    clear_exception(&test->process->main_thread->exception);
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    size_t attempts = allocation_fault_stop();
+    test->ok = attempts == 0 && !allocation_fault_triggered();
+#else
+    test->ok = true;
+#endif
+    object_array_t values = get_array_elements(test->anchor);
+    int_value_t marker = get_object_integer_value(values.items[0]);
+    test->ok = test->ok && marker.has_value && marker.value == 456789
+               && test->process->objects.size == test->baseline + 2
+               && !test->process->main_thread->exception.value && !test->process->pending_releases
+               && !test->process->draining_releases;
+    DECREF(test->anchor);
+    test->ok = test->ok && test->process->objects.size == test->baseline;
+    return NULL;
+}
+
+/** @brief Tears down another process whose exception is still holding the graph. */
+static void *destroy_on_small_stack(void *data) {
+    destroy_process(data);
+    return NULL;
+}
+
+/** @brief Builds an acyclic mixed chain with a weak self field and retained shared leaf. */
+static object_t *make_release_chain(process_t *proc, object_t *anchor, size_t count) {
+    object_t *next = anchor;
+    INCREF(next);
+    object_t *proto = get_string_builder_proto();
+    static object_static_string_t storage = {0};
+    object_t *key = get_static_string_object(&storage, U"next");
+    for (size_t i = 0; i < count; ++i) {
+        object_t *elements[] = {next, anchor, anchor};
+        object_t *array = create_array_object(proc, (object_array_t){elements, 3});
+        DECREF(next);
+        object_t *receiver = create_user_defined_object(proc, (object_array_t){&proto, 1});
+        if (!initialize_string_builder_storage(receiver)
+            || create_object_property(receiver, key, array, true) != MSTAT_OK
+            || create_object_property(receiver, get_this_key(), receiver, true) != MSTAT_OK) {
+            DECREF(array);
+            DECREF(receiver);
+            return NULL;
+        }
+        DECREF(array);
+        next = create_function_object(proc, NULL, 0, 0, receiver, NULL, false);
+        DECREF(receiver);
+    }
+    return next;
+}
+
+typedef struct {
+    process_t *process;
+    object_t *extra_owner;
+    size_t calls;
+    bool drained_by_outer_release;
+} release_callback_t;
+
+static uint32_t GOAT_NATIVE_CALL
+unused_release_test_entry(const goat_native_continuation_context_t *context, uint32_t initial_pc) {
+    (void)context;
+    return initial_pc;
+}
+
+/** @brief A native descriptor owner can release another object while its host is finalizing. */
+static void release_callback_owner(void *data) {
+    release_callback_t *callback = data;
+    ++callback->calls;
+    DECREF(callback->extra_owner);
+    callback->drained_by_outer_release =
+        callback->process->draining_releases && callback->process->pending_releases;
+}
+
+bool test_iterative_last_ref_release(void) {
+    process_t *proc = create_process();
+    ASSERT(proc);
+    size_t baseline = proc->objects.size;
+    object_t *marker = create_integer_object(proc, 456789);
+    object_t *anchor = create_array_object(proc, (object_array_t){&marker, 1});
+    DECREF(marker);
+    object_t *mixed = make_release_chain(proc, anchor, 12000);
+    ASSERT(mixed);
+    /* These ordinary arrays make a second deep branch, with no cycle to defer to GC. */
+    object_t *arrays = anchor;
+    INCREF(arrays);
+    for (size_t i = 0; i < 30000; ++i) {
+        object_t *parent = create_array_object(proc, (object_array_t){&arrays, 1});
+        DECREF(arrays);
+        arrays = parent;
+    }
+    object_t *branches[] = {mixed, arrays};
+    proc->main_thread->exception.value = create_array_object(proc, (object_array_t){branches, 2});
+    DECREF(mixed);
+    DECREF(arrays);
+    iterative_gc_test_t test = {.process = proc, .anchor = anchor, .baseline = baseline};
+    os_thread_t *worker;
+    ASSERT(create_os_thread(&worker, release_on_small_stack, &test, 256 * 1024) == OS_THREAD_OK);
+    ASSERT(join_os_thread(worker, NULL) == OS_THREAD_OK);
+    ASSERT(destroy_os_thread(worker) == OS_THREAD_OK);
+    ASSERT(test.ok);
+
+    size_t pooled = proc->user_defined_objects.size;
+    object_t *proto = get_string_builder_proto();
+    object_t *reused = create_user_defined_object(proc, (object_array_t){&proto, 1});
+    ASSERT(pooled > 0 && proc->user_defined_objects.size == pooled - 1);
+    ASSERT(!get_string_builder_storage(reused));
+    add_gc_root(proc, reused);
+    collect_garbage(proc);
+    ASSERT(proc->objects.size == baseline + 1);
+    remove_gc_root(proc, reused);
+    DECREF(reused);
+
+    object_t *array = create_array_object(proc, (object_array_t){NULL, 0});
+    release_callback_t callback = {.process = proc, .extra_owner = array};
+    const goat_native_continuation_entry_t entry = {.function_id = 1,
+                                                    .instruction_count = 1,
+                                                    .invoke = unused_release_test_entry};
+    native_function_descriptor_t *descriptor =
+        create_native_continuation_descriptor(&entry, &callback, release_callback_owner);
+    ASSERT(descriptor);
+    object_t *function =
+        create_function_object(proc, NULL, 0, 0, get_root_object(), descriptor, false);
+    release_native_function_descriptor(descriptor);
+    DECREF(function);
+    ASSERT(callback.calls == 1 && callback.drained_by_outer_release);
+    ASSERT(proc->objects.size == baseline && !proc->pending_releases && !proc->draining_releases);
+
+    proc->main_thread->exception.value = make_release_chain(proc, get_null_object(), 8000);
+    ASSERT(proc->main_thread->exception.value);
+    ASSERT(create_os_thread(&worker, destroy_on_small_stack, proc, 256 * 1024) == OS_THREAD_OK);
+    ASSERT(join_os_thread(worker, NULL) == OS_THREAD_OK);
+    ASSERT(destroy_os_thread(worker) == OS_THREAD_OK);
     return true;
 }

@@ -107,10 +107,13 @@ typedef struct {
      */
     void (*dec_ref)(object_t *obj);
 
+    /** @brief Finalizes a queued graph object after its last owned reference is dropped. */
+    void (*finalize_last_ref)(object_t *obj);
+
     /** @brief Marks a managed object once and links non-leaves into the pending worklist. */
     void (*mark)(object_t *obj, object_t **pending);
 
-    /** @brief Gets the pending-list link of a queued object that can have children. */
+    /** @brief Gets the transient link shared by disjoint mark and ordinary release passes. */
     object_t **(*gc_link)(object_t *obj);
 
     /** @brief Enumerates immediate tracing edges; never traverses them. */

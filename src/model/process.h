@@ -83,6 +83,12 @@ struct process_t {
     /** @brief The size of the string cache. */
     size_t string_cache_size;
 
+    /** @brief Pending zero-reference graph objects under the execution lock. */
+    object_t *pending_releases;
+
+    /** @brief True while an outer last-owner release is draining the queue. */
+    bool draining_releases;
+
     /** @brief External objects kept alive by the process for the garbage collector. */
     object_t **gc_roots;
 
@@ -92,6 +98,9 @@ struct process_t {
 
 /** @brief Creates a new process. */
 process_t *create_process();
+
+/** @brief Enqueues a DYING graph object and drains at the outermost release boundary. */
+void enqueue_last_ref_release(object_t *obj);
 
 /** @brief Destroys a process and frees all its resources, including threads and objects. */
 void destroy_process(process_t *process);

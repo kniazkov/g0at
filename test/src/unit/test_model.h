@@ -152,3 +152,5 @@ bool test_gc_sweep_fields_and_functions(void);
 
 /** @brief Traces deep and shared cyclic graphs on a small stack, without an allocation. */
 bool test_gc_iterative_mark(void);
+/** @brief Releases deep acyclic and shared graphs on a bounded stack. */
+bool test_iterative_last_ref_release(void);

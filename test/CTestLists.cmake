@@ -920,3 +920,4 @@ goat_suite(native.string_builder "native;string-builder" "${CMAKE_COMMAND}"
 goat_suite(core.string_builder "core;string-builder" $<TARGET_FILE:unit_testing> --string-builder-tests)
 goat_suite(core.gc_sweep "core;gc-sweep" $<TARGET_FILE:unit_testing> --gc-sweep-tests)
 goat_suite(core.gc_mark "core;gc-mark" $<TARGET_FILE:unit_testing> --gc-mark-tests)
+goat_suite(core.gc_release "core;gc-release" $<TARGET_FILE:unit_testing> --gc-release-tests)
