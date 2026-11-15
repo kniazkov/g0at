@@ -63,6 +63,10 @@ int main(int argc, char **argv) {
         bool success = test_checked_gc_refcounts();
         return success && get_allocated_memory_size() == before ? EXIT_SUCCESS : EXIT_FAILURE;
     }
+    if (argc == 2 && !strcmp(argv[1], "--gc-pool-tests"))
+        return test_gc_pool_budget() ? EXIT_SUCCESS : EXIT_FAILURE;
+    if (argc == 2 && !strcmp(argv[1], "--gc-pool-bench"))
+        return test_gc_pool_benchmark() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 2 && !strcmp(argv[1], "--gc-root-tests"))
         return test_owning_gc_roots() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 2 && !strcmp(argv[1], "--gc-release-tests")) {

@@ -21,14 +21,6 @@
 
 #include <assert.h>
 
-/**
- * @brief Defines the maximum capacity of the object pool.
- *
- * Sets the maximum number of objects that can be stored in the object pool before it reaches its
- * capacity.
- */
-#define POOL_CAPACITY 1024
-
 /** @brief A user-defined object. */
 typedef struct {
     /** @brief The base object that provides common functionality. */
@@ -113,6 +105,23 @@ static void clear_fields(object_user_defined_t *uobj, bool deep) {
     uobj->domain = NULL;
 }
 
+/** @brief Empty oversized vectors retain their header, not their backing storage. */
+static void clear_pool_vector(vector_t *vector) {
+    clear_vector(vector);
+    if (vector->capacity > GOAT_POOL_VECTOR_SLOT_LIMIT) {
+        FREE(vector->data);
+        vector->data = NULL;
+        vector->capacity = 0;
+    }
+}
+
+/** @brief Exact retained payload after all cells, AVL nodes and native data are cleared. */
+static size_t pooled_user_bytes(const object_user_defined_t *object) {
+    size_t slots = object->proto->capacity + object->topology->capacity + object->keys->capacity
+                   + object->fields->capacity;
+    return sizeof(*object) + 4 * sizeof(vector_t) + sizeof(avl_tree_t) + slots * sizeof(void *);
+}
+
 /** @brief Releases or clears a user-defined object with optional deep cleaning. */
 static void release_or_clear(object_user_defined_t *uobj, bool deep_cleaning) {
     if (deep_cleaning) {
@@ -125,21 +134,23 @@ static void release_or_clear(object_user_defined_t *uobj, bool deep_cleaning) {
         clear_fields(uobj, false);
     }
     remove_object_from_list(&uobj->base.process->objects, &uobj->base);
-    if (uobj->base.process->user_defined_objects.size == POOL_CAPACITY) {
+    clear_pool_vector(uobj->proto);
+    clear_pool_vector(uobj->topology);
+    clear_pool_vector(uobj->keys);
+    clear_pool_vector(uobj->fields);
+    clear_avl_tree(uobj->properties);
+    if (try_pool_object(&uobj->base.process->user_defined_objects,
+                        &uobj->base,
+                        pooled_user_bytes(uobj))) {
+        uobj->refs = 0;
+        uobj->state = ZOMBIE;
+    } else {
         destroy_vector(uobj->proto);
         destroy_vector(uobj->topology);
         destroy_vector(uobj->keys);
         destroy_vector(uobj->fields);
         destroy_avl_tree(uobj->properties);
         FREE(uobj);
-    } else {
-        clear_vector(uobj->proto);
-        clear_vector(uobj->topology);
-        clear_vector(uobj->keys);
-        clear_avl_tree(uobj->properties);
-        uobj->refs = 0;
-        uobj->state = ZOMBIE;
-        add_object_to_list(&uobj->base.process->user_defined_objects, &uobj->base);
     }
 }
 
@@ -223,9 +234,10 @@ static bool sweep(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    remove_object_from_list(uobj->state == ZOMBIE ? &obj->process->user_defined_objects
-                                                  : &obj->process->objects,
-                            obj);
+    if (uobj->state == ZOMBIE)
+        remove_pooled_object(&obj->process->user_defined_objects, obj, pooled_user_bytes(uobj));
+    else
+        remove_object_from_list(&obj->process->objects, obj);
     destroy_vector(uobj->proto);
     destroy_vector(uobj->topology);
     destroy_vector(uobj->keys);
@@ -825,8 +837,8 @@ create_empty_user_defined_object(process_t *process, object_array_t proto, modul
     assert(proto.size > 0);
     object_user_defined_t *uobj;
     if (process->user_defined_objects.size > 0) {
-        uobj =
-            (object_user_defined_t *)remove_first_object_from_list(&process->user_defined_objects);
+        uobj = (object_user_defined_t *)process->user_defined_objects.head;
+        remove_pooled_object(&process->user_defined_objects, &uobj->base, pooled_user_bytes(uobj));
     } else {
         uobj = (object_user_defined_t *)CALLOC(sizeof(object_user_defined_t));
         uobj->base.vtbl = &vtbl;

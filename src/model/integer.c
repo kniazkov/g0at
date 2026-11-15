@@ -19,14 +19,6 @@
 #include <math.h>
 #include <stdio.h>
 
-/**
- * @brief Defines the maximum capacity of the object pool.
- *
- * Sets the maximum number of objects that can be stored in the object pool before it reaches its
- * capacity.
- */
-#define POOL_CAPACITY 1024
-
 /** @brief A static integer object. */
 typedef struct {
     object_t base; ///< The base object that provides common functionality.
@@ -44,13 +36,12 @@ typedef struct {
 /** @brief Releases or clears a dynamic integer object. */
 static void release_or_clear(object_dynamic_integer_t *diobj) {
     remove_object_from_list(&diobj->base.process->objects, &diobj->base);
-    if (diobj->base.process->integers.size == POOL_CAPACITY) {
+    if (!try_pool_object(&diobj->base.process->integers, &diobj->base, sizeof(*diobj))) {
         FREE(diobj);
     } else {
         diobj->refs = 0;
         diobj->state = ZOMBIE;
         diobj->value = 0;
-        add_object_to_list(&diobj->base.process->integers, &diobj->base);
     }
 }
 
@@ -101,9 +92,10 @@ static bool sweep(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
-    remove_object_from_list(diobj->state == ZOMBIE ? &obj->process->integers
-                                                   : &obj->process->objects,
-                            obj);
+    if (diobj->state == ZOMBIE)
+        remove_pooled_object(&obj->process->integers, obj, sizeof(object_dynamic_integer_t));
+    else
+        remove_object_from_list(&obj->process->objects, obj);
     FREE(obj);
 }
 
@@ -463,7 +455,8 @@ object_t *create_integer_object(process_t *process, int64_t value) {
     }
     object_dynamic_integer_t *obj;
     if (process->integers.size > 0) {
-        obj = (object_dynamic_integer_t *)remove_first_object_from_list(&process->integers);
+        obj = (object_dynamic_integer_t *)process->integers.head;
+        remove_pooled_object(&process->integers, &obj->base, sizeof(*obj));
     } else {
         obj = (object_dynamic_integer_t *)CALLOC(sizeof(object_dynamic_integer_t));
         obj->base.vtbl = &dynamic_vtbl;

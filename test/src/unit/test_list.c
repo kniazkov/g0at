@@ -358,6 +358,7 @@ static test_description_t test_list[] = {
     {"GC marks iteratively on a bounded stack", test_gc_iterative_mark},
     {"Last-owner release is iterative on a bounded stack", test_iterative_last_ref_release},
     {"External roots own independent registrations", test_owning_gc_roots},
+    {"Object pools have a byte budget and trim safely", test_gc_pool_budget},
     {"Managed reference counters check their boundaries", test_checked_gc_refcounts},
     {"root object call", test_root_object_call}};
 

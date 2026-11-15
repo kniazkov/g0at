@@ -16,14 +16,6 @@
 #include <assert.h>
 
 /**
- * @brief Defines the maximum capacity of the object pool.
- *
- * Sets the maximum number of objects that can be stored in the object pool before it reaches its
- * capacity.
- */
-#define POOL_CAPACITY 1024
-
-/**
  * @brief A dynamic string object.
  *
  * Dynamic strings are also immutable but are created at runtime, typically as a result of string
@@ -45,13 +37,12 @@ static object_array_t get_keys(const object_t *obj) {
 static void release_or_clear(object_dynamic_string_t *dsobj) {
     FREE((gchar_t *)(dsobj->string.data));
     remove_object_from_list(&dsobj->base.process->objects, &dsobj->base);
-    if (dsobj->base.process->dynamic_strings.size == POOL_CAPACITY) {
+    if (!try_pool_object(&dsobj->base.process->dynamic_strings, &dsobj->base, sizeof(*dsobj))) {
         FREE(dsobj);
     } else {
         dsobj->refs = 0;
         dsobj->state = ZOMBIE;
         dsobj->string = (string_view_t){NULL, 0};
-        add_object_to_list(&dsobj->base.process->dynamic_strings, &dsobj->base);
     }
 }
 
@@ -102,9 +93,10 @@ static bool sweep(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
-    remove_object_from_list(dsobj->state == ZOMBIE ? &obj->process->dynamic_strings
-                                                   : &obj->process->objects,
-                            obj);
+    if (dsobj->state == ZOMBIE)
+        remove_pooled_object(&obj->process->dynamic_strings, obj, sizeof(object_dynamic_string_t));
+    else
+        remove_object_from_list(&obj->process->objects, obj);
     FREE((gchar_t *)(dsobj->string.data));
     FREE(obj);
 }
@@ -363,7 +355,8 @@ object_t *create_string_object(process_t *process, string_value_t value) {
     }
     object_dynamic_string_t *obj;
     if (process->dynamic_strings.size > 0) {
-        obj = (object_dynamic_string_t *)remove_first_object_from_list(&process->dynamic_strings);
+        obj = (object_dynamic_string_t *)process->dynamic_strings.head;
+        remove_pooled_object(&process->dynamic_strings, &obj->base, sizeof(*obj));
     } else {
         obj = (object_dynamic_string_t *)CALLOC(sizeof(object_dynamic_string_t));
         obj->base.vtbl = &dynamic_string_vtbl;

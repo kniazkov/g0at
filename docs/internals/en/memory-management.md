@@ -89,6 +89,24 @@ records and their results until process teardown; a lifetime bound would need
 a separate language/API decision, since thread identifiers carry no ownership
 and can be joined again at any later point.
 
+### Inactive object pools (GC-08)
+
+Each process can retain at most 1,024 inactive shells of each pooled type and
+512 KiB of Goat allocator payload across all pools. The payload counts scalar
+and string shells, and user-defined shells plus four vector headers and
+backings (prototypes, topology, keys, fields) and the empty AVL header. String
+text, property cells, AVL nodes, access identities, and native StringBuilder
+buffers do not remain in the pool. Vectors with capacity above 64 pointer slots
+lose their backing on return; smaller buffers retain their allocation for
+reuse. A shell that would exceed either pool limit is freed instead.
+
+`trim_process_object_pools` explicitly releases all inactive shells and returns
+the exact number of accounted bytes released. Call under the execution lock or
+with exclusive process ownership. It does not allocate, mutate live objects,
+or run tracing. This is a conservative fixed retention policy, not an RSS limit
+or a memory budget calibrated to every deployment. The stress and small-object
+timing workloads are documented in [the pool fixture](../../../test/data/gc-pool-budget/README.md).
+
 ## Audit of owners at a potential collection boundary
 
 | Owner / edge | What retains it | Tracing and release | Synchronization |
