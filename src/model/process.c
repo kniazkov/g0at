@@ -14,6 +14,7 @@
 #include "object_list.h"
 #include "thread.h"
 #include "vm/gc.h"
+#include "vm/gc_stats.h"
 
 #include <assert.h>
 #include <stdatomic.h>
@@ -104,6 +105,8 @@ size_t trim_process_object_pools(process_t *process) {
     for (size_t i = 0; i < sizeof(pools) / sizeof(*pools); ++i)
         destroy_all_objects_in_the_list(pools[i]);
     assert(!process->pooled_bytes);
+    if (!process->destroying && process->gc_statistics)
+        gc_statistics_note_trim(process->gc_statistics, released);
     return released;
 }
 

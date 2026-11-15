@@ -6,6 +6,7 @@
 
 #include "gc.h"
 
+#include "gc_stats.h"
 #include "lib/memory/allocate.h"
 #include "model/context.h"
 #include "model/module_files.h"
@@ -26,6 +27,7 @@ struct gc_root_slot_t {
 typedef struct {
     process_t *process;
     object_t *pending;
+    gc_pass_sample_t *sample;
 } mark_worklist_t;
 
 /** @brief Marks once and enqueues non-leaves; even weak edges are visible to this visitor. */
@@ -34,6 +36,14 @@ static void enqueue_mark(object_t *obj, bool owned, void *data) {
     mark_worklist_t *work = data;
     if (obj && obj->process == work->process && obj->vtbl->mark)
         obj->vtbl->mark(obj, &work->pending);
+}
+
+/** @brief Counts graph edges only, not root attempts or reconciled dead edges. */
+static void enqueue_observed_edge(object_t *obj, bool owned, void *data) {
+    mark_worklist_t *work = data;
+    if (work->sample->edges != SIZE_MAX)
+        ++work->sample->edges;
+    enqueue_mark(obj, owned, data);
 }
 
 /** @brief Marks the thread's owned values and execution state. */
@@ -62,8 +72,9 @@ static void mark_thread_roots(thread_t *thread, mark_worklist_t *work) {
 }
 
 /** @brief Marks all reachable objects in the process. */
-static void mark_reachable_objects(process_t *proc) {
-    mark_worklist_t work = {.process = proc, .pending = NULL};
+static void mark_reachable_objects(process_t *proc, gc_pass_sample_t *sample) {
+    mark_worklist_t work = {.process = proc, .sample = sample};
+    gc_edge_visitor_t visit = sample ? enqueue_observed_edge : enqueue_mark;
     visit_module_file_gc_roots(proc, enqueue_mark, &work);
     if (proc->launch_directory)
         enqueue_mark(proc->launch_directory, true, &work);
@@ -86,7 +97,7 @@ static void mark_reachable_objects(process_t *proc) {
         object_t **link = obj->vtbl->gc_link(obj);
         work.pending = *link;
         *link = NULL;
-        obj->vtbl->visit_gc_edges(obj, enqueue_mark, &work);
+        obj->vtbl->visit_gc_edges(obj, visit, &work);
     }
 }
 
@@ -109,6 +120,18 @@ static void sweep_unreachable_objects(process_t *proc) {
     }
 }
 
+/** @brief Scoped live payload, not the allocator-wide total. */
+static gc_memory_sample_t measure_gc_memory(const process_t *proc) {
+    gc_memory_sample_t sample = {.objects = proc->objects.size,
+                                 .pooled_bytes = proc->pooled_bytes,
+                                 .auxiliary_bytes = allocation_payload_size(proc->gc_roots)
+                                                    + allocation_payload_size(proc->string_cache)};
+    for (const object_t *obj = proc->objects.head; obj; obj = obj->next)
+        if (obj->vtbl->gc_owned_payload)
+            sample.active_bytes += obj->vtbl->gc_owned_payload(obj);
+    return sample;
+}
+
 /** @brief Performs garbage collection on the specified process. */
 void collect_garbage(process_t *proc) {
     /* A reentrant request cannot inspect a partly finalized object graph or reuse its links.
@@ -116,12 +139,34 @@ void collect_garbage(process_t *proc) {
     if (proc->draining_releases || proc->destroying || proc->gc_collecting)
         return;
     proc->gc_collecting = true;
-    mark_reachable_objects(proc);
+    gc_stats_t *stats = proc->gc_statistics;
+    gc_pass_sample_t sample;
+    uint64_t started = 0;
+    bool have_start = false;
+    if (stats) {
+        sample = (gc_pass_sample_t){.run_end = proc->gc_run_end_observation};
+        have_start = gc_statistics_now(&started);
+        sample.before = measure_gc_memory(proc);
+    }
+    mark_reachable_objects(proc, stats ? &sample : NULL);
     /* Correct counts before sweep can free any edge target or clear its mark.
        Reconciliation must not run ordinary last-reference destruction. */
     for (object_t *obj = proc->objects.head; obj; obj = obj->next)
         reconcile_swept_edges(obj);
     sweep_unreachable_objects(proc);
+    if (stats) {
+        sample.after = measure_gc_memory(proc);
+        /* Collection leaves exactly the marked managed vertices in the active list. */
+        sample.vertices = sample.after.objects;
+        size_t before = sample.before.active_bytes + sample.before.pooled_bytes;
+        size_t after = sample.after.active_bytes + sample.after.pooled_bytes;
+        sample.freed_bytes = before >= after ? before - after : 0;
+        uint64_t finished;
+        sample.clock_valid = have_start && gc_statistics_now(&finished) && finished >= started;
+        if (sample.clock_valid)
+            sample.pause_ns = finished - started;
+        gc_statistics_record(stats, sample);
+    }
     proc->gc_collecting = false;
 }
 

@@ -186,6 +186,14 @@ void _FREE(void *ptr) {
     free(header->allocation);
 }
 
+size_t allocation_payload_size(const void *ptr) {
+    if (!ptr)
+        return 0;
+    const memory_header_t *header =
+        (const memory_header_t *)((const char *)ptr - sizeof(memory_header_t));
+    return header->size;
+}
+
 size_t get_allocated_memory_size(void) {
     lock_accounting();
     size_t size = allocated_memory_size;

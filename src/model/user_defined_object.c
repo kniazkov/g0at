@@ -726,10 +726,20 @@ static bool get_boolean_value(const object_t *obj) {
 }
 
 /** @brief Virtual table defining the behavior of the user-defined object. */
+/** @brief Direct dynamically owned payload in this part of the managed heap. */
+static size_t gc_owned_payload(const object_t *obj) {
+    const object_user_defined_t *user = (const object_user_defined_t *)obj;
+    const string_builder_t *builder = user->string_builder;
+    return pooled_user_bytes(user) + user->fields->size * sizeof(field_cell_t)
+           + user->keys->size * sizeof(avl_node_t)
+           + (builder ? sizeof(*builder) + allocation_payload_size(builder->data) : 0);
+}
+
 static object_vtbl_t vtbl = {.type = TYPE_USER_DEFINED_OBJECT,
                              .inc_ref = inc_ref,
                              .dec_ref = dec_ref,
                              .finalize_last_ref = finalize_last_ref,
+                             .gc_owned_payload = gc_owned_payload,
                              .mark = mark,
                              .gc_link = gc_link,
                              .visit_gc_edges = visit_edges,

@@ -403,9 +403,16 @@ object_t *get_integer_zero() {
 }
 
 /** @brief This virtual table defines the behavior of the dynamic integer object. */
+/** @brief Direct dynamically owned payload in this part of the managed heap. */
+static size_t gc_owned_payload(const object_t *obj) {
+    (void)obj;
+    return sizeof(object_dynamic_integer_t);
+}
+
 static object_vtbl_t dynamic_vtbl = {.type = TYPE_NUMBER,
                                      .inc_ref = inc_ref,
                                      .dec_ref = dec_ref,
+                                     .gc_owned_payload = gc_owned_payload,
                                      .mark = mark,
                                      .sweep = sweep,
                                      .drop_swept_reference = drop_marked_reference,

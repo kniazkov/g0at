@@ -923,6 +923,7 @@ goat_suite(core.gc_mark "core;gc-mark" $<TARGET_FILE:unit_testing> --gc-mark-tes
 goat_suite(core.gc_release "core;gc-release" $<TARGET_FILE:unit_testing> --gc-release-tests)
 goat_suite(core.gc_roots "core;gc-roots" $<TARGET_FILE:unit_testing> --gc-root-tests)
 goat_suite(core.gc_pools "core;integration;gc-pools" $<TARGET_FILE:unit_testing> --gc-pool-tests)
+goat_suite(core.gc_stats "core;integration;gc-stats" $<TARGET_FILE:unit_testing> --gc-stats-tests)
 foreach(mode join no-join)
   goat_suite(core.thread_memory.${mode} "core;integration;module-threads-migration;thread-retention"
     "$<TARGET_FILE:module_thread_lifetime_testing>"
