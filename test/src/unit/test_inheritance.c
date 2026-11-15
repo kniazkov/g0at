@@ -140,7 +140,7 @@ bool test_inheritance_lifetime(void) {
         ASSERT(create_object_property(parent, key, get_static_integer_object(1), true) == MSTAT_OK);
         object_t *child = create_user_defined_object(proc, (object_array_t){&parent, 1});
         enable_prototype_shadowing(child);
-        add_gc_root(proc, child);
+        gc_root_handle_t child_root = register_gc_root(proc, child);
         DECREF(parent);
         collect_garbage(proc);
         ASSERT(get_object_integer_value(get_object_property(parent, key)).value == 1);
@@ -149,7 +149,7 @@ bool test_inheritance_lifetime(void) {
         object_t *copy = clone_object(proc, child);
         ASSERT(set_object_property(copy, get_string_length(), get_integer_zero()) == MSTAT_OK);
         DECREF(copy);
-        remove_gc_root(proc, child);
+        unregister_gc_root(proc, child_root);
         DECREF(child);
         collect_garbage(proc);
         ASSERT(proc->objects.size == baseline);

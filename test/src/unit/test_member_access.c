@@ -194,9 +194,9 @@ bool test_member_access_vm(void) {
     process_t *proc = create_process();
     object_t *root = get_root_object();
     object_t *key = create_string_object(proc, (string_value_t){U"x", 1, false});
-    add_gc_root(proc, key);
+    gc_root_handle_t key_root = register_gc_root(proc, key);
     object_t *obj = create_user_defined_object(proc, (object_array_t){&root, 1});
-    add_gc_root(proc, obj);
+    gc_root_handle_t obj_root = register_gc_root(proc, obj);
     ASSERT(create_object_property(obj, key, get_static_integer_object(10), false) == MSTAT_OK);
 
     instruction_t getprop[] = {{.opcode = GETPROP, .arg1 = 0}, {.opcode = END}};
@@ -233,7 +233,7 @@ bool test_member_access_vm(void) {
     free_bytecode(code);
 
     object_t *fresh = create_user_defined_object(proc, (object_array_t){&root, 1});
-    add_gc_root(proc, fresh);
+    gc_root_handle_t fresh_root = register_gc_root(proc, fresh);
     instruction_t setprop[] = {{.opcode = SETPROP, .arg1 = 0}, {.opcode = END}};
     code = make_member_access_code(setprop, 2);
     push_object_onto_stack(proc->main_thread->data_stack, get_static_integer_object(42));
@@ -245,10 +245,10 @@ bool test_member_access_vm(void) {
     free_bytecode(code);
 
     object_t *proto = create_user_defined_object(proc, (object_array_t){&root, 1});
-    add_gc_root(proc, proto);
+    gc_root_handle_t proto_root = register_gc_root(proc, proto);
     ASSERT(create_object_property(proto, key, get_static_integer_object(7), false) == MSTAT_OK);
     object_t *derived = create_user_defined_object(proc, (object_array_t){&proto, 1});
-    add_gc_root(proc, derived);
+    gc_root_handle_t derived_root = register_gc_root(proc, derived);
     instruction_t inherited[] = {{.opcode = GETPROP, .arg1 = 0}, {.opcode = END}};
     code = make_member_access_code(inherited, 2);
     INCREF(derived);
@@ -270,7 +270,7 @@ bool test_member_access_vm(void) {
     free_bytecode(code);
 
     object_t *locked = create_user_defined_object(proc, (object_array_t){&root, 1});
-    add_gc_root(proc, locked);
+    gc_root_handle_t locked_root = register_gc_root(proc, locked);
     ASSERT(create_object_property(locked, key, get_null_object(), true) == MSTAT_OK);
     instruction_t const_prop[] = {{.opcode = SETPROP, .arg1 = 0}, {.opcode = END}};
     code = make_member_access_code(const_prop, 2);
@@ -288,17 +288,17 @@ bool test_member_access_vm(void) {
     FREE_STRING(text);
     free_bytecode(code);
 
-    remove_gc_root(proc, obj);
+    unregister_gc_root(proc, obj_root);
     DECREF(obj);
-    remove_gc_root(proc, fresh);
+    unregister_gc_root(proc, fresh_root);
     DECREF(fresh);
-    remove_gc_root(proc, proto);
+    unregister_gc_root(proc, proto_root);
     DECREF(proto);
-    remove_gc_root(proc, derived);
+    unregister_gc_root(proc, derived_root);
     DECREF(derived);
-    remove_gc_root(proc, locked);
+    unregister_gc_root(proc, locked_root);
     DECREF(locked);
-    remove_gc_root(proc, key);
+    unregister_gc_root(proc, key_root);
     DECREF(key);
     destroy_process(proc);
     return true;
@@ -324,9 +324,9 @@ bool test_method_call_receiver_vm(void) {
     process_t *proc = create_process();
     object_t *root = get_root_object();
     object_t *receiver = create_user_defined_object(proc, (object_array_t){&root, 1});
-    add_gc_root(proc, receiver);
+    gc_root_handle_t receiver_root = register_gc_root(proc, receiver);
     object_t *key = create_string_object(proc, (string_value_t){U"x", 1, false});
-    add_gc_root(proc, key);
+    gc_root_handle_t key_root = register_gc_root(proc, key);
     ASSERT(create_object_property(receiver, key, get_static_integer_object(5), false) == MSTAT_OK);
     INCREF(receiver);
     push_object_onto_stack(proc->main_thread->data_stack, receiver);
@@ -337,9 +337,9 @@ bool test_method_call_receiver_vm(void) {
     ASSERT(is_integer_object(result));
     ASSERT(get_object_integer_value(result).value == 5);
     free_bytecode(code);
-    remove_gc_root(proc, receiver);
+    unregister_gc_root(proc, receiver_root);
     DECREF(receiver);
-    remove_gc_root(proc, key);
+    unregister_gc_root(proc, key_root);
     DECREF(key);
     destroy_process(proc);
     return true;

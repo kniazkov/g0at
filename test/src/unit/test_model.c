@@ -717,7 +717,7 @@ bool test_string_builder_storage(void) {
     process_t *proc = create_process();
     object_t *proto = get_string_builder_proto();
     object_t *obj = create_user_defined_object(proc, (object_array_t){&proto, 1});
-    add_gc_root(proc, obj);
+    gc_root_handle_t obj_root = register_gc_root(proc, obj);
     object_t *key = create_string_object(proc, STATIC_STRING(U"init"));
     const builtin_function_t *init =
         ((builtin_function_object_t *)get_object_property(proto, key))->descriptor;
@@ -743,7 +743,7 @@ bool test_string_builder_storage(void) {
     gchar_t *data = buffer->data;
     string_value_t snapshot = string_builder_snapshot(obj);
     object_t *copy = clone_object(proc, obj);
-    add_gc_root(proc, copy);
+    gc_root_handle_t copy_root = register_gc_root(proc, copy);
     ASSERT(get_string_builder_storage(copy)->data != data);
     ASSERT(get_string_builder_storage(copy)->length == 4096);
     key = create_string_object(proc, STATIC_STRING(U"clear"));
@@ -758,9 +758,9 @@ bool test_string_builder_storage(void) {
     collect_garbage(proc);
     ASSERT(get_string_builder_storage(copy)->length == 4096);
     FREE_STRING(snapshot);
-    remove_gc_root(proc, copy);
+    unregister_gc_root(proc, copy_root);
     DECREF(copy);
-    remove_gc_root(proc, obj);
+    unregister_gc_root(proc, obj_root);
     DECREF(obj);
     /* Reusing a pooled ordinary object must not resurrect native storage. */
     object_t *root = get_root_object();
@@ -838,10 +838,10 @@ bool test_gc_no_registered_threads(void) {
     process_t *proc = create_process();
     destroy_thread(proc->main_thread);
     object_t *root = create_integer_object(proc, 317);
-    add_gc_root(proc, root);
+    gc_root_handle_t root_root = register_gc_root(proc, root);
     collect_garbage(proc);
     bool preserved = proc->objects.size == 1;
-    remove_gc_root(proc, root);
+    unregister_gc_root(proc, root_root);
     if (preserved)
         DECREF(root);
     bool reclaimed = proc->objects.size == 0;
@@ -867,8 +867,8 @@ static bool sweep_array_references(bool survivor_first) {
     object_t *length = get_object_property(a, get_string_length());
     INCREF(length);
     INCREF(survivor); /* Two independent outside owners; neither is the root table. */
-    add_gc_root(proc, survivor);
-    add_gc_root(proc, length);
+    gc_root_handle_t survivor_root = register_gc_root(proc, survivor);
+    gc_root_handle_t length_root = register_gc_root(proc, length);
 
     object_t *zero = get_integer_zero();
     object_t *one = create_integer_object(proc, 1);
@@ -893,12 +893,12 @@ static bool sweep_array_references(bool survivor_first) {
     collect_garbage(proc);
     collect_garbage(proc);
     good = good && proc->objects.size == baseline + 2;
-    remove_gc_root(proc, length);
+    unregister_gc_root(proc, length_root);
     DECREF(length);
     good = good && proc->objects.size == baseline + 1;
     DECREF(survivor);
     good = good && proc->objects.size == baseline + 1;
-    remove_gc_root(proc, survivor);
+    unregister_gc_root(proc, survivor_root);
     DECREF(survivor);
     good = good && proc->objects.size == baseline;
     destroy_process(proc);
@@ -922,8 +922,9 @@ bool test_gc_sweep_fields_and_functions(void) {
     object_t *number = create_integer_object(proc, 9876543);
     object_t *live_function = create_function_object(proc, NULL, 0, 0, live, NULL, false);
     object_t *values[] = {live_function, live, key, character, real, number};
+    gc_root_handle_t handles[sizeof(values) / sizeof(*values)];
     for (size_t i = 0; i < sizeof(values) / sizeof(*values); ++i)
-        add_gc_root(proc, values[i]);
+        handles[i] = register_gc_root(proc, values[i]);
 
     object_t *dead = create_user_defined_object(proc, (object_array_t){&live, 1});
     object_t **names = ALLOC(sizeof(*names));
@@ -951,7 +952,7 @@ bool test_gc_sweep_fields_and_functions(void) {
     good = good && proc->objects.size == baseline + sizeof(values) / sizeof(*values);
     for (size_t i = 0; i < sizeof(values) / sizeof(*values); ++i) {
         size_t before = proc->objects.size;
-        remove_gc_root(proc, values[i]);
+        unregister_gc_root(proc, handles[i]);
         DECREF(values[i]);
         good = good && proc->objects.size + 1 == before;
     }
@@ -968,6 +969,7 @@ typedef struct {
     size_t baseline;
     size_t live;
     bool ok;
+    gc_root_handle_t root_handle;
 } iterative_gc_test_t;
 
 /** @brief Runs only the collector and bounded observations on a small OS stack. */
@@ -995,7 +997,7 @@ static void *collect_on_small_stack(void *data) {
 
     /* Drop the only outside owner. The strong back-edge prevents synchronous recursive
        destruction; this test exercises marking/sweep, not the separate DECREF cascade. */
-    remove_gc_root(test->process, test->root);
+    unregister_gc_root(test->process, test->root_handle);
     DECREF(test->root);
 #ifdef GOAT_TEST_ALLOC_FAILURE
     allocation_fault_start(1);
@@ -1064,9 +1066,9 @@ bool test_gc_iterative_mark(void) {
     ASSERT(!back.is_exception);
     DECREF(back.value);
     DECREF(anchor);
-    add_gc_root(proc, root);
+    gc_root_handle_t root_root = register_gc_root(proc, root);
 
-    iterative_gc_test_t test = {proc, root, anchor, baseline, proc->objects.size, false};
+    iterative_gc_test_t test = {proc, root, anchor, baseline, proc->objects.size, false, root_root};
     os_thread_t *worker;
     os_thread_status_t status =
         create_os_thread(&worker, collect_on_small_stack, &test, 256 * 1024);
@@ -1081,10 +1083,10 @@ bool test_gc_iterative_mark(void) {
         size_t pooled = proc->user_defined_objects.size;
         object_t *reused = create_user_defined_object(proc, (object_array_t){&root_object, 1});
         test.ok = pooled > 0 && proc->user_defined_objects.size == pooled - 1;
-        add_gc_root(proc, reused);
+        gc_root_handle_t reused_root = register_gc_root(proc, reused);
         collect_garbage(proc);
         test.ok = test.ok && proc->objects.size == baseline + 1;
-        remove_gc_root(proc, reused);
+        unregister_gc_root(proc, reused_root);
         DECREF(reused);
         test.ok = test.ok && proc->objects.size == baseline;
     }
@@ -1204,10 +1206,10 @@ bool test_iterative_last_ref_release(void) {
     object_t *reused = create_user_defined_object(proc, (object_array_t){&proto, 1});
     ASSERT(pooled > 0 && proc->user_defined_objects.size == pooled - 1);
     ASSERT(!get_string_builder_storage(reused));
-    add_gc_root(proc, reused);
+    gc_root_handle_t reused_root = register_gc_root(proc, reused);
     collect_garbage(proc);
     ASSERT(proc->objects.size == baseline + 1);
-    remove_gc_root(proc, reused);
+    unregister_gc_root(proc, reused_root);
     DECREF(reused);
 
     object_t *array = create_array_object(proc, (object_array_t){NULL, 0});
@@ -1230,5 +1232,112 @@ bool test_iterative_last_ref_release(void) {
     ASSERT(create_os_thread(&worker, destroy_on_small_stack, proc, 256 * 1024) == OS_THREAD_OK);
     ASSERT(join_os_thread(worker, NULL) == OS_THREAD_OK);
     ASSERT(destroy_os_thread(worker) == OS_THREAD_OK);
+    return true;
+}
+
+typedef struct {
+    process_t *process;
+    size_t releases;
+    bool registration_closed;
+} root_teardown_probe_t;
+
+/** @brief Observes ordinary disposal of a registered function's native descriptor. */
+static void count_root_resource_release(void *data) {
+    root_teardown_probe_t *probe = data;
+    ++probe->releases;
+    probe->registration_closed = !register_gc_root(probe->process, get_null_object()).serial;
+}
+
+bool test_owning_gc_roots(void) {
+    size_t allocated_before = get_allocated_memory_size();
+    process_t *proc = create_process();
+    process_t *other = create_process();
+    ASSERT(proc && other);
+    size_t baseline = proc->objects.size;
+    object_t *marker = create_integer_object(proc, 456789);
+    object_t *obj = create_array_object(proc, (object_array_t){&marker, 1});
+    DECREF(marker);
+    gc_root_handle_t first = register_gc_root(proc, obj);
+    gc_root_handle_t second = register_gc_root(proc, obj);
+    gc_root_handle_t same_index_other = register_gc_root(other, get_null_object());
+    ASSERT(first.serial && second.serial && same_index_other.serial);
+    ASSERT(!register_gc_root(proc, NULL).serial);
+    ASSERT(!register_gc_root(NULL, obj).serial);
+    ASSERT(!register_gc_root(other, obj).serial);
+    ASSERT(!unregister_gc_root(other, first));
+    ASSERT(!unregister_gc_root(NULL, first));
+    ASSERT(unregister_gc_root(other, same_index_other));
+    destroy_process(other);
+
+    /* The two registrations alone own the array and its child. */
+    DECREF(obj);
+    ASSERT(unregister_gc_root(proc, first));
+    ASSERT(!unregister_gc_root(proc, first));
+    collect_garbage(proc);
+    ASSERT(proc->objects.size == baseline + 2);
+    int_value_t value = get_object_integer_value(get_array_elements(obj).items[0]);
+    ASSERT(value.has_value && value.value == 456789);
+
+    /* Reuse freed slots, but old copied handles still cannot remove a new registration. */
+    enum { MANY = 2048 };
+
+    gc_root_handle_t *more = ALLOC(MANY * sizeof(*more));
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    allocation_fault_start(SIZE_MAX);
+#endif
+    size_t initial_capacity = proc->gc_roots_capacity;
+    size_t growths = 0;
+    for (size_t i = 0; i < MANY; ++i) {
+        more[i] = register_gc_root(proc, obj);
+        ASSERT(more[i].serial);
+        if (initial_capacity != proc->gc_roots_capacity) {
+            ++growths;
+            initial_capacity = proc->gc_roots_capacity;
+        }
+    }
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    size_t attempts = allocation_fault_stop();
+    ASSERT(attempts == growths && !allocation_fault_triggered());
+    allocation_fault_start(1);
+#endif
+    ASSERT(growths > 0 && growths < 16);
+    ASSERT(!unregister_gc_root(proc, first) && proc->gc_roots_size == MANY + 1);
+    for (size_t i = 0; i < MANY; ++i)
+        ASSERT(unregister_gc_root(proc, more[i]));
+    ASSERT(unregister_gc_root(proc, second));
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    size_t removals = allocation_fault_stop();
+    ASSERT(!removals && !allocation_fault_triggered());
+#endif
+    FREE(more);
+    ASSERT(!proc->gc_roots_size && proc->objects.size == baseline);
+
+    /* Leave two roots registered at shutdown with a shared child and native resources.
+       The function also retains its closure through the lexical-access snapshot. */
+    object_t *proto = get_string_builder_proto();
+    object_t *child = create_user_defined_object(proc, (object_array_t){&proto, 1});
+    string_builder_t *buffer = initialize_string_builder_storage(child);
+    ASSERT(buffer);
+    append_substring(buffer, U"root-only", 9);
+    root_teardown_probe_t probe = {.process = proc};
+    const goat_native_continuation_entry_t entry = {.function_id = 1,
+                                                    .instruction_count = 1,
+                                                    .invoke = unused_release_test_entry};
+    native_function_descriptor_t *descriptor =
+        create_native_continuation_descriptor(&entry, &probe, count_root_resource_release);
+    ASSERT(descriptor);
+    object_t *fn = create_function_object(proc, NULL, 0, 0, child, descriptor, false);
+    release_native_function_descriptor(descriptor);
+    object_t *siblings[] = {child, child};
+    object_t *array = create_array_object(proc, (object_array_t){siblings, 2});
+    DECREF(child);
+    ASSERT(register_gc_root(proc, array).serial && register_gc_root(proc, fn).serial);
+    DECREF(array);
+    DECREF(fn);
+    collect_garbage(proc);
+    ASSERT(!probe.releases && proc->objects.size == baseline + 3);
+    destroy_process(proc);
+    ASSERT(probe.releases == 1 && probe.registration_closed
+           && get_allocated_memory_size() == allocated_before);
     return true;
 }

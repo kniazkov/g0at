@@ -149,14 +149,14 @@ static void model_cases(void) {
         assert(access->module == a && access->file_id == 7);
         assert(can_access_field(access, get_own_field_cell(copy, cells[0]->key)));
         DECREF(mk);
-        add_gc_root(p, copy);
-        add_gc_root(p, obj);
-        add_gc_root(p, derived);
+        gc_root_handle_t copy_root = register_gc_root(p, copy);
+        gc_root_handle_t obj_root = register_gc_root(p, obj);
+        gc_root_handle_t derived_root = register_gc_root(p, derived);
         collect_garbage(p);
         assert(get_function_access(adapted)->file_id == 7);
-        remove_gc_root(p, copy);
-        remove_gc_root(p, obj);
-        remove_gc_root(p, derived);
+        unregister_gc_root(p, copy_root);
+        unregister_gc_root(p, obj_root);
+        unregister_gc_root(p, derived_root);
         DECREF(copy);
     }
     DECREF(method);
@@ -300,7 +300,7 @@ static void wire_cases(void) {
     memcpy(copy, input + 4 + json, image_size);
     free(input);
     object_t *x = key(p, U"x");
-    add_gc_root(p, x);
+    gc_root_handle_t x_root = register_gc_root(p, x);
     for (size_t s = 0; s < 2; ++s) {
         for (size_t i = 0; i < module_files_count(sets[s]); ++i) {
             module_file_t *file = module_files_get(sets[s], (uint32_t)i);
@@ -360,7 +360,7 @@ static void wire_cases(void) {
                        ->file_id
                    == i);
     }
-    remove_gc_root(p, x);
+    unregister_gc_root(p, x_root);
     DECREF(x);
     free(copy);
     destroy_process(p);

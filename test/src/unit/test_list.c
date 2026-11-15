@@ -357,6 +357,7 @@ static test_description_t test_list[] = {
     {"GC sweep reconciles field and function references", test_gc_sweep_fields_and_functions},
     {"GC marks iteratively on a bounded stack", test_gc_iterative_mark},
     {"Last-owner release is iterative on a bounded stack", test_iterative_last_ref_release},
+    {"External roots own independent registrations", test_owning_gc_roots},
     {"root object call", test_root_object_call}};
 
 int get_number_of_tests() {

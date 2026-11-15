@@ -81,7 +81,8 @@ static int run_interactive(options_t *opt) {
     /* A strong reference to the session context data object. An uncaught exception unwinds all
        contexts to the root one; holding this reference keeps the declared variables alive so the
        session can be recreated on top of them. */
-    object_t *session_vars = NULL;
+    object_t *session_vars = NULL; /* Borrowed from session_root. */
+    gc_root_handle_t session_root = {0};
 
     while (!process->exit_requested) {
         if (!stdout_at_line_start()) {
@@ -256,16 +257,12 @@ static int run_interactive(options_t *opt) {
                     thread->context->data = session_vars;
                 }
             }
-            /* Hold the session data object across potential exception unwinding. An uncaught
-               exception destroys the session context inside run(); keeping the object registered
-               as a GC root and strongly referenced prevents the collector from sweeping it. */
-            if (session_vars != NULL) {
-                remove_gc_root(process, session_vars);
+            /* Keep the session data rooted across exception unwinding. */
+            if (session_vars != thread->context->data) {
+                unregister_gc_root(process, session_root);
+                session_vars = thread->context->data;
+                session_root = register_gc_root(process, session_vars);
             }
-            DECREFIF(session_vars);
-            session_vars = thread->context->data;
-            INCREF(session_vars);
-            add_gc_root(process, session_vars);
             while (thread->data_stack->size > 0) {
                 object_t *value = pop_object_from_stack(thread->data_stack);
                 DECREF(value);
@@ -308,10 +305,7 @@ static int run_interactive(options_t *opt) {
         FREE_STRING(line);
     }
 
-    if (session_vars != NULL) {
-        remove_gc_root(process, session_vars);
-    }
-    DECREFIF(session_vars);
+    unregister_gc_root(process, session_root);
     destroy_code_builder(session_code);
     destroy_data_builder(session_data);
     int status = process->exit_requested ? process->exit_code : 0;

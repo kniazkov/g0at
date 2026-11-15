@@ -202,8 +202,8 @@ bool test_access_captures(void) {
     add_function_access_domain(fa, cell->domain);
     add_function_access_domain(fa, cell->domain);
     ASSERT(fa->domains->size == 1);
-    add_gc_root(proc, f);
-    add_gc_root(proc, g);
+    gc_root_handle_t f_root = register_gc_root(proc, f);
+    gc_root_handle_t g_root = register_gc_root(proc, g);
     DECREF(storage);
     DECREF(key);
     DECREF(value);
@@ -217,11 +217,11 @@ bool test_access_captures(void) {
     ASSERT(set_field_cell_value(fc->storage, fc->cell, fc->cell->object) == MSTAT_OK);
     ASSERT(set_field_cell_value(fc->storage, fc->cell, get_boolean_object(true)) == MSTAT_OK);
     ASSERT(gc->cell->object == get_boolean_object(true));
-    remove_gc_root(proc, f);
+    unregister_gc_root(proc, f_root);
     DECREF(f);
     collect_garbage(proc);
     ASSERT(gc->cell->object == get_boolean_object(true));
-    remove_gc_root(proc, g);
+    unregister_gc_root(proc, g_root);
     DECREF(g);
     collect_garbage(proc);
     destroy_process(proc);
@@ -374,7 +374,7 @@ bool test_access_clone_methods(void) {
         ASSERT(old_cell->object == get_boolean_object(false));
         ASSERT(set_field_cell_value(copy, get_own_field_cell(copy, f), method)
                == MSTAT_PROPERTY_IS_CONSTANT);
-        add_gc_root(proc, adapted);
+        gc_root_handle_t adapted_root = register_gc_root(proc, adapted);
         DECREF(copy);
         DECREF(second);
         DECREF(method);
@@ -383,7 +383,7 @@ bool test_access_clone_methods(void) {
         ASSERT(capture->cell->object == get_boolean_object(true));
         ASSERT(get_own_field_cell(capture->storage, f)->object == adapted);
         /* A detached method alone keeps its copied cell and alias alive. */
-        remove_gc_root(proc, adapted);
+        unregister_gc_root(proc, adapted_root);
         collect_garbage(proc);
         ASSERT(proc->objects.size == baseline);
     }
@@ -457,7 +457,7 @@ bool test_access_flat_cells(void) {
                == lookup_accessible_property(&caller, source, x, false).cell->object);
         ASSERT(set_field_cell_value(copy, lc.cell, get_boolean_object(true)) == MSTAT_OK);
         ASSERT(get_object_property(parents[0], x) == get_boolean_object(false));
-        add_gc_root(proc, left);
+        gc_root_handle_t left_root = register_gc_root(proc, left);
         DECREF(copy);
         DECREF(source);
         for (size_t i = 0; i < 2; i++) {
@@ -467,7 +467,7 @@ bool test_access_flat_cells(void) {
         collect_garbage(proc);
         ASSERT(lc.cell->object == get_boolean_object(true));
         ASSERT(get_object_field_count(lc.storage) == 6);
-        remove_gc_root(proc, left);
+        unregister_gc_root(proc, left_root);
         collect_garbage(proc);
         ASSERT(proc->objects.size == baseline);
     }
@@ -512,10 +512,10 @@ bool test_access_clone_metadata(void) {
     release_access_domain(extra);
     release_module_identity(module);
     DECREF(key);
-    add_gc_root(proc, copy);
+    gc_root_handle_t copy_root = register_gc_root(proc, copy);
     collect_garbage(proc);
     ASSERT(b->object == get_boolean_object(true));
-    remove_gc_root(proc, copy);
+    unregister_gc_root(proc, copy_root);
     DECREF(copy);
     destroy_process(proc);
     return true;

@@ -13,11 +13,25 @@ they are not Goat heap objects merely because a live Goat value refers to them.
 
 **Tracing**: a positive refcount, an owned C local or a borrowed pointer does not
 make a tracing root. A live heap object must be reachable from one of the roots
-below when tracing runs. `add_gc_root` registers a pointer in a per-process set;
-it does **not** retain it. Keep an owned reference, unregister it before releasing
-that reference, and do not unregister another owner's registration. Use a separate
-owned aggregate when independently nested callers must register the same value.
-GC-05 (#547) is responsible for the replacement external registration contract.
+below when tracing runs.
+
+### External owning roots (GC-05)
+
+`register_gc_root(process, value)` owns a reference and publishes it as a root.
+Each registration has a distinct handle, even for the same object; copying a
+handle does not create another registration. `unregister_gc_root(process, handle)`
+drops exactly that registration and can synchronously release the value. Locals
+borrowing from the registration must stop using the value before unregistering.
+Null or foreign objects, registration during teardown or a release drain,
+and stale, repeated or foreign handles are rejected without changing ownership.
+No root updates are allowed during collection. Process-independent static values
+are allowed. Handles do not keep processes alive.
+
+Use the execution lock (or exclusive process ownership) to register, unregister
+and collect. The table grows geometrically using the managed allocator's fatal
+failure policy, reuses free slots and does not allocate on unregister. Teardown
+blocks new registrations and releases all remaining roots before the shallow heap
+walk. It invalidates a registration before release callbacks can reenter.
 
 ### Last-owner release (GC-04)
 
@@ -48,12 +62,12 @@ are released by their existing cleanup paths.
 | Thread bootstrap slot and operand stack (`thread.c`, `vm.c`) | `start_function` owns the pending callable, the stack owns queued arguments and other values | Mark both independently. Under the lock the worker moves the slot into a C local, clears it, dispatches and drops ownership. Failed creation destroys the thread and releases slot/stack | Thread publication, worker takeover and execution share the model lock; the takeover sequence is not a new safe point |
 | Thread context chain (`context.c`, `access.c`) | Context owns its scope, immutable arguments, explicit receiver, pending return/throw value and lexical access snapshot | Mark scope, arguments, receiver, pending value and access lexical scopes/captured storage; destroy on unwind, frame exit or teardown. The immutable shared root context has no access snapshot to scan | Execution lock |
 | Thread exception and join state (`thread.c`, `vm.c`) | Thread owns the exception payload and trace; result remains on its stack | Mark the payload, not the separately managed trace. Finished records still keep their contexts/stacks/payloads until teardown; reducing retention is #549 | Execution lock; condition wait releases the lock |
-| Constructor snapshot (`init_snapshot.c`) | Context owns snapshot; snapshot owns an immutable array of receiver and callables | Snapshot explicitly registers the array; remove the root before releasing it on completion, unwind, or thread teardown | Execution lock |
+| Constructor snapshot (`init_snapshot.c`) | Context owns the snapshot and its handle for an immutable array of receiver and callables | Unregister on completion, unwind, or thread teardown; the registration owns the array | Execution lock |
 | StringBuilder storage (`string_builder.c`, `user_defined_object.c`) | The builder receiver owns the native Unicode buffer; clone/flat copy it, not its pointer | Raw character storage has no Goat edges to mark. Clear the buffer and pointer in object cleanup, including sweep and pooling. The published length is an ordinary traced field; a builder initializer captured by the constructor follows the snapshot row above | Receiver model operations share the execution lock |
 | Function and object graph (`function.c`, `array.c`, `user_defined_object.c`) | Functions retain closure, names and access captures; arrays retain elements; user objects retain prototypes and property edges per type contract | Object mark callbacks walk strong graph edges; normal last release drops owned edges. Pool list entries are not scanned as live values | Execution lock or exclusive host access |
-| Native continuations and builtin operator invocation (`function.c`) | Each invocation owns an aggregate for the popped callable, or for receiver and arguments, respectively | Register a distinct aggregate per invocation around callback; unregister before release. Other live VM operands are on contexts/stacks; there is no general scan of C frames | Model lock and existing synchronous invocation contract |
+| Native continuations and builtin operator invocation (`function.c`) | Each invocation holds its own handle to the popped callable or to the receiver/argument aggregate | Unregister after the call; other live VM operands are on contexts/stacks, not implicit C roots | Model lock and existing synchronous invocation contract |
 | Native ABI descriptors and per-call state (`module_native.c`, `native_services.c`) | Descriptor retains independently loaded code; host owns per-invocation ABI resources | ABI scalars and memory-service blocks are not traced Goat objects. Host cleans up on return, failure or fallback; any Goat object across a possible GC needs an ordinary traced root | No generic callback or allocator safe point |
-| Explicit host roots (`gc.c`, `launcher.c`) | Registration is non-owning; caller owns a separate ref (e.g. REPL session scope) | Mark registered pointers; unregister before releasing. Process teardown discards the table | Execution lock or exclusive host access |
+| Explicit host roots (`gc.c`, `launcher.c`) | Each handle owns its registration (e.g. REPL session scope) | Trace registered values and release any remaining roots before the heap is disposed | Execution lock or exclusive host access |
 | Temporary C values (`vm.c` and model helpers) | A local may own or borrow a value; `operation_result_t` carries a value, with trace handled separately | Not scanned. Publish every live managed value into rooted state before any collection; local transfer/clone tables, popped operands, return values, pending callback results are not implicit roots | Model lock serializes graph mutation, but taking it does not by itself make a safe point |
 
 In the root scan an empty thread list means there are no thread roots: process and

@@ -316,7 +316,7 @@ static void check_builder_failure(test_t *test, process_t *process) {
     thread_t *thread = process->main_thread;
     object_t *proto = get_string_builder_proto();
     object_t *builder = create_user_defined_object(process, (object_array_t){&proto, 1});
-    add_gc_root(process, builder);
+    gc_root_handle_t builder_root = register_gc_root(process, builder);
     object_t *init_key = create_string_object(process, STATIC_STRING(U"init"));
     object_t *init = get_object_property(proto, init_key);
     assert(call_object(init, 0, builder, thread));
@@ -353,7 +353,7 @@ static void check_builder_failure(test_t *test, process_t *process) {
         DECREF(method_key);
     }
     DECREF(converted.value);
-    remove_gc_root(process, builder);
+    unregister_gc_root(process, builder_root);
     DECREF(builder);
 }
 
@@ -389,7 +389,7 @@ int main(int argc, char **argv) {
     object_t *payload = !strcmp(argv[3], "null")
                             ? get_null_object()
                             : create_user_defined_object(process, (object_array_t){&root, 1});
-    add_gc_root(process, payload);
+    gc_root_handle_t payload_root = register_gc_root(process, payload);
     test_t test = {.files = files,
                    .first = first,
                    .payload = payload,
@@ -435,7 +435,7 @@ int main(int argc, char **argv) {
     clear_exception(&failure);
     destroy_context(observer);
     DECREF(test.child);
-    remove_gc_root(process, payload);
+    unregister_gc_root(process, payload_root);
     DECREF(payload);
     destroy_process(process);
     assert(!get_allocated_memory_size());

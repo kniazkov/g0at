@@ -164,7 +164,7 @@ static object_t *dictionary(process_t *proc, object_t *proto) {
 bool test_index_model(void) {
     process_t *proc = create_process();
     object_t *obj = dictionary(proc, get_root_object());
-    add_gc_root(proc, obj);
+    gc_root_handle_t obj_root = register_gc_root(proc, obj);
     object_t *key = dictionary(proc, get_root_object());
     object_t *value = dictionary(proc, get_root_object());
     operation_result_t result = obj->vtbl->set_index(proc, obj, (object_array_t){&key, 1}, value);
@@ -177,7 +177,7 @@ bool test_index_model(void) {
     ASSERT(!result.is_exception && result.value == value);
     DECREF(result.value);
     object_t *clone = clone_object(proc, obj);
-    add_gc_root(proc, clone);
+    gc_root_handle_t clone_root = register_gc_root(proc, clone);
     result = clone->vtbl->get_index(proc, clone, (object_array_t){&key, 1});
     ASSERT(result.value == value);
     DECREF(result.value);
@@ -192,7 +192,7 @@ bool test_index_model(void) {
     ASSERT(result.is_exception && result.value == get_exception_invalid_argument());
     DECREF(result.value);
     object_t *self = dictionary(proc, get_root_object());
-    add_gc_root(proc, self);
+    gc_root_handle_t self_root = register_gc_root(proc, self);
     result = self->vtbl->set_index(proc, self, (object_array_t){&self, 1}, self);
     ASSERT(result.value == self);
     DECREF(result.value);
@@ -200,16 +200,16 @@ bool test_index_model(void) {
     ASSERT(!STRCMP(text.data, U"{{...}:{...}}"));
     FREE_STRING(text);
     collect_garbage(proc);
-    remove_gc_root(proc, self);
+    unregister_gc_root(proc, self_root);
     DECREF(self);
     collect_garbage(proc);
-    remove_gc_root(proc, clone);
+    unregister_gc_root(proc, clone_root);
     DECREF(clone);
     collect_garbage(proc);
     result = obj->vtbl->get_index(proc, obj, (object_array_t){&key, 1});
     ASSERT(result.value == value);
     DECREF(result.value);
-    remove_gc_root(proc, obj);
+    unregister_gc_root(proc, obj_root);
     DECREF(obj);
     destroy_process(proc);
     return true;

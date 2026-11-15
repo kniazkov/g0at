@@ -700,13 +700,10 @@ static bool dynamic_call_impl(object_t *obj,
     const goat_native_continuation_entry_t *continuation =
         get_native_function_continuation(dfobj->native_function);
     if (continuation && !ctx->native_disabled && native_stack_has_headroom()) {
-        /* Each invocation needs a distinct root: recursive calls must not unregister one
-           another. A runtime GC callback can run after CALL popped this function. */
-        object_t *roots = create_read_only_array_object(thread->process, (object_array_t){&obj, 1});
-        add_gc_root(thread->process, roots);
+        /* Keep the popped callable rooted throughout this native invocation. */
+        gc_root_handle_t handle = register_gc_root(thread->process, obj);
         bool completed = vm_run_native_continuation(thread, continuation);
-        remove_gc_root(thread->process, roots);
-        DECREF(roots);
+        unregister_gc_root(thread->process, handle);
         return completed;
     }
     return true;
@@ -867,9 +864,9 @@ bool call_function_with_operator_receiver(object_t *function,
     object_t *roots =
         create_read_only_array_object(thread->process, (object_array_t){values, (size_t)count + 1});
     FREE(values);
-    add_gc_root(thread->process, roots);
-    bool result = static_call(function, count, receiver, thread);
-    remove_gc_root(thread->process, roots);
+    gc_root_handle_t handle = register_gc_root(thread->process, roots);
     DECREF(roots);
+    bool result = static_call(function, count, receiver, thread);
+    unregister_gc_root(thread->process, handle);
     return result;
 }

@@ -90,7 +90,7 @@ bool test_array_model(void) {
     ASSERT(get_object_topology(array).items[1] == get_root_object());
     ASSERT(get_object_prototypes(get_array_proto()).items[0] == get_root_object());
     DECREF(child);
-    add_gc_root(proc, array);
+    gc_root_handle_t array_root = register_gc_root(proc, array);
     collect_garbage(proc);
     ASSERT(get_array_elements(array).size == 2);
     ASSERT(get_array_elements(array).items[0] == child);
@@ -116,15 +116,15 @@ bool test_array_model(void) {
     object_t *copy = clone_object(proc, array);
     ASSERT(copy != array && get_array_elements(copy).items[0] == copy);
     ASSERT(get_array_elements(copy).items[1] == child);
-    add_gc_root(proc, copy);
+    gc_root_handle_t copy_root = register_gc_root(proc, copy);
     DECREF(array);
-    remove_gc_root(proc, array);
+    unregister_gc_root(proc, array_root);
     collect_garbage(proc);
     ASSERT(get_array_elements(copy).items[0] == copy);
     string_value_t notation = convert_object_to_string_notation(copy);
     ASSERT(STRCMP(notation.data, U"[[...],[ ]]") == 0);
     FREE_STRING(notation);
-    remove_gc_root(proc, copy);
+    unregister_gc_root(proc, copy_root);
     DECREF(copy);
     collect_garbage(proc);
     size_t baseline = proc->objects.size;
@@ -133,7 +133,7 @@ bool test_array_model(void) {
         object_t *dict = create_user_defined_object(proc, (object_array_t){&root, 1});
         array = create_array_object(proc, (object_array_t){&dict, 1});
         ASSERT(create_object_property(dict, array, array, false) == MSTAT_OK);
-        add_gc_root(proc, array);
+        gc_root_handle_t cycle_root = register_gc_root(proc, array);
         DECREF(dict);
         DECREF(array);
         collect_garbage(proc);
@@ -141,7 +141,7 @@ bool test_array_model(void) {
         notation = convert_object_to_string_notation(array);
         ASSERT(STRCMP(notation.data, U"[{[...]:[...]}]") == 0);
         FREE_STRING(notation);
-        remove_gc_root(proc, array);
+        unregister_gc_root(proc, cycle_root);
         collect_garbage(proc);
         ASSERT(proc->objects.size == baseline);
     }
@@ -150,12 +150,12 @@ bool test_array_model(void) {
     for (size_t i = 0; i < 256; i++)
         many[i] = get_null_object();
     array = create_array_object(proc, (object_array_t){many, 256});
-    add_gc_root(proc, array);
+    gc_root_handle_t length_owner = register_gc_root(proc, array);
     collect_garbage(proc);
     object_t *length = get_object_property(array, get_string_length());
     ASSERT(get_object_integer_value(length).value == 256);
     ASSERT(get_object_property(array, get_string_length()) == length);
-    remove_gc_root(proc, array);
+    unregister_gc_root(proc, length_owner);
     DECREF(array);
     destroy_process(proc);
     return true;
@@ -211,7 +211,7 @@ static operation_result_t comparison_error(process_t *proc, object_t *a, object_
 bool test_array_methods(void) {
     process_t *proc = create_process();
     object_t *array = create_array_object(proc, (object_array_t){0});
-    add_gc_root(proc, array);
+    gc_root_handle_t array_root = register_gc_root(proc, array);
     collect_garbage(proc);
     size_t baseline = proc->objects.size;
     for (size_t pass = 0; pass < 50; pass++) {
@@ -243,7 +243,7 @@ bool test_array_methods(void) {
     result = array_call(proc, array, U"slice", NULL, 0);
     ASSERT(!result.is_exception);
     object_t *slice = result.value;
-    add_gc_root(proc, slice);
+    gc_root_handle_t slice_root = register_gc_root(proc, slice);
     result = array_call(proc, array, U"clear", NULL, 0);
     DECREF(result.value);
     collect_garbage(proc);
@@ -252,7 +252,7 @@ bool test_array_methods(void) {
     ASSERT(!result.is_exception && result.value == child);
     ASSERT(get_array_elements(result.value).size == 0);
     DECREF(result.value);
-    remove_gc_root(proc, slice);
+    unregister_gc_root(proc, slice_root);
     DECREF(slice);
     /* Every comparison failure must propagate without changing order or losing elements. */
     object_t *root = get_root_object();
@@ -282,7 +282,7 @@ bool test_array_methods(void) {
     DECREF(result.value);
     DECREF(first);
     DECREF(second);
-    remove_gc_root(proc, array);
+    unregister_gc_root(proc, array_root);
     DECREF(array);
     destroy_process(proc);
     return true;
@@ -403,12 +403,12 @@ bool test_context_argument_snapshot(void) {
         ASSERT(get_array_elements(get_array_elements(snapshot).items[0]).items[0] == snapshot);
         /* Model an escaped strong reference across the common frame destruction path. */
         INCREF(snapshot);
-        add_gc_root(proc, snapshot);
+        gc_root_handle_t snapshot_root = register_gc_root(proc, snapshot);
         proc->main_thread->context = destroy_context(frame);
         collect_garbage(proc);
         ASSERT(get_array_elements(snapshot).size == 3 && is_read_only_array(snapshot));
         ASSERT(immutable_result(clear_array_elements(snapshot)));
-        remove_gc_root(proc, snapshot);
+        unregister_gc_root(proc, snapshot_root);
         DECREF(snapshot);
         collect_garbage(proc);
         ASSERT(proc->objects.size == baseline);

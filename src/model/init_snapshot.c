@@ -14,7 +14,8 @@
 
 struct init_snapshot_t {
     process_t *process;
-    object_t *roots;
+    object_t *roots; /**< Borrowed from the owning registration. */
+    gc_root_handle_t root_handle;
 };
 
 typedef struct {
@@ -72,7 +73,8 @@ init_snapshot_result_t collect_init_snapshot(process_t *process, object_t *recei
         snapshot->roots = create_read_only_array_object(
             process,
             (object_array_t){(object_t **)values->data, values->size});
-        add_gc_root(process, snapshot->roots);
+        snapshot->root_handle = register_gc_root(process, snapshot->roots);
+        DECREF(snapshot->roots);
         result.snapshot = snapshot;
     }
     for (size_t i = 0; i < stack->size; i++)
@@ -95,7 +97,6 @@ object_array_t get_init_snapshot_functions(const init_snapshot_t *snapshot) {
 void destroy_init_snapshot(init_snapshot_t *snapshot) {
     if (!snapshot)
         return;
-    remove_gc_root(snapshot->process, snapshot->roots);
-    DECREF(snapshot->roots);
+    unregister_gc_root(snapshot->process, snapshot->root_handle);
     FREE(snapshot);
 }
