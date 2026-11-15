@@ -360,6 +360,7 @@ static test_description_t test_list[] = {
     {"External roots own independent registrations", test_owning_gc_roots},
     {"Object pools have a byte budget and trim safely", test_gc_pool_budget},
     {"Collection statistics are optional and process-local", test_gc_statistics},
+    {"Controlled model boundary preserves a published result", test_gc_controlled_model_boundary},
     {"Managed reference counters check their boundaries", test_checked_gc_refcounts},
     {"root object call", test_root_object_call}};
 

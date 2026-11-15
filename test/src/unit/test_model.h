@@ -170,3 +170,6 @@ bool test_gc_statistics(void);
 
 /** @brief Emits repeatable graph, pause and ordinary refcount workload measurements. */
 bool test_gc_statistics_benchmark(void);
+
+/** @brief A test-host boundary with a published operation result and a parked mutator. */
+bool test_gc_controlled_model_boundary(void);

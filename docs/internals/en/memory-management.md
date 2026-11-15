@@ -167,8 +167,8 @@ single-process graph; #556 gates paths that can admit foreign objects.
 A managed object on the process list starts unmarked, becomes marked if reached,
 and surviving marks are reset for the next pass. A type may use an intermediate
 dying state while releasing edges and a zombie state for an empty pooled shell;
-neither is an accessible live value. Long last-reference chains still use
-recursive ordinary release (#546); that is separate from tracing.
+neither is an accessible live value. Ordinary last-reference chains use their
+separate iterative release worklist (#546).
 
 Mark uses a process-local LIFO worklist, not the C call stack. Arrays, user
 objects and dynamic functions each reserve one transient pointer; leaves need
@@ -200,11 +200,25 @@ re-entry. An initializer gate or an allocator lock cannot substitute for this
 contract. No GC is allowed in arbitrary allocation, native or blocking calls,
 during context/stack transfers, or between individual stores in an operation.
 
-Production tracing still occurs after `finish_program_threads` and dropping the
-standalone cache in `finish_string_cache`. Test callbacks may force collection at
-a specifically controlled boundary; they are not evidence of a general in-run
-safe point. GC-10 (#552) must audit the remaining per-opcode and native/VM transition
-temporaries, suspension/resumption, caught errors/finally and initializer paths,
-and enforce/test safe points and re-entry before auto-collection is enabled by
-#553. Another ownership boundary requiring verification is cross-process model
-mutation; external root input validation belongs to #547.
+### Safe-point audit (GC-10, partial)
+
+The production call remains the end of `finish_string_cache`: all program
+threads and descendants have completed, their OS handles have been reaped,
+and the standalone cache has been dropped. The caller holds the execution
+lock. This audit does not certify a general in-run collection boundary.
+
+| Boundary | Required ownership and synchronization | Evidence or outstanding work |
+|---|---|---|
+| Host outside execution | The caller exclusively owns the process; live managed values use known roots, not C locals | Model-only collection is supported under that contract |
+| VM instruction boundary and worker handoff | Stack/context changes and worker result publication complete under the execution lock before roots are inspected | Existing queued-callable and completed-result tests cover those owners; an opcode finishing does not certify other suspended paths |
+| Native continuation step, native fallback or builtin callback | The execution lock does not certify C-local owners; the callable and relevant receiver/argument aggregate use explicit owned handles; callback result must be published or protected before inspection | The existing selected continuation/constructor/builtin probes are controlled tests, not permission to trace in arbitrary callbacks or fallback |
+| Pending exception, finally and constructor transition | Root the payload in thread/context state, keep saved return/throw values and the initializer snapshot live until the transition commits; trace metadata has separate ownership | Existing fixtures cover specific unwind/initializer paths, not every transfer or VM/native combination |
+| Join/wait, blocking host I/O, loader or OS reap | Releasing the lock is not a safe point. A permitted test first publishes every live managed reference and prevents mutation until the collector takes the lock | Controlled test-host wait verifies one published result, stable roots and restored recursive lock depth. Arbitrary native/I/O/loader suspension has not been certified |
+| Module readiness and initialization gate | Publish scopes/results with the model lock; initializer mutex does not replace it. Existing module table keeps committed values alive | A general protocol for partially completed inclusion/loading still needs verification |
+
+Before adding permitted in-run points, finish the publication inventory for
+temporary operands, operation results and callback/initializer transfers,
+then require all participating mutators to be in known stable states and
+exercise each admitted boundary under the intended protocol. #556 gates
+ingress that can admit objects from another process, not ordinary same-owner
+graphs. This partial audit does not complete #552 or unblock #553.
