@@ -110,6 +110,10 @@ typedef struct {
     /** @brief Finalizes a queued graph object after its last owned reference is dropped. */
     void (*finalize_last_ref)(object_t *obj);
 
+    /** @brief Direct Goat allocator payload owned by this active managed object, for diagnostics.
+     */
+    size_t (*gc_owned_payload)(const object_t *obj);
+
     /** @brief Marks a managed object once and links non-leaves into the pending worklist. */
     void (*mark)(object_t *obj, object_t **pending);
 

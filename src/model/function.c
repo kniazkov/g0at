@@ -713,10 +713,25 @@ static bool dynamic_call(object_t *obj, uint16_t count, object_t *receiver, thre
 }
 
 /** @brief Virtual table defining the behavior of the dynamic functional object. */
+static size_t gc_payload_of_vector(const vector_t *vector) {
+    return sizeof(*vector) + allocation_payload_size(vector->data);
+}
+
+/** @brief Direct dynamically owned payload in this part of the managed heap. */
+static size_t gc_owned_payload(const object_t *obj) {
+    const object_dynamic_function_t *function = (const object_dynamic_function_t *)obj;
+    const function_access_t *access = &function->access;
+    return sizeof(*function) + allocation_payload_size(function->arg_names)
+           + gc_payload_of_vector(access->domains) + gc_payload_of_vector(access->protected_domains)
+           + gc_payload_of_vector(access->captures) + gc_payload_of_vector(access->lexical_scopes)
+           + access->captures->size * sizeof(field_capture_t);
+}
+
 static object_vtbl_t dynamic_vtbl = {.type = TYPE_OTHER,
                                      .inc_ref = inc_ref,
                                      .dec_ref = dec_ref,
                                      .finalize_last_ref = finalize_last_ref,
+                                     .gc_owned_payload = gc_owned_payload,
                                      .mark = mark,
                                      .gc_link = gc_link,
                                      .visit_gc_edges = visit_edges,

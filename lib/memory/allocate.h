@@ -42,6 +42,11 @@ void _FREE(void *ptr);
  */
 #define FREE _FREE
 
+/** @brief Size of a live ALLOC/CALLOC payload (NULL gives zero).
+ * Caller must own or synchronize the allocation. Not for arbitrary pointers.
+ */
+size_t allocation_payload_size(const void *ptr);
+
 /** @brief Returns live payload bytes, excluding allocator overhead. */
 size_t get_allocated_memory_size(void);
 

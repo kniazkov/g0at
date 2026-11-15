@@ -107,6 +107,32 @@ or run tracing. This is a conservative fixed retention policy, not an RSS limit
 or a memory budget calibrated to every deployment. The stress and small-object
 timing workloads are documented in `test/data/gc-pool-budget/README.md`.
 
+### Observing existing passes (GC-09)
+
+A host or test can attach caller-owned `gc_stats_t` using
+`configure_gc_statistics` under the execution lock or exclusive process
+ownership. The caller reads under the same rule and keeps the storage alive
+until detaching or destroying the process. Diagnostics are off by default,
+allocate no buffers and emit no output. No new collection call, safe point,
+trigger or cadence is introduced.
+
+The last pass distinguishes the existing end-of-run call from explicit
+host calls. It records distinct marked managed objects, outgoing edge
+visits of marked graph objects (including weak and static targets, excluding
+root enumeration/reconciliation), before/after active and pooled payload
+bytes, and the net drop in their sum. Transferred shells are not counted as
+freed if retained in a pool. The monotonic pause includes diagnostic walks
+and has a validity flag. Explicit pool trim adds separate call/byte totals
+without recording a tracing pass; teardown is not an explicit trim.
+
+The active payload is the managed shell and its directly owned backing:
+strings, elements, user vectors/cells/index and StringBuilder buffer, and
+function arguments/access snapshot allocations. Shared module/domain/native
+resources, thread state, allocator overhead and RSS are outside this metric.
+Auxiliary payload reports the root-slot and standalone string-cache tables;
+the intrusive tracing worklist allocates no separate buffer. The reproducible
+workload is described in `test/data/gc-statistics/README.md`.
+
 ## Audit of owners at a potential collection boundary
 
 | Owner / edge | What retains it | Tracing and release | Synchronization |

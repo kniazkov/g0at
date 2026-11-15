@@ -164,3 +164,9 @@ bool test_gc_pool_budget(void);
 
 /** @brief Reports the reproducible large/small pool workload, without speed gates. */
 bool test_gc_pool_benchmark(void);
+
+/** @brief Checks per-process snapshots and separate pool trim accounting. */
+bool test_gc_statistics(void);
+
+/** @brief Emits repeatable graph, pause and ordinary refcount workload measurements. */
+bool test_gc_statistics_benchmark(void);

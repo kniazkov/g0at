@@ -20,6 +20,7 @@
 #include "model/thread.h"
 #include "test_macro.h"
 #include "vm/gc.h"
+#include "vm/gc_stats.h"
 #include "vm/vm.h"
 
 #include <stdio.h>
@@ -1535,5 +1536,171 @@ bool test_gc_pool_benchmark(void) {
            elapsed);
     destroy_process(proc);
     ASSERT(get_allocated_memory_size() == begin);
+    return true;
+}
+
+/** @brief Sets one array slot using normal ownership-transfer semantics. */
+static bool set_stat_test_edge(process_t *proc, object_t *array, size_t index, object_t *target) {
+    object_t *key = get_static_integer_object((int)index);
+    operation_result_t result =
+        array->vtbl->set_index(proc, array, (object_array_t){&key, 1}, target);
+    DECREF(result.value);
+    return !result.is_exception;
+}
+
+bool test_gc_statistics(void) {
+    size_t start = get_allocated_memory_size();
+    process_t *a = create_process();
+    process_t *b = create_process();
+    ASSERT(a && b);
+    gc_stats_t sa, sb;
+    ASSERT(configure_gc_statistics(a, &sa) && configure_gc_statistics(b, &sb));
+    collect_garbage(a);
+    size_t base_objects = sa.last.after.objects;
+    size_t base_edges = sa.last.edges;
+    size_t base_payload = sa.last.after.active_bytes;
+
+    object_t *leaf = create_real_number_object(a, 314.25);
+    object_t *live = create_array_object(a, (object_array_t){&leaf, 1});
+    DECREF(leaf);
+    gc_root_handle_t live_root = register_gc_root(a, live);
+    object_t *empty = get_null_object();
+    object_t *first = create_array_object(a, (object_array_t){&empty, 1});
+    object_t *second = create_array_object(a, (object_array_t){&empty, 1});
+    ASSERT(set_stat_test_edge(a, first, 0, second) && set_stat_test_edge(a, second, 0, first));
+    DECREF(first);
+    DECREF(second);
+
+    object_t *b_live = create_string_object(b, STATIC_STRING(U"other process"));
+    gc_root_handle_t b_root = register_gc_root(b, b_live);
+    object_t *b_temp = create_integer_object(b, 456789);
+    DECREF(b_temp);
+    size_t b_active = b->objects.size, b_pooled = b->pooled_bytes;
+
+    size_t global_before = get_allocated_memory_size();
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    allocation_fault_start(1);
+#endif
+    collect_garbage(a);
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    size_t attempts = allocation_fault_stop();
+    ASSERT(!attempts && !allocation_fault_triggered());
+#endif
+    ASSERT(sa.collections == 2 && sa.explicit_collections == 2 && !sa.run_end_collections);
+    ASSERT(sa.last.before.objects == base_objects + 4 && sa.last.after.objects == base_objects + 2);
+    ASSERT(sa.last.vertices == base_objects + 2 && sa.last.edges == base_edges + 2);
+    ASSERT(sa.last.after.active_bytes > base_payload && sa.last.before.auxiliary_bytes > 0);
+    ASSERT(sa.last.before.auxiliary_bytes == sa.last.after.auxiliary_bytes);
+    ASSERT(sa.last.freed_bytes == global_before - get_allocated_memory_size());
+    ASSERT(!sb.collections && !sb.trim_calls && b->objects.size == b_active
+           && b->pooled_bytes == b_pooled);
+    ASSERT(b_live->vtbl->type == TYPE_STRING && b->gc_roots_size == 1);
+    string_value_t other_text = convert_object_to_string(b_live);
+    ASSERT(STRCMP(other_text.data, U"other process") == 0);
+    FREE_STRING(other_text);
+
+    object_t *temp = create_integer_object(a, 7654321);
+    DECREF(temp);
+    size_t pooled = a->pooled_bytes;
+    ASSERT(pooled > 0 && trim_process_object_pools(a) == pooled);
+    ASSERT(sa.trim_calls == 1 && sa.trimmed_bytes == pooled && sa.collections == 2
+           && sa.last.edges == base_edges + 2);
+    ASSERT(!sb.collections && !sb.trim_calls && b->pooled_bytes == b_pooled);
+
+    ASSERT(unregister_gc_root(a, live_root) && unregister_gc_root(b, b_root));
+    DECREF(live);
+    DECREF(b_live);
+    instruction_t instructions[] = {{.opcode = END}};
+    bytecode_t *code = create_test_bytecode(instructions, 1);
+    ASSERT(run(a, code) == 0);
+    ASSERT(sa.collections == 3 && sa.run_end_collections == 1 && sa.last.run_end);
+    free_bytecode(code);
+    ASSERT(configure_gc_statistics(a, NULL));
+    collect_garbage(a);
+    ASSERT(sa.collections == 3);
+    destroy_process(a);
+    destroy_process(b);
+    ASSERT(get_allocated_memory_size() == start);
+    return true;
+}
+
+bool test_gc_statistics_benchmark(void) {
+    enum { DEPTH = 20000, WIDTH = 4096, TRIALS = 9, CHURN = 100000 };
+
+    size_t memory_before = get_allocated_memory_size();
+    process_t *proc = create_process();
+    ASSERT(proc);
+    gc_stats_t stats;
+    object_t *empty = get_null_object();
+    object_t *seed = create_array_object(proc, (object_array_t){&empty, 1});
+    object_t *top = seed;
+    INCREF(top);
+    for (size_t i = 0; i < DEPTH; ++i) {
+        object_t *next = create_array_object(proc, (object_array_t){&top, 1});
+        DECREF(top);
+        top = next;
+    }
+    ASSERT(set_stat_test_edge(proc, seed, 0, top));
+    object_t **values = ALLOC(WIDTH * sizeof(*values));
+    for (size_t i = 0; i < WIDTH; ++i)
+        values[i] = top;
+    object_t *wide = create_array_object(proc, (object_array_t){values, WIDTH});
+    FREE(values);
+    gc_root_handle_t root = register_gc_root(proc, wide);
+    DECREF(top);
+    DECREF(seed);
+    uint64_t maximum_unobserved = 0;
+    size_t unobserved_samples = 0;
+    for (size_t trial = 0; trial < TRIALS; ++trial) {
+        uint64_t started, finished;
+        bool timed = gc_statistics_now(&started);
+        collect_garbage(proc);
+        if (timed && gc_statistics_now(&finished) && finished >= started) {
+            ++unobserved_samples;
+            if (finished - started > maximum_unobserved)
+                maximum_unobserved = finished - started;
+        }
+    }
+    printf("unobserved_samples=%zu unobserved_max_pause_ns=%llu\n",
+           unobserved_samples,
+           (unsigned long long)maximum_unobserved);
+    ASSERT(configure_gc_statistics(proc, &stats));
+    for (size_t trial = 0; trial < TRIALS; ++trial)
+        collect_garbage(proc);
+    printf("live_passes=%llu vertices=%zu edges=%zu active_bytes=%zu max_pause_ns=%llu timed=%d\n",
+           (unsigned long long)stats.collections,
+           stats.last.vertices,
+           stats.last.edges,
+           stats.last.after.active_bytes,
+           (unsigned long long)stats.max_pause_ns,
+           stats.last.clock_valid);
+    ASSERT(unregister_gc_root(proc, root));
+    DECREF(wide);
+    collect_garbage(proc);
+    printf("cycle_before=%zu cycle_after=%zu cycle_freed_bytes=%zu cycle_pause_ns=%llu\n",
+           stats.last.before.objects,
+           stats.last.after.objects,
+           stats.last.freed_bytes,
+           (unsigned long long)stats.last.pause_ns);
+
+    uint64_t start = 0, end = 0;
+    bool timed = gc_statistics_now(&start);
+    for (size_t i = 0; i < CHURN; ++i) {
+        object_t *scalar = create_integer_object(proc, 97654321);
+        object_t *array = create_array_object(proc, (object_array_t){&scalar, 1});
+        DECREF(scalar);
+        DECREF(array);
+    }
+    timed = timed && gc_statistics_now(&end) && end >= start;
+    size_t trimmed = trim_process_object_pools(proc);
+    printf("rc_churn=%d rc_churn_ns=%llu rc_timed=%d pool_trimmed_bytes=%zu "
+           "final_tracing_passes=%llu\n",
+           CHURN,
+           (unsigned long long)(timed ? end - start : 0),
+           timed,
+           trimmed,
+           (unsigned long long)stats.collections);
+    destroy_process(proc);
+    ASSERT(get_allocated_memory_size() == memory_before);
     return true;
 }

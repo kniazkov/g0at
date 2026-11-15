@@ -212,9 +212,16 @@ static int_value_t get_integer_value(const object_t *obj) {
 }
 
 /** @brief This virtual table defines the behavior of the dynamic character object. */
+/** @brief Direct dynamically owned payload in this part of the managed heap. */
+static size_t gc_owned_payload(const object_t *obj) {
+    (void)obj;
+    return sizeof(object_dynamic_character_t);
+}
+
 static object_vtbl_t character_vtbl = {.type = TYPE_CHARACTER,
                                        .inc_ref = inc_ref,
                                        .dec_ref = dec_ref,
+                                       .gc_owned_payload = gc_owned_payload,
                                        .mark = mark,
                                        .sweep = sweep,
                                        .drop_swept_reference = drop_marked_reference,

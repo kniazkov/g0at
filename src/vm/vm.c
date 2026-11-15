@@ -2142,7 +2142,9 @@ static void finish_string_cache(process_t *proc) {
     FREE(proc->string_cache);
     proc->string_cache = NULL;
     proc->string_cache_size = 0;
+    proc->gc_run_end_observation = proc->gc_statistics != NULL;
     collect_garbage(proc);
+    proc->gc_run_end_observation = false;
 }
 
 int run(process_t *proc, bytecode_t *code) {

@@ -21,6 +21,7 @@ typedef struct process_t process_t;
 typedef struct thread_t thread_t;
 typedef struct module_t module_t;
 typedef struct gc_root_slot_t gc_root_slot_t;
+struct gc_stats_t;
 
 /** @brief Limits apply to retained Goat allocator payload per process, not RSS. */
 #define GOAT_POOL_BYTE_LIMIT ((size_t)512 * 1024)
@@ -101,13 +102,15 @@ struct process_t {
 
     /** @brief External owning roots; slot indices survive storage growth. */
     gc_root_slot_t *gc_roots;
-    size_t gc_roots_size;     /**< Number of active registrations, including duplicates. */
-    size_t gc_roots_used;     /**< High-water number of slots initialized. */
-    size_t gc_roots_capacity; /**< Slots reserved in the allocation. */
-    size_t gc_roots_free;     /**< One-based first free slot, or zero. */
-    uint64_t gc_root_serial;  /**< Never-reused registration serial within the process. */
-    bool gc_collecting;       /**< Protects the current tracing/sweep pass from reentry. */
-    bool destroying;          /**< Teardown allows unregister but forbids registration and GC. */
+    size_t gc_roots_size;             /**< Number of active registrations, including duplicates. */
+    size_t gc_roots_used;             /**< High-water number of slots initialized. */
+    size_t gc_roots_capacity;         /**< Slots reserved in the allocation. */
+    size_t gc_roots_free;             /**< One-based first free slot, or zero. */
+    uint64_t gc_root_serial;          /**< Never-reused registration serial within the process. */
+    struct gc_stats_t *gc_statistics; /**< Optional host-owned diagnostics, normally NULL. */
+    bool gc_run_end_observation;      /**< Tags the preexisting automatic end-of-run call only. */
+    bool gc_collecting;               /**< Protects the current tracing/sweep pass from reentry. */
+    bool destroying; /**< Teardown allows unregister but forbids registration and GC. */
 };
 
 /** @brief Creates a new process. */

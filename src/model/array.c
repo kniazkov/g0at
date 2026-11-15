@@ -207,10 +207,17 @@ static object_array_t get_topology(const object_t *obj) {
 }
 
 /** @brief Array behavior; indexed access is independent of named properties. */
+/** @brief Direct dynamically owned payload in this part of the managed heap. */
+static size_t gc_owned_payload(const object_t *obj) {
+    const array_object_t *array = (const array_object_t *)obj;
+    return sizeof(*array) + allocation_payload_size(array->items);
+}
+
 static object_vtbl_t vtbl = {.type = TYPE_ARRAY,
                              .inc_ref = inc_ref,
                              .dec_ref = dec_ref,
                              .finalize_last_ref = finalize_last_ref,
+                             .gc_owned_payload = gc_owned_payload,
                              .mark = mark,
                              .gc_link = gc_link,
                              .visit_gc_edges = visit_edges,

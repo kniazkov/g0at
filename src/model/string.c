@@ -302,9 +302,16 @@ DECLARE_STATIC_STRING(string_sqrt, U"sqrt")
 DECLARE_STATIC_STRING(string_trim, U"trim")
 
 /** @brief Virtual table defining the behavior of the dynamic string object. */
+/** @brief Direct dynamically owned payload in this part of the managed heap. */
+static size_t gc_owned_payload(const object_t *obj) {
+    const object_dynamic_string_t *string = (const object_dynamic_string_t *)obj;
+    return sizeof(*string) + allocation_payload_size(string->string.data);
+}
+
 static object_vtbl_t dynamic_string_vtbl = {.type = TYPE_STRING,
                                             .inc_ref = inc_ref,
                                             .dec_ref = dec_ref,
+                                            .gc_owned_payload = gc_owned_payload,
                                             .mark = mark,
                                             .sweep = sweep,
                                             .drop_swept_reference = drop_marked_reference,
