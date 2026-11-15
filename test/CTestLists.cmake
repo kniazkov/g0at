@@ -878,7 +878,7 @@ foreach(operator_case matrix order property bypass lookup lifetime continuation 
     "$<TARGET_FILE:operator_call_testing>" "${operator_case}")
 endforeach()
 
-foreach(continuation_case mixed unwind escape trace strict-bool recursion method-gc method-recursion method-unwind init-vm init-method init-caller init-static init-validation init-return init-unwind init-trace init-native-trace init-cancel-direct init-backend-direct init-cancel init-snapshot init-gc-closure init-gc-exception init-gc-reentrant no-replay range host-cancel cancel-backend)
+foreach(continuation_case mixed unwind escape trace strict-bool recursion method-gc published-finally method-recursion method-unwind init-vm init-method init-caller init-static init-validation init-return init-unwind init-trace init-native-trace init-cancel-direct init-backend-direct init-cancel init-snapshot init-gc-closure init-gc-exception init-gc-reentrant no-replay range host-cancel cancel-backend)
   goat_suite(component.native_continuation.${continuation_case} "component;native-continuation"
     "$<TARGET_FILE:native_continuation_testing>" "${continuation_case}")
 endforeach()
@@ -934,4 +934,7 @@ endforeach()
 goat_suite(core.thread_memory.unobserved "core;integration;module-threads-migration;thread-retention"
   "$<TARGET_FILE:module_thread_lifetime_testing>"
   "${PROJECT_SOURCE_DIR}/test/data/gc-thread-memory/unobserved.goat" "unobserved")
+goat_suite(core.thread_memory.publication "core;integration;module-threads-migration;thread-retention"
+  "$<TARGET_FILE:module_thread_lifetime_testing>"
+  "${PROJECT_SOURCE_DIR}/test/data/gc-thread-memory/publication.goat" "publication")
 goat_suite(core.gc_refcounts "core;gc-refcounts" $<TARGET_FILE:unit_testing> --gc-refcount-tests)

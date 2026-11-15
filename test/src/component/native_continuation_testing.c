@@ -15,6 +15,7 @@
 #include "model/thread.h"
 #include "unit/analysis_test_support.h"
 #include "vm/gc.h"
+#include "vm/gc_stats.h"
 #include "vm/vm.h"
 
 #include <assert.h>
@@ -25,6 +26,7 @@
 static size_t entries, steps, effects;
 static process_t *gc_process;
 static bool force_init_gc;
+static bool verify_boundary_counts;
 static size_t between_init_collections, inside_init_collections, pending_init_collections;
 static bool require_pending_init_gc;
 static bool fail_after_effect, invalid_pc, escaping_exception, language_failure;
@@ -164,6 +166,9 @@ static void program(const gchar_t *source,
     }
     process_t *process = create_process();
     setup(process);
+    gc_stats_t stats;
+    if (verify_boundary_counts)
+        assert(configure_gc_statistics(process, &stats));
     gc_process = process;
     thread_t *thread = process->main_thread;
     context_t *caller = thread->context;
@@ -178,6 +183,10 @@ static void program(const gchar_t *source,
     if (host_cancellation)
         assert(status == (backend_failure ? 1 : 7));
     assert(entries == expected_entries && effects == expected_effects && steps >= entries);
+    if (verify_boundary_counts) {
+        assert(stats.explicit_collections == expected_effects);
+        assert(stats.run_end_collections == 1 && stats.collections == expected_effects + 1);
+    }
     assert(thread->native_attempts == entries && thread->native_retries == 0);
     assert(thread->native_successes == (failure || escaping_exception ? 0 : entries));
     assert(thread->data_stack->size == 0);
@@ -282,6 +291,24 @@ int main(int argc, char **argv) {
                 1,
                 9,
                 9,
+                false);
+    } else if (!strcmp(argv[1], "published-finally")) {
+        verify_boundary_counts = true;
+        /* Each payload is produced inside the call, not kept by an outside variable.
+           The existing controlled probe consults it only while the finally is executing. */
+        program(U"var caller=func(){try{return {var tag=73;};}finally{mark();}};"
+                U"var result=caller();if(result.tag!=73)throw 1;",
+                1,
+                1,
+                1,
+                false);
+        escaping_exception = true;
+        program(U"var caller=func(){try{throw {var tag=91;};}finally{mark();}};"
+                U"var caught=false;try{caller();}catch(e){caught=e.tag==91;}"
+                U"if(!caught)throw 2;",
+                1,
+                1,
+                1,
                 false);
     } else if (!strcmp(argv[1], "method-gc")) {
         /* The factory result has no caller variable: the method frame must root it. */
