@@ -24,6 +24,7 @@
 #include "vm/vm.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 /** @brief Creates a test bytecode sequence. */
@@ -1702,5 +1703,83 @@ bool test_gc_statistics_benchmark(void) {
            (unsigned long long)stats.collections);
     destroy_process(proc);
     ASSERT(get_allocated_memory_size() == memory_before);
+    return true;
+}
+
+typedef struct {
+    process_t *process;
+    unsigned stage;
+    bool rooted, inspected;
+    bool result_preserved, depth_preserved;
+} controlled_wait_t;
+
+/** @brief A model-test mutator: publishes before waiting and does not mutate until resumed. */
+static void *hold_published_result(void *data) {
+    controlled_wait_t *state = data;
+    process_t *proc = state->process;
+    process_execution_enter(proc);
+    process_execution_enter(proc);
+    object_t *leaf = create_integer_object(proc, 789123);
+    operation_result_t pending =
+        operation_success(create_array_object(proc, (object_array_t){&leaf, 1}));
+    DECREF(leaf);
+    gc_root_handle_t published = register_gc_root(proc, pending.value);
+    /* The registration, not a C local, now owns the graph across the wait. */
+    DECREF(pending.value);
+    state->rooted = published.serial != 0;
+    state->stage = 1;
+    broadcast_os_condition(proc->threads_changed);
+    while (state->stage == 1)
+        if (wait_os_condition(proc->threads_changed, proc->execution_mutex) != OS_THREAD_OK)
+            abort();
+    state->depth_preserved = os_mutex_depth(proc->execution_mutex) == 2;
+    if (state->inspected) {
+        object_array_t items = get_array_elements(pending.value);
+        state->result_preserved =
+            items.size == 1 && get_object_integer_value(items.items[0]).value == 789123;
+        state->result_preserved = unregister_gc_root(proc, published) && state->result_preserved;
+    }
+    process_execution_leave(proc);
+    process_execution_leave(proc);
+    return NULL;
+}
+
+bool test_gc_controlled_model_boundary(void) {
+    size_t baseline = get_allocated_memory_size();
+    process_t *proc = create_process();
+    ASSERT(proc);
+    gc_stats_t stats;
+    ASSERT(configure_gc_statistics(proc, &stats));
+    controlled_wait_t test = {.process = proc};
+    os_thread_t *worker;
+    process_execution_enter(proc);
+    if (create_os_thread(&worker, hold_published_result, &test, 0) != OS_THREAD_OK) {
+        process_execution_leave(proc);
+        destroy_process(proc);
+        return false;
+    }
+    while (!test.stage)
+        if (wait_os_condition(proc->threads_changed, proc->execution_mutex) != OS_THREAD_OK)
+            abort();
+    /* Both participants explicitly agree the only mutator is parked with its result rooted.
+       This is a test-host protocol, not a permission granted by any VM unlock. */
+    if (test.rooted && os_mutex_depth(proc->execution_mutex) == 1 && proc->gc_roots_size == 1) {
+        size_t active = proc->objects.size;
+        collect_garbage(proc);
+        collect_garbage(proc);
+        test.inspected = stats.collections == 2 && stats.explicit_collections == 2
+                         && stats.last.after.objects == active;
+    }
+    test.stage = 2;
+    broadcast_os_condition(proc->threads_changed);
+    process_execution_leave(proc);
+    ASSERT(join_os_thread(worker, NULL) == OS_THREAD_OK);
+    ASSERT(destroy_os_thread(worker) == OS_THREAD_OK);
+    /* Do not dereference a result unless the invariant was observed. */
+    if (!test.inspected)
+        return false;
+    bool good = test.depth_preserved && test.result_preserved && !proc->gc_roots_size;
+    destroy_process(proc);
+    ASSERT(good && get_allocated_memory_size() == baseline);
     return true;
 }

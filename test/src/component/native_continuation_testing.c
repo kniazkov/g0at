@@ -50,6 +50,7 @@ static uint32_t GOAT_NATIVE_CALL invoke(const goat_native_continuation_context_t
                 ++between_init_collections;
                 if (owner->init_index < get_init_snapshot_functions(owner->init_snapshot).size)
                     ++pending_init_collections;
+                assert(os_mutex_depth(gc_process->execution_mutex) > 0);
                 collect_garbage(gc_process);
             }
         }
@@ -72,6 +73,7 @@ static operation_result_t mark(object_t **arguments, uint16_t count, thread_t *t
                 break;
             }
     }
+    assert(os_mutex_depth(thread->process->execution_mutex) > 0);
     collect_garbage(thread->process);
     if (host_cancellation) {
         thread->process->exit_requested = true;

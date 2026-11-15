@@ -63,6 +63,8 @@ int main(int argc, char **argv) {
         bool success = test_checked_gc_refcounts();
         return success && get_allocated_memory_size() == before ? EXIT_SUCCESS : EXIT_FAILURE;
     }
+    if (argc == 2 && !strcmp(argv[1], "--gc-boundary-tests"))
+        return test_gc_controlled_model_boundary() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 2 && !strcmp(argv[1], "--gc-stats-tests"))
         return test_gc_statistics() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 2 && !strcmp(argv[1], "--gc-stats-bench"))
