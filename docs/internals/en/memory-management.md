@@ -105,7 +105,7 @@ the exact number of accounted bytes released. Call under the execution lock or
 with exclusive process ownership. It does not allocate, mutate live objects,
 or run tracing. This is a conservative fixed retention policy, not an RSS limit
 or a memory budget calibrated to every deployment. The stress and small-object
-timing workloads are documented in [the pool fixture](../../../test/data/gc-pool-budget/README.md).
+timing workloads are documented in `test/data/gc-pool-budget/README.md`.
 
 ## Audit of owners at a potential collection boundary
 
