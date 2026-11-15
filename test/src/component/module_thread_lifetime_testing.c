@@ -10,6 +10,7 @@
 #include "model/builtin_function.h"
 #include "model/native_library.h"
 #include "model/thread.h"
+#include "vm/gc_stats.h"
 #include "vm/vm.h"
 
 /* Fixture actions and lifetime assertions must execute in Release too. */
@@ -381,11 +382,34 @@ static void check_memory_results(process_t *process) {
            last_rss);
 }
 
+/** @brief Verify outcomes that have no owner outside their finished worker record. */
+static void check_published_worker_outcomes(process_t *process) {
+    thread_t *entry = process->main_thread;
+    thread_t *returned = entry->next;
+    thread_t *thrown = returned->next;
+    assert(returned != entry && thrown != entry && thrown->next == entry);
+    assert(returned->finished && thrown->finished && !returned->worker && !thrown->worker);
+    assert(!returned->context && !thrown->context && !returned->waiting_for
+           && !thrown->waiting_for);
+    assert(returned->data_stack == &returned->completion_stack
+           && thrown->data_stack == &thrown->completion_stack);
+    assert(returned->completion_stack.size == 1 && thrown->completion_stack.size == 0);
+    assert(returned->completion_value && returned->completion_value->vtbl->type == TYPE_ARRAY);
+    assert(thrown->failure_observed && thrown->exception.value && thrown->exception.trace);
+    assert(thrown->exception.value->vtbl->type == TYPE_ARRAY);
+    object_array_t result = get_array_elements(returned->completion_value);
+    object_array_t payload = get_array_elements(thrown->exception.value);
+    assert(result.size == 1 && get_object_integer_value(result.items[0]).value == 71345);
+    assert(payload.size == 1 && get_object_integer_value(payload.items[0]).value == 91736);
+    assert(exception_trace_size(thrown->exception.trace) > 0);
+}
+
 int main(int argc, char **argv) {
     fs_error_t argument_error = {0};
     assert(fs_arguments(&argc, &argv, &argument_error));
     assert(argc == 2 || argc == 3);
     bool memory_mode = argc == 3;
+    bool publication_mode = memory_mode && argv[2][0] == 'p';
     no_join_mode = memory_mode && argv[2][0] == 'n';
     module_sources_t *sources = NULL;
     module_sources_error_t source_error = {0};
@@ -416,9 +440,16 @@ int main(int argc, char **argv) {
            == MSTAT_OK);
     if (memory_mode)
         install_memory_builtins(module_file_scope(module_files_main(files)));
+    gc_stats_t stats;
+    if (publication_mode)
+        assert(configure_gc_statistics(process, &stats));
     int status = run_module_file(process, module_files_main(files));
     assert(!process->active_threads);
-    if (memory_mode && argv[2][0] == 'u') {
+    if (publication_mode) {
+        assert(status == 0 && stats.collections == 1 && stats.run_end_collections == 1
+               && !stats.explicit_collections);
+        check_published_worker_outcomes(process);
+    } else if (memory_mode && argv[2][0] == 'u') {
         assert(status == 1 && process->main_thread->exception.value
                && process->main_thread->exception.trace);
         assert(process->main_thread->next->failure_observed

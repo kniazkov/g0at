@@ -1,0 +1,6 @@
+const returned = spawn(func() { return [71345]; });
+const failed = spawn(func() { throw [91736]; });
+if (join(returned)[0] != 71345 || join(returned)[0] != 71345) throw "wrong result";
+var caught = false;
+try { join(failed); } catch (e) { caught = e[0] == 91736; }
+if (!caught) throw "wrong exception";
