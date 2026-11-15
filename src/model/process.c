@@ -78,6 +78,35 @@ static void destroy_all_objects_in_the_list(object_list_t *list) {
     }
 }
 
+bool try_pool_object(object_list_t *pool, object_t *object, size_t bytes) {
+    process_t *process = object->process;
+    assert(process->pooled_bytes <= GOAT_POOL_BYTE_LIMIT);
+    if (pool->size >= GOAT_POOL_TYPE_LIMIT || bytes > GOAT_POOL_BYTE_LIMIT - process->pooled_bytes)
+        return false;
+    add_object_to_list(pool, object);
+    process->pooled_bytes += bytes;
+    return true;
+}
+
+void remove_pooled_object(object_list_t *pool, object_t *object, size_t bytes) {
+    assert(object->process->pooled_bytes >= bytes);
+    remove_object_from_list(pool, object);
+    object->process->pooled_bytes -= bytes;
+}
+
+size_t trim_process_object_pools(process_t *process) {
+    size_t released = process->pooled_bytes;
+    object_list_t *pools[] = {&process->integers,
+                              &process->real_numbers,
+                              &process->dynamic_strings,
+                              &process->user_defined_objects,
+                              &process->characters};
+    for (size_t i = 0; i < sizeof(pools) / sizeof(*pools); ++i)
+        destroy_all_objects_in_the_list(pools[i]);
+    assert(!process->pooled_bytes);
+    return released;
+}
+
 void destroy_process(process_t *process) {
     assert(!process->destroying && !process->draining_releases && !process->pending_releases
            && !process->gc_collecting);
@@ -89,11 +118,7 @@ void destroy_process(process_t *process) {
     release_module_identity(process->launch_module);
     clear_gc_roots(process);
     destroy_all_objects_in_the_list(&process->objects);
-    destroy_all_objects_in_the_list(&process->integers);
-    destroy_all_objects_in_the_list(&process->real_numbers);
-    destroy_all_objects_in_the_list(&process->dynamic_strings);
-    destroy_all_objects_in_the_list(&process->user_defined_objects);
-    destroy_all_objects_in_the_list(&process->characters);
+    trim_process_object_pools(process);
     destroy_module_files(process);
     FREE(process->string_cache);
     release_module_identity(process->module);

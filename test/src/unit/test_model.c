@@ -23,6 +23,7 @@
 #include "vm/vm.h"
 
 #include <stdio.h>
+#include <time.h>
 
 /** @brief Creates a test bytecode sequence. */
 static bytecode_t *create_test_bytecode(instruction_t *list, int count) {
@@ -1376,5 +1377,163 @@ bool test_checked_gc_refcounts(void) {
         ASSERT(proc->objects.size == live && proc->integers.size == 1);
     }
     destroy_process(proc);
+    return true;
+}
+
+enum { LARGE_OBJECTS = 24, LARGE_FIELDS = 1024, LARGE_PROTOTYPES = 96 };
+
+/** @brief Populates all four user-object vectors with more than a warm shell should keep. */
+static bool fill_large_pool_workload(process_t *proc, object_t **objects) {
+    object_t *prototype = get_root_object();
+    object_t *parents[LARGE_PROTOTYPES];
+    for (size_t i = 0; i < LARGE_PROTOTYPES; ++i)
+        parents[i] = create_user_defined_object(proc, (object_array_t){&prototype, 1});
+    for (size_t i = 0; i < LARGE_OBJECTS; ++i) {
+        objects[i] = create_user_defined_object(proc, (object_array_t){parents, LARGE_PROTOTYPES});
+        for (size_t j = 0; j < LARGE_FIELDS; ++j) {
+            object_t *key = create_integer_object(proc, 3000 + (int64_t)j);
+            model_status_t status =
+                create_object_property(objects[i], key, get_null_object(), true);
+            DECREF(key);
+            if (status != MSTAT_OK)
+                return false;
+        }
+    }
+    for (size_t i = 0; i < LARGE_PROTOTYPES; ++i)
+        DECREF(parents[i]);
+    return true;
+}
+
+bool test_gc_pool_budget(void) {
+    size_t begin = get_allocated_memory_size();
+    process_t *proc = create_process();
+    ASSERT(proc);
+    object_t *live = create_integer_object(proc, 734567);
+    object_t *objects[LARGE_OBJECTS];
+    ASSERT(fill_large_pool_workload(proc, objects));
+    size_t occupied = get_allocated_memory_size();
+    for (size_t i = 0; i < LARGE_OBJECTS; ++i)
+        DECREF(objects[i]);
+    ASSERT(occupied - get_allocated_memory_size() > 1024 * 1024);
+    ASSERT(proc->user_defined_objects.size > 0 && proc->pooled_bytes <= GOAT_POOL_BYTE_LIMIT);
+    object_t *reused_shell = proc->user_defined_objects.head;
+    size_t previously_pooled = proc->pooled_bytes;
+    object_t *root = get_root_object();
+    object_t *reused = create_user_defined_object(proc, (object_array_t){&root, 1});
+    ASSERT(reused == reused_shell && get_object_keys(reused).size == 0
+           && get_object_prototypes(reused).size == 1 && proc->pooled_bytes < previously_pooled);
+    DECREF(reused);
+
+    /* A full real pool stays bounded even when the integer pool is empty. */
+    trim_process_object_pools(proc);
+
+    enum { EXTRA = 17 };
+
+    object_t *reals[GOAT_POOL_TYPE_LIMIT + EXTRA];
+    for (size_t i = 0; i < GOAT_POOL_TYPE_LIMIT + EXTRA; ++i)
+        reals[i] = create_real_number_object(proc, 500.25 + (double)i);
+    for (size_t i = 0; i < GOAT_POOL_TYPE_LIMIT + EXTRA; ++i)
+        DECREF(reals[i]);
+    ASSERT(!proc->integers.size && proc->real_numbers.size == GOAT_POOL_TYPE_LIMIT);
+
+    /* Include each scalar type in exact trim accounting. */
+    object_t *integer = create_integer_object(proc, 734568);
+    object_t *character = create_character_object(proc, U'界');
+    object_t *string = create_string_object(proc, STATIC_STRING(U"pool-budget"));
+    DECREF(integer);
+    DECREF(character);
+    DECREF(string);
+    ASSERT(proc->integers.size && proc->characters.size && proc->dynamic_strings.size);
+
+    /* Saturate the byte limit with retained warm vectors across different types. */
+    object_t **holders = ALLOC(GOAT_POOL_TYPE_LIMIT * sizeof(*holders));
+    for (size_t i = 0; i < GOAT_POOL_TYPE_LIMIT; ++i) {
+        holders[i] = create_user_defined_object(proc, (object_array_t){&root, 1});
+        for (size_t j = 0; j < GOAT_POOL_VECTOR_SLOT_LIMIT; ++j) {
+            object_t *key = get_static_integer_object((int)j);
+            ASSERT(create_object_property(holders[i], key, get_null_object(), true) == MSTAT_OK);
+        }
+    }
+    for (size_t i = 0; i < GOAT_POOL_TYPE_LIMIT; ++i)
+        DECREF(holders[i]);
+    FREE(holders);
+    ASSERT(proc->user_defined_objects.size > 0
+           && proc->user_defined_objects.size < GOAT_POOL_TYPE_LIMIT);
+    ASSERT(proc->pooled_bytes <= GOAT_POOL_BYTE_LIMIT && proc->pooled_bytes > 400 * 1024);
+
+    size_t before_trim = get_allocated_memory_size();
+    size_t expected = proc->pooled_bytes;
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    allocation_fault_start(1);
+#endif
+    size_t released = trim_process_object_pools(proc);
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    size_t attempts = allocation_fault_stop();
+    ASSERT(!attempts && !allocation_fault_triggered());
+#endif
+    ASSERT(released == expected && before_trim - get_allocated_memory_size() == released);
+    ASSERT(!proc->pooled_bytes && !proc->user_defined_objects.size && !proc->real_numbers.size
+           && !proc->integers.size && !proc->characters.size && !proc->dynamic_strings.size);
+    ASSERT(get_object_integer_value(live).value == 734567 && trim_process_object_pools(proc) == 0);
+    DECREF(live);
+    destroy_process(proc);
+    ASSERT(get_allocated_memory_size() == begin);
+    return true;
+}
+
+bool test_gc_pool_benchmark(void) {
+    enum { ITERATIONS = 100000 };
+
+    size_t begin = get_allocated_memory_size();
+    process_t *proc = create_process();
+    ASSERT(proc);
+    size_t before = get_allocated_memory_size();
+    object_t *large[LARGE_OBJECTS];
+    ASSERT(fill_large_pool_workload(proc, large));
+    size_t peak = get_allocated_memory_size() - before;
+    for (size_t i = 0; i < LARGE_OBJECTS; ++i)
+        DECREF(large[i]);
+    size_t retained = get_allocated_memory_size() - before;
+    size_t trimmed = trim_process_object_pools(proc);
+
+    /* Use a fresh process for the small benchmark on both runtimes. */
+    destroy_process(proc);
+    proc = create_process();
+    ASSERT(proc);
+    object_t *root = get_root_object();
+    object_t *key = get_static_integer_object(0);
+    for (size_t warm = 0; warm < 32; ++warm) {
+        object_t *object = create_user_defined_object(proc, (object_array_t){&root, 1});
+        ASSERT(create_object_property(object, key, get_null_object(), true) == MSTAT_OK);
+        DECREF(object);
+    }
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    allocation_fault_start(SIZE_MAX);
+#endif
+    clock_t started = clock();
+    for (size_t i = 0; i < ITERATIONS; ++i) {
+        object_t *object = create_user_defined_object(proc, (object_array_t){&root, 1});
+        object_t *value = create_integer_object(proc, 734567);
+        ASSERT(create_object_property(object, key, value, true) == MSTAT_OK);
+        DECREF(value);
+        DECREF(object);
+    }
+    double elapsed = (double)(clock() - started) / CLOCKS_PER_SEC;
+#ifdef GOAT_TEST_ALLOC_FAILURE
+    size_t allocations = allocation_fault_stop();
+    ASSERT(!allocation_fault_triggered());
+#else
+    size_t allocations = 0; /* Counter disabled in builds without allocation instrumentation. */
+#endif
+    printf("large_peak=%zu large_retained=%zu trimmed=%zu small_iterations=%d "
+           "small_allocations=%zu small_cpu_seconds=%.6f\n",
+           peak,
+           retained,
+           trimmed,
+           ITERATIONS,
+           allocations,
+           elapsed);
+    destroy_process(proc);
+    ASSERT(get_allocated_memory_size() == begin);
     return true;
 }

@@ -16,14 +16,6 @@
 #include <stdio.h>
 
 /**
- * @brief Defines the maximum capacity of the object pool.
- *
- * Sets the maximum number of objects that can be stored in the object pool before it reaches its
- * capacity.
- */
-#define POOL_CAPACITY 1024
-
-/**
  * @brief A static real number object.
  *
  * Static real numbers are used for mathematical constants and other immutable floating-point values
@@ -45,13 +37,12 @@ typedef struct {
 /** @brief Releases or clears a dynamic real number object. */
 static void release_or_clear(object_dynamic_real_t *drobj) {
     remove_object_from_list(&drobj->base.process->objects, &drobj->base);
-    if (drobj->base.process->integers.size == POOL_CAPACITY) {
+    if (!try_pool_object(&drobj->base.process->real_numbers, &drobj->base, sizeof(*drobj))) {
         FREE(drobj);
     } else {
         drobj->refs = 0;
         drobj->state = ZOMBIE;
         drobj->value = 0;
-        add_object_to_list(&drobj->base.process->real_numbers, &drobj->base);
     }
 }
 
@@ -102,9 +93,10 @@ static bool sweep(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_dynamic_real_t *diobj = (object_dynamic_real_t *)obj;
-    remove_object_from_list(diobj->state == ZOMBIE ? &obj->process->real_numbers
-                                                   : &obj->process->objects,
-                            obj);
+    if (diobj->state == ZOMBIE)
+        remove_pooled_object(&obj->process->real_numbers, obj, sizeof(object_dynamic_real_t));
+    else
+        remove_object_from_list(&obj->process->objects, obj);
     FREE(obj);
 }
 
@@ -355,7 +347,8 @@ static object_vtbl_t dynamic_vtbl = {.type = TYPE_NUMBER,
 object_t *create_real_number_object(process_t *process, double value) {
     object_dynamic_real_t *obj;
     if (process->real_numbers.size > 0) {
-        obj = (object_dynamic_real_t *)remove_first_object_from_list(&process->real_numbers);
+        obj = (object_dynamic_real_t *)process->real_numbers.head;
+        remove_pooled_object(&process->real_numbers, &obj->base, sizeof(*obj));
     } else {
         obj = (object_dynamic_real_t *)CALLOC(sizeof(object_dynamic_real_t));
         obj->base.vtbl = &dynamic_vtbl;

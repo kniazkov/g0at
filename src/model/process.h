@@ -22,6 +22,11 @@ typedef struct thread_t thread_t;
 typedef struct module_t module_t;
 typedef struct gc_root_slot_t gc_root_slot_t;
 
+/** @brief Limits apply to retained Goat allocator payload per process, not RSS. */
+#define GOAT_POOL_BYTE_LIMIT ((size_t)512 * 1024)
+#define GOAT_POOL_TYPE_LIMIT ((size_t)1024)
+#define GOAT_POOL_VECTOR_SLOT_LIMIT ((size_t)64)
+
 /** @brief A process in Goat. */
 struct process_t {
     /** @brief Short recursive model lock; never retained across user blocking waits. */
@@ -79,6 +84,9 @@ struct process_t {
     /** @brief Pool of character objects managed by the process. */
     object_list_t characters;
 
+    /** @brief Retained payload bytes across all five object pools. */
+    size_t pooled_bytes;
+
     /** @brief Cache of strings used during the execution of the process. */
     object_t **string_cache;
 
@@ -107,6 +115,18 @@ process_t *create_process();
 
 /** @brief Enqueues a DYING graph object and drains at the outermost release boundary. */
 void enqueue_last_ref_release(object_t *obj);
+
+/** @brief Try to admit a detached, already cleaned shell under both pool limits. */
+bool try_pool_object(object_list_t *pool, object_t *object, size_t bytes);
+
+/** @brief Remove a pooled shell for reuse or destruction and subtract its full payload. */
+void remove_pooled_object(object_list_t *pool, object_t *object, size_t bytes);
+
+/** @brief Drop all inactive pooled shells; returns allocator payload bytes released.
+ * Requires the process execution lock or exclusive access. Never touches live objects,
+ * runs collection, or allocates. An empty trim returns zero.
+ */
+size_t trim_process_object_pools(process_t *process);
 
 /** @brief Destroys a process and frees all its resources, including threads and objects. */
 void destroy_process(process_t *process);

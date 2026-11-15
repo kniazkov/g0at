@@ -14,14 +14,6 @@
 
 #include <assert.h>
 
-/**
- * @brief Defines the maximum capacity of the object pool.
- *
- * Sets the maximum number of objects that can be stored in the object pool before it reaches its
- * capacity.
- */
-#define POOL_CAPACITY 1024
-
 /** @brief A dynamic character object. */
 typedef struct {
     object_t base;        ///< The base object that provides common functionality.
@@ -33,13 +25,12 @@ typedef struct {
 /** @brief Releases or clears a dynamic character object. */
 static void release_or_clear(object_dynamic_character_t *diobj) {
     remove_object_from_list(&diobj->base.process->objects, &diobj->base);
-    if (diobj->base.process->characters.size == POOL_CAPACITY) {
+    if (!try_pool_object(&diobj->base.process->characters, &diobj->base, sizeof(*diobj))) {
         FREE(diobj);
     } else {
         diobj->refs = 0;
         diobj->state = ZOMBIE;
         diobj->value = 0;
-        add_object_to_list(&diobj->base.process->characters, &diobj->base);
     }
 }
 
@@ -90,9 +81,10 @@ static bool sweep(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_dynamic_character_t *diobj = (object_dynamic_character_t *)obj;
-    remove_object_from_list(diobj->state == ZOMBIE ? &obj->process->characters
-                                                   : &obj->process->objects,
-                            obj);
+    if (diobj->state == ZOMBIE)
+        remove_pooled_object(&obj->process->characters, obj, sizeof(object_dynamic_character_t));
+    else
+        remove_object_from_list(&obj->process->objects, obj);
     FREE(obj);
 }
 
@@ -269,7 +261,8 @@ static object_vtbl_t character_vtbl = {.type = TYPE_CHARACTER,
 object_t *create_character_object(process_t *process, uint32_t value) {
     object_dynamic_character_t *obj;
     if (process->characters.size > 0) {
-        obj = (object_dynamic_character_t *)remove_first_object_from_list(&process->characters);
+        obj = (object_dynamic_character_t *)process->characters.head;
+        remove_pooled_object(&process->characters, &obj->base, sizeof(*obj));
     } else {
         obj = (object_dynamic_character_t *)CALLOC(sizeof(object_dynamic_character_t));
         obj->base.vtbl = &character_vtbl;

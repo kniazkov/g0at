@@ -158,3 +158,9 @@ bool test_iterative_last_ref_release(void);
 bool test_owning_gc_roots(void);
 /** @brief Checks detached reference-count boundaries and ordinary pool reuse. */
 bool test_checked_gc_refcounts(void);
+
+/** @brief Checks exact retained pool bytes and explicit trim without allocation. */
+bool test_gc_pool_budget(void);
+
+/** @brief Reports the reproducible large/small pool workload, without speed gates. */
+bool test_gc_pool_benchmark(void);
