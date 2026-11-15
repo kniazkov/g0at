@@ -132,6 +132,8 @@ gc_root_handle_t register_gc_root(process_t *proc, object_t *obj) {
     /* Never allow a stale token to alias a slot reused after serial wrap. */
     if (proc->gc_root_serial == UINT64_MAX)
         abort();
+    /* Validate the strong count before changing any slot or free-list bookkeeping. */
+    INCREF(obj);
     size_t index;
     if (proc->gc_roots_free) {
         index = proc->gc_roots_free - 1;
@@ -149,7 +151,6 @@ gc_root_handle_t register_gc_root(process_t *proc, object_t *obj) {
         }
         index = proc->gc_roots_used++;
     }
-    INCREF(obj);
     uint64_t serial = ++proc->gc_root_serial;
     proc->gc_roots[index] = (gc_root_slot_t){obj, serial, 0};
     ++proc->gc_roots_size;

@@ -922,3 +922,4 @@ goat_suite(core.gc_sweep "core;gc-sweep" $<TARGET_FILE:unit_testing> --gc-sweep-
 goat_suite(core.gc_mark "core;gc-mark" $<TARGET_FILE:unit_testing> --gc-mark-tests)
 goat_suite(core.gc_release "core;gc-release" $<TARGET_FILE:unit_testing> --gc-release-tests)
 goat_suite(core.gc_roots "core;gc-roots" $<TARGET_FILE:unit_testing> --gc-root-tests)
+goat_suite(core.gc_refcounts "core;gc-refcounts" $<TARGET_FILE:unit_testing> --gc-refcount-tests)

@@ -156,3 +156,5 @@ bool test_gc_iterative_mark(void);
 bool test_iterative_last_ref_release(void);
 /** @brief Verifies independent owning roots, geometric growth and process shutdown. */
 bool test_owning_gc_roots(void);
+/** @brief Checks detached reference-count boundaries and ordinary pool reuse. */
+bool test_checked_gc_refcounts(void);

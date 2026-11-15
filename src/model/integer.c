@@ -5,6 +5,7 @@
  */
 
 #include "common_methods.h"
+#include "gc_refcount.h"
 #include "lib/memory/allocate.h"
 #include "lib/numbers/bitwise.h"
 #include "lib/numbers/integer_math.h"
@@ -35,7 +36,7 @@ typedef struct {
 /** @brief A dynamic integer object. */
 typedef struct {
     object_t base;        ///< The base object that provides common functionality.
-    int refs;             ///< Reference count.
+    gc_refcount_t refs;   ///< Reference count.
     object_state_t state; ///< The state of the object (e.g., unmarked, marked, or zombie).
     int64_t value;        ///< The integer value of the object.
 } object_dynamic_integer_t;
@@ -57,14 +58,14 @@ static void release_or_clear(object_dynamic_integer_t *diobj) {
 static void inc_ref(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     assert(diobj->state != ZOMBIE);
-    diobj->refs++;
+    retain_gc_ref(&diobj->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::dec_ref. */
 static void dec_ref(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     assert(diobj->state != ZOMBIE);
-    if (!(--diobj->refs)) {
+    if (release_gc_ref(&diobj->refs)) {
         release_or_clear(diobj);
     }
 }
@@ -80,11 +81,8 @@ static void mark(object_t *obj, object_t **pending) {
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
 static void drop_marked_reference(object_t *obj) {
     object_dynamic_integer_t *integer = (object_dynamic_integer_t *)obj;
-    if (integer->state == MARKED) {
-        assert(integer->refs > 1);
-        if (integer->refs > 1)
-            --integer->refs;
-    }
+    if (integer->state == MARKED)
+        drop_swept_gc_ref(&integer->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::sweep. */

@@ -9,6 +9,7 @@
 #include "builtin_function.h"
 #include "common_methods.h"
 #include "context.h"
+#include "gc_refcount.h"
 #include "lib/memory/allocate.h"
 #include "lib/wire/wire.h"
 #include "module_files.h"
@@ -157,7 +158,7 @@ typedef struct {
     object_t base;
 
     /** @brief Reference count used for garbage collection. */
-    int refs;
+    gc_refcount_t refs;
 
     /** @brief The state of the object (unmarked, marked, zombie, or dying). */
     object_state_t state;
@@ -210,13 +211,13 @@ static void clear(object_dynamic_function_t *dfobj, bool deep_cleaning) {
 /** @brief Implements @ref object_vtbl_t::inc_ref. */
 static void inc_ref(object_t *obj) {
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
-    dfobj->refs++;
+    retain_gc_ref(&dfobj->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::dec_ref. */
 static void dec_ref(object_t *obj) {
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
-    if (dfobj->state == DYING || --dfobj->refs)
+    if (dfobj->state == DYING || !release_gc_ref(&dfobj->refs))
         return;
     dfobj->state = DYING;
     enqueue_last_ref_release(obj);
@@ -257,11 +258,8 @@ static void visit_edges(object_t *obj, gc_edge_visitor_t visit, void *data) {
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
 static void drop_marked_reference(object_t *obj) {
     object_dynamic_function_t *function = (object_dynamic_function_t *)obj;
-    if (function->state == MARKED) {
-        assert(function->refs > 1);
-        if (function->refs > 1)
-            --function->refs;
-    }
+    if (function->state == MARKED)
+        drop_swept_gc_ref(&function->refs);
 }
 
 /** @brief Reconciles each owned edge of a dead object once. */

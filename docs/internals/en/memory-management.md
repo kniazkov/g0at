@@ -15,6 +15,23 @@ they are not Goat heap objects merely because a live Goat value refers to them.
 make a tracing root. A live heap object must be reachable from one of the roots
 below when tracing runs.
 
+### Checked strong counts (GC-06)
+
+Dynamic integers, reals, characters, strings, arrays, user objects and
+functions use one 32-bit unsigned strong count under the execution lock
+(or exclusive ownership), not atomics. A new or reused object starts at one.
+Zero is reserved for inactive pooled shells or objects on the finalization
+path; it is not a retainable state. Retaining at the upper limit or
+retaining/releasing a zero live count terminates the process before modifying its
+count, in both Debug and Release. No count wraps or saturates. An already
+`DYING` graph object is skipped by the existing nested-release guard.
+
+Tracing reconciliation is not an ordinary `DECREF`: it removes an excess
+dead-source reference only while the marked target's count is greater than one
+and cannot trigger finalization. Static singletons have no managed count;
+module identities, native descriptors and other distinct resources keep
+their own counters and synchronization rules.
+
 ### External owning roots (GC-05)
 
 `register_gc_root(process, value)` owns a reference and publishes it as a root.

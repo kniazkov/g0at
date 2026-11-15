@@ -7,6 +7,7 @@
 #include "access.h"
 #include "common_methods.h"
 #include "context.h"
+#include "gc_refcount.h"
 #include "lib/collections/avl_tree.h"
 #include "lib/collections/vector.h"
 #include "lib/memory/allocate.h"
@@ -34,7 +35,7 @@ typedef struct {
     object_t base;
 
     /** @brief Reference count. */
-    int refs;
+    gc_refcount_t refs;
 
     /** @brief The state of the object (e.g., unmarked, marked, or zombie). */
     object_state_t state;
@@ -146,14 +147,14 @@ static void release_or_clear(object_user_defined_t *uobj, bool deep_cleaning) {
 static void inc_ref(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     assert(uobj->state != ZOMBIE);
-    uobj->refs++;
+    retain_gc_ref(&uobj->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::dec_ref. */
 static void dec_ref(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     assert(uobj->state != ZOMBIE);
-    if (uobj->state == DYING || --uobj->refs)
+    if (uobj->state == DYING || !release_gc_ref(&uobj->refs))
         return;
     uobj->state = DYING;
     enqueue_last_ref_release(obj);
@@ -196,11 +197,8 @@ static void visit_edges(object_t *obj, gc_edge_visitor_t visit, void *data) {
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
 static void drop_marked_reference(object_t *obj) {
     object_user_defined_t *user = (object_user_defined_t *)obj;
-    if (user->state == MARKED) {
-        assert(user->refs > 1);
-        if (user->refs > 1)
-            --user->refs;
-    }
+    if (user->state == MARKED)
+        drop_swept_gc_ref(&user->refs);
 }
 
 /** @brief Reconciles each owned edge of a dead object once. */
