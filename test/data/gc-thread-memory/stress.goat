@@ -1,0 +1,13 @@
+multiJoin();
+var first = null;
+for (var i = 0; i < 512; i++) {
+    const id = spawn(temporary);
+    if (i == 0) first = id;
+    if (!noJoin()) {
+        if (join(id) != 7 || join(id) != 7) throw "bad join";
+    }
+    sample(id);
+}
+if (join(first) != 7) throw "bad late join";
+const failed = spawn(func() { throw "retained trace"; });
+verifyFailure(failed);

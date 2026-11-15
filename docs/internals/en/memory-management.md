@@ -68,6 +68,27 @@ remain shallow: they do not drop already-swept object references. Weak
 self-fields still do not own their target. Module/domain/native resources
 are released by their existing cleanup paths.
 
+### Completed program workers (GC-07)
+
+A worker drops its context chain, operand stack and any queued callable before
+publishing completion under the execution lock. The record keeps its identity,
+successful return value (including object identity), or exception value and
+original trace, plus status, observation and native diagnostic counters.
+The existing stack-root walk sees the outcome via a fixed, inline zero/one-item
+view, not discarded execution state. Late, repeated and
+concurrent joins have the same outcome; a join does not consume it. Unobserved
+failures are still reported for the current execution. The host entry thread
+keeps its own scope and operand stack for the REPL and embedding APIs.
+
+Completed OS workers are reaped once, outside the model lock at a pre-existing
+VM scheduling transition, or during final shutdown. A worker completing after
+a transition is claimed at the next one; a long native segment with no such
+transition may delay reaping. Shutdown still waits for every descendant,
+including those created after entry finishes. The runtime keeps completion
+records and their results until process teardown; a lifetime bound would need
+a separate language/API decision, since thread identifiers carry no ownership
+and can be joined again at any later point.
+
 ## Audit of owners at a potential collection boundary
 
 | Owner / edge | What retains it | Tracing and release | Synchronization |
@@ -78,7 +99,7 @@ are released by their existing cleanup paths.
 | Entry scope for declaration reservation (`vm.c`) | `vm_execution_t.entry_scope` temporarily retains the launch scope | The prepared launch file scope is also held and marked by the process module table; clear reservation state after workers finish. The borrowed struct itself is not scanned | Execution lock |
 | Thread bootstrap slot and operand stack (`thread.c`, `vm.c`) | `start_function` owns the pending callable, the stack owns queued arguments and other values | Mark both independently. Under the lock the worker moves the slot into a C local, clears it, dispatches and drops ownership. Failed creation destroys the thread and releases slot/stack | Thread publication, worker takeover and execution share the model lock; the takeover sequence is not a new safe point |
 | Thread context chain (`context.c`, `access.c`) | Context owns its scope, immutable arguments, explicit receiver, pending return/throw value and lexical access snapshot | Mark scope, arguments, receiver, pending value and access lexical scopes/captured storage; destroy on unwind, frame exit or teardown. The immutable shared root context has no access snapshot to scan | Execution lock |
-| Thread exception and join state (`thread.c`, `vm.c`) | Thread owns the exception payload and trace; result remains on its stack | Mark the payload, not the separately managed trace. Finished records still keep their contexts/stacks/payloads until teardown; reducing retention is #549 | Execution lock; condition wait releases the lock |
+| Thread exception and join state (`thread.c`, `vm.c`) | An active thread owns its exception; a compact completion owns its result or exception and trace | Mark the payload or successful worker result, not the separate trace. No worker context or operand stack after completion; retain outcome for later joins and diagnostics | Execution lock; condition wait releases the lock |
 | Constructor snapshot (`init_snapshot.c`) | Context owns the snapshot and its handle for an immutable array of receiver and callables | Unregister on completion, unwind, or thread teardown; the registration owns the array | Execution lock |
 | StringBuilder storage (`string_builder.c`, `user_defined_object.c`) | The builder receiver owns the native Unicode buffer; clone/flat copy it, not its pointer | Raw character storage has no Goat edges to mark. Clear the buffer and pointer in object cleanup, including sweep and pooling. The published length is an ordinary traced field; a builder initializer captured by the constructor follows the snapshot row above | Receiver model operations share the execution lock |
 | Function and object graph (`function.c`, `array.c`, `user_defined_object.c`) | Functions retain closure, names and access captures; arrays retain elements; user objects retain prototypes and property edges per type contract | Object mark callbacks walk strong graph edges; normal last release drops owned edges. Pool list entries are not scanned as live values | Execution lock or exclusive host access |

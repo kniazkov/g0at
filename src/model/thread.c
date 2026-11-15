@@ -48,14 +48,26 @@ void destroy_thread(thread_t *thread) {
         if (thread->process->main_thread == thread)
             thread->process->main_thread = thread->next;
     }
-    context_t *root_context = get_root_context();
-    context_t *context = thread->context;
-    while (context != NULL && context != root_context) {
-        context = destroy_context(context);
-    }
+    discard_thread_work(thread);
     FREE(thread->native_diagnostic);
     clear_exception(&thread->exception);
-    DECREFIF(thread->start_function);
-    destroy_object_stack(thread->data_stack);
+    DECREFIF(thread->completion_value);
     FREE(thread);
+}
+
+void discard_thread_work(thread_t *thread) {
+    context_t *root_context = get_root_context();
+    while (thread->context && thread->context != root_context)
+        thread->context = destroy_context(thread->context);
+    thread->context = NULL;
+    if (thread->data_stack && thread->data_stack != &thread->completion_stack) {
+        while (thread->data_stack->size) {
+            object_t *value = pop_object_from_stack(thread->data_stack);
+            DECREF(value);
+        }
+        destroy_object_stack(thread->data_stack);
+    }
+    thread->data_stack = NULL;
+    DECREFIF(thread->start_function);
+    thread->start_function = NULL;
 }
