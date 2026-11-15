@@ -58,6 +58,11 @@ int main(int argc, char **argv) {
     if (cleanup_service_main(argc, argv, &cleanup_code))
         return cleanup_code;
     init_unicode_locale();
+    if (argc == 2 && !strcmp(argv[1], "--gc-refcount-tests")) {
+        size_t before = get_allocated_memory_size();
+        bool success = test_checked_gc_refcounts();
+        return success && get_allocated_memory_size() == before ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
     if (argc == 2 && !strcmp(argv[1], "--gc-root-tests"))
         return test_owning_gc_roots() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 2 && !strcmp(argv[1], "--gc-release-tests")) {

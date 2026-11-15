@@ -5,6 +5,7 @@
  */
 
 #include "common_methods.h"
+#include "gc_refcount.h"
 #include "lib/memory/allocate.h"
 #include "lib/strings/string_ext.h"
 #include "object.h"
@@ -24,7 +25,7 @@
 /** @brief A dynamic character object. */
 typedef struct {
     object_t base;        ///< The base object that provides common functionality.
-    int refs;             ///< Reference count.
+    gc_refcount_t refs;   ///< Reference count.
     object_state_t state; ///< The state of the object (e.g., unmarked, marked, or zombie).
     uint32_t value;       ///< The Unicode code point of the character.
 } object_dynamic_character_t;
@@ -46,14 +47,14 @@ static void release_or_clear(object_dynamic_character_t *diobj) {
 static void inc_ref(object_t *obj) {
     object_dynamic_character_t *diobj = (object_dynamic_character_t *)obj;
     assert(diobj->state != ZOMBIE);
-    diobj->refs++;
+    retain_gc_ref(&diobj->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::dec_ref. */
 static void dec_ref(object_t *obj) {
     object_dynamic_character_t *diobj = (object_dynamic_character_t *)obj;
     assert(diobj->state != ZOMBIE);
-    if (!(--diobj->refs)) {
+    if (release_gc_ref(&diobj->refs)) {
         release_or_clear(diobj);
     }
 }
@@ -69,11 +70,8 @@ static void mark(object_t *obj, object_t **pending) {
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
 static void drop_marked_reference(object_t *obj) {
     object_dynamic_character_t *character = (object_dynamic_character_t *)obj;
-    if (character->state == MARKED) {
-        assert(character->refs > 1);
-        if (character->refs > 1)
-            --character->refs;
-    }
+    if (character->state == MARKED)
+        drop_swept_gc_ref(&character->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::sweep. */

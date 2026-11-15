@@ -25,13 +25,13 @@ static void release(object_t *obj) {
 
 /** @brief Retains an array. */
 static void inc_ref(object_t *obj) {
-    ((array_object_t *)obj)->refs++;
+    retain_gc_ref(&((array_object_t *)obj)->refs);
 }
 
 /** @brief Releases owned values when the last reference disappears. */
 static void dec_ref(object_t *obj) {
     array_object_t *array = (array_object_t *)obj;
-    if (array->state == DYING || --array->refs)
+    if (array->state == DYING || !release_gc_ref(&array->refs))
         return;
     array->state = DYING;
     enqueue_last_ref_release(obj);
@@ -74,11 +74,8 @@ static void visit_edges(object_t *obj, gc_edge_visitor_t visit, void *data) {
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
 static void drop_marked_reference(object_t *obj) {
     array_object_t *array = (array_object_t *)obj;
-    if (array->state == MARKED) {
-        assert(array->refs > 1);
-        if (array->refs > 1)
-            --array->refs;
-    }
+    if (array->state == MARKED)
+        drop_swept_gc_ref(&array->refs);
 }
 
 /** @brief Reconciles each owned edge of a dead object once. */

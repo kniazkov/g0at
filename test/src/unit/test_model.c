@@ -12,6 +12,7 @@
 #include "lib/threads/os_thread.h"
 #include "model/builtin_function.h"
 #include "model/context.h"
+#include "model/gc_refcount.h"
 #include "model/native_continuation_descriptor.h"
 #include "model/object.h"
 #include "model/process.h"
@@ -1339,5 +1340,41 @@ bool test_owning_gc_roots(void) {
     destroy_process(proc);
     ASSERT(probe.releases == 1 && probe.registration_closed
            && get_allocated_memory_size() == allocated_before);
+    return true;
+}
+
+bool test_checked_gc_refcounts(void) {
+    /* Exercise boundary arithmetic on detached counters, not fabricated live objects. */
+    gc_refcount_t count = 0;
+    ASSERT(!try_retain_gc_ref(&count) && count == 0);
+    ASSERT(try_release_gc_ref(&count) == GC_REFCOUNT_INVALID && count == 0);
+    ASSERT(!drop_swept_gc_ref(&count) && count == 0);
+
+    count = UINT32_MAX - 1;
+    ASSERT(try_retain_gc_ref(&count) && count == UINT32_MAX);
+    ASSERT(!try_retain_gc_ref(&count) && count == UINT32_MAX);
+    ASSERT(try_release_gc_ref(&count) == GC_REFCOUNT_LIVE && count == UINT32_MAX - 1);
+
+    count = 1;
+    ASSERT(!drop_swept_gc_ref(&count) && count == 1);
+    retain_gc_ref(&count);
+    ASSERT(count == 2 && drop_swept_gc_ref(&count) && count == 1);
+    ASSERT(release_gc_ref(&count) && count == 0);
+
+    /* Normal pooled shells become active again before they can be retained. */
+    process_t *proc = create_process();
+    ASSERT(proc);
+    size_t live = proc->objects.size;
+    for (size_t i = 0; i < 32; ++i) {
+        object_t *obj = create_integer_object(proc, 456789);
+        gc_root_handle_t root = register_gc_root(proc, obj);
+        ASSERT(root.serial && proc->objects.size == live + 1);
+        DECREF(obj);
+        collect_garbage(proc);
+        ASSERT(get_object_integer_value(obj).value == 456789);
+        ASSERT(unregister_gc_root(proc, root));
+        ASSERT(proc->objects.size == live && proc->integers.size == 1);
+    }
+    destroy_process(proc);
     return true;
 }

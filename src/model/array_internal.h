@@ -3,6 +3,7 @@
  * @brief Internal array storage and operations; not part of the native ABI.
  */
 #pragma once
+#include "gc_refcount.h"
 #include "object.h"
 #include "object_state.h"
 
@@ -10,7 +11,7 @@
 typedef struct {
     object_t base;        /**< Object header. */
     bool read_only;       /**< Rejects every element mutation, including empty operations. */
-    size_t refs;          /**< Strong reference count. */
+    gc_refcount_t refs;   /**< Strong reference count. */
     object_state_t state; /**< Tracing/destruction state. */
     object_t *gc_next;    /**< Transient link for marking or last-owner release. */
     object_t **items;     /**< Owned element references. */

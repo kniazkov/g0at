@@ -4,6 +4,7 @@
  * @brief Implementation of an object representing a real number.
  */
 #include "common_methods.h"
+#include "gc_refcount.h"
 #include "lib/memory/allocate.h"
 #include "lib/strings/string_ext.h"
 #include "object.h"
@@ -36,7 +37,7 @@ typedef struct {
 /** @brief A dynamic real number object. */
 typedef struct {
     object_t base;        ///< The base object that provides common functionality.
-    int refs;             ///< Reference count for garbage collection.
+    gc_refcount_t refs;   ///< Reference count for garbage collection.
     object_state_t state; ///< The state of the object (unmarked, marked, or zombie).
     double value;         ///< The double-precision floating-point value of the object.
 } object_dynamic_real_t;
@@ -58,14 +59,14 @@ static void release_or_clear(object_dynamic_real_t *drobj) {
 static void inc_ref(object_t *obj) {
     object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
     assert(drobj->state != ZOMBIE);
-    drobj->refs++;
+    retain_gc_ref(&drobj->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::dec_ref. */
 static void dec_ref(object_t *obj) {
     object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
     assert(drobj->state != ZOMBIE);
-    if (!(--drobj->refs)) {
+    if (release_gc_ref(&drobj->refs)) {
         release_or_clear(drobj);
     }
 }
@@ -81,11 +82,8 @@ static void mark(object_t *obj, object_t **pending) {
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
 static void drop_marked_reference(object_t *obj) {
     object_dynamic_real_t *real = (object_dynamic_real_t *)obj;
-    if (real->state == MARKED) {
-        assert(real->refs > 1);
-        if (real->refs > 1)
-            --real->refs;
-    }
+    if (real->state == MARKED)
+        drop_swept_gc_ref(&real->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::sweep. */

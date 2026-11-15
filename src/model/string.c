@@ -5,6 +5,7 @@
  */
 
 #include "common_methods.h"
+#include "gc_refcount.h"
 #include "lib/collections/comparison.h"
 #include "lib/memory/allocate.h"
 #include "lib/strings/string_ext.h"
@@ -30,7 +31,7 @@
  */
 typedef struct {
     object_t base;        ///< The base object that provides common functionality.
-    int refs;             ///< Reference count used for garbage collection.
+    gc_refcount_t refs;   ///< Reference count used for garbage collection.
     object_state_t state; ///< The state of the object (e.g., unmarked, marked, or zombie).
     string_view_t string; ///< The string.
 } object_dynamic_string_t;
@@ -58,14 +59,14 @@ static void release_or_clear(object_dynamic_string_t *dsobj) {
 static void inc_ref(object_t *obj) {
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
     assert(dsobj->state != ZOMBIE);
-    dsobj->refs++;
+    retain_gc_ref(&dsobj->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::dec_ref. */
 static void dec_ref(object_t *obj) {
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
     assert(dsobj->state != ZOMBIE);
-    if (!(--dsobj->refs)) {
+    if (release_gc_ref(&dsobj->refs)) {
         release_or_clear(dsobj);
     }
 }
@@ -81,11 +82,8 @@ static void mark(object_t *obj, object_t **pending) {
 /** @brief Subtracts a swept edge while a traced owner keeps the value alive. */
 static void drop_marked_reference(object_t *obj) {
     object_dynamic_string_t *string = (object_dynamic_string_t *)obj;
-    if (string->state == MARKED) {
-        assert(string->refs > 1);
-        if (string->refs > 1)
-            --string->refs;
-    }
+    if (string->state == MARKED)
+        drop_swept_gc_ref(&string->refs);
 }
 
 /** @brief Implements @ref object_vtbl_t::sweep. */
