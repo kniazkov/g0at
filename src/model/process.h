@@ -30,7 +30,8 @@ struct process_t {
     os_mutex_t *initialization_mutex;
     /** @brief Program-thread completion notification, guarded by execution_mutex. */
     os_condition_t *threads_changed;
-    size_t active_threads; /**< Unfinished program executions, including descendants. */
+    thread_t *finished_workers; /**< Completed workers whose OS handle needs reaping. */
+    size_t active_threads;      /**< Unfinished program executions, including descendants. */
     /** @brief Loader waiters, guarded by execution_mutex, for lifecycle diagnostics. */
     size_t initialization_waiters;
     struct vm_execution_t *execution; /**< Borrowed while the VM owns execution. */

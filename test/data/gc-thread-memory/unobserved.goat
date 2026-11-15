@@ -1,0 +1,1 @@
+spawn(func() { throw "unobserved worker error"; });

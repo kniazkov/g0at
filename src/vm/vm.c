@@ -50,6 +50,8 @@ struct vm_execution_t {
     bytecode_t *entry_code;
     object_t *entry_scope; /**< Retained standalone entry scope until all threads complete. */
     uint32_t entry_file;
+    thread_t
+        *first_worker; /**< First worker created during this run; earlier records stay joinable. */
     bool reservations_done;
 };
 
@@ -1899,6 +1901,30 @@ bool vm_run_native_continuation(thread_t *thread, const goat_native_continuation
     return false;
 }
 
+/** @brief Release the model lock at an existing scheduling transition and reap workers. */
+static void schedule_and_reap(process_t *process) {
+    thread_t *finished = process->finished_workers;
+    process->finished_workers = NULL;
+    size_t depth = process_execution_suspend(process);
+    /* The detached chain is private to this reaper; all its workers have published
+       completion. Their VM records outlive the reaper. No VM work occurs here. */
+    for (thread_t *thread = finished; thread; thread = thread->reap_next) {
+        os_thread_status_t joined = join_os_thread(thread->worker, NULL);
+        os_thread_status_t released = destroy_os_thread(thread->worker);
+        if (joined != OS_THREAD_OK || released != OS_THREAD_OK) {
+            FPUTS("FATAL: could not reap a finished Goat thread.\n", stderr);
+            abort();
+        }
+    }
+    process_execution_resume(process, depth);
+    while (finished) {
+        thread_t *next = finished->reap_next;
+        finished->worker = NULL;
+        finished->reap_next = NULL;
+        finished = next;
+    }
+}
+
 /** @brief Executes one thread; releases the model lock between instructions. */
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule) {
     (void)schedule;
@@ -1923,19 +1949,38 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
         flag = executors[instr.opcode](runtime, instr, thread);
         /* The initializer retains its own reentrant gate, not the model lock.
            Suspend all recursive entries, including an enclosing include handler. */
-        size_t depth = process_execution_suspend(thread->process);
-        process_execution_resume(thread->process, depth);
+        schedule_and_reap(thread->process);
     }
 }
 
 /** @brief Completes one equal program thread, with the model lock held. */
 static void complete_program_thread(thread_t *thread, int status) {
-    /* A host exit or backend failure can terminate without language unwinding.
-       No constructor can resume after thread completion; release its GC roots now. */
-    for (context_t *ctx = thread->context; ctx && ctx != get_root_context(); ctx = ctx->previous) {
-        destroy_init_snapshot(ctx->init_snapshot);
-        ctx->init_snapshot = NULL;
+    if (thread->program_worker) {
+        /* Only the successful top result belongs to the retained completion record.
+           Transfer this owned edge before dropping the working stack and contexts. */
+        if (!status && !thread->native_status && !thread->exception.value
+            && !thread->process->exit_requested && !thread->process->native_failed
+            && thread->data_stack->size)
+            thread->completion_value = pop_object_from_stack(thread->data_stack);
+        discard_thread_work(thread);
+        /* Reuse the existing GC stack-root enumeration with a fixed-size view.
+           The view owns no heap; completion_value is its only possible item. */
+        thread->completion_stack = (object_stack_t){.objects = &thread->completion_value,
+                                                    .size = thread->completion_value != NULL,
+                                                    .capacity = 1};
+        thread->data_stack = &thread->completion_stack;
+        thread->reap_next = thread->process->finished_workers;
+        thread->process->finished_workers = thread;
+    } else {
+        /* Entry context and stack are host-owned across runs (including the REPL).
+           Its constructors cannot resume after completion. */
+        for (context_t *ctx = thread->context; ctx && ctx != get_root_context();
+             ctx = ctx->previous) {
+            destroy_init_snapshot(ctx->init_snapshot);
+            ctx->init_snapshot = NULL;
+        }
     }
+    assert(!thread->waiting_for);
     thread->execution_status = status;
     thread->finished = true;
     assert(thread->process->active_threads);
@@ -2010,6 +2055,8 @@ operation_result_t spawn_program_thread(thread_t *caller,
         destroy_thread(thread);
         return operation_exception(get_exception_invalid_operation());
     }
+    if (!execution->first_worker)
+        execution->first_worker = thread;
     return operation_success(create_integer_object(process, (int64_t)thread->id));
 }
 
@@ -2043,8 +2090,11 @@ operation_result_t join_program_thread(thread_t *caller, uint64_t id) {
     }
     if (target->execution_status || target->native_status)
         return operation_exception(get_exception_invalid_operation());
-    object_t *value = target->data_stack->size ? peek_object_from_stack(target->data_stack, 0)
-                                               : get_null_object();
+    object_t *value = target->program_worker     ? target->completion_value
+                      : target->data_stack->size ? peek_object_from_stack(target->data_stack, 0)
+                                                 : NULL;
+    if (!value)
+        value = get_null_object();
     INCREF(value);
     return operation_success(value);
 }
@@ -2058,28 +2108,20 @@ static int finish_program_threads(process_t *process, thread_t *entry, int statu
         wait_os_condition(process->threads_changed, process->execution_mutex);
     if (entry->failure_observed && entry->exception.value && !entry->native_status)
         status = 0;
-    thread_t *thread = process->main_thread;
-    do {
-        bool participated = thread == entry || thread->worker != NULL;
-        if (thread->worker) {
-            size_t depth = process_execution_suspend(process);
-            join_os_thread(thread->worker, NULL);
-            destroy_os_thread(thread->worker);
-            process_execution_resume(process, depth);
-            thread->worker = NULL;
-        }
-        if (participated && thread != entry
-            && (thread->native_status
-                || ((thread->execution_status || thread->exception.value)
-                    && !thread->failure_observed))) {
+    if (process->finished_workers)
+        schedule_and_reap(process);
+    for (thread_t *thread = process->execution->first_worker; thread && thread != entry;
+         thread = thread->next) {
+        if (thread->native_status
+            || ((thread->execution_status || thread->exception.value)
+                && !thread->failure_observed)) {
             status = 1;
             if (!entry->exception.value && thread->exception.value) {
                 entry->exception = retain_exception(thread->exception);
                 thread->failure_observed = true;
             }
         }
-        thread = thread->next;
-    } while (thread != process->main_thread);
+    }
     if (process->native_failed)
         status = 1;
     DECREFIF(process->execution->entry_scope);

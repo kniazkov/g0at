@@ -137,10 +137,256 @@ static operation_result_t bootstrap(object_t **args, uint16_t count, thread_t *t
 static const builtin_function_t bootstrap_descriptor = {.name = U"bootstrap", .execute = bootstrap};
 static builtin_function_object_t bootstrap_object;
 
+enum { MEMORY_ITERATIONS = 512, TEMP_ITEMS = 64 * 1024 };
+
+static bool no_join_mode;
+static size_t observed_samples, peak_working_delta, first_live, last_live, first_rss, last_rss;
+static size_t last_records, last_os_handles, peak_os_handles;
+static bool allow_join_target;
+static thread_t *waiters[2];
+
+static size_t current_rss_kib(void) {
+#ifdef __linux__
+    FILE *status = fopen("/proc/self/status", "r");
+    if (!status)
+        return 0;
+    char line[256];
+    size_t rss = 0;
+    while (fgets(line, sizeof(line), status))
+        if (sscanf(line, "VmRSS: %zu kB", &rss) == 1)
+            break;
+    fclose(status);
+    return rss;
+#else
+    return 0; /* No portable resident byte counter; do not report a fake measurement. */
+#endif
+}
+
+static uint64_t take_thread_id(operation_result_t handle) {
+    assert(!handle.is_exception);
+    uint64_t id = (uint64_t)get_object_integer_value(handle.value).value;
+    DECREF(handle.value);
+    return id;
+}
+
+static thread_t *worker_by_id(thread_t *caller, uint64_t id) {
+    thread_t *worker = caller;
+    do {
+        if (worker->id == id)
+            return worker;
+        worker = worker->next;
+    } while (worker != caller);
+    assert(false);
+    return NULL;
+}
+
+static operation_result_t temporary_worker(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count);
+    size_t before = get_allocated_memory_size();
+    object_t **items = ALLOC(TEMP_ITEMS * sizeof(*items));
+    object_t *leaf = create_integer_object(thread->process, 456789);
+    for (size_t index = 0; index < TEMP_ITEMS; ++index)
+        items[index] = leaf;
+    object_t *array = create_array_object(thread->process, (object_array_t){items, TEMP_ITEMS});
+    FREE(items);
+    DECREF(leaf);
+    static object_static_string_t storage;
+    assert(create_object_property(thread->context->data,
+                                  get_static_string_object(&storage, U"working"),
+                                  array,
+                                  true)
+           == MSTAT_OK);
+    push_object_onto_stack(thread->data_stack, array); /* Transfers its owned reference. */
+    size_t delta = get_allocated_memory_size() - before;
+    if (delta > peak_working_delta)
+        peak_working_delta = delta;
+    return operation_success(get_static_integer_object(7));
+}
+
+static operation_result_t sample_memory(object_t **args, uint16_t count, thread_t *thread) {
+    assert(count == 1);
+    thread_t *target = worker_by_id(thread, (uint64_t)get_object_integer_value(args[0]).value);
+    if (no_join_mode) {
+        while (!target->finished)
+            assert(wait_os_condition(thread->process->threads_changed,
+                                     thread->process->execution_mutex)
+                   == OS_THREAD_OK);
+    }
+    assert(target->finished && !target->waiting_for && !target->context
+           && target->data_stack == &target->completion_stack);
+    assert(get_object_integer_value(target->completion_value).value == 7);
+    size_t handles = 0, records = 0;
+    for (thread_t *worker = thread->next; worker != thread; worker = worker->next) {
+        if (worker->finished) {
+            ++records;
+            handles += worker->worker != NULL;
+        }
+    }
+    /* In no-join mode the just-finished worker may be awaiting the next VM transition. */
+    assert(handles <= 1);
+    if (handles > peak_os_handles)
+        peak_os_handles = handles;
+    if (!observed_samples) {
+        first_live = get_allocated_memory_size();
+        first_rss = current_rss_kib();
+    }
+    ++observed_samples;
+    last_live = get_allocated_memory_size();
+    last_rss = current_rss_kib();
+    last_records = records;
+    last_os_handles = handles;
+    return operation_success(get_null_object());
+}
+
+static operation_result_t no_join(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    (void)thread;
+    assert(!count);
+    return operation_success(get_boolean_object(no_join_mode));
+}
+
+static operation_result_t shared_target(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count);
+    while (!allow_join_target)
+        assert(wait_os_condition(thread->process->threads_changed, thread->process->execution_mutex)
+               == OS_THREAD_OK);
+    object_t *value = create_integer_object(thread->process, 1234567);
+    object_t *array = create_array_object(thread->process, (object_array_t){&value, 1});
+    DECREF(value);
+    return operation_success(array);
+}
+
+static operation_result_t joint_waiter(object_t **args, uint16_t count, thread_t *thread) {
+    assert(count == 2);
+    uint64_t target = (uint64_t)get_object_integer_value(args[0]).value;
+    size_t slot = (size_t)get_object_integer_value(args[1]).value;
+    assert(slot < 2 && !waiters[slot]);
+    waiters[slot] = thread;
+    broadcast_os_condition(thread->process->threads_changed);
+    operation_result_t first = join_program_thread(thread, target);
+    operation_result_t second = join_program_thread(thread, target);
+    assert(!first.is_exception && !second.is_exception && first.value == second.value);
+    assert(get_object_integer_value(get_array_elements(first.value).items[0]).value == 1234567);
+    DECREF(second.value);
+    return first;
+}
+
+static const builtin_function_t shared_descriptor = {.name = U"shared", .execute = shared_target};
+static const builtin_function_t waiting_descriptor = {.name = U"waiting", .execute = joint_waiter};
+static builtin_function_object_t shared_object, waiting_object;
+
+static operation_result_t multi_join(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count);
+    uint64_t target = take_thread_id(
+        spawn_program_thread(thread,
+                             get_builtin_function_object(&shared_object, &shared_descriptor),
+                             NULL,
+                             0));
+    uint64_t ids[2];
+    object_t *target_id = create_integer_object(thread->process, (int64_t)target);
+    for (size_t index = 0; index < 2; ++index) {
+        object_t *arguments[] = {target_id, get_static_integer_object((int32_t)index)};
+        ids[index] = take_thread_id(
+            spawn_program_thread(thread,
+                                 get_builtin_function_object(&waiting_object, &waiting_descriptor),
+                                 arguments,
+                                 2));
+    }
+    DECREF(target_id);
+    thread_t *record = worker_by_id(thread, target);
+    while (!waiters[0] || !waiters[1] || waiters[0]->waiting_for != record
+           || waiters[1]->waiting_for != record)
+        assert(wait_os_condition(thread->process->threads_changed, thread->process->execution_mutex)
+               == OS_THREAD_OK);
+    allow_join_target = true;
+    broadcast_os_condition(thread->process->threads_changed);
+    operation_result_t one = join_program_thread(thread, ids[0]);
+    operation_result_t two = join_program_thread(thread, ids[1]);
+    operation_result_t late = join_program_thread(thread, target);
+    assert(!one.is_exception && !two.is_exception && !late.is_exception && one.value == two.value
+           && two.value == late.value);
+    DECREF(one.value);
+    DECREF(two.value);
+    DECREF(late.value);
+    return operation_success(get_null_object());
+}
+
+static operation_result_t verify_failure(object_t **args, uint16_t count, thread_t *thread) {
+    assert(count == 1);
+    uint64_t id = (uint64_t)get_object_integer_value(args[0]).value;
+    thread_t *worker = worker_by_id(thread, id);
+    operation_result_t first = join_program_thread(thread, id);
+    operation_result_t second = join_program_thread(thread, id);
+    assert(first.is_exception && second.is_exception && first.value == second.value);
+    assert(first.trace && first.trace == second.trace && first.trace == worker->exception.trace);
+    assert(exception_trace_size(first.trace) > 0 && worker->failure_observed && !worker->context
+           && !worker->completion_stack.size && !worker->completion_value);
+    DECREF(first.value);
+    DECREF(second.value);
+    return operation_success(get_null_object());
+}
+
+static const builtin_function_t memory_builtins[] = {
+    {.name = U"temporary", .execute = temporary_worker},
+    {.name = U"sample", .execute = sample_memory},
+    {.name = U"noJoin", .execute = no_join},
+    {.name = U"multiJoin", .execute = multi_join},
+    {.name = U"verifyFailure", .execute = verify_failure},
+};
+static builtin_function_object_t memory_objects[sizeof(memory_builtins) / sizeof(*memory_builtins)];
+static object_static_string_t memory_keys[sizeof(memory_builtins) / sizeof(*memory_builtins)];
+
+static void install_memory_builtins(object_t *scope) {
+    for (size_t index = 0; index < sizeof(memory_builtins) / sizeof(*memory_builtins); ++index)
+        assert(create_object_property(
+                   scope,
+                   get_static_string_object(&memory_keys[index], memory_builtins[index].name),
+                   get_builtin_function_object(&memory_objects[index], &memory_builtins[index]),
+                   true)
+               == MSTAT_OK);
+}
+
+static void check_memory_results(process_t *process) {
+    assert(observed_samples == MEMORY_ITERATIONS && last_records == MEMORY_ITERATIONS + 3);
+    assert(peak_working_delta >= TEMP_ITEMS * sizeof(object_t *));
+    assert(last_live <= first_live + MEMORY_ITERATIONS * sizeof(thread_t) + 256 * 1024);
+    assert(!process->finished_workers);
+    /* The object shared by the initial target and both waiters is reachable solely
+       through their retained outcomes, including through final VM tracing. */
+    thread_t *target = process->main_thread->next;
+    object_t *shared = target->completion_value;
+    assert(shared && waiters[0]->completion_value == shared
+           && waiters[1]->completion_value == shared);
+    assert(get_object_integer_value(get_array_elements(shared).items[0]).value == 1234567);
+    for (thread_t *worker = process->main_thread->next; worker != process->main_thread;
+         worker = worker->next)
+        assert(!worker->context && worker->data_stack == &worker->completion_stack
+               && !worker->worker);
+    printf("mode=%s samples=%zu managed_first=%zu managed_last=%zu transient_peak=%zu "
+           "records=%zu record_bytes_each=%zu os_handles_peak=%zu os_handles_last=%zu "
+           "rss_first_kib=%zu rss_last_kib=%zu\n",
+           no_join_mode ? "without-join" : "join",
+           observed_samples,
+           first_live,
+           last_live,
+           peak_working_delta,
+           last_records,
+           sizeof(thread_t),
+           peak_os_handles,
+           last_os_handles,
+           first_rss,
+           last_rss);
+}
+
 int main(int argc, char **argv) {
     fs_error_t argument_error = {0};
     assert(fs_arguments(&argc, &argv, &argument_error));
-    assert(argc == 2);
+    assert(argc == 2 || argc == 3);
+    bool memory_mode = argc == 3;
+    no_join_mode = memory_mode && argv[2][0] == 'n';
     module_sources_t *sources = NULL;
     module_sources_error_t source_error = {0};
     module_compilation_t *compilation = NULL;
@@ -168,11 +414,25 @@ int main(int argc, char **argv) {
                get_builtin_function_object(&bootstrap_object, &bootstrap_descriptor),
                true)
            == MSTAT_OK);
-    assert(run_module_file(process, module_files_main(files)) == 0);
-    assert(completed == 2 && !process->active_threads);
+    if (memory_mode)
+        install_memory_builtins(module_file_scope(module_files_main(files)));
+    int status = run_module_file(process, module_files_main(files));
+    assert(!process->active_threads);
+    if (memory_mode && argv[2][0] == 'u') {
+        assert(status == 1 && process->main_thread->exception.value
+               && process->main_thread->exception.trace);
+        assert(process->main_thread->next->failure_observed
+               && process->main_thread->next->exception.value
+                      == process->main_thread->exception.value);
+    } else if (memory_mode) {
+        assert(status == 0);
+        check_memory_results(process);
+    } else {
+        assert(status == 0 && completed == 2);
+    }
     /* GC may release the unrooted descriptor at ordinary final cleanup, but never earlier. */
     destroy_process(process);
-    assert(cleaned == 1);
+    assert(cleaned == (memory_mode ? 0 : 1));
     free_module_compilation(compilation);
     clear_module_compilation_error(&compile_error);
     free_module_sources(sources);

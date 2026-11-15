@@ -55,8 +55,11 @@ struct thread_t {
     size_t native_successes;
     size_t native_retries;
 
-    /** @brief OS execution handle, joined once by the VM after all program threads finish. */
+    /** @brief OS execution handle, reaped once after this worker publishes completion. */
     os_thread_t *worker;
+    thread_t *reap_next;             /**< Pending OS reap; protected by the execution lock. */
+    object_t *completion_value;      /**< Owned worker result for late and repeated joins. */
+    object_stack_t completion_stack; /**< Inline zero/one-result view; no working allocation. */
     /** @brief Owned, directly traced callable until the worker takes it under the execution lock.
      */
     object_t *start_function;
@@ -83,6 +86,9 @@ struct thread_t {
 
 /** @brief Creates a new thread within the given process with an initial context. */
 thread_t *create_thread(process_t *process, context_t *context);
+
+/** @brief Discards a thread's working contexts, stack and queued callable. */
+void discard_thread_work(thread_t *thread);
 
 /** @brief Destroys a thread and frees its resources. */
 void destroy_thread(thread_t *thread);
