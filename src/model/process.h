@@ -20,6 +20,7 @@
 typedef struct process_t process_t;
 typedef struct thread_t thread_t;
 typedef struct module_t module_t;
+typedef struct gc_root_slot_t gc_root_slot_t;
 
 /** @brief A process in Goat. */
 struct process_t {
@@ -89,11 +90,15 @@ struct process_t {
     /** @brief True while an outer last-owner release is draining the queue. */
     bool draining_releases;
 
-    /** @brief External objects kept alive by the process for the garbage collector. */
-    object_t **gc_roots;
-
-    /** @brief The number of registered external garbage-collection roots. */
-    size_t gc_roots_size;
+    /** @brief External owning roots; slot indices survive storage growth. */
+    gc_root_slot_t *gc_roots;
+    size_t gc_roots_size;     /**< Number of active registrations, including duplicates. */
+    size_t gc_roots_used;     /**< High-water number of slots initialized. */
+    size_t gc_roots_capacity; /**< Slots reserved in the allocation. */
+    size_t gc_roots_free;     /**< One-based first free slot, or zero. */
+    uint64_t gc_root_serial;  /**< Never-reused registration serial within the process. */
+    bool gc_collecting;       /**< Protects the current tracing/sweep pass from reentry. */
+    bool destroying;          /**< Teardown allows unregister but forbids registration and GC. */
 };
 
 /** @brief Creates a new process. */

@@ -121,8 +121,9 @@ int main(int argc, char **argv) {
     clear_exception(&error);
     /* Only the saved failure roots the payload; surviving ordinary values are rooted separately. */
     object_t *roots[] = {ordinary, copy, flat, function, function_copy};
+    gc_root_handle_t handles[sizeof(roots) / sizeof(*roots)];
     for (size_t i = 0; i < sizeof(roots) / sizeof(*roots); ++i)
-        add_gc_root(process, roots[i]);
+        handles[i] = register_gc_root(process, roots[i]);
     DECREF(payload);
     collect_garbage(process);
     payload = module_file_failure(file);
@@ -205,7 +206,7 @@ int main(int argc, char **argv) {
     clear_exception(&error);
     destroy_context(frame);
     for (size_t i = 0; i < sizeof(roots) / sizeof(*roots); ++i) {
-        remove_gc_root(process, roots[i]);
+        unregister_gc_root(process, handles[i]);
         DECREF(roots[i]);
     }
     destroy_process(process);

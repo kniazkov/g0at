@@ -12,7 +12,15 @@
 #include "model/object.h"
 #include "model/thread.h"
 
+#include <assert.h>
+#include <stdlib.h>
 #include <string.h>
+
+struct gc_root_slot_t {
+    object_t *object;
+    uint64_t serial;
+    size_t next_free;
+};
 
 /** @brief Process-local tracing cursor; links are borrowed while the heap is stable. */
 typedef struct {
@@ -63,8 +71,8 @@ static void mark_reachable_objects(process_t *proc) {
         if (proc->string_cache[index])
             enqueue_mark(proc->string_cache[index], true, &work);
     }
-    for (size_t index = 0; index < proc->gc_roots_size; index++) {
-        enqueue_mark(proc->gc_roots[index], true, &work);
+    for (size_t index = 0; index < proc->gc_roots_used; index++) {
+        enqueue_mark(proc->gc_roots[index].object, true, &work);
     }
     thread_t *thread = proc->main_thread;
     if (thread) {
@@ -105,49 +113,76 @@ static void sweep_unreachable_objects(process_t *proc) {
 void collect_garbage(process_t *proc) {
     /* A reentrant request cannot inspect a partly finalized object graph or reuse its links.
        An ordinary collection can only start at a stable boundary. */
-    if (proc->draining_releases)
+    if (proc->draining_releases || proc->destroying || proc->gc_collecting)
         return;
+    proc->gc_collecting = true;
     mark_reachable_objects(proc);
     /* Correct counts before sweep can free any edge target or clear its mark.
        Reconciliation must not run ordinary last-reference destruction. */
     for (object_t *obj = proc->objects.head; obj; obj = obj->next)
         reconcile_swept_edges(obj);
     sweep_unreachable_objects(proc);
+    proc->gc_collecting = false;
 }
 
-void add_gc_root(process_t *proc, object_t *obj) {
-    for (size_t index = 0; index < proc->gc_roots_size; index++) {
-        if (proc->gc_roots[index] == obj)
-            return;
-    }
-    object_t **roots = ALLOC((proc->gc_roots_size + 1) * sizeof(object_t *));
-    if (proc->gc_roots_size > 0) {
-        memcpy(roots, proc->gc_roots, proc->gc_roots_size * sizeof(object_t *));
-        FREE(proc->gc_roots);
-    }
-    roots[proc->gc_roots_size] = obj;
-    proc->gc_roots = roots;
-    proc->gc_roots_size++;
-}
-
-void remove_gc_root(process_t *proc, object_t *obj) {
-    for (size_t index = 0; index < proc->gc_roots_size; index++) {
-        if (proc->gc_roots[index] == obj) {
-            if (proc->gc_roots_size == 1) {
-                FREE(proc->gc_roots);
-                proc->gc_roots = NULL;
-                proc->gc_roots_size = 0;
-            } else {
-                object_t **roots = ALLOC((proc->gc_roots_size - 1) * sizeof(object_t *));
-                memcpy(roots, proc->gc_roots, index * sizeof(object_t *));
-                memcpy(roots + index,
-                       proc->gc_roots + index + 1,
-                       (proc->gc_roots_size - index - 1) * sizeof(object_t *));
-                FREE(proc->gc_roots);
-                proc->gc_roots = roots;
-                proc->gc_roots_size--;
-            }
-            return;
+gc_root_handle_t register_gc_root(process_t *proc, object_t *obj) {
+    if (!proc || !obj || (obj->process && obj->process != proc) || proc->destroying
+        || proc->draining_releases || proc->gc_collecting)
+        return (gc_root_handle_t){0};
+    /* Never allow a stale token to alias a slot reused after serial wrap. */
+    if (proc->gc_root_serial == UINT64_MAX)
+        abort();
+    size_t index;
+    if (proc->gc_roots_free) {
+        index = proc->gc_roots_free - 1;
+        proc->gc_roots_free = proc->gc_roots[index].next_free;
+    } else {
+        if (proc->gc_roots_used == proc->gc_roots_capacity) {
+            size_t capacity =
+                proc->gc_roots_capacity ? allocation_size_multiply(proc->gc_roots_capacity, 2) : 8;
+            gc_root_slot_t *slots = ALLOC(allocation_size_multiply(capacity, sizeof(*slots)));
+            if (proc->gc_roots_used)
+                memcpy(slots, proc->gc_roots, proc->gc_roots_used * sizeof(*slots));
+            FREE(proc->gc_roots);
+            proc->gc_roots = slots;
+            proc->gc_roots_capacity = capacity;
         }
+        index = proc->gc_roots_used++;
     }
+    INCREF(obj);
+    uint64_t serial = ++proc->gc_root_serial;
+    proc->gc_roots[index] = (gc_root_slot_t){obj, serial, 0};
+    ++proc->gc_roots_size;
+    return (gc_root_handle_t){proc->id, serial, index};
+}
+
+/** @brief Invalidate first: release callbacks cannot remove the same slot twice. */
+static void drop_root_slot(process_t *proc, size_t index) {
+    object_t *obj = proc->gc_roots[index].object;
+    proc->gc_roots[index] = (gc_root_slot_t){.next_free = proc->gc_roots_free};
+    proc->gc_roots_free = index + 1;
+    --proc->gc_roots_size;
+    DECREF(obj);
+}
+
+bool unregister_gc_root(process_t *proc, gc_root_handle_t handle) {
+    if (!proc || proc->gc_collecting || !handle.serial || proc->id != handle.process_id
+        || handle.index >= proc->gc_roots_used)
+        return false;
+    gc_root_slot_t *slot = &proc->gc_roots[handle.index];
+    if (!slot->object || slot->serial != handle.serial)
+        return false;
+    drop_root_slot(proc, handle.index);
+    return true;
+}
+
+void clear_gc_roots(process_t *proc) {
+    assert(proc->destroying);
+    for (size_t index = 0; index < proc->gc_roots_used; ++index)
+        if (proc->gc_roots[index].object)
+            drop_root_slot(proc, index);
+    assert(!proc->gc_roots_size);
+    FREE(proc->gc_roots);
+    proc->gc_roots = NULL;
+    proc->gc_roots_used = proc->gc_roots_capacity = proc->gc_roots_free = 0;
 }

@@ -40,9 +40,10 @@ collect_garbage() marks module file roots, launch-directory and string caches,
 explicit host roots, each pending worker's callable, context chain, pending
 values, exceptions and operand stack, then sweeps the process object list.
 
-A local C pointer alone is not a GC root. add_gc_root() registers a tracing
-root but does not acquire an owned reference. Duplicate registration is set-like,
-not counted. Native descriptors independently keep OS-loaded code alive.
+A local C pointer alone is not a GC root. `register_gc_root()` creates an
+owning root and returns a distinct handle for that registration.
+`unregister_gc_root()` drops only that handle's reference. Native descriptors
+independently keep OS-loaded code alive.
 
 See the [ownership and tracing audit](memory-management.md) for the root table, collection boundaries, and limitations.
 

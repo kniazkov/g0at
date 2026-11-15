@@ -13,6 +13,7 @@
 #include "module_files.h"
 #include "object_list.h"
 #include "thread.h"
+#include "vm/gc.h"
 
 #include <assert.h>
 #include <stdatomic.h>
@@ -78,12 +79,15 @@ static void destroy_all_objects_in_the_list(object_list_t *list) {
 }
 
 void destroy_process(process_t *process) {
-    assert(!process->draining_releases && !process->pending_releases);
+    assert(!process->destroying && !process->draining_releases && !process->pending_releases
+           && !process->gc_collecting);
+    process->destroying = true;
     while (process->main_thread) {
         destroy_thread(process->main_thread);
     }
     DECREFIF(process->launch_directory);
     release_module_identity(process->launch_module);
+    clear_gc_roots(process);
     destroy_all_objects_in_the_list(&process->objects);
     destroy_all_objects_in_the_list(&process->integers);
     destroy_all_objects_in_the_list(&process->real_numbers);
@@ -92,7 +96,6 @@ void destroy_process(process_t *process) {
     destroy_all_objects_in_the_list(&process->characters);
     destroy_module_files(process);
     FREE(process->string_cache);
-    FREE(process->gc_roots);
     release_module_identity(process->module);
     destroy_os_condition(process->threads_changed);
     destroy_os_mutex(process->initialization_mutex);
