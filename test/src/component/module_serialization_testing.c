@@ -10,6 +10,8 @@
 #include "model/module_files.h"
 #include "model/process.h"
 #include "model/thread.h"
+#include "vm/gc.h"
+#include "vm/gc_stats.h"
 
 #ifdef NDEBUG
 #    undef NDEBUG
@@ -28,7 +30,7 @@ typedef struct {
     module_files_t *files;
     os_mutex_t *mutex;
     os_condition_t *condition;
-    bool entered, release, requested, failed, direct;
+    bool entered, release, requested, failed, direct, trace_while_parked;
     unsigned active;
     unsigned calls[3];
     exception_t original;
@@ -42,6 +44,8 @@ typedef struct {
     exception_t failure;
     module_initialize_status_t status;
 } request_t;
+
+enum { PARKED_PAYLOAD = 730001 };
 
 static bool execute(module_file_t *file, context_t *frame, void *data, exception_t *failure) {
     fixture_t *test = data;
@@ -71,10 +75,13 @@ static bool execute(module_file_t *file, context_t *frame, void *data, exception
     assert(initialize_module_file(file, frame, execute, data, &recursive, &recursive_failure)
            == MODULE_INITIALIZE_OK);
     assert(recursive == frame->data && !recursive_failure.value);
-    assert(initialize_field_cell(frame->data,
-                                 get_own_field_cell(frame->data, c),
-                                 get_static_integer_object(73))
+    bool retain_while_parked = id == 0 && test->trace_while_parked;
+    object_t *payload = retain_while_parked ? create_integer_object(test->process, PARKED_PAYLOAD)
+                                            : get_static_integer_object(73);
+    assert(!retain_while_parked || payload->process == test->process);
+    assert(initialize_field_cell(frame->data, get_own_field_cell(frame->data, c), payload)
            == MSTAT_OK);
+    DECREF(payload);
     if (id == 0) {
         /* Simulates blocking I/O: keep initialization ownership, release only model lock. */
         size_t depth = process_execution_suspend(test->process);
@@ -86,6 +93,12 @@ static bool execute(module_file_t *file, context_t *frame, void *data, exception
             assert(wait_os_condition(test->condition, test->mutex) == OS_THREAD_OK);
         assert(unlock_os_mutex(test->mutex) == OS_THREAD_OK);
         process_execution_resume(test->process, depth);
+        if (retain_while_parked) {
+            operation_result_t retained = read_accessible_property(&frame->access, frame->data, c);
+            assert(!retained.is_exception && is_integer_object(retained.value));
+            assert(get_object_integer_value(retained.value).value == PARKED_PAYLOAD);
+            DECREF(retained.value);
+        }
     }
     assert(lock_os_mutex(test->mutex) == OS_THREAD_OK);
     --test->active;
@@ -121,7 +134,10 @@ static void *request(void *data) {
 
 static void run_case(const unsigned char *input, size_t size, unsigned variant) {
     uint32_t json_size = read_le32(input);
-    fixture_t test = {.process = create_process(), .failed = variant == 2, .direct = variant == 3};
+    fixture_t test = {.process = create_process(),
+                      .failed = variant == 2,
+                      .direct = variant == 3,
+                      .trace_while_parked = variant == 0 || variant == 2};
     assert(create_os_mutex(&test.mutex) == OS_THREAD_OK);
     assert(create_os_condition(&test.condition) == OS_THREAD_OK);
     assert(create_module_files(test.process,
@@ -136,6 +152,13 @@ static void run_case(const unsigned char *input, size_t size, unsigned variant) 
     test.original.value = create_user_defined_object(test.process, (object_array_t){&root, 1});
     test.original.trace = capture_exception_trace(test.process->main_thread->context, 0);
     assert(test.original.trace);
+    gc_root_handle_t pending_failure = {0};
+    gc_stats_t gc = {0};
+    if (test.trace_while_parked) {
+        pending_failure = register_gc_root(test.process, test.original.value);
+        assert(pending_failure.serial);
+        assert(configure_gc_statistics(test.process, &gc));
+    }
     object_t *ready = NULL;
     exception_t failure = {0};
     assert(initialize_module_file(module_files_get(test.files, 2),
@@ -165,6 +188,15 @@ static void run_case(const unsigned char *input, size_t size, unsigned variant) 
         while (!test.process->initialization_waiters)
             assert(wait_os_condition(test.process->threads_changed, test.process->execution_mutex)
                    == OS_THREAD_OK);
+        if (test.trace_while_parked) {
+            /* The owner cannot resume until this driver releases it; the waiter
+               cannot obtain the initializer mutex before the owner does that.
+               The model lock excludes resumption throughout this controlled pass.
+               The module table owns the scope; the pending failure is rooted. */
+            assert(gc.collections == 0);
+            collect_garbage(test.process);
+            assert(gc.collections == 1 && gc.explicit_collections == 1);
+        }
         process_execution_leave(test.process);
     }
     /* A ready independent file must not wait on the global initialization lock. */
@@ -228,6 +260,10 @@ static void run_case(const unsigned char *input, size_t size, unsigned variant) 
         if (second)
             assert(b.status == MODULE_INITIALIZE_OK
                    && (variant == 1 ? b.scope != a.scope : b.scope == a.scope));
+    }
+    if (test.trace_while_parked) {
+        assert(configure_gc_statistics(test.process, NULL));
+        assert(unregister_gc_root(test.process, pending_failure));
     }
     clear_exception(&a.failure);
     clear_exception(&b.failure);
