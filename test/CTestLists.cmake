@@ -937,4 +937,7 @@ goat_suite(core.thread_memory.unobserved "core;integration;module-threads-migrat
 goat_suite(core.thread_memory.publication "core;integration;module-threads-migration;thread-retention"
   "$<TARGET_FILE:module_thread_lifetime_testing>"
   "${PROJECT_SOURCE_DIR}/test/data/gc-thread-memory/publication.goat" "publication")
+goat_suite(core.thread_memory.queued "core;integration;module-threads-migration;thread-retention"
+  "$<TARGET_FILE:module_thread_lifetime_testing>"
+  "${PROJECT_SOURCE_DIR}/test/data/gc-thread-memory/queued.goat" "queued")
 goat_suite(core.gc_refcounts "core;gc-refcounts" $<TARGET_FILE:unit_testing> --gc-refcount-tests)
