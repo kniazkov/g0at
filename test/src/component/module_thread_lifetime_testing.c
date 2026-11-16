@@ -202,8 +202,11 @@ static operation_result_t trace_queued_worker(object_t **args, uint16_t count, t
     object_t *leaf = create_integer_object(process, 841729);
     object_t *payload = create_array_object(process, (object_array_t){&leaf, 1});
     DECREF(leaf);
-    uint64_t id = take_thread_id(spawn_program_thread(
-        thread, get_builtin_function_object(&callable, &descriptor), &payload, 1));
+    uint64_t id =
+        take_thread_id(spawn_program_thread(thread,
+                                            get_builtin_function_object(&callable, &descriptor),
+                                            &payload,
+                                            1));
     thread_t *worker = worker_by_id(thread, id);
     assert(process->active_threads == 2 && worker->worker && !worker->finished);
     assert(worker->start_function && worker->start_argument_count == 1);
@@ -482,11 +485,10 @@ int main(int argc, char **argv) {
                                                  .execute = trace_queued_worker};
         static builtin_function_object_t object;
         static object_static_string_t name;
-        assert(create_object_property(
-                   module_file_scope(module_files_main(files)),
-                   get_static_string_object(&name, probe.name),
-                   get_builtin_function_object(&object, &probe),
-                   true)
+        assert(create_object_property(module_file_scope(module_files_main(files)),
+                                      get_static_string_object(&name, probe.name),
+                                      get_builtin_function_object(&object, &probe),
+                                      true)
                == MSTAT_OK);
     } else if (memory_mode) {
         install_memory_builtins(module_file_scope(module_files_main(files)));
