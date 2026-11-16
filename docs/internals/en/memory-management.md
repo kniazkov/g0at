@@ -222,3 +222,35 @@ then require all participating mutators to be in known stable states and
 exercise each admitted boundary under the intended protocol. #556 gates
 ingress that can admit objects from another process, not ordinary same-owner
 graphs. This partial audit does not complete #552 or unblock #553.
+
+### Proposed admission contract for in-run safe points (GC-10)
+
+Admission is per boundary and per process, not per call stack. Until a boundary
+is reviewed and verified against this contract, it remains forbidden for in-run
+collection. The supported host-exclusive and production end-of-run cases above
+are unchanged; controlled test fixtures are not production admissions.
+
+| Candidate boundary | Designated owner of managed values at admission | Required stable state |
+|---|---|---|
+| VM dispatch, unwind and constructor transitions | Thread stack/context owns operands and pending outcomes, including return and throw values; the constructor snapshot owns its receiver/callables until completion or unwind | Transfers are committed; values are visible from their final owners or explicit owning roots, never solely from a C local |
+| Native continuation, builtin callback, fallback or VM re-entry | The invoking frame owns required callable/arguments; an explicit owning root or committed caller-visible state retains each live managed result | Each nested invocation has published its own live values. A nested call does not inherit admission from an outer call |
+| Worker launch, wait and resume | The published thread state owns startup values; a parked frame or explicit owning root retains suspended values; the completion record owns the outcome after completion | Ownership is established before suspension or handoff and retained until the receiving state owns the values |
+| Module/include loading, initialization or waiting | The module table owns committed state; the initiating frame or an explicit owning root retains provisional managed values and pending outcomes | Publication and synchronization are coherent with the process model lock; readiness gates alone do not grant admission |
+
+The collector must have exclusive model access for the entire pass. Every other
+mutator of that process must be demonstrably quiescent with its managed state
+published; resumption cannot overlap the pass. Holding the execution lock is
+necessary for the proposed in-run case but does not prove quiescence or
+publication by itself. No wait for quiescence may hold a lock needed to make
+that quiescence possible. Recursive VM entry is not collector re-entry:
+concurrent or nested collection is forbidden, including during refcount drain
+and teardown.
+
+To admit a point, record the participating paths, owning locations and transfer
+lifetimes, and the lock/wait ordering that guarantees quiescence and resumption.
+Then demonstrate those invariants with normal positive tests at the proposed
+controlled boundary, including simultaneously parked participants where
+applicable, on success and exceptional completion; run the relevant regression
+suite and required CI. A path without that evidence stays excluded. This
+proposal does not add a test hook or runtime entry point, enable periodic or
+allocation-triggered tracing, change #556, complete #552, or unblock #553.
