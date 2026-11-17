@@ -1786,9 +1786,8 @@ bool test_gc_controlled_model_boundary(void) {
 }
 
 /** @brief An ordinary builtin is still not the outer post-opcode dispatcher. */
-static operation_result_t check_unproven_gc_boundary(object_t **args,
-                                                     uint16_t count,
-                                                     thread_t *thread) {
+static operation_result_t
+check_unproven_gc_boundary(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
     process_t *process = thread->process;
     bool accepted = gc_admission_allows(thread, (gc_admission_boundary_t){.opcode = CALL});
@@ -1837,8 +1836,8 @@ bool test_gc_admission_decision(void) {
     process_execution_enter(process);
     gc_stats_t stats;
     bool observed = configure_gc_statistics(process, &stats);
-    bool idle_refused = !gc_admission_allows(thread, candidate)
-                        && os_mutex_depth(process->execution_mutex) == 1;
+    bool idle_refused =
+        !gc_admission_allows(thread, candidate) && os_mutex_depth(process->execution_mutex) == 1;
     process_execution_leave(process);
 
     static const builtin_function_t descriptor = {.name = U"checkGcBoundary",

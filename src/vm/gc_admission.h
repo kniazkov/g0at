@@ -14,10 +14,7 @@
 #include <stdint.h>
 
 /** @brief Proven dispatcher provenance, not inferred from lock depth or thread count. */
-typedef enum {
-    GC_DISPATCH_UNPROVEN = 0,
-    GC_DISPATCH_STANDALONE_OUTER
-} gc_dispatch_origin_t;
+typedef enum { GC_DISPATCH_UNPROVEN = 0, GC_DISPATCH_STANDALONE_OUTER } gc_dispatch_origin_t;
 
 /** @brief Evidence that only a future dispatcher bridge can establish. */
 typedef struct {
