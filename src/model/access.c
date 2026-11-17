@@ -73,6 +73,7 @@ void init_function_access(function_access_t *access, module_t *module) {
 }
 
 void init_function_access_in_file(function_access_t *access, module_t *module, uint32_t file_id) {
+    access->process = NULL;
     access->module = retain_module_identity(module);
     access->file_id = file_id;
     access->domains = create_vector();
@@ -89,6 +90,8 @@ void add_function_access_domain(function_access_t *access, access_domain_t *doma
 }
 
 bool add_function_field_capture(function_access_t *access, object_t *storage, field_cell_t *cell) {
+    if (!storage || (access->process && !object_belongs_to_process(access->process, storage)))
+        return false;
     bool found = false;
     for (size_t i = 0; i < get_object_field_count(storage); i++)
         if (get_object_field_at(storage, i) == cell) {
@@ -102,6 +105,8 @@ bool add_function_field_capture(function_access_t *access, object_t *storage, fi
         if (capture->storage == storage && capture->cell == cell)
             return true;
     }
+    if (storage->process)
+        access->process = storage->process;
     field_capture_t *capture = ALLOC(sizeof(*capture));
     *capture = (field_capture_t){storage, cell};
     INCREF(storage);
@@ -194,8 +199,12 @@ void add_inherited_receiver_access(function_access_t *access,
     }
 }
 
-void inherit_function_access(function_access_t *target, const function_access_t *source) {
+bool inherit_function_access(function_access_t *target, const function_access_t *source) {
+    if (target->process && source->process && target->process != source->process)
+        return false;
     assert(target->module == source->module);
+    if (source->process)
+        target->process = source->process;
     target->file_id = source->file_id;
     for (size_t i = 0; i < source->domains->size; i++)
         add_function_access_domain(target, source->domains->data[i]);
@@ -207,12 +216,17 @@ void inherit_function_access(function_access_t *target, const function_access_t 
     }
     for (size_t i = 0; i < source->lexical_scopes->size; i++)
         add_lexical_scope(target, source->lexical_scopes->data[i]);
+    return true;
 }
 
-void add_lexical_scope(function_access_t *access, object_t *storage) {
+bool add_lexical_scope(function_access_t *access, object_t *storage) {
+    if (!storage || (access->process && !object_belongs_to_process(access->process, storage)))
+        return false;
     for (size_t i = 0; i < access->lexical_scopes->size; i++)
         if (access->lexical_scopes->data[i] == storage)
-            return;
+            return true;
+    if (storage->process)
+        access->process = storage->process;
     INCREF(storage);
     append_to_vector(access->lexical_scopes, storage);
     for (size_t i = 0; i < get_object_field_count(storage); i++) {
@@ -220,4 +234,5 @@ void add_lexical_scope(function_access_t *access, object_t *storage) {
         if (cell->declaration_id && can_access_field(access, cell))
             add_function_field_capture(access, storage, cell);
     }
+    return true;
 }

@@ -16,5 +16,5 @@ typedef enum {
     MSTAT_ACCESS_DENIED,           /**< The winning declaration is not accessible */
     MSTAT_UNINITIALIZED,           /**< A known declaration has not executed yet */
     MSTAT_FAILED_FILE,             /**< File scope initialization failed; payload is retained */
-    MSTAT_FOREIGN_OBJECT,          /**< Another module owns the object being extended */
+    MSTAT_FOREIGN_OBJECT, /**< Foreign module extension or cross-process managed reference */
 } model_status_t;

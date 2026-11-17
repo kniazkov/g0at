@@ -176,3 +176,6 @@ bool test_gc_controlled_model_boundary(void);
 
 /** @brief Checks the private standalone admission policy without calling the collector. */
 bool test_gc_admission_decision(void);
+
+/** @brief Cross-process ingress rejects before mutation or retention. */
+bool test_gc_process_ownership(void);

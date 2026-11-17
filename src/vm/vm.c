@@ -2027,7 +2027,8 @@ operation_result_t spawn_program_thread(thread_t *caller,
     if (caller->initialization_depth || !process->execution || process->exit_requested
         || process->native_failed)
         return operation_exception(get_exception_invalid_operation());
-    if (!callable || callable->vtbl->call == stub_call || (count && !arguments))
+    if (!object_belongs_to_process(process, callable) || callable->vtbl->call == stub_call
+        || !objects_belong_to_process(process, (object_array_t){arguments, count}))
         return operation_exception(get_exception_invalid_argument());
     struct vm_execution_t *execution = process->execution;
     if (execution->entry_scope && !execution->reservations_done) {

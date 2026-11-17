@@ -27,6 +27,8 @@ create_context_with_protos(process_t *process, context_t *caller, object_array_t
                                            protos,
                                            caller->module ? caller->module : process->module,
                                            caller->module ? caller->access.file_id : 0);
+    if (!ctx)
+        return NULL;
     if (caller->module) {
         add_lexical_scope(&ctx->access, caller->data);
         inherit_function_access(&ctx->access, &caller->access);
@@ -46,11 +48,15 @@ context_t *create_context_with_protos_in_file(process_t *process,
                                               object_array_t protos,
                                               module_t *module,
                                               uint32_t file_id) {
+    if (!process || !caller || !protos.size || !objects_belong_to_process(process, protos)
+        || !object_belongs_to_process(process, caller->data))
+        return NULL;
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
     ctx->module = retain_module_identity(module);
     ctx->data = create_user_defined_object_in_file(process, protos, ctx->module, file_id);
     set_inheritance_prototype_count(ctx->data, 0);
     init_function_access_in_file(&ctx->access, module, file_id);
+    ctx->access.process = process;
     add_function_access_domain(&ctx->access, get_object_access_domain(ctx->data));
     ctx->arguments = NULL;
     ctx->call_receiver = NULL;
@@ -103,9 +109,12 @@ context_t *destroy_context(context_t *context) {
     return previous;
 }
 
-void capture_context_arguments(context_t *context, object_array_t arguments) {
+bool capture_context_arguments(context_t *context, object_array_t arguments) {
+    if (!objects_belong_to_process(context->data->process, arguments))
+        return false;
     assert(!context->arguments);
     context->arguments = create_read_only_array_object(context->data->process, arguments);
+    return true;
 }
 
 object_t *get_context_arguments(const context_t *context) {

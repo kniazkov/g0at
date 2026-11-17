@@ -46,6 +46,7 @@ typedef struct {
 
 /** @brief Function/context snapshot. Captures and domains are populated before publication. */
 typedef struct {
+    process_t *process; /**< Borrowed heap owner, NULL until first managed storage is added. */
     module_t *module;
     uint32_t file_id; /**< Lexical source-file identity, never the dynamic caller. */
     /** @brief Retained access_domain_t pointers, nearest lexical domain first, without duplicates.
@@ -142,10 +143,11 @@ void init_function_access(function_access_t *access, module_t *module);
 /** @brief Initializes lexical rights for one file of a module instance. */
 void init_function_access_in_file(function_access_t *access, module_t *module, uint32_t file_id);
 void add_function_access_domain(function_access_t *access, access_domain_t *domain);
-/** @brief Copies grants and captures into an unpublished context in the same module. */
-void inherit_function_access(function_access_t *target, const function_access_t *source);
-/** @brief Retains lexical storage, including fields declared after closure creation. */
-void add_lexical_scope(function_access_t *access, object_t *storage);
+/** @brief Copies grants/captures in the same module; false before mutation for foreign heaps. */
+bool inherit_function_access(function_access_t *target, const function_access_t *source);
+/** @brief Retains lexical storage and binds an unbound snapshot.
+ * Includes later declarations; NULL/foreign storage returns false without retaining it. */
+bool add_lexical_scope(function_access_t *access, object_t *storage);
 /** @brief Grants protected access to an object's declaration domain and its prototypes. */
 void add_protected_object_access(function_access_t *access, object_t *object);
 /** @brief Grants descendant protected rights only along explicit inheritance edges. */

@@ -8,19 +8,22 @@
 
 #include "common/types.h"
 
+#include <stdbool.h>
+
 typedef struct object_t object_t;
 
 /** @brief Stack structure for storing Goat objects. */
 typedef struct {
-    object_t **objects; /**< Array of Goat objects. */
-    size_t size;        /**< Number of elements currently in the stack. */
-    size_t capacity;    /**< Maximum number of elements the stack can hold. */
+    struct process_t *process; /**< Borrowed owner; never rebound during stack lifetime. */
+    object_t **objects;        /**< Array of Goat objects. */
+    size_t size;               /**< Number of elements currently in the stack. */
+    size_t capacity;           /**< Maximum number of elements the stack can hold. */
 } object_stack_t;
 
 /** @brief Creates a new object stack. */
-object_stack_t *create_object_stack();
+object_stack_t *create_object_stack(struct process_t *process);
 
-/** @brief Pushes an object onto the stack. */
+/** @brief Transfers ownership on success; foreign/NULL values return BAD_STACK_INDEX unchanged. */
 stack_index_t push_object_onto_stack(object_stack_t *stack, object_t *object);
 
 /** @brief Reports a fatal stack invariant violation and exits the process. */
@@ -38,10 +41,11 @@ object_t *peek_object_from_stack(object_stack_t *stack, stack_index_t index);
 /**
  * @brief Replaces an object at a specific index on the stack.
  *
+ * Returns false without mutation for foreign/NULL values. Otherwise returns true.
  * Decrements the reference count of the old object at the given index and replaces it with a new
  * object, incrementing its reference count.
  */
-void replace_object_on_stack(object_stack_t *stack, object_t *new_object, stack_index_t index);
+bool replace_object_on_stack(object_stack_t *stack, object_t *new_object, stack_index_t index);
 
 /**
  * @brief Reduces the size of the object stack to a specified index.
