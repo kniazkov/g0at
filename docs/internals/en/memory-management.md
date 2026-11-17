@@ -378,3 +378,31 @@ reuse and rejection before dispatch. Final run-end GC is counted separately.
 This implements only the first dispatcher experiment of #552. Multiple parked
 participants, native transfers and module/wait lock ordering remain unproved;
 #552 stays partial and automatic scheduling in #553 remains blocked.
+
+### Real worker refusal at the dispatcher (#590)
+
+The dedicated host also runs four `core.gc_dispatch` worker cases: two workers
+waiting inside builtins, or both already joined/reaped before the first ARRAY;
+each case covers ordinary results or observed exceptions. The workers retain
+heap arrays only in C locals while waiting. Those values have refcounts but no
+traced owner: waiting alone cannot authorize collection. No tracing is forced
+inside the refused state.
+
+The barrier uses only `threads_changed` and the process model mutex. Each
+worker publishes its arrival under that mutex and waits in a predicate loop;
+the entry thread waits until both arrivals are visible. The condition wait
+releases the model mutex, allowing the remaining participants to progress.
+After the ARRAY refusal is observed, the entry thread sets the release flag,
+broadcasts and joins. In the joined variant this release/join happens before
+the first ARRAY. Normal dispatcher scheduling reaps the workers before the
+inspection callback, which verifies `active_threads == 1`, an empty completion
+queue and released OS handles. There is no second gate/lock, sleep, or reliance
+on scheduling speed. CTest limits each case to 30 seconds.
+
+The tests require zero collections before resuming the unpublished C-local
+values, intact return/exception payloads, restored lock depth and completion of
+both workers. A fresh run on the same process must admit exactly one pass:
+worker history belongs to the execution, not the lifetime of the process.
+The joined case specifically protects `no_worker_started`; a count of one
+active thread is insufficient. These are refusal tests, not a safe publication
+protocol for parked workers. #552 remains incomplete and #553 blocked.

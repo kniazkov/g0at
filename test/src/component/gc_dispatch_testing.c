@@ -13,6 +13,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+bool test_gc_worker_admission(bool joined, bool exceptional);
 
 #define CHECK(expr)                                                                                \
     do {                                                                                           \
@@ -168,7 +171,17 @@ static bool rejected_run(void) {
     return true;
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+    if (argc == 2) {
+        bool joined = !strncmp(argv[1], "joined-", 7);
+        bool exceptional = strstr(argv[1], "exception") != NULL;
+        if (strcmp(argv[1], "parked-return") && strcmp(argv[1], "parked-exception")
+            && strcmp(argv[1], "joined-return") && strcmp(argv[1], "joined-exception"))
+            return EXIT_FAILURE;
+        return test_gc_worker_admission(joined, exceptional) ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    if (argc != 1)
+        return EXIT_FAILURE;
     bool ok = run_case(true, false, false, false, false, false)
               && run_case(false, false, false, false, false, false)
               && run_case(true, true, false, false, false, false)
