@@ -20,6 +20,7 @@
 #include "model/thread.h"
 #include "test_macro.h"
 #include "vm/gc.h"
+#include "vm/gc_admission.h"
 #include "vm/gc_stats.h"
 #include "vm/vm.h"
 
@@ -1781,5 +1782,89 @@ bool test_gc_controlled_model_boundary(void) {
     bool good = test.depth_preserved && test.result_preserved && !proc->gc_roots_size;
     destroy_process(proc);
     ASSERT(good && get_allocated_memory_size() == baseline);
+    return true;
+}
+
+/** @brief An ordinary builtin is still not the outer post-opcode dispatcher. */
+static operation_result_t
+check_unproven_gc_boundary(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    process_t *process = thread->process;
+    bool accepted = gc_admission_allows(thread, (gc_admission_boundary_t){.opcode = CALL});
+    bool correct = !count && !accepted && process->execution && process->active_threads == 1
+                   && os_mutex_depth(process->execution_mutex) == 1
+                   && process->gc_statistics->collections == 0;
+    return operation_success(get_boolean_object(correct));
+}
+
+bool test_gc_admission_decision(void) {
+    const gc_admission_boundary_t candidate = {.origin = GC_DISPATCH_STANDALONE_OUTER,
+                                               .opcode = ARRAY,
+                                               .dispatch_continues = true,
+                                               .ordinary_flow = true,
+                                               .transfers_published = true,
+                                               .no_worker_started = true,
+                                               .no_other_clients = true};
+    ASSERT(gc_admission_matches_boundary(candidate));
+    ASSERT(!gc_admission_matches_boundary((gc_admission_boundary_t){0}));
+    gc_admission_boundary_t refused = candidate;
+    refused.origin = GC_DISPATCH_UNPROVEN;
+    ASSERT(!gc_admission_matches_boundary(refused));
+    refused = candidate;
+    refused.opcode = CALL;
+    ASSERT(!gc_admission_matches_boundary(refused));
+    refused = candidate;
+    refused.dispatch_continues = false;
+    ASSERT(!gc_admission_matches_boundary(refused));
+    refused = candidate;
+    refused.ordinary_flow = false;
+    ASSERT(!gc_admission_matches_boundary(refused));
+    refused = candidate;
+    refused.transfers_published = false;
+    ASSERT(!gc_admission_matches_boundary(refused));
+    refused = candidate;
+    refused.no_worker_started = false;
+    ASSERT(!gc_admission_matches_boundary(refused));
+    refused = candidate;
+    refused.no_other_clients = false;
+    ASSERT(!gc_admission_matches_boundary(refused));
+
+    process_t *process = create_process();
+    ASSERT(process);
+    thread_t *thread = process->main_thread;
+    ASSERT(!gc_admission_allows(thread, candidate));
+    process_execution_enter(process);
+    gc_stats_t stats;
+    bool observed = configure_gc_statistics(process, &stats);
+    bool idle_refused =
+        !gc_admission_allows(thread, candidate) && os_mutex_depth(process->execution_mutex) == 1;
+    process_execution_leave(process);
+
+    static const builtin_function_t descriptor = {.name = U"checkGcBoundary",
+                                                  .execute = check_unproven_gc_boundary};
+    static object_static_string_t key_storage;
+    static builtin_function_object_t function_storage;
+    object_t *key = get_static_string_object(&key_storage, descriptor.name);
+    object_t *function = get_builtin_function_object(&function_storage, &descriptor);
+    model_status_t installed = create_object_property(thread->context->data, key, function, true);
+
+    code_builder_t *builder = create_code_builder();
+    data_builder_t *data = create_data_builder();
+    uint32_t name = add_string_to_data_segment(data, descriptor.name);
+    add_instruction(builder, (instruction_t){.opcode = VLOAD, .arg1 = name});
+    add_instruction(builder, (instruction_t){.opcode = CALL});
+    add_instruction(builder, (instruction_t){.opcode = END});
+    bytecode_t *code = link_code_and_data(builder, data);
+    destroy_code_builder(builder);
+    destroy_data_builder(data);
+
+    bool normal = observed && installed == MSTAT_OK && run(process, code) == 0
+                  && thread->data_stack->size == 1
+                  && peek_object_from_stack(thread->data_stack, 0) == get_boolean_object(true)
+                  && stats.collections == 1 && stats.run_end_collections == 1
+                  && stats.explicit_collections == 0;
+    destroy_process(process);
+    free_bytecode(code);
+    ASSERT(idle_refused && normal);
     return true;
 }
