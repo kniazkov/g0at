@@ -350,3 +350,31 @@ successes, and clean destruction. Existing operator, module, thread, native and
 REPL suites cover valid callers. Tests never invoke tracing on deliberately
 invalid graphs. These checks do not admit any new collection point or complete
 the still-partial GC-10 publication protocol.
+
+### Dedicated post-ARRAY dispatcher test (#588)
+
+`core.gc_dispatch` compiles a separate VM with `GOAT_TEST_GC_DISPATCH`. Its
+private host API requests at most one pass per standalone run. The ordinary
+interpreter, CLI and `run_module_file` have no request switch. The host must
+own the process exclusively throughout the run; a boolean assertion is not a
+production participant-registration protocol.
+
+| Boundary | Current implementation | Evidence / refusal |
+|---|---|---|
+| Standalone outer post-ARRAY | Test host only, before scheduling | Initial context, dispatcher depth one, normal and pending flow, published operand result, model lock depth one, no workers or other clients, plus the admission predicate |
+| Nested function, include or continuation | Excluded | Initial-context / dispatcher provenance fails, or the runtime has no request |
+| Module entry, worker and parked participants | Excluded | No request is installed; no concurrent participation protocol exists |
+
+The request is consumed at the first ARRAY even on refusal. The decision does
+not collect, wait or drop the lock on refusal (ordinary scheduling still runs
+afterwards). A request lives only in the current runtime; an unused request
+cannot affect a later ordinary run. Tests verify one explicit pass despite two
+ARRAY instructions, reclamation of an unreachable cycle before the observer,
+a stack-only nested array result, subsequent normal execution and an exception
+carrying that result. Separate cases cover recursive locking, missing exclusive
+ownership evidence, nested function execution, pending flow, no ARRAY, process
+reuse and rejection before dispatch. Final run-end GC is counted separately.
+
+This implements only the first dispatcher experiment of #552. Multiple parked
+participants, native transfers and module/wait lock ordering remain unproved;
+#552 stays partial and automatic scheduling in #553 remains blocked.

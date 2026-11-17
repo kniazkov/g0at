@@ -38,7 +38,8 @@ static inline bool gc_admission_matches_boundary(gc_admission_boundary_t boundar
  * @brief Check the candidate and currently observable VM state without waiting.
  *
  * This decision neither establishes dispatcher evidence nor requests a
- * collection. It has no runtime caller until a site proves that evidence.
+ * collection. Only the dedicated test dispatcher currently supplies that evidence.
+ * Production execution does not call this gate.
  */
 static inline bool gc_admission_allows(const thread_t *thread, gc_admission_boundary_t boundary) {
     if (!thread || !gc_admission_matches_boundary(boundary))

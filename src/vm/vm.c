@@ -7,6 +7,10 @@
 #include "vm.h"
 
 #include "gc.h"
+#ifdef GOAT_TEST_GC_DISPATCH
+#    include "gc_admission.h"
+#    include "gc_admission_testing.h"
+#endif
 #include "lib/collections/avl_tree.h"
 #include "lib/files/file_system.h"
 #include "lib/memory/allocate.h"
@@ -36,6 +40,11 @@ typedef struct {
     module_files_t *files;
     /** @brief Nonzero if an instruction failed. */
     int status;
+#ifdef GOAT_TEST_GC_DISPATCH
+    gc_dispatch_test_t *gc_test;
+    context_t *gc_entry_context;
+    size_t gc_dispatch_depth;
+#endif
 } runtime_t;
 
 /**
@@ -1925,8 +1934,45 @@ static void schedule_and_reap(process_t *process) {
     }
 }
 
+#ifdef GOAT_TEST_GC_DISPATCH
+/** @brief One reviewed boundary; never wait, release a lock, or inspect uncommitted operands. */
+static void test_post_array_gc(runtime_t *runtime,
+                               thread_t *thread,
+                               bool outer,
+                               instruction_t instruction,
+                               bool continues) {
+    gc_dispatch_test_t *request = runtime->gc_test;
+    if (!request || request->attempted || instruction.opcode != ARRAY)
+        return;
+    request->attempted = true;
+    process_t *process = thread->process;
+    bool provenance = outer && runtime->gc_dispatch_depth == 1
+                      && thread->context == runtime->gc_entry_context && !runtime->files;
+    context_t *context = thread->context;
+    gc_admission_boundary_t boundary = {
+        .origin = provenance ? GC_DISPATCH_STANDALONE_OUTER : GC_DISPATCH_UNPROVEN,
+        .opcode = instruction.opcode,
+        .dispatch_continues = continues && !runtime->status,
+        .ordinary_flow = context->control_flow == FLOW_NORMAL
+                         && context->pending_flow == FLOW_NORMAL && !context->pending_value
+                         && !context->init_snapshot && !context->file_initialization_boundary,
+        /* exec_ARRAY has released temporary element owners, pushed its result and advanced PC. */
+        .transfers_published = provenance && continues,
+        .no_worker_started = process->execution && !process->execution->first_worker,
+        .no_other_clients = request->exclusive_model_client,
+    };
+    if (gc_admission_allows(thread, boundary)) {
+        collect_garbage(process);
+        request->collected = true;
+    }
+}
+#endif
+
 /** @brief Executes one thread; releases the model lock between instructions. */
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule) {
+#ifdef GOAT_TEST_GC_DISPATCH
+    ++runtime->gc_dispatch_depth;
+#endif
     (void)schedule;
     bool flag = true;
     while (flag && !thread->process->exit_requested && !thread->process->native_failed) {
@@ -1947,10 +1993,16 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
         thread->context->instruction = thread->instr_id;
         instruction_t instr = runtime->code->instructions[thread->instr_id];
         flag = executors[instr.opcode](runtime, instr, thread);
+#ifdef GOAT_TEST_GC_DISPATCH
+        test_post_array_gc(runtime, thread, schedule, instr, flag);
+#endif
         /* The initializer retains its own reentrant gate, not the model lock.
            Suspend all recursive entries, including an enclosing include handler. */
         schedule_and_reap(thread->process);
     }
+#ifdef GOAT_TEST_GC_DISPATCH
+    --runtime->gc_dispatch_depth;
+#endif
 }
 
 /** @brief Completes one equal program thread, with the model lock held. */
@@ -2148,7 +2200,11 @@ static void finish_string_cache(process_t *proc) {
     proc->gc_run_end_observation = false;
 }
 
+#ifdef GOAT_TEST_GC_DISPATCH
+static int run_standalone(process_t *proc, bytecode_t *code, gc_dispatch_test_t *request) {
+#else
 int run(process_t *proc, bytecode_t *code) {
+#endif
     process_execution_enter(proc);
     if (proc->execution || proc->native_failed) {
         process_execution_leave(proc);
@@ -2164,6 +2220,10 @@ int run(process_t *proc, bytecode_t *code) {
     FREE(proc->main_thread->native_diagnostic);
     proc->main_thread->native_diagnostic = NULL;
     runtime_t runtime = {.code = code, .entry_code = code};
+#ifdef GOAT_TEST_GC_DISPATCH
+    runtime.gc_test = request;
+    runtime.gc_entry_context = proc->main_thread->context;
+#endif
     prepare_string_cache(proc, code);
     thread_t *thread = proc->main_thread;
     if (thread->context->file_initialization_boundary)
@@ -2182,6 +2242,20 @@ int run(process_t *proc, bytecode_t *code) {
     process_execution_leave(proc);
     return result;
 }
+
+#ifdef GOAT_TEST_GC_DISPATCH
+int run(process_t *proc, bytecode_t *code) {
+    return run_standalone(proc, code, NULL);
+}
+
+int run_with_gc_dispatch_test(process_t *proc, bytecode_t *code, gc_dispatch_test_t *request) {
+    if (request) {
+        request->attempted = false;
+        request->collected = false;
+    }
+    return run_standalone(proc, code, request);
+}
+#endif
 
 int run_module_file(process_t *proc, module_file_t *file) {
     if (!proc || !file || module_file_process(file) != proc || proc->native_failed)

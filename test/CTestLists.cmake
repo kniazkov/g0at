@@ -943,3 +943,5 @@ goat_suite(core.thread_memory.queued "core;integration;module-threads-migration;
 goat_suite(core.gc_refcounts "core;gc-refcounts" $<TARGET_FILE:unit_testing> --gc-refcount-tests)
 
 goat_suite(core.gc_ownership "core;gc-ownership" $<TARGET_FILE:unit_testing> --gc-ownership-tests)
+
+goat_suite(core.gc_dispatch "core;integration;gc-boundary" $<TARGET_FILE:gc_dispatch_testing>)

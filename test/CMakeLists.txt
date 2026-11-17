@@ -99,6 +99,11 @@ add_executable(inspect_probe_testing src/component/inspect_probe_testing.c "${PR
 target_compile_definitions(inspect_probe_testing PRIVATE GOAT_INSPECT_PROBE_TESTING=1)
 target_link_libraries(inspect_probe_testing PRIVATE core goat_validation goat_module m)
 
+# Override the archive's VM object only in this host; production core has no probe code/API.
+add_executable(gc_dispatch_testing src/component/gc_dispatch_testing.c "${PROJECT_SOURCE_DIR}/src/vm/vm.c")
+target_compile_definitions(gc_dispatch_testing PRIVATE GOAT_TEST_GC_DISPATCH=1)
+target_link_libraries(gc_dispatch_testing PRIVATE core goat_validation goat_module m)
+
 file(GLOB unit_testing_exe src/unit/*.c)
 message(STATUS "Found unit testing sources: ${unit_testing_exe}")
 add_executable(unit_testing ${unit_testing_exe})
