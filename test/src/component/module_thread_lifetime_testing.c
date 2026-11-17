@@ -10,6 +10,7 @@
 #include "model/builtin_function.h"
 #include "model/native_library.h"
 #include "model/thread.h"
+#include "vm/gc.h"
 #include "vm/gc_stats.h"
 #include "vm/vm.h"
 
@@ -179,6 +180,46 @@ static thread_t *worker_by_id(thread_t *caller, uint64_t id) {
     } while (worker != caller);
     assert(false);
     return NULL;
+}
+
+static operation_result_t accept_queued(object_t **args, uint16_t count, thread_t *thread) {
+    assert(count == 1 && args[0]->process == thread->process);
+    assert(args[0]->vtbl->type == TYPE_ARRAY);
+    object_array_t items = get_array_elements(args[0]);
+    assert(items.size == 1 && get_object_integer_value(items.items[0]).value == 841729);
+    return operation_success(get_static_integer_object(43));
+}
+
+static operation_result_t trace_queued_worker(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    process_t *process = thread->process;
+    assert(!count && thread == process->main_thread && process->active_threads == 1);
+    assert(os_mutex_depth(process->execution_mutex) > 0);
+    static const builtin_function_t descriptor = {.name = U"acceptStartupArgument",
+                                                  .min_args = 1,
+                                                  .execute = accept_queued};
+    static builtin_function_object_t callable;
+    object_t *leaf = create_integer_object(process, 841729);
+    object_t *payload = create_array_object(process, (object_array_t){&leaf, 1});
+    DECREF(leaf);
+    uint64_t id =
+        take_thread_id(spawn_program_thread(thread,
+                                            get_builtin_function_object(&callable, &descriptor),
+                                            &payload,
+                                            1));
+    thread_t *worker = worker_by_id(thread, id);
+    assert(process->active_threads == 2 && worker->worker && !worker->finished);
+    assert(worker->start_function && worker->start_argument_count == 1);
+    assert(worker->data_stack->size == 1 && worker->data_stack->objects[0] == payload);
+    DECREF(payload);
+
+    /* Only this zero-argument fixture callback is active. The real bootstrap
+       cannot acquire the model lock yet; its operand stack owns the only array
+       reference. Release the lock only through the normal join after tracing. */
+    size_t active = process->objects.size;
+    collect_garbage(process);
+    assert(process->objects.size == active);
+    return join_program_thread(thread, id);
 }
 
 static operation_result_t temporary_worker(object_t **args, uint16_t count, thread_t *thread) {
@@ -410,6 +451,7 @@ int main(int argc, char **argv) {
     assert(argc == 2 || argc == 3);
     bool memory_mode = argc == 3;
     bool publication_mode = memory_mode && argv[2][0] == 'p';
+    bool queued_mode = memory_mode && argv[2][0] == 'q';
     no_join_mode = memory_mode && argv[2][0] == 'n';
     module_sources_t *sources = NULL;
     module_sources_error_t source_error = {0};
@@ -438,10 +480,21 @@ int main(int argc, char **argv) {
                get_builtin_function_object(&bootstrap_object, &bootstrap_descriptor),
                true)
            == MSTAT_OK);
-    if (memory_mode)
+    if (queued_mode) {
+        static const builtin_function_t probe = {.name = U"traceQueuedWorker",
+                                                 .execute = trace_queued_worker};
+        static builtin_function_object_t object;
+        static object_static_string_t name;
+        assert(create_object_property(module_file_scope(module_files_main(files)),
+                                      get_static_string_object(&name, probe.name),
+                                      get_builtin_function_object(&object, &probe),
+                                      true)
+               == MSTAT_OK);
+    } else if (memory_mode) {
         install_memory_builtins(module_file_scope(module_files_main(files)));
+    }
     gc_stats_t stats;
-    if (publication_mode)
+    if (publication_mode || queued_mode)
         assert(configure_gc_statistics(process, &stats));
     int status = run_module_file(process, module_files_main(files));
     assert(!process->active_threads);
@@ -449,6 +502,9 @@ int main(int argc, char **argv) {
         assert(status == 0 && stats.collections == 1 && stats.run_end_collections == 1
                && !stats.explicit_collections);
         check_published_worker_outcomes(process);
+    } else if (queued_mode) {
+        assert(status == 0 && stats.collections == 2 && stats.explicit_collections == 1
+               && stats.run_end_collections == 1);
     } else if (memory_mode && argv[2][0] == 'u') {
         assert(status == 1 && process->main_thread->exception.value
                && process->main_thread->exception.trace);
