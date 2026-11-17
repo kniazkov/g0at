@@ -27,8 +27,9 @@ void require_object_stack_size(const object_stack_t *stack, size_t size) {
 /** @brief Default initial capacity for the stack. */
 #define DEFAULT_CAPACITY 128
 
-object_stack_t *create_object_stack() {
+object_stack_t *create_object_stack(process_t *process) {
     object_stack_t *stack = (object_stack_t *)CALLOC(sizeof(object_stack_t));
+    stack->process = process;
     stack->objects = (object_t **)ALLOC(DEFAULT_CAPACITY * sizeof(object_t *));
     stack->capacity = DEFAULT_CAPACITY;
     stack->size = 0;
@@ -36,6 +37,8 @@ object_stack_t *create_object_stack() {
 }
 
 stack_index_t push_object_onto_stack(object_stack_t *stack, object_t *object) {
+    if (!object_belongs_to_process(stack->process, object))
+        return BAD_STACK_INDEX;
     if (stack->size == stack->capacity) {
         size_t new_capacity = stack->capacity * 2;
         object_t **new_data = (object_t **)ALLOC(new_capacity * sizeof(object_t *));
@@ -71,15 +74,18 @@ void reduce_object_stack(object_stack_t *stack, stack_index_t new_index) {
     stack->size = new_index + 1;
 }
 
-void replace_object_on_stack(object_stack_t *stack, object_t *new_object, stack_index_t index) {
+bool replace_object_on_stack(object_stack_t *stack, object_t *new_object, stack_index_t index) {
     if (index >= stack->size)
         fail_stack_underflow();
+    if (!object_belongs_to_process(stack->process, new_object))
+        return false;
     object_t *old_object = stack->objects[index];
     if (old_object != new_object) {
-        DECREF(old_object);
-        stack->objects[index] = new_object;
         INCREF(new_object);
+        stack->objects[index] = new_object;
+        DECREF(old_object);
     }
+    return true;
 }
 
 void destroy_object_stack(object_stack_t *stack) {

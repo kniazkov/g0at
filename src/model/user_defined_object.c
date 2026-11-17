@@ -253,6 +253,8 @@ static object_t *clone_in_module(process_t *process,
                                  module_t *module,
                                  uint32_t file_id,
                                  bool relocate) {
+    if (!object_belongs_to_process(process, obj))
+        return NULL;
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     object_user_defined_t *copy = create_empty_user_defined_object(
         process,
@@ -357,6 +359,8 @@ static void flatten_storage(transfer_t *transfer, object_t *target, object_t *so
 
 object_t *
 flat_object_with_access(process_t *process, object_t *source, const function_access_t *access) {
+    if (!object_belongs_to_process(process, source))
+        return NULL;
     if (source->vtbl->type != TYPE_USER_DEFINED_OBJECT) {
         INCREF(source);
         return source;
@@ -399,6 +403,8 @@ operation_result_t copy_object_with_access(process_t *process,
                                            object_t *source,
                                            const function_access_t *access,
                                            bool flatten) {
+    if (!object_belongs_to_process(process, source))
+        return operation_exception(get_exception_invalid_argument());
     object_t *failure = module_scope_failure(source);
     if (failure) {
         INCREF(failure);
@@ -659,6 +665,9 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
 /** @brief Implements @ref object_vtbl_t::create_property. */
 static model_status_t
 create_property(object_t *obj, object_t *key, object_t *value, bool constant) {
+    if (!object_belongs_to_process(obj->process, key)
+        || (value && !object_belongs_to_process(obj->process, value)))
+        return MSTAT_FOREIGN_OBJECT;
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
     if (key->vtbl->type == TYPE_STRING && compare_objects_using_vtbl(key, get_this_key()) == 0
@@ -899,6 +908,8 @@ object_t *create_user_defined_object_in_file(process_t *process,
                                              object_array_t prototypes,
                                              module_t *module,
                                              uint32_t file_id) {
+    if (!process || !prototypes.size || !objects_belong_to_process(process, prototypes))
+        return NULL;
     object_user_defined_t *obj = create_empty_user_defined_object(process, prototypes, module);
     obj->file_id = file_id;
     return &obj->base;
@@ -978,6 +989,9 @@ field_cell_t *create_object_field_in_file(object_t *obj,
                                           uint32_t file_id,
                                           access_domain_t *domain,
                                           bool selected) {
+    if (!object_belongs_to_process(obj->process, key)
+        || !object_belongs_to_process(obj->process, value))
+        return NULL;
     assert(obj->vtbl->type == TYPE_USER_DEFINED_OBJECT);
     assert(module && domain);
     assert(modifier >= ACCESS_FILE && modifier <= ACCESS_PRIVATE);
@@ -1033,6 +1047,8 @@ model_status_t set_field_cell_value(object_t *storage, field_cell_t *cell, objec
 }
 
 static model_status_t write_field(object_t *storage, field_cell_t *cell, object_t *value) {
+    if (value && !object_belongs_to_process(storage->process, value))
+        return MSTAT_FOREIGN_OBJECT;
     if (cell->pending_initialization)
         return MSTAT_UNINITIALIZED;
     if (cell->is_constant)
@@ -1092,6 +1108,8 @@ object_t *snapshot_object_keys_with_access(process_t *process,
 }
 
 model_status_t initialize_field_cell(object_t *storage, field_cell_t *cell, object_t *value) {
+    if (!object_belongs_to_process(storage->process, value))
+        return MSTAT_FOREIGN_OBJECT;
     if (!cell || !cell->pending_initialization)
         return MSTAT_PROPERTY_ALREADY_EXISTS;
     bool found = false;

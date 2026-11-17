@@ -20,6 +20,8 @@
 static atomic_uint_fast64_t last_thread_id = 0;
 
 thread_t *create_thread(process_t *process, context_t *context) {
+    if (!process || !context || !object_belongs_to_process(process, context->data))
+        return NULL;
     thread_t *thread = (thread_t *)CALLOC(sizeof(thread_t));
     thread->id = atomic_fetch_add(&last_thread_id, 1) + 1;
     thread->process = process;
@@ -35,7 +37,7 @@ thread_t *create_thread(process_t *process, context_t *context) {
         process->main_thread->previous = thread;
     }
     thread->context = context;
-    thread->data_stack = create_object_stack();
+    thread->data_stack = create_object_stack(process);
     return thread;
 }
 

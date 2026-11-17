@@ -311,3 +311,42 @@ with more than one parked participant and a documented lock-order argument;
 do not force tracing inside a refused state to test the refusal. Require
 relevant regression suites and CI on those changes. Until this exists, #553
 must not schedule collection during execution.
+
+### Checked process ingress (#556)
+
+A managed reference belongs to exactly one process. Ingress accepts a live object
+with the destination `process`, or a process-independent immutable static object
+(`object->process == NULL`). This is a model/C API contract, not a proof that an
+arbitrary pointer is valid: callers must supply live objects and hold the model
+lock or exclusive ownership. Direct writes to public internal structs, vtables,
+field cells or stack buffers bypass the API and remain unsupported.
+
+| Boundary | Check and rejection before mutation |
+|---|---|
+| Mutable/read-only array construction | Validate the complete element batch; return NULL without allocating or retaining any element |
+| Array insertion/index replacement | Validate values against the container owner (and explicit process on index writes); return InvalidArgument without changing capacity, length, elements or refs |
+| Object construction/prototypes | Validate all prototypes before allocation or pool removal; return NULL |
+| Field creation, replacement, pending initialization | Check retained keys/values; return NULL or MSTAT_FOREIGN_OBJECT. A rejected initializer leaves pending/constant flags intact. NULL preflight values remain supported by property assignment |
+| Function construction | Check closure and every parameter name before taking ownership of the names buffer or retaining values; return NULL, leaving that buffer with the caller |
+| Access snapshots/captures | A function/context binds its snapshot to its process. Standalone snapshots bind on their first managed storage. add_lexical_scope, add_function_field_capture and inherit_function_access return false before changes for another owner; module identity is not heap identity |
+| Context/thread construction and argument snapshots | Check caller/prototypes, context data or the complete argument batch before publication; constructors return NULL, capture_context_arguments returns false |
+| Operand stack | The stack has a borrowed immutable owner. A rejected push returns BAD_STACK_INDEX and consumes no reference; replacement returns false before releasing the old value. Valid push transfers ownership; valid replacement retains the new value |
+| Spawn | Check callable and every argument before declaration reservation, thread creation, stack pushes or INCREF; return InvalidArgument. Normal execution eligibility checks still apply first |
+| Builtin/dynamic function dispatch | Reject a foreign callable/receiver before popping arguments or creating a frame; return false with InvalidArgument |
+| Shallow clone/flat/function adaptation | Reject a foreign composite/function before making a copy; no implicit heap transfer. Scalar clone implementations can explicitly copy independent payloads into another process |
+| External GC registrations | Existing register_gc_root ownership check continues to reject foreign values |
+
+Internal field copying, lexical transfer maps and direct stack rearrangements
+operate only on already validated same-process graphs. They are not a public
+cross-heap transfer facility; their source/destination provenance comes from the
+checked clone/flat, function, context and stack entry points. Module identities,
+access domains, bytecode/native descriptors and exception traces have their own
+resource ownership, not GC-heap ownership. Borrowed lookups/comparisons do not
+create retained cross-heap edges.
+
+`core.gc_ownership` uses two real heaps, checks batch rejection (including a valid
+prefix), unchanged refs/heap allocation/stack/field state, same-owner and static
+successes, and clean destruction. Existing operator, module, thread, native and
+REPL suites cover valid callers. Tests never invoke tracing on deliberately
+invalid graphs. These checks do not admit any new collection point or complete
+the still-partial GC-10 publication protocol.

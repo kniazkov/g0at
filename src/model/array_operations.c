@@ -20,6 +20,8 @@ static operation_result_t self(object_t *obj) {
 /** @brief Inserts borrowed argument values, preserving order and self references. */
 operation_result_t
 insert_array_elements(object_t *obj, size_t index, object_t **args, size_t count) {
+    if (!objects_belong_to_process(obj->process, (object_array_t){args, count}))
+        return operation_exception(get_exception_invalid_argument());
     array_object_t *array = (array_object_t *)obj;
     if (array->read_only)
         return operation_exception(get_exception_immutable_object());

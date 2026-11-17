@@ -58,6 +58,8 @@ int main(int argc, char **argv) {
     if (cleanup_service_main(argc, argv, &cleanup_code))
         return cleanup_code;
     init_unicode_locale();
+    if (argc == 2 && !strcmp(argv[1], "--gc-ownership-tests"))
+        return test_gc_process_ownership() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 2 && !strcmp(argv[1], "--gc-refcount-tests")) {
         size_t before = get_allocated_memory_size();
         bool success = test_checked_gc_refcounts();

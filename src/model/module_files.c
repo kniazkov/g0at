@@ -272,6 +272,7 @@ context_t *create_module_file_context(module_file_t *file, context_t *caller) {
     context->data = file->scope;
     INCREF(context->data);
     init_function_access_in_file(&context->access, file->owner->identity, file->id);
+    context->access.process = file->owner->process;
     add_function_access_domain(&context->access, get_object_access_domain(file->scope));
     return context;
 }

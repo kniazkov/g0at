@@ -941,3 +941,5 @@ goat_suite(core.thread_memory.queued "core;integration;module-threads-migration;
   "$<TARGET_FILE:module_thread_lifetime_testing>"
   "${PROJECT_SOURCE_DIR}/test/data/gc-thread-memory/queued.goat" "queued")
 goat_suite(core.gc_refcounts "core;gc-refcounts" $<TARGET_FILE:unit_testing> --gc-refcount-tests)
+
+goat_suite(core.gc_ownership "core;gc-ownership" $<TARGET_FILE:unit_testing> --gc-ownership-tests)

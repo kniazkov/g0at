@@ -351,6 +351,7 @@ static test_description_t test_list[] = {
     {"access analysis", test_access_analysis},
     {"process launch", test_process_launch},
     {"process launch VM", test_process_launch_vm},
+    {"GC process ownership", test_gc_process_ownership},
     {"GC pending thread callable", test_gc_pending_thread_callable},
     {"GC without registered threads", test_gc_no_registered_threads},
     {"GC sweep reconciles array references", test_gc_sweep_array_references},

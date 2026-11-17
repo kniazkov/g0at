@@ -61,6 +61,13 @@ static object_array_t get_topology(const object_t *obj) {
 
 /** @brief Invokes a builtin; failed calls leave an owned pending exception. */
 static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
+    if (!object_belongs_to_process(thread->process, obj)
+        || (receiver && !object_belongs_to_process(thread->process, receiver))) {
+        clear_exception(&thread->exception);
+        thread->exception.value = get_exception_invalid_argument();
+        return false;
+    }
+
     require_object_stack_size(thread->data_stack, arg_count);
     const builtin_function_t *descriptor = ((builtin_function_object_t *)obj)->descriptor;
     object_t *failure = receiver ? module_scope_failure(receiver) : NULL;
@@ -578,6 +585,13 @@ static bool dynamic_call_impl(object_t *obj,
                               object_t *receiver,
                               thread_t *thread,
                               bool operator_receiver) {
+    if (!object_belongs_to_process(thread->process, obj)
+        || (receiver && !object_belongs_to_process(thread->process, receiver))) {
+        clear_exception(&thread->exception);
+        thread->exception.value = get_exception_invalid_argument();
+        return false;
+    }
+
     if (thread->process->native_failed)
         return false;
     require_object_stack_size(thread->data_stack, arg_count);
@@ -785,6 +799,9 @@ object_t *create_function_object(process_t *process,
                                  object_t *closure,
                                  native_function_descriptor_t *native_function,
                                  bool native_disabled) {
+    if (!process || !object_belongs_to_process(process, closure)
+        || !objects_belong_to_process(process, (object_array_t){arg_names, arg_count}))
+        return NULL;
     object_dynamic_function_t *obj =
         (object_dynamic_function_t *)CALLOC(sizeof(object_dynamic_function_t));
     obj->base.vtbl = &dynamic_vtbl;
@@ -802,6 +819,7 @@ object_t *create_function_object(process_t *process,
     init_function_access_in_file(&obj->access,
                                  get_object_module(closure),
                                  get_object_file_id(closure));
+    obj->access.process = process;
     access_domain_t *domain = get_object_access_domain(closure);
     if (domain)
         add_function_access_domain(&obj->access, domain);
@@ -823,6 +841,8 @@ function_access_t *get_function_access(object_t *function) {
 }
 
 object_t *create_transferred_function(process_t *process, object_t *source) {
+    if (!object_belongs_to_process(process, source))
+        return NULL;
     object_dynamic_function_t *original = (object_dynamic_function_t *)source;
     object_t **names = original->arg_count ? ALLOC(original->arg_count * sizeof(*names)) : NULL;
     for (size_t i = 0; i < original->arg_count; i++)
@@ -838,10 +858,13 @@ object_t *create_transferred_function(process_t *process, object_t *source) {
     function_access_t *access = get_function_access(result);
     clear_function_access(access, true);
     init_function_access_in_file(access, original->access.module, original->access.file_id);
+    access->process = process;
     return result;
 }
 
 void link_transferred_function(object_t *destination, object_t *source, transfer_t *transfer) {
+    if (!object_belongs_to_process(destination->process, source))
+        return;
     object_dynamic_function_t *copy = (object_dynamic_function_t *)destination;
     object_dynamic_function_t *original = (object_dynamic_function_t *)source;
     object_t *closure = transfer_closure(transfer, original->closure);

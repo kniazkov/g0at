@@ -103,6 +103,8 @@ object_array_t get_array_elements(const object_t *obj) {
 
 /** @brief A shallow independent copy; direct self references target the copy. */
 static object_t *clone(process_t *process, object_t *obj) {
+    if (!object_belongs_to_process(process, obj))
+        return NULL;
     array_object_t *copy = (array_object_t *)create_array_object(process, get_array_elements(obj));
     for (size_t i = 0; i < copy->count; i++) {
         if (copy->items[i] == obj) {
@@ -174,6 +176,8 @@ set_index(process_t *process, object_t *obj, object_array_t indices, object_t *v
         return operation_exception(get_exception_immutable_object());
     size_t index;
     if (!index_value(array, indices, &index))
+        return operation_exception(get_exception_invalid_argument());
+    if (process != obj->process || !object_belongs_to_process(obj->process, value))
         return operation_exception(get_exception_invalid_argument());
     INCREF(value);
     object_t *old = array->items[index];
@@ -265,6 +269,8 @@ static object_vtbl_t vtbl = {.type = TYPE_ARRAY,
                              .call = stub_call};
 
 object_t *create_array_object(process_t *process, object_array_t elements) {
+    if (!process || !objects_belong_to_process(process, elements))
+        return NULL;
     /* Public constructor may be called outside the VM: guard size arithmetic too. */
     if (elements.size > SIZE_MAX / sizeof(object_t *) || elements.size > INT64_MAX)
         abort();
@@ -320,6 +326,8 @@ void reserve_array(array_object_t *array, size_t count) {
 
 object_t *create_read_only_array_object(process_t *process, object_array_t elements) {
     array_object_t *array = (array_object_t *)create_array_object(process, elements);
+    if (!array)
+        return NULL;
     array->read_only = true;
     return &array->base;
 }

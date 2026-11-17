@@ -320,6 +320,21 @@ struct object_t {
     object_t *next;
 };
 
+/** @brief Accepts live same-process values and process-independent static objects. */
+static inline bool object_belongs_to_process(const process_t *process, const object_t *obj) {
+    return obj && (!obj->process || obj->process == process);
+}
+
+/** @brief Validates the whole batch before any ownership or container change. */
+static inline bool objects_belong_to_process(const process_t *process, object_array_t values) {
+    if (values.size && !values.items)
+        return false;
+    for (size_t i = 0; i < values.size; ++i)
+        if (!object_belongs_to_process(process, values.items[i]))
+            return false;
+    return true;
+}
+
 /**
  * @brief Macro to increment the reference count of an object.
  *
@@ -387,7 +402,8 @@ static inline int compare_objects_using_vtbl(const object_t *obj1, const object_
  * @brief Clones an object for a process, returning an owned reference.
  *
  * This helper dispatches to the object's virtual table and creates a clone owned by the given
- * process.
+ * process. Composite objects/functions reject cross-process shallow cloning with NULL;
+ * scalar implementations may explicitly copy their payload into the destination heap.
  */
 static inline object_t *clone_object(process_t *process, object_t *obj) {
     return obj->vtbl->clone(process, obj);
