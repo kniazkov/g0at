@@ -173,3 +173,6 @@ bool test_gc_statistics_benchmark(void);
 
 /** @brief A test-host boundary with a published operation result and a parked mutator. */
 bool test_gc_controlled_model_boundary(void);
+
+/** @brief Checks the private standalone admission policy without calling the collector. */
+bool test_gc_admission_decision(void);
