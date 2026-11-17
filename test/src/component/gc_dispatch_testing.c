@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool test_gc_worker_admission(bool joined, bool exceptional);
+bool test_gc_worker_admission(bool joined, bool exceptional, unsigned publications);
 
 #define CHECK(expr)                                                                                \
     do {                                                                                           \
@@ -176,9 +176,15 @@ int main(int argc, char **argv) {
         bool joined = !strncmp(argv[1], "joined-", 7);
         bool exceptional = strstr(argv[1], "exception") != NULL;
         if (strcmp(argv[1], "parked-return") && strcmp(argv[1], "parked-exception")
-            && strcmp(argv[1], "joined-return") && strcmp(argv[1], "joined-exception"))
+            && strcmp(argv[1], "joined-return") && strcmp(argv[1], "joined-exception")
+            && strcmp(argv[1], "published-return") && strcmp(argv[1], "published-exception")
+            && strcmp(argv[1], "mixed-return") && strcmp(argv[1], "mixed-exception"))
             return EXIT_FAILURE;
-        return test_gc_worker_admission(joined, exceptional) ? EXIT_SUCCESS : EXIT_FAILURE;
+        unsigned publications = !strncmp(argv[1], "published-", 10) ? 2
+                                : !strncmp(argv[1], "mixed-", 6)    ? 1
+                                                                    : 0;
+        return test_gc_worker_admission(joined, exceptional, publications) ? EXIT_SUCCESS
+                                                                           : EXIT_FAILURE;
     }
     if (argc != 1)
         return EXIT_FAILURE;

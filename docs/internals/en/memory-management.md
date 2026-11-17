@@ -406,3 +406,42 @@ worker history belongs to the execution, not the lifetime of the process.
 The joined case specifically protects `no_worker_started`; a count of one
 active thread is insufficient. These are refusal tests, not a safe publication
 protocol for parked workers. #552 remains incomplete and #553 blocked.
+
+### Controlled publication of waiting workers (#592)
+
+The dedicated test host now has an opt-in `published_workers` request. This
+does not enable production GC or automatically treat builtin/native waits as
+safe. The reviewed fixtures use a static zero-argument builtin without a
+receiver or enclosing native/module frames; its sole live managed C-local
+value is the array passed to `gc_test_publish_park`. A more general builtin
+would need to publish its entire live call chain first.
+
+Under model-lock depth one, publication registers an owning GC root and then
+links a stack-scoped park registration into the current execution. The caller
+retains its original reference. Duplicate registration, recursive lock entry,
+and mismatched/double resume are rejected. At the real outer post-ARRAY site,
+the dispatcher checks its normal mutator conditions, then requires one
+registration for every current live worker and an exact active-thread count.
+An unregistered, finished, initializing, failed or joining worker blocks this
+route. It does not wait for missing registrations. The original no-worker
+route and its historical-worker refusal remain intact.
+
+The barrier and registrations share the model mutex. Publish before signaling
+arrival and waiting; condition wait releases the mutex. Spurious wakeups only
+recheck the release predicate. On actual resumption, unlink the stable state
+before removing its root, under the same mutex, before touching the graph or
+returning/throwing. GC holds this mutex throughout tracing; there is no second
+lock or readiness gate to invert the order. No token or root survives worker
+completion; a new run has an empty registration list.
+
+| Test-host participants | Post-ARRAY result | Verified outcomes |
+|---|---|---|
+| Two published waiting workers | One tracing pass | Dead cycle reclaimed; both published arrays and entry operand survive; return and exception; roots removed after resume |
+| One published and one ordinary waiting worker | Refusal, zero tracing passes | Both workers resume and return/throw intact; registered root removed |
+| Two ordinary waiting or joined/reaped workers | Refusal as before | Existing #590 scenarios unchanged |
+
+All variants also verify a fresh run on the same process. These controlled
+fixtures demonstrate a publication handshake, not a complete runtime protocol:
+arbitrary native frames, module/include waits, join publication and worker
+bootstrap still have no admitted collection point. #552 remains partial and
+#553 must not schedule automatic collection.

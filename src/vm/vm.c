@@ -62,6 +62,10 @@ struct vm_execution_t {
     thread_t
         *first_worker; /**< First worker created during this run; earlier records stay joinable. */
     bool reservations_done;
+#ifdef GOAT_TEST_GC_DISPATCH
+    gc_dispatch_test_t *gc_request;
+    gc_test_park_t *gc_parks;
+#endif
 };
 
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
@@ -1935,6 +1939,70 @@ static void schedule_and_reap(process_t *process) {
 }
 
 #ifdef GOAT_TEST_GC_DISPATCH
+bool gc_test_publish_park(thread_t *thread, object_t *value, gc_test_park_t *park) {
+    if (!thread || !park || park->thread || !value)
+        return false;
+    process_t *proc = thread->process;
+    if (os_mutex_depth(proc->execution_mutex) != 1 || !proc->execution
+        || !proc->execution->gc_request || !proc->execution->gc_request->published_workers
+        || !thread->program_worker || thread->finished || thread->initialization_depth
+        || thread->native_status || thread->exception.value || thread->waiting_for
+        || !object_belongs_to_process(proc, value))
+        return false;
+    for (gc_test_park_t *item = proc->execution->gc_parks; item; item = item->next)
+        if (item->thread == thread)
+            return false;
+    gc_root_handle_t root = register_gc_root(proc, value);
+    if (!root.serial)
+        return false;
+    *park = (gc_test_park_t){thread, proc->execution->gc_parks, root};
+    proc->execution->gc_parks = park;
+    return true;
+}
+
+bool gc_test_resume(thread_t *thread, gc_test_park_t *park) {
+    if (!thread || !park || park->thread != thread)
+        return false;
+    process_t *proc = thread->process;
+    if (os_mutex_depth(proc->execution_mutex) != 1 || !proc->execution)
+        return false;
+    gc_test_park_t **link = &proc->execution->gc_parks;
+    while (*link && *link != park)
+        link = &(*link)->next;
+    if (!*link)
+        return false;
+    *link = park->next; /* Withdraw stable state before releasing its owning root. */
+    bool removed = unregister_gc_root(proc, park->root);
+    *park = (gc_test_park_t){0};
+    return removed;
+}
+
+/** @brief Every current worker must have explicitly published before releasing the model lock. */
+static bool test_all_workers_parked(process_t *proc) {
+    struct vm_execution_t *execution = proc->execution;
+    if (!execution || !execution->first_worker || !execution->gc_request
+        || !execution->gc_request->published_workers)
+        return false;
+    size_t workers = 0, registrations = 0;
+    for (thread_t *thread = execution->first_worker; thread != proc->main_thread;
+         thread = thread->next) {
+        if (!thread->program_worker || thread->finished || thread->initialization_depth
+            || thread->native_status || thread->exception.value || thread->waiting_for)
+            return false;
+        gc_test_park_t *park = execution->gc_parks;
+        while (park && park->thread != thread)
+            park = park->next;
+        if (!park || !park->root.serial)
+            return false;
+        ++workers;
+    }
+    for (gc_test_park_t *park = execution->gc_parks; park; park = park->next)
+        ++registrations;
+    return workers && registrations == workers && proc->active_threads == workers + 1;
+}
+#endif
+
+#ifdef GOAT_TEST_GC_DISPATCH
 /** @brief One reviewed boundary; never wait, release a lock, or inspect uncommitted operands. */
 static void test_post_array_gc(runtime_t *runtime,
                                thread_t *thread,
@@ -1961,7 +2029,8 @@ static void test_post_array_gc(runtime_t *runtime,
         .no_worker_started = process->execution && !process->execution->first_worker,
         .no_other_clients = request->exclusive_model_client,
     };
-    if (gc_admission_allows(thread, boundary)) {
+    if (gc_admission_allows(thread, boundary)
+        || (gc_admission_allows_mutator(thread, boundary) && test_all_workers_parked(process))) {
         collect_garbage(process);
         request->collected = true;
     }
@@ -2032,6 +2101,10 @@ static void complete_program_thread(thread_t *thread, int status) {
             ctx->init_snapshot = NULL;
         }
     }
+#ifdef GOAT_TEST_GC_DISPATCH
+    for (gc_test_park_t *park = thread->process->execution->gc_parks; park; park = park->next)
+        assert(park->thread != thread);
+#endif
     assert(!thread->waiting_for);
     thread->execution_status = status;
     thread->finished = true;
@@ -2221,6 +2294,7 @@ int run(process_t *proc, bytecode_t *code) {
     proc->main_thread->native_diagnostic = NULL;
     runtime_t runtime = {.code = code, .entry_code = code};
 #ifdef GOAT_TEST_GC_DISPATCH
+    execution.gc_request = request;
     runtime.gc_test = request;
     runtime.gc_entry_context = proc->main_thread->context;
 #endif
