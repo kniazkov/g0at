@@ -254,3 +254,60 @@ applicable, on success and exceptional completion; run the relevant regression
 suite and required CI. A path without that evidence stays excluded. This
 proposal does not add a test hook or runtime entry point, enable periodic or
 allocation-triggered tracing, change #556, complete #552, or unblock #553.
+
+#### Implementation order and acceptance for the admission gate
+
+1. Start with a private, non-waiting decision under the execution lock.
+   A refused request must leave the model and pending result unchanged: it
+   must not release the lock, wait for another thread, or enter tracing. Keep
+   the host-exclusive and end-of-run calls separate from this decision.
+   First exercise the decision without collecting. Later, a bounded test
+   request may invoke one existing tracing pass after admission; no runtime
+   timer, allocation threshold or default test request belongs in this step.
+   A declined or unused test request cannot carry over to the next run.
+2. The first candidate is the outer dispatcher of a standalone `run`, after a
+   successful opcode returns and before `execute_instructions` calls
+   `schedule_and_reap`. Start with one live entry mutator, no worker started
+   in this run (`first_worker == NULL`), and no other model clients. For the
+   first test, use `exec_ARRAY`: it puts the result on the operand stack
+   and advances the instruction index before returning. Require the top-level
+   dispatch path, not merely lock
+   depth or `active_threads == 1`: `run_module_file`, include, continuation
+   stepping and nested VM calls can reach similar control flow. Do not admit
+   while unwinding, during refcount drain or teardown, or after completion of
+   the dispatch loop. The first test should retain a heap result only through
+   a traced operand slot and verify normal execution after one admitted pass.
+3. Extend admission to other participation states one at a time. A worker
+   published by `spawn_program_thread` has a callable and arguments in traced
+   slots until `program_thread_entry` takes the callable. Its takeover and
+   initial dispatch are not themselves safe points. Before adding parked
+   participants, track their publication under the model lock: a caller must
+   move every live result from its C locals to traced state before recording a
+   stable park. Pending values in contexts, constructor snapshot registrations,
+   module scopes/failures and completed worker records already have different
+   owners; do not keep redundant roots indefinitely. On resumption, leave the
+   parked state under the model lock before changing the graph. A refused
+   request is deferred; never wait for readiness while retaining either the
+   model lock or a gate another participant needs.
+4. Classify each existing lock-release/wait path before permitting it:
+   `join_program_thread`, `schedule_and_reap`, file initialization and loader
+   waits, native calls/callbacks, and blocking builtins. A recursive native
+   callback or include inherits no admission from the enclosing frame. In
+   particular, `static_call` moves popped arguments into a C array, and a
+   native invocation may hold borrowed views while its model lock is dropped.
+   Leave such paths excluded until ownership has been shown across each
+   transfer, including exceptions and fallback. No raw suspend/resume or
+   condition-wait helper should implicitly advertise a safe point.
+
+The #580–#584 fixtures verify specific publication paths, not the gate:
+controlled waiting, outcomes through finally and completion, same-process
+module initialization/wait, and a real queued worker before bootstrap. A
+completion claim for #552 needs a matrix of *implemented, admitted* points:
+each row names its ownership handoff, possible concurrent participants, refusal
+conditions, and success/exception tests. Prove that a refused request does not
+collect, an admitted request collects exactly once, and every normal wakeup or
+error restores the participant state. Include at least one deterministic test
+with more than one parked participant and a documented lock-order argument;
+do not force tracing inside a refused state to test the refusal. Require
+relevant regression suites and CI on those changes. Until this exists, #553
+must not schedule collection during execution.
