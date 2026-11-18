@@ -178,11 +178,15 @@ int main(int argc, char **argv) {
         if (strcmp(argv[1], "parked-return") && strcmp(argv[1], "parked-exception")
             && strcmp(argv[1], "joined-return") && strcmp(argv[1], "joined-exception")
             && strcmp(argv[1], "published-return") && strcmp(argv[1], "published-exception")
-            && strcmp(argv[1], "mixed-return") && strcmp(argv[1], "mixed-exception"))
+            && strcmp(argv[1], "mixed-return") && strcmp(argv[1], "mixed-exception")
+            && strcmp(argv[1], "withdrawn-return") && strcmp(argv[1], "withdrawn-exception")
+            && strcmp(argv[1], "republished-return") && strcmp(argv[1], "republished-exception"))
             return EXIT_FAILURE;
-        unsigned publications = !strncmp(argv[1], "published-", 10) ? 2
-                                : !strncmp(argv[1], "mixed-", 6)    ? 1
-                                                                    : 0;
+        unsigned publications = !strncmp(argv[1], "withdrawn-", 10)     ? 3
+                                : !strncmp(argv[1], "republished-", 12) ? 4
+                                : !strncmp(argv[1], "published-", 10)   ? 2
+                                : !strncmp(argv[1], "mixed-", 6)        ? 1
+                                                                        : 0;
         return test_gc_worker_admission(joined, exceptional, publications) ? EXIT_SUCCESS
                                                                            : EXIT_FAILURE;
     }
