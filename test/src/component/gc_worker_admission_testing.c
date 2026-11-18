@@ -24,7 +24,7 @@
     } while (0)
 
 typedef struct {
-    bool joined_boundary, exceptional, release, observed;
+    bool joined_boundary, exceptional, release, observed, arguments;
     unsigned parked, resumed, publications;
     uint64_t ids[2];
     gc_dispatch_test_t request;
@@ -44,8 +44,8 @@ static bool payload_ok(object_t *value) {
 }
 
 static operation_result_t park(object_t **args, uint16_t count, thread_t *thread) {
-    (void)args;
-    REQUIRE(count == 0);
+    REQUIRE(count == (state.arguments ? 2 : 0));
+    REQUIRE(thread->data_stack->size == 0); /* static_call has popped every argument. */
     process_t *proc = thread->process;
     object_t *leaf = create_integer_object(proc, 7654321);
     object_t *value = create_array_object(proc, (object_array_t){&leaf, 1});
@@ -53,7 +53,8 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
     object_t *second_leaf = create_integer_object(proc, 7654321);
     object_t *second = create_array_object(proc, (object_array_t){&second_leaf, 1});
     DECREF(second_leaf);
-    object_t *batch[] = {value, second};
+    object_t *batch[] = {value, second, count ? args[0] : NULL, count ? args[1] : NULL};
+    size_t batch_size = count ? 4 : 2;
     gc_test_park_t registration = {0}, duplicate = {0};
     bool publish = state.parked < state.publications;
     if (publish) {
@@ -67,7 +68,9 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
         process_execution_enter(proc);
         REQUIRE(!gc_test_publish_park(thread, value, &registration));
         process_execution_leave(proc);
-        REQUIRE(gc_test_publish_park_values(thread, (object_array_t){batch, 2}, &registration));
+        REQUIRE(gc_test_publish_park_values(thread,
+                                            (object_array_t){batch, batch_size},
+                                            &registration));
         REQUIRE(!gc_test_publish_park(thread, value, &registration));
         REQUIRE(!gc_test_publish_park(thread, value, &duplicate));
         REQUIRE(!gc_test_resume(thread, &duplicate));
@@ -83,7 +86,9 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
         batch[0] = value;
         publish = state.publications == 4;
         if (publish)
-            REQUIRE(gc_test_publish_park_values(thread, (object_array_t){batch, 2}, &registration));
+            REQUIRE(gc_test_publish_park_values(thread,
+                                                (object_array_t){batch, batch_size},
+                                                &registration));
     }
     /* Unregistered fixtures deliberately retain a C-local only value. */
     ++state.parked;
@@ -102,6 +107,13 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
     }
     REQUIRE(payload_ok(value) && payload_ok(second));
     DECREF(second);
+    if (count) {
+        REQUIRE(args[0] != args[1] && payload_ok(args[0]) && payload_ok(args[1]));
+        /* static_call will release both arguments after we return, including on exception. */
+        DECREF(value);
+        value = args[0];
+        INCREF(value);
+    }
     ++state.resumed;
     return state.exceptional ? operation_exception(value) : operation_success(value);
 }
@@ -131,11 +143,23 @@ static operation_result_t start(object_t **args, uint16_t count, thread_t *threa
     DECREF(inserted.value);
     DECREF(dead);
     for (size_t i = 0; i < 2; ++i) {
+        object_t *arguments[2] = {NULL, NULL};
+        if (state.arguments) {
+            for (size_t j = 0; j < 2; ++j) {
+                object_t *leaf = create_integer_object(thread->process, 7654321);
+                arguments[j] = create_array_object(thread->process, (object_array_t){&leaf, 1});
+                DECREF(leaf);
+            }
+        }
         operation_result_t result =
             spawn_program_thread(thread,
                                  get_builtin_function_object(&storage, &descriptor),
-                                 NULL,
-                                 0);
+                                 state.arguments ? arguments : NULL,
+                                 state.arguments ? 2 : 0);
+        if (state.arguments) {
+            DECREF(arguments[0]);
+            DECREF(arguments[1]);
+        }
         REQUIRE(!result.is_exception);
         state.ids[i] = (uint64_t)get_object_integer_value(result.value).value;
         DECREF(result.value);
@@ -218,7 +242,10 @@ static bytecode_t *make_program(process_t *proc, bool workers) {
     return code;
 }
 
-bool test_gc_worker_admission(bool joined, bool exceptional, unsigned publications) {
+bool test_gc_worker_admission(bool joined,
+                              bool exceptional,
+                              unsigned publications,
+                              bool arguments) {
     size_t baseline = get_allocated_memory_size();
     process_t *proc = create_process();
     gc_stats_t stats;
@@ -226,6 +253,7 @@ bool test_gc_worker_admission(bool joined, bool exceptional, unsigned publicatio
     /* Exclusive host ownership excludes external model clients, not the VM's own workers. */
     state = (worker_case_t){
         .joined_boundary = joined,
+        .arguments = arguments,
         .exceptional = exceptional,
         .publications = publications,
         .request = {.exclusive_model_client = true, .published_workers = publications != 0}};
