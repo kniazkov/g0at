@@ -25,7 +25,7 @@ typedef struct {
 int run_with_gc_dispatch_test(process_t *proc, bytecode_t *code, gc_dispatch_test_t *request);
 
 /** @brief Stack-scoped fixture registration; zero initialize, never copy or modify while linked.
- * This API is ONLY for reviewed test builtins: static callable, explicitly published arguments, no
+ * This API is ONLY for reviewed test builtins: static callable, explicitly published arguments and
  * receiver, no enclosing native/module frames except explicitly rooted test builtin callers.
  * All live managed C-local values must be included in the batch or caller roots. The caller keeps
  * its own reference. Register under lock depth one before waiting; unregister under the same lock

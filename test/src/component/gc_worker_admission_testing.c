@@ -24,7 +24,7 @@
     } while (0)
 
 typedef struct {
-    bool joined_boundary, exceptional, release, observed, arguments, nested;
+    bool joined_boundary, exceptional, release, observed, arguments, nested, method;
     unsigned parked, resumed, publications;
     uint64_t ids[2];
     gc_dispatch_test_t request;
@@ -43,7 +43,8 @@ static bool payload_ok(object_t *value) {
            && get_object_integer_value(items.items[0]).value == 7654321;
 }
 
-static operation_result_t park(object_t **args, uint16_t count, thread_t *thread) {
+static operation_result_t
+park_impl(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
     REQUIRE(count == (state.arguments ? 2 : 0));
     REQUIRE(thread->data_stack->size == 0); /* static_call has popped every argument. */
     process_t *proc = thread->process;
@@ -53,8 +54,9 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
     object_t *second_leaf = create_integer_object(proc, 7654321);
     object_t *second = create_array_object(proc, (object_array_t){&second_leaf, 1});
     DECREF(second_leaf);
-    object_t *batch[] = {value, second, count ? args[0] : NULL, count ? args[1] : NULL};
-    size_t batch_size = count ? 4 : 2;
+    object_t *batch[] = {value, second, count ? args[0] : NULL, count ? args[1] : NULL, receiver};
+    size_t batch_size = receiver ? 5 : count ? 4 : 2;
+    REQUIRE((receiver != NULL) == state.method);
     gc_test_park_t registration = {0}, duplicate = {0};
     bool publish = state.parked < state.publications;
     if (publish) {
@@ -114,8 +116,23 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
         value = args[0];
         INCREF(value);
     }
+    if (receiver) {
+        REQUIRE(payload_ok(receiver));
+        DECREF(value);
+        value = receiver;
+        INCREF(value);
+    }
     ++state.resumed;
     return state.exceptional ? operation_exception(value) : operation_success(value);
+}
+
+static operation_result_t park(object_t **args, uint16_t count, thread_t *thread) {
+    return park_impl(NULL, args, count, thread);
+}
+
+static operation_result_t
+park_method(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    return park_impl(receiver, args, count, thread);
 }
 
 static void release_and_join(thread_t *thread) {
@@ -143,16 +160,25 @@ static operation_result_t outer_park(object_t **args, uint16_t count, thread_t *
     gc_root_handle_t root = register_gc_root(thread->process, frame);
     REQUIRE(root.serial);
     DECREF(frame);
-    static const builtin_function_t inner_descriptor = {.name = U"innerGcPark", .execute = park};
+    static const builtin_function_t inner_descriptor = {.name = U"innerGcPark",
+                                                        .execute = park,
+                                                        .execute_method = park_method};
     static builtin_function_object_t inner_storage;
     for (size_t i = 0; i < count; ++i) {
         INCREF(args[i]);
         push_object_onto_stack(thread->data_stack, args[i]);
     }
+    object_t *receiver = NULL;
+    if (state.method) {
+        object_t *receiver_leaf = create_integer_object(thread->process, 7654321);
+        receiver = create_array_object(thread->process, (object_array_t){&receiver_leaf, 1});
+        DECREF(receiver_leaf);
+        /* Deliberately absent from the outer frame root: the method must publish it. */
+    }
     instr_index_t saved = thread->instr_id;
     bool ok = call_object(get_builtin_function_object(&inner_storage, &inner_descriptor),
                           count,
-                          NULL,
+                          receiver,
                           thread);
     thread->instr_id = saved;
     REQUIRE(ok == !state.exceptional);
@@ -167,9 +193,11 @@ static operation_result_t outer_park(object_t **args, uint16_t count, thread_t *
         result = thread->exception.value;
         thread->exception = (exception_t){0};
     }
-    REQUIRE(payload_ok(result) && result == args[0]);
+    REQUIRE(payload_ok(result) && result == (receiver ? receiver : args[0]));
     REQUIRE(unregister_gc_root(thread->process, root));
     DECREF(local);
+    DECREFIF(receiver);
+    REQUIRE(payload_ok(result));
     return ok ? operation_success(result) : operation_exception(result);
 }
 
@@ -290,7 +318,8 @@ bool test_gc_worker_admission(bool joined,
                               bool exceptional,
                               unsigned publications,
                               bool arguments,
-                              bool nested) {
+                              bool nested,
+                              bool method) {
     size_t baseline = get_allocated_memory_size();
     process_t *proc = create_process();
     gc_stats_t stats;
@@ -300,6 +329,7 @@ bool test_gc_worker_admission(bool joined,
         .joined_boundary = joined,
         .arguments = arguments,
         .nested = nested,
+        .method = method,
         .exceptional = exceptional,
         .publications = publications,
         .request = {.exclusive_model_client = true, .published_workers = publications != 0}};

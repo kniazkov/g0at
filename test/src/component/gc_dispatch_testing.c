@@ -19,7 +19,8 @@ bool test_gc_worker_admission(bool joined,
                               bool exceptional,
                               unsigned publications,
                               bool arguments,
-                              bool nested);
+                              bool nested,
+                              bool method);
 
 #define CHECK(expr)                                                                                \
     do {                                                                                           \
@@ -177,6 +178,9 @@ static bool rejected_run(void) {
 
 int main(int argc, char **argv) {
     if (argc == 2) {
+        bool method = !strncmp(argv[1], "method-", 7);
+        if (method)
+            argv[1] += 7;
         bool nested = !strncmp(argv[1], "nested-", 7);
         if (nested)
             argv[1] += 7;
@@ -197,7 +201,12 @@ int main(int argc, char **argv) {
                                 : !strncmp(argv[1], "published-", 10)   ? 2
                                 : !strncmp(argv[1], "mixed-", 6)        ? 1
                                                                         : 0;
-        return test_gc_worker_admission(joined, exceptional, publications, arguments, nested)
+        return test_gc_worker_admission(joined,
+                                        exceptional,
+                                        publications,
+                                        arguments,
+                                        nested,
+                                        method)
                    ? EXIT_SUCCESS
                    : EXIT_FAILURE;
     }
