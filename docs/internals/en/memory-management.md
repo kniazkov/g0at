@@ -449,3 +449,9 @@ bootstrap still have no admitted collection point. #552 remains partial and
 ### Withdrawn and republished participants (#594)
 
 Additional dispatcher scenarios withdraw one worker registration before the barrier, replace its C-local array and either wait without publication or republish the replacement using the same token. The former must refuse tracing; the latter must collect once and preserve the new array. Both return and exception outcomes verify root cleanup and a fresh process run. This covers registration lifecycle, not arbitrary native/module frames.
+
+### Batch publication (#596)
+
+A fixture may publish a nonempty array of independent live values with `gc_test_publish_park_values`. The whole batch is checked for process ownership and valid entries before roots are registered. Every owning root exists before the participant becomes stable. Resume withdraws stability first, then releases every root and the handle array. The single-value wrapper retains its contract. OOM follows the existing fatal allocator policy; this is not OOM recovery.
+
+Worker scenarios now retain two independent arrays, exercise an invalid second element without partial registration, and verify both arrays after return/exception, refusal and republication. General native/module call-chain publication is still not established.

@@ -1940,22 +1940,34 @@ static void schedule_and_reap(process_t *process) {
 
 #ifdef GOAT_TEST_GC_DISPATCH
 bool gc_test_publish_park(thread_t *thread, object_t *value, gc_test_park_t *park) {
-    if (!thread || !park || park->thread || !value)
+    return gc_test_publish_park_values(thread, (object_array_t){&value, 1}, park);
+}
+
+bool gc_test_publish_park_values(thread_t *thread, object_array_t values, gc_test_park_t *park) {
+    if (!thread || !park || park->thread || !values.size || !values.items
+        || values.size > SIZE_MAX / sizeof(gc_root_handle_t))
         return false;
     process_t *proc = thread->process;
     if (os_mutex_depth(proc->execution_mutex) != 1 || !proc->execution
         || !proc->execution->gc_request || !proc->execution->gc_request->published_workers
         || !thread->program_worker || thread->finished || thread->initialization_depth
         || thread->native_status || thread->exception.value || thread->waiting_for
-        || !object_belongs_to_process(proc, value))
+        || !objects_belong_to_process(proc, values))
         return false;
     for (gc_test_park_t *item = proc->execution->gc_parks; item; item = item->next)
         if (item->thread == thread)
             return false;
-    gc_root_handle_t root = register_gc_root(proc, value);
-    if (!root.serial)
-        return false;
-    *park = (gc_test_park_t){thread, proc->execution->gc_parks, root};
+    gc_root_handle_t *roots = ALLOC(values.size * sizeof(*roots));
+    for (size_t i = 0; i < values.size; ++i) {
+        roots[i] = register_gc_root(proc, values.items[i]);
+        if (!roots[i].serial) {
+            while (i)
+                unregister_gc_root(proc, roots[--i]);
+            FREE(roots);
+            return false;
+        }
+    }
+    *park = (gc_test_park_t){thread, proc->execution->gc_parks, roots, values.size};
     proc->execution->gc_parks = park;
     return true;
 }
@@ -1972,7 +1984,10 @@ bool gc_test_resume(thread_t *thread, gc_test_park_t *park) {
     if (!*link)
         return false;
     *link = park->next; /* Withdraw stable state before releasing its owning root. */
-    bool removed = unregister_gc_root(proc, park->root);
+    bool removed = true;
+    for (size_t i = 0; i < park->root_count; ++i)
+        removed = unregister_gc_root(proc, park->roots[i]) && removed;
+    FREE(park->roots);
     *park = (gc_test_park_t){0};
     return removed;
 }
@@ -1992,7 +2007,7 @@ static bool test_all_workers_parked(process_t *proc) {
         gc_test_park_t *park = execution->gc_parks;
         while (park && park->thread != thread)
             park = park->next;
-        if (!park || !park->root.serial)
+        if (!park || !park->roots || !park->root_count)
             return false;
         ++workers;
     }
