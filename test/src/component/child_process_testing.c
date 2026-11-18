@@ -351,7 +351,7 @@ static int fixture_main(int argc, char **argv) {
     }
     if (!strcmp(mode, "budget")) {
         args[2] = "delay";
-        options.deadline = child_deadline_after(350);
+        options.deadline = child_deadline_after(3000);
     }
     uint64_t start = child_monotonic_ms();
     if (!strcmp(mode, "launch-owner")) {
@@ -366,10 +366,25 @@ static int fixture_main(int argc, char **argv) {
     const child_result_t *result =
         !strcmp(mode, "stop") ? stop_child_process(child) : wait_child_process(child);
     if (!strcmp(mode, "budget")) {
-        if (result->status != CHILD_EXITED || result->exit_code)
+        if (result->status != CHILD_EXITED || result->exit_code) {
+            fprintf(stderr,
+                    "budget first child: status=%d code=%lld error=%lu cleanup=%lu\n",
+                    result->status,
+                    (long long)result->exit_code,
+                    result->system_error,
+                    result->cleanup_error);
+            destroy_child_process(child);
             return 4;
+        }
         destroy_child_process(child);
+        /* Consume the original absolute budget explicitly. Two 200 ms sleeps under a
+           350 ms deadline could time out the FIRST launch on loaded Windows runners.
+           The second launch must inherit the expired deadline, never a fresh budget. */
+        while (child_monotonic_ms() < options.deadline)
+            sleep_ms(10);
         child = start_child_process(&options);
+        if (!child)
+            return 3;
         result = wait_child_process(child);
     }
     int parent_input = !strcmp(mode, "stdin") ? getchar() : -1;

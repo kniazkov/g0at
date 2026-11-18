@@ -946,7 +946,7 @@ goat_suite(core.gc_ownership "core;gc-ownership" $<TARGET_FILE:unit_testing> --g
 
 goat_suite(core.gc_dispatch "core;integration;gc-boundary" $<TARGET_FILE:gc_dispatch_testing>)
 
-foreach(mode parked-return parked-exception joined-return joined-exception published-return published-exception mixed-return mixed-exception)
+foreach(mode parked-return parked-exception joined-return joined-exception published-return published-exception mixed-return mixed-exception withdrawn-return withdrawn-exception republished-return republished-exception)
   goat_suite(core.gc_dispatch.${mode} "core;integration;gc-boundary"
     $<TARGET_FILE:gc_dispatch_testing> ${mode})
   set_tests_properties(core.gc_dispatch.${mode} PROPERTIES TIMEOUT 30)

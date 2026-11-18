@@ -33,6 +33,10 @@ typedef struct {
 /* One test process per executable; all accesses during run hold its model lock. */
 static worker_case_t state;
 
+static bool collection_expected(void) {
+    return state.publications == 2 || state.publications == 4;
+}
+
 static bool payload_ok(object_t *value) {
     object_array_t items = get_array_elements(value);
     return items.size == 1 && get_object_integer_value(items.items[0]).has_value
@@ -57,13 +61,25 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
         REQUIRE(!gc_test_publish_park(thread, value, &duplicate));
         REQUIRE(!gc_test_resume(thread, &duplicate));
     }
+    if (state.publications >= 3 && state.parked == 0) {
+        REQUIRE(gc_test_resume(thread, &registration));
+        REQUIRE(!gc_test_resume(thread, &registration));
+        /* The old value can now die; a future publication must protect its replacement. */
+        DECREF(value);
+        leaf = create_integer_object(proc, 7654321);
+        value = create_array_object(proc, (object_array_t){&leaf, 1});
+        DECREF(leaf);
+        publish = state.publications == 4;
+        if (publish)
+            REQUIRE(gc_test_publish_park(thread, value, &registration));
+    }
     /* Unregistered fixtures deliberately retain a C-local only value. */
     ++state.parked;
     broadcast_os_condition(proc->threads_changed);
     while (!state.release)
         REQUIRE(wait_os_condition(proc->threads_changed, proc->execution_mutex) == OS_THREAD_OK);
     /* Check refusal before touching the unpublished value. */
-    REQUIRE(proc->gc_statistics->collections == (state.publications == 2 ? 1 : 0));
+    REQUIRE(proc->gc_statistics->collections == (collection_expected() ? 1 : 0));
     REQUIRE(os_mutex_depth(proc->execution_mutex) == 1);
     if (publish) {
         process_execution_enter(proc);
@@ -124,11 +140,11 @@ static operation_result_t inspect(object_t **args, uint16_t count, thread_t *thr
     (void)args;
     REQUIRE(count == 0);
     process_t *proc = thread->process;
-    REQUIRE(state.request.attempted && state.request.collected == (state.publications == 2));
-    REQUIRE(proc->gc_statistics->collections == (state.publications == 2 ? 1 : 0));
+    REQUIRE(state.request.attempted && state.request.collected == collection_expected());
+    REQUIRE(proc->gc_statistics->collections == (collection_expected() ? 1 : 0));
     REQUIRE(os_mutex_depth(proc->execution_mutex) == 1);
     REQUIRE(payload_ok(peek_object_from_stack(thread->data_stack, 0)));
-    if (state.publications == 2)
+    if (collection_expected())
         REQUIRE(proc->gc_statistics->last.before.objects > proc->gc_statistics->last.after.objects);
     if (state.joined_boundary) {
         /* Only the historical first_worker guard now excludes this boundary. */
@@ -202,9 +218,10 @@ bool test_gc_worker_admission(bool joined, bool exceptional, unsigned publicatio
         .request = {.exclusive_model_client = true, .published_workers = publications != 0}};
     bytecode_t *code = make_program(proc, true);
     REQUIRE(run_with_gc_dispatch_test(proc, code, &state.request) == 0);
-    REQUIRE(state.observed && state.resumed == 2 && state.request.collected == (publications == 2));
-    REQUIRE(stats.collections == (publications == 2 ? 2 : 1)
-            && stats.explicit_collections == (publications == 2 ? 1 : 0)
+    REQUIRE(state.observed && state.resumed == 2
+            && state.request.collected == collection_expected());
+    REQUIRE(stats.collections == (collection_expected() ? 2 : 1)
+            && stats.explicit_collections == (collection_expected() ? 1 : 0)
             && stats.run_end_collections == 1);
     REQUIRE(!proc->active_threads && !proc->finished_workers && !proc->execution);
     REQUIRE(!os_mutex_depth(proc->execution_mutex));

@@ -445,3 +445,7 @@ fixtures demonstrate a publication handshake, not a complete runtime protocol:
 arbitrary native frames, module/include waits, join publication and worker
 bootstrap still have no admitted collection point. #552 remains partial and
 #553 must not schedule automatic collection.
+
+### Withdrawn and republished participants (#594)
+
+Additional dispatcher scenarios withdraw one worker registration before the barrier, replace its C-local array and either wait without publication or republish the replacement using the same token. The former must refuse tracing; the latter must collect once and preserve the new array. Both return and exception outcomes verify root cleanup and a fresh process run. This covers registration lifecycle, not arbitrary native/module frames.
