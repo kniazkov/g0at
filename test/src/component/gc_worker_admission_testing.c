@@ -50,13 +50,24 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
     object_t *leaf = create_integer_object(proc, 7654321);
     object_t *value = create_array_object(proc, (object_array_t){&leaf, 1});
     DECREF(leaf);
+    object_t *second_leaf = create_integer_object(proc, 7654321);
+    object_t *second = create_array_object(proc, (object_array_t){&second_leaf, 1});
+    DECREF(second_leaf);
+    object_t *batch[] = {value, second};
     gc_test_park_t registration = {0}, duplicate = {0};
     bool publish = state.parked < state.publications;
     if (publish) {
+        size_t roots_before = proc->gc_roots_size;
+        REQUIRE(gc_test_publish_park(thread, value, &registration));
+        REQUIRE(gc_test_resume(thread, &registration));
+        REQUIRE(proc->gc_roots_size == roots_before);
+        object_t *invalid[] = {value, NULL};
+        REQUIRE(!gc_test_publish_park_values(thread, (object_array_t){invalid, 2}, &registration));
+        REQUIRE(proc->gc_roots_size == roots_before && !registration.thread);
         process_execution_enter(proc);
         REQUIRE(!gc_test_publish_park(thread, value, &registration));
         process_execution_leave(proc);
-        REQUIRE(gc_test_publish_park(thread, value, &registration));
+        REQUIRE(gc_test_publish_park_values(thread, (object_array_t){batch, 2}, &registration));
         REQUIRE(!gc_test_publish_park(thread, value, &registration));
         REQUIRE(!gc_test_publish_park(thread, value, &duplicate));
         REQUIRE(!gc_test_resume(thread, &duplicate));
@@ -69,9 +80,10 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
         leaf = create_integer_object(proc, 7654321);
         value = create_array_object(proc, (object_array_t){&leaf, 1});
         DECREF(leaf);
+        batch[0] = value;
         publish = state.publications == 4;
         if (publish)
-            REQUIRE(gc_test_publish_park(thread, value, &registration));
+            REQUIRE(gc_test_publish_park_values(thread, (object_array_t){batch, 2}, &registration));
     }
     /* Unregistered fixtures deliberately retain a C-local only value. */
     ++state.parked;
@@ -88,7 +100,8 @@ static operation_result_t park(object_t **args, uint16_t count, thread_t *thread
         REQUIRE(gc_test_resume(thread, &registration));
         REQUIRE(!gc_test_resume(thread, &registration));
     }
-    REQUIRE(payload_ok(value));
+    REQUIRE(payload_ok(value) && payload_ok(second));
+    DECREF(second);
     ++state.resumed;
     return state.exceptional ? operation_exception(value) : operation_success(value);
 }

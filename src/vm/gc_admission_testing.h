@@ -26,16 +26,20 @@ int run_with_gc_dispatch_test(process_t *proc, bytecode_t *code, gc_dispatch_tes
 
 /** @brief Stack-scoped fixture registration; zero initialize, never copy or modify while linked.
  * This API is ONLY for reviewed test builtins: static callable, no arguments/receiver,
- * no enclosing native/module frames, all C-local live managed values represented by value.
- * The caller keeps its own reference. Register under lock depth one before waiting;
+ * no enclosing native/module frames, all C-local live managed values included in the published
+ * batch. The caller keeps its own reference. Register under lock depth one before waiting;
  * unregister under the same lock before touching the graph or returning/throwing.
  * Waiting alone, including a spurious wakeup, is not permission to mutate the model.
  */
 typedef struct gc_test_park_t {
     thread_t *thread;
     struct gc_test_park_t *next;
-    gc_root_handle_t root;
+    gc_root_handle_t *roots;
+    size_t root_count;
 } gc_test_park_t;
+
+/** @brief Validate the entire nonempty batch before publishing any root or stable state. */
+bool gc_test_publish_park_values(thread_t *thread, object_array_t values, gc_test_park_t *park);
 
 bool gc_test_publish_park(thread_t *thread, object_t *value, gc_test_park_t *park);
 bool gc_test_resume(thread_t *thread, gc_test_park_t *park);
