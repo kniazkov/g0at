@@ -92,12 +92,16 @@ static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, t
     } else {
         result = descriptor->execute(args, arg_count, thread);
     }
+    /* A builtin may forward the current exception's borrowed trace. Retain it before
+       releasing any existing owner, including the pending exception below. */
+    const exception_trace_t *trace =
+        result.is_exception ? retain_exception_trace(result.trace) : NULL;
     for (size_t i = 0; i < arg_count; i++)
         DECREF(args[i]);
     FREE(args);
     if (result.is_exception) {
         clear_exception(&thread->exception);
-        thread->exception = (exception_t){result.value, retain_exception_trace(result.trace)};
+        thread->exception = (exception_t){result.value, trace};
         return false;
     }
     push_object_onto_stack(thread->data_stack, result.value);

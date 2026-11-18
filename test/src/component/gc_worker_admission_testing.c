@@ -123,6 +123,11 @@ park_impl(object_t *receiver, object_t **args, uint16_t count, thread_t *thread)
         INCREF(value);
     }
     ++state.resumed;
+    if (state.exceptional && state.nested) {
+        REQUIRE(!thread->exception.value && !thread->exception.trace);
+        thread->exception.trace = capture_exception_trace(thread->context, 123);
+        return (operation_result_t){value, true, thread->exception.trace};
+    }
     return state.exceptional ? operation_exception(value) : operation_success(value);
 }
 
@@ -143,6 +148,10 @@ static void release_and_join(thread_t *thread) {
     for (size_t i = 0; i < 2; ++i) {
         operation_result_t result = join_program_thread(thread, state.ids[i]);
         REQUIRE(result.is_exception == state.exceptional && payload_ok(result.value));
+        if (state.exceptional && state.nested) {
+            REQUIRE(exception_trace_size(result.trace) > 0);
+            REQUIRE(exception_trace_frame(result.trace, 0)->instruction == 123);
+        }
         DECREF(result.value);
     }
     REQUIRE(state.resumed == 2 && proc->active_threads == 1 && proc->gc_roots_size == 0);
@@ -188,17 +197,19 @@ static operation_result_t outer_park(object_t **args, uint16_t count, thread_t *
         REQUIRE(thread->data_stack->size == 1);
         result = pop_object_from_stack(thread->data_stack);
     } else {
-        /* A direct builtin exception has no VM-generated trace at this boundary. */
-        REQUIRE(thread->exception.value && !thread->exception.trace);
+        REQUIRE(thread->exception.value && thread->exception.trace);
+        REQUIRE(exception_trace_size(thread->exception.trace) > 0);
+        REQUIRE(exception_trace_frame(thread->exception.trace, 0)->instruction == 123);
         result = thread->exception.value;
-        thread->exception = (exception_t){0};
+        INCREF(result); /* Returned value owns a separate reference from the pending exception. */
     }
     REQUIRE(payload_ok(result) && result == (receiver ? receiver : args[0]));
     REQUIRE(unregister_gc_root(thread->process, root));
     DECREF(local);
     DECREFIF(receiver);
     REQUIRE(payload_ok(result));
-    return ok ? operation_success(result) : operation_exception(result);
+    return ok ? operation_success(result)
+              : (operation_result_t){result, true, thread->exception.trace};
 }
 
 static operation_result_t start(object_t **args, uint16_t count, thread_t *thread) {
