@@ -455,3 +455,9 @@ Additional dispatcher scenarios withdraw one worker registration before the barr
 A fixture may publish a nonempty array of independent live values with `gc_test_publish_park_values`. The whole batch is checked for process ownership and valid entries before roots are registered. Every owning root exists before the participant becomes stable. Resume withdraws stability first, then releases every root and the handle array. The single-value wrapper retains its contract. OOM follows the existing fatal allocator policy; this is not OOM recovery.
 
 Worker scenarios now retain two independent arrays, exercise an invalid second element without partial registration, and verify both arrays after return/exception, refusal and republication. General native/module call-chain publication is still not established.
+
+### Builtin arguments across a published wait (#598)
+
+The controlled worker fixture now also covers direct static builtin calls with two heap arguments. `spawn_program_thread` retains them on the startup stack; the spawning host releases its references. `static_call` pops both into its C argument array before entering the builtin (the test requires an empty operand stack). The builtin publishes those arguments together with both local arrays before waiting. No enclosing native/module frame or receiver is involved. This extends the earlier zero-argument fixture contract only to these explicitly published arguments.
+
+After resuming under the model lock, the fixture withdraws registration, checks both arguments and returns or throws the first argument with a new owned reference. The ordinary static_call cleanup releases the argument array and its references. Both the published and mixed/refused variants check final payloads, root cleanup and a fresh run. Arbitrary builtin call chains are still excluded.

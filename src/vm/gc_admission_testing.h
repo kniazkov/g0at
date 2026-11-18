@@ -25,11 +25,11 @@ typedef struct {
 int run_with_gc_dispatch_test(process_t *proc, bytecode_t *code, gc_dispatch_test_t *request);
 
 /** @brief Stack-scoped fixture registration; zero initialize, never copy or modify while linked.
- * This API is ONLY for reviewed test builtins: static callable, no arguments/receiver,
- * no enclosing native/module frames, all C-local live managed values included in the published
- * batch. The caller keeps its own reference. Register under lock depth one before waiting;
- * unregister under the same lock before touching the graph or returning/throwing.
- * Waiting alone, including a spurious wakeup, is not permission to mutate the model.
+ * This API is ONLY for reviewed test builtins: static callable, explicitly published arguments, no
+ * receiver, no enclosing native/module frames, all C-local live managed values included in the
+ * published batch. The caller keeps its own reference. Register under lock depth one before
+ * waiting; unregister under the same lock before touching the graph or returning/throwing. Waiting
+ * alone, including a spurious wakeup, is not permission to mutate the model.
  */
 typedef struct gc_test_park_t {
     thread_t *thread;
