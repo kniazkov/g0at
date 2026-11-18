@@ -467,3 +467,9 @@ After resuming under the model lock, the fixture withdraws registration, checks 
 A controlled outer static builtin now roots its arguments and an independent local array in an owning read-only snapshot before calling the waiting builtin through call_object. The inner call publishes its own values and park state. The outer C frame stays suspended and its root stays registered throughout the wait; it must not inherit publication merely because the inner frame is parked.
 
 After inner completion, the fixture restores the instruction index, checks the outer graph, takes the returned operand or transfers the plain builtin exception value, and then removes the outer root. Direct builtin exceptions here have no VM trace; the fixture asserts this restriction. Return/exception and mixed-refusal scenarios verify full root cleanup and a new run. This proves only the explicitly rooted two-frame test chain, not arbitrary native/module frames.
+
+### Published builtin receiver (#602)
+
+The controlled nested fixture also invokes execute_method through call_object with a separate heap receiver. It is deliberately absent from the outer frame snapshot and the operand stack: only the method publication batch makes it a tracing root during the wait. Both arguments, both local graphs and the receiver are published before stable park registration.
+
+The method returns or throws the receiver with an owned reference after withdrawing its park registration. The outer caller checks pointer identity and payload, releases its own receiver reference, and verifies the result remains alive. Full-publication and mixed-refusal variants verify cleanup and another run. This extends the reviewed test contract to explicitly published receivers; it does not authorize arbitrary method/native/module frames.
