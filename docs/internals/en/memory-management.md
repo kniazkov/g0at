@@ -461,3 +461,9 @@ Worker scenarios now retain two independent arrays, exercise an invalid second e
 The controlled worker fixture now also covers direct static builtin calls with two heap arguments. `spawn_program_thread` retains them on the startup stack; the spawning host releases its references. `static_call` pops both into its C argument array before entering the builtin (the test requires an empty operand stack). The builtin publishes those arguments together with both local arrays before waiting. No enclosing native/module frame or receiver is involved. This extends the earlier zero-argument fixture contract only to these explicitly published arguments.
 
 After resuming under the model lock, the fixture withdraws registration, checks both arguments and returns or throws the first argument with a new owned reference. The ordinary static_call cleanup releases the argument array and its references. Both the published and mixed/refused variants check final payloads, root cleanup and a fresh run. Arbitrary builtin call chains are still excluded.
+
+### Explicit outer builtin frames (#600)
+
+A controlled outer static builtin now roots its arguments and an independent local array in an owning read-only snapshot before calling the waiting builtin through call_object. The inner call publishes its own values and park state. The outer C frame stays suspended and its root stays registered throughout the wait; it must not inherit publication merely because the inner frame is parked.
+
+After inner completion, the fixture restores the instruction index, checks the outer graph, takes the returned operand or transfers the plain builtin exception value, and then removes the outer root. Direct builtin exceptions here have no VM trace; the fixture asserts this restriction. Return/exception and mixed-refusal scenarios verify full root cleanup and a new run. This proves only the explicitly rooted two-frame test chain, not arbitrary native/module frames.
