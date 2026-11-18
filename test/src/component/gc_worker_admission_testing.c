@@ -24,7 +24,7 @@
     } while (0)
 
 typedef struct {
-    bool joined_boundary, exceptional, release, observed, arguments;
+    bool joined_boundary, exceptional, release, observed, arguments, nested;
     unsigned parked, resumed, publications;
     uint64_t ids[2];
     gc_dispatch_test_t request;
@@ -132,11 +132,54 @@ static void release_and_join(thread_t *thread) {
     REQUIRE(os_mutex_depth(proc->execution_mutex) == 1 && !thread->waiting_for);
 }
 
+/** @brief Explicitly publish the outer C frame before invoking the waiting builtin. */
+static operation_result_t outer_park(object_t **args, uint16_t count, thread_t *thread) {
+    REQUIRE(count == 2 && thread->data_stack->size == 0);
+    object_t *leaf = create_integer_object(thread->process, 7654321);
+    object_t *local = create_array_object(thread->process, (object_array_t){&leaf, 1});
+    DECREF(leaf);
+    object_t *values[] = {local, args[0], args[1]};
+    object_t *frame = create_read_only_array_object(thread->process, (object_array_t){values, 3});
+    gc_root_handle_t root = register_gc_root(thread->process, frame);
+    REQUIRE(root.serial);
+    DECREF(frame);
+    static const builtin_function_t inner_descriptor = {.name = U"innerGcPark", .execute = park};
+    static builtin_function_object_t inner_storage;
+    for (size_t i = 0; i < count; ++i) {
+        INCREF(args[i]);
+        push_object_onto_stack(thread->data_stack, args[i]);
+    }
+    instr_index_t saved = thread->instr_id;
+    bool ok = call_object(get_builtin_function_object(&inner_storage, &inner_descriptor),
+                          count,
+                          NULL,
+                          thread);
+    thread->instr_id = saved;
+    REQUIRE(ok == !state.exceptional);
+    REQUIRE(payload_ok(local) && payload_ok(args[0]) && payload_ok(args[1]));
+    object_t *result;
+    if (ok) {
+        REQUIRE(thread->data_stack->size == 1);
+        result = pop_object_from_stack(thread->data_stack);
+    } else {
+        /* A direct builtin exception has no VM-generated trace at this boundary. */
+        REQUIRE(thread->exception.value && !thread->exception.trace);
+        result = thread->exception.value;
+        thread->exception = (exception_t){0};
+    }
+    REQUIRE(payload_ok(result) && result == args[0]);
+    REQUIRE(unregister_gc_root(thread->process, root));
+    DECREF(local);
+    return ok ? operation_success(result) : operation_exception(result);
+}
+
 static operation_result_t start(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
     REQUIRE(count == 0);
     static const builtin_function_t descriptor = {.name = U"parkGcWorker", .execute = park};
-    static builtin_function_object_t storage;
+    static builtin_function_object_t storage, outer_storage;
+    static const builtin_function_t outer_descriptor = {.name = U"outerGcPark",
+                                                        .execute = outer_park};
     object_t *dead = create_array_object(thread->process, (object_array_t){0});
     operation_result_t inserted = insert_array_elements(dead, 0, &dead, 1);
     REQUIRE(!inserted.is_exception);
@@ -151,11 +194,12 @@ static operation_result_t start(object_t **args, uint16_t count, thread_t *threa
                 DECREF(leaf);
             }
         }
-        operation_result_t result =
-            spawn_program_thread(thread,
-                                 get_builtin_function_object(&storage, &descriptor),
-                                 state.arguments ? arguments : NULL,
-                                 state.arguments ? 2 : 0);
+        operation_result_t result = spawn_program_thread(
+            thread,
+            state.nested ? get_builtin_function_object(&outer_storage, &outer_descriptor)
+                         : get_builtin_function_object(&storage, &descriptor),
+            state.arguments ? arguments : NULL,
+            state.arguments ? 2 : 0);
         if (state.arguments) {
             DECREF(arguments[0]);
             DECREF(arguments[1]);
@@ -245,7 +289,8 @@ static bytecode_t *make_program(process_t *proc, bool workers) {
 bool test_gc_worker_admission(bool joined,
                               bool exceptional,
                               unsigned publications,
-                              bool arguments) {
+                              bool arguments,
+                              bool nested) {
     size_t baseline = get_allocated_memory_size();
     process_t *proc = create_process();
     gc_stats_t stats;
@@ -254,6 +299,7 @@ bool test_gc_worker_admission(bool joined,
     state = (worker_case_t){
         .joined_boundary = joined,
         .arguments = arguments,
+        .nested = nested,
         .exceptional = exceptional,
         .publications = publications,
         .request = {.exclusive_model_client = true, .published_workers = publications != 0}};
