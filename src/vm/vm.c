@@ -1951,7 +1951,8 @@ bool gc_test_publish_park_values(thread_t *thread, object_array_t values, gc_tes
     if (os_mutex_depth(proc->execution_mutex) != 1 || !proc->execution
         || !proc->execution->gc_request || !proc->execution->gc_request->published_workers
         || !thread->program_worker || thread->finished || thread->initialization_depth
-        || thread->native_status || thread->exception.value || thread->waiting_for
+        || thread->native_status || thread->waiting_for
+        || (thread->exception.value && !object_belongs_to_process(proc, thread->exception.value))
         || !objects_belong_to_process(proc, values))
         return false;
     for (gc_test_park_t *item = proc->execution->gc_parks; item; item = item->next)
@@ -2002,7 +2003,9 @@ static bool test_all_workers_parked(process_t *proc) {
     for (thread_t *thread = execution->first_worker; thread != proc->main_thread;
          thread = thread->next) {
         if (!thread->program_worker || thread->finished || thread->initialization_depth
-            || thread->native_status || thread->exception.value || thread->waiting_for)
+            || thread->native_status || thread->waiting_for
+            || (thread->exception.value
+                && !object_belongs_to_process(proc, thread->exception.value)))
             return false;
         gc_test_park_t *park = execution->gc_parks;
         while (park && park->thread != thread)

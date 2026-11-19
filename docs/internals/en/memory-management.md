@@ -479,3 +479,11 @@ The method returns or throws the receiver with an owned reference after withdraw
 An operation result owns its value but borrows its trace. The trace owner must remain alive until the receiver retains the trace. A builtin can forward the current pending exception, keeping its trace owned by the thread and returning a separate owned value reference. static_call now retains the trace before releasing arguments or clearing the pending exception. Clearing first caused a reproduced ASan heap-use-after-free.
 
 Nested worker fixtures now forward nonempty traces with a checked origin instruction through both builtin frames, normal/receiver calls and admitted/refused collection. This supersedes their earlier trace-less restriction; arbitrary native/module publication is still unproved.
+
+### Pending exceptions during a published wait (#606)
+
+The nested exception fixtures now create an independent heap array and origin trace before parking. The array is owned only by `thread->exception`, absent from the publication batch, operand stack and outer snapshot. The ordinary thread-root traversal must preserve it during the real post-ARRAY collection. After withdrawing park registration, each worker checks the graph and origin, then forwards the borrowed trace while replacing the old exception value with its argument or receiver. Join and a fresh run still verify cleanup.
+
+The test-only worker publication protocol permits this stable pending exception when its value belongs to the process. It must remain unchanged until resume; its trace is reference-counted, not a managed graph node. The collecting main thread still cannot have a pending exception. This does not admit exception dispatch/unwinding, native frames or module waits. Production admission and automatic collection remain unchanged.
+
+The adjacent native exit callbacks currently produce trace-less errors (or terminate the process); their clear-before-retain code does not reproduce #604. VM result dispatch retains the trace before entering exception dispatch; property-error traces belong to process-owned failed module files. These observations are an ownership audit, not evidence that arbitrary native/module frames are safe to collect.
