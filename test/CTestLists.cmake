@@ -878,7 +878,7 @@ foreach(operator_case matrix order property bypass lookup lifetime continuation 
     "$<TARGET_FILE:operator_call_testing>" "${operator_case}")
 endforeach()
 
-foreach(continuation_case temporaries step-gc-temporaries step-gc-mixed step-gc-method-gc step-gc-method-recursion step-gc-published-finally step-gc-trace step-gc-init-caller mixed unwind escape trace strict-bool recursion method-gc published-finally method-recursion method-unwind init-vm init-method init-caller init-static init-validation init-return init-unwind init-trace init-native-trace init-cancel-direct init-backend-direct init-cancel init-snapshot init-gc-closure init-gc-exception init-gc-reentrant no-replay range host-cancel cancel-backend)
+foreach(continuation_case step-gc-no-replay step-gc-range step-gc-host-cancel step-gc-cancel-backend step-gc-init-cancel step-gc-init-cancel-direct step-gc-init-backend-direct temporaries step-gc-temporaries step-gc-mixed step-gc-method-gc step-gc-method-recursion step-gc-published-finally step-gc-trace step-gc-init-caller mixed unwind escape trace strict-bool recursion method-gc published-finally method-recursion method-unwind init-vm init-method init-caller init-static init-validation init-return init-unwind init-trace init-native-trace init-cancel-direct init-backend-direct init-cancel init-snapshot init-gc-closure init-gc-exception init-gc-reentrant no-replay range host-cancel cancel-backend)
   goat_suite(component.native_continuation.${continuation_case} "component;native-continuation"
     "$<TARGET_FILE:native_continuation_testing>" "${continuation_case}")
 endforeach()
