@@ -473,3 +473,9 @@ After inner completion, the fixture restores the instruction index, checks the o
 The controlled nested fixture also invokes execute_method through call_object with a separate heap receiver. It is deliberately absent from the outer frame snapshot and the operand stack: only the method publication batch makes it a tracing root during the wait. Both arguments, both local graphs and the receiver are published before stable park registration.
 
 The method returns or throws the receiver with an owned reference after withdrawing its park registration. The outer caller checks pointer identity and payload, releases its own receiver reference, and verifies the result remains alive. Full-publication and mixed-refusal variants verify cleanup and another run. This extends the reviewed test contract to explicitly published receivers; it does not authorize arbitrary method/native/module frames.
+
+### Forwarded builtin exception traces (#604)
+
+An operation result owns its value but borrows its trace. The trace owner must remain alive until the receiver retains the trace. A builtin can forward the current pending exception, keeping its trace owned by the thread and returning a separate owned value reference. static_call now retains the trace before releasing arguments or clearing the pending exception. Clearing first caused a reproduced ASan heap-use-after-free.
+
+Nested worker fixtures now forward nonempty traces with a checked origin instruction through both builtin frames, normal/receiver calls and admitted/refused collection. This supersedes their earlier trace-less restriction; arbitrary native/module publication is still unproved.

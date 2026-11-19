@@ -24,7 +24,8 @@ typedef struct object_t object_t;
 typedef struct {
     object_t *value;
     bool is_exception;
-    const exception_trace_t *trace; /**< Borrowed from a process-owned failed file, if any. */
+    const exception_trace_t *trace; /**< Borrowed trace, if any; its owner must keep it alive until
+                                       the caller retains it. */
 } operation_result_t;
 
 /** @brief Transfers an owned value into a normal operation result. */
