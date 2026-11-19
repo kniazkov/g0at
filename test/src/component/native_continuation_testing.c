@@ -31,10 +31,59 @@ static bool verify_boundary_counts;
 static bool force_step_gc;
 static bool step_swept;
 static size_t step_collections, complete_collections, exception_collections;
+static size_t failed_collections, driver_failures;
+static bool require_failure_payload;
+static size_t failure_payload_checks;
 static size_t between_init_collections, inside_init_collections, pending_init_collections;
 static bool require_pending_init_gc;
 static bool fail_after_effect, invalid_pc, escaping_exception, language_failure;
 static bool host_cancellation, backend_failure, constructor_aborted;
+
+/** @brief The failure fixture's argument is owned only by the active call frame. */
+static size_t check_failure_payload(void) {
+    if (!require_failure_payload)
+        return 0;
+    static object_static_string_t payload_key, tag_key;
+    size_t found = 0;
+    for (context_t *ctx = gc_process->main_thread->context; ctx != get_root_context();
+         ctx = ctx->previous) {
+        object_t *payload =
+            get_object_property(ctx->data, get_static_string_object(&payload_key, U"payload"));
+        if (!payload)
+            continue;
+        object_t *tag = get_object_property(payload, get_static_string_object(&tag_key, U"tag"));
+        assert(tag && get_object_integer_value(tag).has_value);
+        assert(get_object_integer_value(tag).value == 7654321);
+        ++found;
+    }
+    return found;
+}
+
+/** @brief Probe only after step returns, before the host tears down failed frames. */
+static void collect_after_step(uint32_t status) {
+    if (!force_step_gc)
+        return;
+    /* Exclusive single-thread fixture: the driver owns only scalar PC/status.
+       VM operands and results must already be published, even after frame teardown. */
+    assert(status == GOAT_NATIVE_CONTINUE || status == GOAT_NATIVE_COMPLETE
+           || status == GOAT_NATIVE_EXCEPTION || status == GOAT_NATIVE_FAILED);
+    assert(gc_process->active_threads == 1);
+    assert(os_mutex_depth(gc_process->execution_mutex) > 0);
+    size_t payloads = check_failure_payload();
+    if (require_failure_payload)
+        assert(payloads > 0);
+    uint64_t before = gc_process->gc_statistics->collections;
+    collect_garbage(gc_process);
+    assert(check_failure_payload() == payloads);
+    failure_payload_checks += payloads;
+    assert(gc_process->gc_statistics->collections == before + 1);
+    step_swept |= gc_process->gc_statistics->last.before.objects
+                  > gc_process->gc_statistics->last.after.objects;
+    ++step_collections;
+    complete_collections += status == GOAT_NATIVE_COMPLETE;
+    exception_collections += status == GOAT_NATIVE_EXCEPTION;
+    failed_collections += status == GOAT_NATIVE_FAILED;
+}
 
 static uint32_t GOAT_NATIVE_CALL invoke(const goat_native_continuation_context_t *context,
                                         uint32_t pc) {
@@ -42,28 +91,15 @@ static uint32_t GOAT_NATIVE_CALL invoke(const goat_native_continuation_context_t
     if (invalid_pc) {
         uint32_t next;
         ++steps;
-        return context->step(context->state, UINT32_MAX, &next);
+        uint32_t status = context->step(context->state, UINT32_MAX, &next);
+        collect_after_step(status);
+        return status;
     }
     for (;;) {
         uint32_t next;
         ++steps;
         uint32_t status = context->step(context->state, pc, &next);
-        if (force_step_gc) {
-            /* Exclusive single-thread fixture: the driver owns only scalar PC/status.
-               VM operands and results must already be published, even after frame teardown. */
-            assert(status == GOAT_NATIVE_CONTINUE || status == GOAT_NATIVE_COMPLETE
-                   || status == GOAT_NATIVE_EXCEPTION);
-            assert(gc_process->active_threads == 1);
-            assert(os_mutex_depth(gc_process->execution_mutex) > 0);
-            uint64_t before = gc_process->gc_statistics->collections;
-            collect_garbage(gc_process);
-            assert(gc_process->gc_statistics->collections == before + 1);
-            step_swept |= gc_process->gc_statistics->last.before.objects
-                          > gc_process->gc_statistics->last.after.objects;
-            ++step_collections;
-            complete_collections += status == GOAT_NATIVE_COMPLETE;
-            exception_collections += status == GOAT_NATIVE_EXCEPTION;
-        }
+        collect_after_step(status);
         if (force_init_gc && status == GOAT_NATIVE_CONTINUE) {
             context_t *owner = gc_process->main_thread->context;
             /* The completed VM method has returned to its constructor owner.
@@ -78,8 +114,10 @@ static uint32_t GOAT_NATIVE_CALL invoke(const goat_native_continuation_context_t
         }
         if (status != GOAT_NATIVE_CONTINUE)
             return status;
-        if (fail_after_effect && effects)
+        if (fail_after_effect && effects) {
+            ++driver_failures; /* This failure is produced by the adapter, not by step. */
             return GOAT_NATIVE_FAILED;
+        }
         pc = next;
     }
 }
@@ -194,6 +232,8 @@ static void program(const gchar_t *source,
     context_t *caller = thread->context;
     entries = steps = effects = 0;
     step_collections = complete_collections = exception_collections = 0;
+    failed_collections = driver_failures = 0;
+    failure_payload_checks = 0;
     step_swept = false;
     if (force_step_gc) {
         object_t *dead = create_array_object(process, (object_array_t){0});
@@ -219,9 +259,16 @@ static void program(const gchar_t *source,
     }
     if (force_step_gc) {
         assert(step_swept);
-        assert(step_collections == steps && step_collections > entries);
-        assert(complete_collections + exception_collections == entries);
-        assert(exception_collections == (failure || escaping_exception ? entries : 0));
+        assert(step_collections == steps);
+        assert(invalid_pc ? step_collections == entries : step_collections > entries);
+        assert(complete_collections + exception_collections + failed_collections + driver_failures
+               == entries);
+        assert(exception_collections == (language_failure || escaping_exception ? entries : 0));
+        assert(failed_collections + driver_failures
+               == (failure && !language_failure ? entries : 0));
+        assert(driver_failures == (fail_after_effect ? entries : 0));
+        if (require_failure_payload)
+            assert(failure_payload_checks > 0);
     }
     assert(thread->native_attempts == entries && thread->native_retries == 0);
     assert(thread->native_successes == (failure || escaping_exception ? 0 : entries));
@@ -534,15 +581,30 @@ int main(int argc, char **argv) {
                 false);
     } else if (!strcmp(scenario, "no-replay")) {
         fail_after_effect = true;
-        program(U"var caller=func(){mark();return 1;};caller();", 1, 1, 1, true);
+        require_failure_payload = true;
+        program(U"var caller=func(payload){mark();return 1;};caller({var tag=7654321;});",
+                1,
+                1,
+                1,
+                true);
     } else if (!strcmp(scenario, "host-cancel") || !strcmp(scenario, "cancel-backend")) {
         host_cancellation = true;
         backend_failure = !strcmp(scenario, "cancel-backend");
-        program(U"var caller=func(){mark();return 1;};caller();", 1, 1, 1, true);
+        require_failure_payload = true;
+        program(U"var caller=func(payload){mark();return 1;};caller({var tag=7654321;});",
+                1,
+                1,
+                1,
+                true);
         assert(steps == 2);
     } else if (!strcmp(scenario, "range")) {
         invalid_pc = true;
-        program(U"var caller=func(){mark();return 1;};caller();", 1, 1, 0, true);
+        require_failure_payload = true;
+        program(U"var caller=func(payload){mark();return 1;};caller({var tag=7654321;});",
+                1,
+                1,
+                0,
+                true);
         assert(steps == 1);
     } else {
         assert(!"unknown case");
