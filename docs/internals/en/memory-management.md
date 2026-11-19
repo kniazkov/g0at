@@ -487,3 +487,11 @@ The nested exception fixtures now create an independent heap array and origin tr
 The test-only worker publication protocol permits this stable pending exception when its value belongs to the process. It must remain unchanged until resume; its trace is reference-counted, not a managed graph node. The collecting main thread still cannot have a pending exception. This does not admit exception dispatch/unwinding, native frames or module waits. Production admission and automatic collection remain unchanged.
 
 The adjacent native exit callbacks currently produce trace-less errors (or terminate the process); their clear-before-retain code does not reproduce #604. VM result dispatch retains the trace before entering exception dispatch; property-error traces belong to process-owned failed module files. These observations are an ownership audit, not evidence that arbitrary native/module frames are safe to collect.
+
+### Completed native continuation steps (#608)
+
+The dedicated continuation test driver has a `step-gc-` mode which collects after each returned `context->step`, including `CONTINUE`, `COMPLETE` and `EXCEPTION`. Its host exclusively owns one process with one active thread and holds the model lock. The driver stores only scalar PC/status values; ordinary operand/context/exception roots and the invocation's callable handle must preserve managed values. A completed step may already have destroyed its call frame, so terminal results must be rooted before the driver inspects the status.
+
+Seven scenarios cover temporary array elements and terminal results, mixed native/VM operator calls and arguments, receiver lifetime, recursive methods, fresh heap return/throw through finally, escaping exception traces and constructor callbacks. Counters require one real collection per returned step and one terminal status per invocation, distinguish builtin probes and end-of-run collection, and require garbage to be swept before completion. Existing checks retain their no-replay, root cleanup, allocator balance and immutable bytecode guarantees. The temporary-array scenario has no builtin GC probe.
+
+These are controlled single-thread probes at the driver API boundary. They do not collect inside a step's VM-only nested call, certify arbitrary generated native adapters, or publish parked native workers. Production GC admission remains unchanged.
