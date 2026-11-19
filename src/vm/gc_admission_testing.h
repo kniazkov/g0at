@@ -30,7 +30,9 @@ int run_with_gc_dispatch_test(process_t *proc, bytecode_t *code, gc_dispatch_tes
  * All live managed C-local values must be included in the batch or caller roots. The caller keeps
  * its own reference. Register under lock depth one before waiting; unregister under the same lock
  * before touching the graph or returning/throwing. Waiting alone, including a spurious wakeup, is
- * not permission to mutate the model.
+ * not permission to mutate the model. A pending exception may remain in the thread-owned slot:
+ * its value is an ordinary thread GC root and its trace stays reference-counted. Both must remain
+ * unchanged while parked. This does not permit collection during exception dispatch or unwinding.
  */
 typedef struct gc_test_park_t {
     thread_t *thread;

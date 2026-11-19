@@ -54,6 +54,15 @@ park_impl(object_t *receiver, object_t **args, uint16_t count, thread_t *thread)
     object_t *second_leaf = create_integer_object(proc, 7654321);
     object_t *second = create_array_object(proc, (object_array_t){&second_leaf, 1});
     DECREF(second_leaf);
+    if (state.exceptional && state.nested) {
+        REQUIRE(!thread->exception.value && !thread->exception.trace);
+        object_t *exception_leaf = create_integer_object(proc, 7654321);
+        thread->exception.value = create_array_object(proc, (object_array_t){&exception_leaf, 1});
+        DECREF(exception_leaf);
+        thread->exception.trace = capture_exception_trace(thread->context, 123);
+        /* Only the ordinary thread exception root protects this independent graph.
+           Neither the publication batch nor the outer C-frame snapshot contains it. */
+    }
     object_t *batch[] = {value, second, count ? args[0] : NULL, count ? args[1] : NULL, receiver};
     size_t batch_size = receiver ? 5 : count ? 4 : 2;
     REQUIRE((receiver != NULL) == state.method);
@@ -107,6 +116,14 @@ park_impl(object_t *receiver, object_t **args, uint16_t count, thread_t *thread)
         REQUIRE(gc_test_resume(thread, &registration));
         REQUIRE(!gc_test_resume(thread, &registration));
     }
+    if (state.exceptional && state.nested) {
+        REQUIRE(payload_ok(thread->exception.value));
+        REQUIRE(thread->exception.value != value && thread->exception.value != second);
+        REQUIRE(thread->exception.value != args[0] && thread->exception.value != args[1]);
+        REQUIRE(thread->exception.value != receiver);
+        REQUIRE(exception_trace_size(thread->exception.trace) > 0);
+        REQUIRE(exception_trace_frame(thread->exception.trace, 0)->instruction == 123);
+    }
     REQUIRE(payload_ok(value) && payload_ok(second));
     DECREF(second);
     if (count) {
@@ -124,8 +141,7 @@ park_impl(object_t *receiver, object_t **args, uint16_t count, thread_t *thread)
     }
     ++state.resumed;
     if (state.exceptional && state.nested) {
-        REQUIRE(!thread->exception.value && !thread->exception.trace);
-        thread->exception.trace = capture_exception_trace(thread->context, 123);
+        /* static_call replaces the old exception-only graph while retaining its trace. */
         return (operation_result_t){value, true, thread->exception.trace};
     }
     return state.exceptional ? operation_exception(value) : operation_success(value);
