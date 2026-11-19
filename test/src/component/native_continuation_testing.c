@@ -8,6 +8,7 @@
 #include "codegen/linker.h"
 #include "lib/memory/allocate.h"
 #include "lib/strings/string_ext.h"
+#include "model/array.h"
 #include "model/builtin_function.h"
 #include "model/context.h"
 #include "model/native_library.h"
@@ -27,6 +28,9 @@ static size_t entries, steps, effects;
 static process_t *gc_process;
 static bool force_init_gc;
 static bool verify_boundary_counts;
+static bool force_step_gc;
+static bool step_swept;
+static size_t step_collections, complete_collections, exception_collections;
 static size_t between_init_collections, inside_init_collections, pending_init_collections;
 static bool require_pending_init_gc;
 static bool fail_after_effect, invalid_pc, escaping_exception, language_failure;
@@ -44,6 +48,22 @@ static uint32_t GOAT_NATIVE_CALL invoke(const goat_native_continuation_context_t
         uint32_t next;
         ++steps;
         uint32_t status = context->step(context->state, pc, &next);
+        if (force_step_gc) {
+            /* Exclusive single-thread fixture: the driver owns only scalar PC/status.
+               VM operands and results must already be published, even after frame teardown. */
+            assert(status == GOAT_NATIVE_CONTINUE || status == GOAT_NATIVE_COMPLETE
+                   || status == GOAT_NATIVE_EXCEPTION);
+            assert(gc_process->active_threads == 1);
+            assert(os_mutex_depth(gc_process->execution_mutex) > 0);
+            uint64_t before = gc_process->gc_statistics->collections;
+            collect_garbage(gc_process);
+            assert(gc_process->gc_statistics->collections == before + 1);
+            step_swept |= gc_process->gc_statistics->last.before.objects
+                          > gc_process->gc_statistics->last.after.objects;
+            ++step_collections;
+            complete_collections += status == GOAT_NATIVE_COMPLETE;
+            exception_collections += status == GOAT_NATIVE_EXCEPTION;
+        }
         if (force_init_gc && status == GOAT_NATIVE_CONTINUE) {
             context_t *owner = gc_process->main_thread->context;
             /* The completed VM method has returned to its constructor owner.
@@ -173,6 +193,15 @@ static void program(const gchar_t *source,
     thread_t *thread = process->main_thread;
     context_t *caller = thread->context;
     entries = steps = effects = 0;
+    step_collections = complete_collections = exception_collections = 0;
+    step_swept = false;
+    if (force_step_gc) {
+        object_t *dead = create_array_object(process, (object_array_t){0});
+        operation_result_t inserted = insert_array_elements(dead, 0, &dead, 1);
+        assert(!inserted.is_exception);
+        DECREF(inserted.value);
+        DECREF(dead);
+    }
     size_t roots = process->gc_roots_size;
     int status = run(process, code);
     if (status && !failure)
@@ -184,8 +213,15 @@ static void program(const gchar_t *source,
         assert(status == (backend_failure ? 1 : 7));
     assert(entries == expected_entries && effects == expected_effects && steps >= entries);
     if (verify_boundary_counts) {
-        assert(stats.explicit_collections == expected_effects);
-        assert(stats.run_end_collections == 1 && stats.collections == expected_effects + 1);
+        assert(stats.explicit_collections == expected_effects + step_collections);
+        assert(stats.run_end_collections == 1
+               && stats.collections == expected_effects + step_collections + 1);
+    }
+    if (force_step_gc) {
+        assert(step_swept);
+        assert(step_collections == steps && step_collections > entries);
+        assert(complete_collections + exception_collections == entries);
+        assert(exception_collections == (failure || escaping_exception ? entries : 0));
     }
     assert(thread->native_attempts == entries && thread->native_retries == 0);
     assert(thread->native_successes == (failure || escaping_exception ? 0 : entries));
@@ -235,7 +271,20 @@ static void program(const gchar_t *source,
 
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (!strcmp(argv[1], "mixed")) {
+    const char *scenario = argv[1];
+    if (!strncmp(scenario, "step-gc-", 8)) {
+        scenario += 8;
+        force_step_gc = verify_boundary_counts = true;
+    }
+    if (!strcmp(scenario, "temporaries")) {
+        /* Both elements and the terminal array result have no source-level owner yet. */
+        program(U"var caller=func(){return [{var tag=73;},{var tag=91;}];};"
+                U"var a=caller();if(a.length!=2 || a[0].tag!=73 || a[1].tag!=91)throw 1;",
+                1,
+                1,
+                0,
+                false);
+    } else if (!strcmp(scenario, "mixed")) {
         /* Only caller and helper get drivers: the intervening operator handler is VM-only. */
         program(
             U"var caller=func(a,b){if(arguments.length!=3 || arguments[2]!=b)throw 3;return a+b;};"
@@ -247,7 +296,7 @@ int main(int argc, char **argv) {
             2,
             1,
             false);
-    } else if (!strcmp(argv[1], "unwind")) {
+    } else if (!strcmp(scenario, "unwind")) {
         program(U"var caller=func(a){try{return a+1;}catch(e){"
                 U"if(e!=73)throw 1;return saved;}finally{mark();}};"
                 U"var a={};var saved={};a[\"+\"]=func(x){throw 73;};"
@@ -256,7 +305,7 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 false);
-    } else if (!strcmp(argv[1], "escape")) {
+    } else if (!strcmp(scenario, "escape")) {
         escaping_exception = true;
         /* Escaping throw must return through C before the outer VM catch executes. */
         program(U"var caller=func(a){try{return a+1;}finally{mark();}};"
@@ -267,7 +316,7 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 false);
-    } else if (!strcmp(argv[1], "trace")) {
+    } else if (!strcmp(scenario, "trace")) {
         language_failure = true;
         program(U"var caller=func(a){try{return a+1;}finally{mark();}};"
                 U"var a={};a[\"+\"]=func(x){throw 73;};caller(a);",
@@ -275,7 +324,7 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 true);
-    } else if (!strcmp(argv[1], "strict-bool")) {
+    } else if (!strcmp(scenario, "strict-bool")) {
         escaping_exception = true;
         program(U"var caller=func(a){return a<1;};"
                 U"var a={};a[\"<\"]=func(x){mark();return {};};"
@@ -285,14 +334,14 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 false);
-    } else if (!strcmp(argv[1], "recursion")) {
+    } else if (!strcmp(scenario, "recursion")) {
         program(U"var caller=func(n){mark();if(n==0)return saved;return caller(n-1);};"
                 U"var saved={};if(caller(8)!=saved)throw 2;",
                 1,
                 9,
                 9,
                 false);
-    } else if (!strcmp(argv[1], "published-finally")) {
+    } else if (!strcmp(scenario, "published-finally")) {
         verify_boundary_counts = true;
         /* Each payload is produced inside the call, not kept by an outside variable.
            The existing controlled probe consults it only while the finally is executing. */
@@ -310,7 +359,7 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 false);
-    } else if (!strcmp(argv[1], "method-gc")) {
+    } else if (!strcmp(scenario, "method-gc")) {
         /* The factory result has no caller variable: the method frame must root it. */
         program(U"var method=func(){mark();if(this.tag!=73)throw 1;return this;};"
                 U"var factory=func(){return {var tag=73;var m=method;};};"
@@ -320,7 +369,7 @@ int main(int argc, char **argv) {
                 3,
                 3,
                 false);
-    } else if (!strcmp(argv[1], "method-recursion")) {
+    } else if (!strcmp(scenario, "method-recursion")) {
         /* One function serves repeated receivers; nested returns must restore this. */
         program(U"var method=func(n,expected){if(this!=expected)throw 1;mark();"
                 U"if(n!=0 && this.m(n-1,expected)!=this)throw 2;"
@@ -331,7 +380,7 @@ int main(int argc, char **argv) {
                 9,
                 9,
                 false);
-    } else if (!strcmp(argv[1], "method-unwind")) {
+    } else if (!strcmp(scenario, "method-unwind")) {
         /* A VM-only method throws into a native method; neither frame may leak this. */
         program(U"var method=func(expected){var receiver=this;try{receiver.fail(expected);throw 1;}"
                 U"catch(e){if(e!=73)throw 2;}"
@@ -343,8 +392,8 @@ int main(int argc, char **argv) {
                 2,
                 4,
                 false);
-    } else if (!strcmp(argv[1], "init-vm") || !strcmp(argv[1], "init-method")) {
-        unsigned native = !strcmp(argv[1], "init-method");
+    } else if (!strcmp(scenario, "init-vm") || !strcmp(scenario, "init-method")) {
+        unsigned native = !strcmp(scenario, "init-method");
         program(U"var initialize=func(a){if(a!=null || arguments.length!=0)throw 1;"
                 U"mark();this.x=7;return 999;};"
                 U"var base={var init=initialize;};"
@@ -354,7 +403,7 @@ int main(int argc, char **argv) {
                 native,
                 2,
                 false);
-    } else if (!strcmp(argv[1], "init-caller")) {
+    } else if (!strcmp(scenario, "init-caller")) {
         program(U"var factory=func(base){return base->{mark();};};"
                 U"var inner={const init=func(){mark();this.x=4;};};"
                 U"var base={const init=func(){mark();var self=this;"
@@ -364,14 +413,14 @@ int main(int argc, char **argv) {
                 2,
                 6,
                 false);
-    } else if (!strcmp(argv[1], "init-static")) {
+    } else if (!strcmp(scenario, "init-static")) {
         program(U"var factory=func(base){return base->{this.x=7;};};"
                 U"var base={var init=mark;};if(factory(base).x!=7)throw 1;",
                 1,
                 1,
                 1,
                 false);
-    } else if (!strcmp(argv[1], "init-validation")) {
+    } else if (!strcmp(scenario, "init-validation")) {
         program(U"var factory=func(a,b){try{var v=[a,b]->{throw 2;};}"
                 U"catch(e){if(e!=\"INVALID_OPERATION\")throw 3;return 7;}return 99;};"
                 U"var a={const init=42;};var b={var init=mark;};"
@@ -380,7 +429,7 @@ int main(int argc, char **argv) {
                 1,
                 0,
                 false);
-    } else if (!strcmp(argv[1], "init-return")) {
+    } else if (!strcmp(scenario, "init-return")) {
         program(U"var factory=func(base){try{var obj=base->{return this.x+1;};"
                 U"return 99;}finally{mark();}};"
                 U"var base={const init=func(){this.x=6;return 100;};};"
@@ -389,7 +438,7 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 false);
-    } else if (!strcmp(argv[1], "init-unwind")) {
+    } else if (!strcmp(scenario, "init-unwind")) {
         escaping_exception = true;
         program(U"var factory=func(base){return base->{throw 2;};};"
                 U"var state={var leaked=null;};"
@@ -400,7 +449,7 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 false);
-    } else if (!strcmp(argv[1], "init-trace")) {
+    } else if (!strcmp(scenario, "init-trace")) {
         language_failure = true;
         program(U"var factory=func(base){return base->{throw 2;};};"
                 U"var base={const init=func(){try{mark();throw 73;}finally{mark();}};};"
@@ -409,7 +458,7 @@ int main(int argc, char **argv) {
                 1,
                 2,
                 true);
-    } else if (!strcmp(argv[1], "init-native-trace")) {
+    } else if (!strcmp(scenario, "init-native-trace")) {
         language_failure = true;
         program(U"var initialize=func(){mark();throw 73;};"
                 U"var base={var init=initialize;};var obj=base->{throw 2;};",
@@ -417,16 +466,17 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 true);
-    } else if (!strcmp(argv[1], "init-cancel-direct") || !strcmp(argv[1], "init-backend-direct")) {
+    } else if (!strcmp(scenario, "init-cancel-direct")
+               || !strcmp(scenario, "init-backend-direct")) {
         host_cancellation = constructor_aborted = true;
-        backend_failure = !strcmp(argv[1], "init-backend-direct");
+        backend_failure = !strcmp(scenario, "init-backend-direct");
         program(U"var initialize=func(){mark();};var base={var init=initialize;};"
                 U"var obj=base->{throw 2;};",
                 1,
                 1,
                 1,
                 true);
-    } else if (!strcmp(argv[1], "init-cancel")) {
+    } else if (!strcmp(scenario, "init-cancel")) {
         host_cancellation = true;
         program(U"var factory=func(base){return base->{};};"
                 U"var base={const init=func(){mark();};};factory(base);",
@@ -434,7 +484,7 @@ int main(int argc, char **argv) {
                 1,
                 1,
                 true);
-    } else if (!strcmp(argv[1], "init-snapshot")) {
+    } else if (!strcmp(scenario, "init-snapshot")) {
         program(U"var original=func(){mark();this.x=this.x+10;};"
                 U"var a={var init=original;};"
                 U"var b={const init=func(){a.init=func(){this.x=100;};"
@@ -444,7 +494,7 @@ int main(int argc, char **argv) {
                 1,
                 2,
                 false);
-    } else if (!strcmp(argv[1], "init-gc-closure")) {
+    } else if (!strcmp(scenario, "init-gc-closure")) {
         force_init_gc = require_pending_init_gc = true;
         program(U"var factory=func(a,b){return [a,b]->{};};"
                 U"var make=func(value){return func(){mark();this.x=this.x+value;};};"
@@ -455,7 +505,7 @@ int main(int argc, char **argv) {
                 1,
                 3,
                 false);
-    } else if (!strcmp(argv[1], "init-gc-exception")) {
+    } else if (!strcmp(scenario, "init-gc-exception")) {
         force_init_gc = require_pending_init_gc = escaping_exception = true;
         program(U"var factory=func(a,b,last){return [last,a,b]->{throw 2;};};"
                 U"var state={var leaked=null;};"
@@ -470,7 +520,7 @@ int main(int argc, char **argv) {
                 1,
                 3,
                 false);
-    } else if (!strcmp(argv[1], "init-gc-reentrant")) {
+    } else if (!strcmp(scenario, "init-gc-reentrant")) {
         force_init_gc = true;
         program(U"var factory=func(base){return base->{};};"
                 U"var state={var depth=0;var inner=null;};"
@@ -482,15 +532,15 @@ int main(int argc, char **argv) {
                 2,
                 4,
                 false);
-    } else if (!strcmp(argv[1], "no-replay")) {
+    } else if (!strcmp(scenario, "no-replay")) {
         fail_after_effect = true;
         program(U"var caller=func(){mark();return 1;};caller();", 1, 1, 1, true);
-    } else if (!strcmp(argv[1], "host-cancel") || !strcmp(argv[1], "cancel-backend")) {
+    } else if (!strcmp(scenario, "host-cancel") || !strcmp(scenario, "cancel-backend")) {
         host_cancellation = true;
-        backend_failure = !strcmp(argv[1], "cancel-backend");
+        backend_failure = !strcmp(scenario, "cancel-backend");
         program(U"var caller=func(){mark();return 1;};caller();", 1, 1, 1, true);
         assert(steps == 2);
-    } else if (!strcmp(argv[1], "range")) {
+    } else if (!strcmp(scenario, "range")) {
         invalid_pc = true;
         program(U"var caller=func(){mark();return 1;};caller();", 1, 1, 0, true);
         assert(steps == 1);
