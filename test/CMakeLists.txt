@@ -630,3 +630,12 @@ add_dependencies(module_operator_scenarios goat)
 
 add_executable(init_snapshot_testing src/component/init_snapshot_testing.c)
 target_link_libraries(init_snapshot_testing PRIVATE goat_validation m)
+
+# Separate shared adapter exercises the real scalar v2 loader and CALL path.
+add_library(gc_scalar_native_fixture SHARED src/component/gc_scalar_native_fixture.c)
+target_compile_definitions(gc_scalar_native_fixture PRIVATE GOAT_NATIVE_BUILD)
+set_target_properties(gc_scalar_native_fixture PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}" LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+add_executable(gc_scalar_native_testing src/component/gc_scalar_native_testing.c
+  src/unit/analysis_test_support.c)
+target_link_libraries(gc_scalar_native_testing PRIVATE goat_validation gc_scalar_native_fixture m)
