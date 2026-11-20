@@ -111,6 +111,9 @@ size_t trim_process_object_pools(process_t *process) {
 }
 
 void destroy_process(process_t *process) {
+    /* A stack-owned protocol session must be ended before its process is destroyed. */
+    if (process->gc_session)
+        abort();
     assert(!process->destroying && !process->draining_releases && !process->pending_releases
            && !process->gc_collecting);
     process->destroying = true;
