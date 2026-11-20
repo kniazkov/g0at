@@ -952,7 +952,7 @@ foreach(mode parked-return parked-exception joined-return joined-exception publi
   set_tests_properties(core.gc_dispatch.${mode} PROPERTIES TIMEOUT 30)
 endforeach()
 
-foreach(scalar_case alias substring copy failure retry)
+foreach(scalar_case alias substring copy failure retry host-exception host-bad-status)
   foreach(lock_depth 0 2)
     goat_suite(core.gc_scalar_native.${scalar_case}.${lock_depth} "core;gc-boundary;native-scalar"
       "$<TARGET_FILE:gc_scalar_native_testing>" "$<TARGET_FILE:gc_scalar_native_fixture>"

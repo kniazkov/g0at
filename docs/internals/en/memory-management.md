@@ -509,3 +509,7 @@ A separate shared-library fixture exercises the real scalar v2 loader and FUNC/C
 Ten cases combine five outcomes with ordinary and recursively locked host entry: return the argument view, return a substring view, copy into per-call native memory, fail without replay, or request a permitted pure fallback. Alias and native-owned results must survive the host's subsequent argument/native-memory cleanup. Checks cover Unicode payloads, actual sweep before run ends, invocation/retry counts, lock-depth restoration, root/allocator balance and immutable bytecode. The fixture's native scratch allocation also exercises cleanup on every outcome.
 
 This is not a public callback service or a general native-worker safepoint. Concurrent adapters, module-v1 native calls and arbitrary callback frames remain outside this controlled proof; production GC admission is unchanged.
+
+### Scalar host exception (#614)
+
+A scalar adapter now also requests an invalid host exit before the controlled collection. Pending InvalidArgument survives GC alongside borrowed strings. Returning HOST_EXCEPTION propagates a language exception with native origin; returning OK despite that host error becomes BAD_REQUEST, clears the language value and preserves a native failure trace without replay. Both outcomes are tested at ordinary and recursive lock depth. Production admission is unchanged.

@@ -24,6 +24,7 @@
 
 static process_t *process;
 static size_t probes;
+static bool expect_host_exception;
 
 static void GOAT_NATIVE_CALL collect_in_adapter(void) {
     /* Only this test host may make the single-client promise; this is not a public callback. */
@@ -32,7 +33,11 @@ static void GOAT_NATIVE_CALL collect_in_adapter(void) {
     assert(os_mutex_depth(process->execution_mutex) == 1);
     gc_stats_t *stats = process->gc_statistics;
     assert(stats->collections == 0);
+    if (expect_host_exception)
+        assert(process->main_thread->exception.value == get_exception_invalid_argument());
     collect_garbage(process);
+    if (expect_host_exception)
+        assert(process->main_thread->exception.value == get_exception_invalid_argument());
     assert(stats->explicit_collections == 1 && stats->run_end_collections == 0);
     assert(stats->last.before.objects > stats->last.after.objects);
     ++probes;
@@ -70,13 +75,15 @@ static void deferred(node_t *node, code_builder_t *builder, data_builder_t *data
 
 int main(int argc, char **argv) {
     assert(argc == 4);
-    const char *modes[] = {"alias", "substring", "copy", "failure", "retry"};
+    const char *modes[] =
+        {"alias", "substring", "copy", "failure", "retry", "host-exception", "host-bad-status"};
     unsigned mode = 0;
-    while (mode < 5 && strcmp(argv[2], modes[mode]))
+    while (mode < 7 && strcmp(argv[2], modes[mode]))
         ++mode;
-    assert(mode < 5);
+    assert(mode < 7);
     size_t lock_depth = (size_t)strtoul(argv[3], NULL, 10);
     assert(lock_depth == 0 || lock_depth == 2);
+    expect_host_exception = mode >= 5;
     size_t baseline = get_allocated_memory_size();
     native_library_result_t loaded = load_native_library(argv[1]);
     assert(loaded.status == NATIVE_LIBRARY_OK);
@@ -106,13 +113,19 @@ int main(int argc, char **argv) {
     assert(os_mutex_depth(process->execution_mutex) == lock_depth);
     for (size_t i = 0; i < lock_depth; ++i)
         process_execution_leave(process);
-    assert((status != 0) == (mode == 3));
+    assert((status != 0) == (mode == 3 || mode >= 5));
     assert(probes == 1 && stats.explicit_collections == 1 && stats.run_end_collections == 1);
     thread_t *thread = process->main_thread;
     assert(thread->native_attempts == 1 && thread->native_retries == (mode == 4));
     assert(thread->native_successes == (mode < 3));
-    assert(thread->native_status == (mode == 3 ? GOAT_NATIVE_BAD_REQUEST : GOAT_NATIVE_OK));
-    if (mode != 3) {
+    assert(thread->native_status
+           == (mode == 3 || mode == 6 ? GOAT_NATIVE_BAD_REQUEST : GOAT_NATIVE_OK));
+    if (expect_host_exception) {
+        assert(thread->exception.value == (mode == 5 ? get_exception_invalid_argument() : NULL));
+        assert(exception_trace_size(thread->exception.trace) > 0);
+        assert(exception_trace_frame(thread->exception.trace, 0)->native_entry);
+    }
+    if (mode < 3 || mode == 4) {
         object_t *key = create_string_object(process, STATIC_STRING(U"result"));
         object_t *value = get_object_property(thread->context->data, key);
         DECREF(key);

@@ -37,8 +37,13 @@ static uint32_t GOAT_NATIVE_CALL invoke(uint32_t version,
     check_strings(args);
     /* Per-call native allocations must be reclaimed on success, failure and retry. */
     assert(goat_native_allocate(context, 127));
+    if (mode >= 5)
+        assert(goat_native_request_exit(context, 1, GOAT_NATIVE_I64, 256)
+               == GOAT_NATIVE_HOST_EXCEPTION);
     probe();
     check_strings(args);
+    if (mode == 5)
+        return GOAT_NATIVE_HOST_EXCEPTION;
     if (mode == 3)
         return GOAT_NATIVE_BAD_REQUEST;
     if (mode == 4)
