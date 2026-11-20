@@ -59,7 +59,8 @@ static operation_result_t observe(object_t **args, uint16_t count, thread_t *thr
     return operation_success(get_boolean_object(ok));
 }
 
-static bytecode_t *program(process_t *proc, bool nested, bool no_array, bool throwing) {
+static bytecode_t *
+program(process_t *proc, bool nested, bool no_array, bool throwing, bool deferred) {
     static const builtin_function_t descriptor = {.name = U"observeGcDispatch", .execute = observe};
     static builtin_function_object_t function_storage;
     static object_static_string_t key_storage, nested_storage;
@@ -81,8 +82,10 @@ static bytecode_t *program(process_t *proc, bool nested, bool no_array, bool thr
         uint32_t nested_name = add_string_to_data_segment(data, U"nestedGcDispatch");
         add_instruction(builder, (instruction_t){.opcode = VLOAD, .arg1 = nested_name});
         add_instruction(builder, (instruction_t){.opcode = CALL});
-        add_instruction(builder, (instruction_t){.opcode = VLOAD, .arg1 = observer});
-        add_instruction(builder, (instruction_t){.opcode = CALL});
+        add_instruction(builder,
+                        deferred ? (instruction_t){.opcode = ARRAY, .arg1 = 1}
+                                 : (instruction_t){.opcode = VLOAD, .arg1 = observer});
+        add_instruction(builder, (instruction_t){.opcode = deferred ? END : CALL});
         add_instruction(builder, (instruction_t){.opcode = END});
         add_instruction(builder, (instruction_t){.opcode = ILOAD32, .arg1 = 7654321});
         add_instruction(builder, (instruction_t){.opcode = ARRAY, .arg1 = 1});
@@ -116,7 +119,7 @@ static bool run_case(bool exclusive,
     process_t *proc = create_process();
     gc_stats_t stats;
     CHECK(configure_gc_statistics(proc, &stats));
-    bytecode_t *code = program(proc, nested, no_array, throwing);
+    bytecode_t *code = program(proc, nested, no_array, throwing, false);
     /* A dead cycle proves that the admitted pass actually sweeps before the next opcode. */
     object_t *dead = create_array_object(proc, (object_array_t){0});
     operation_result_t inserted = insert_array_elements(dead, 0, &dead, 1);
@@ -150,7 +153,7 @@ static bool run_case(bool exclusive,
     if (no_array) {
         /* Reuse this process: the declined/unused request is not stored for a later normal run. */
         free_bytecode(code);
-        code = program(proc, false, false, false);
+        code = program(proc, false, false, false, false);
         proc->main_thread->instr_id = 0;
         CHECK(configure_gc_statistics(proc, &stats));
         CHECK(run(proc, code) == 0);
@@ -164,13 +167,44 @@ static bool run_case(bool exclusive,
     return true;
 }
 
+/* The nested ARRAY refuses; the outer ARRAY consumes the same pending request. */
+static bool deferred_run(void) {
+    size_t baseline = get_allocated_memory_size();
+    process_t *proc = create_process();
+    bytecode_t *code = program(proc, true, false, false, true);
+    gc_dispatch_test_t request = {.exclusive_model_client = true, .retry_deferred = true};
+    CHECK(run_with_gc_dispatch_test(proc, code, &request) == 0);
+    CHECK(request.attempted && request.collected && request.requests == 1 && request.refusals == 1
+          && request.collections == 1);
+    CHECK(!proc->gc_session);
+    CHECK(array_payload(peek_object_from_stack(proc->main_thread->data_stack, 0)));
+    free_bytecode(code);
+    destroy_process(proc);
+    CHECK(get_allocated_memory_size() == baseline);
+    return true;
+}
+
 static bool rejected_run(void) {
     process_t *proc = create_process();
-    bytecode_t *code = program(proc, false, true, false);
+    bytecode_t *code = program(proc, false, true, false, false);
     gc_dispatch_test_t request = {true, true, true};
     proc->native_failed = true;
     CHECK(run_with_gc_dispatch_test(proc, code, &request) != 0);
     CHECK(!request.attempted && !request.collected && !os_mutex_depth(proc->execution_mutex));
+    proc->native_failed = false;
+    process_execution_enter(proc);
+    gc_session_t session = {0};
+    CHECK(gc_session_begin(&session, proc, true));
+    CHECK(run_with_gc_dispatch_test(proc, code, &request) != 0);
+    CHECK(run(proc, code) != 0);
+    CHECK(!request.attempted && !request.requests && proc->gc_session == &session);
+    CHECK(os_mutex_depth(proc->execution_mutex) == 1);
+    CHECK(gc_session_end(&session));
+    process_execution_leave(proc);
+    /* Exit before the first instruction still closes the newly opened session. */
+    proc->exit_requested = true;
+    CHECK(run_with_gc_dispatch_test(proc, code, &request) == 0);
+    CHECK(!proc->gc_session && !request.attempted && !request.requests);
     destroy_process(proc);
     free_bytecode(code);
     return true;
@@ -218,6 +252,7 @@ int main(int argc, char **argv) {
               && run_case(true, false, true, false, false, false)
               && run_case(true, false, false, true, false, false)
               && run_case(true, false, false, false, true, false)
-              && run_case(true, false, false, false, false, true) && rejected_run();
+              && run_case(true, false, false, false, false, true) && rejected_run()
+              && deferred_run();
     return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

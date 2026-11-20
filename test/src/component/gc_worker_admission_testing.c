@@ -34,7 +34,7 @@ typedef struct {
 static worker_case_t state;
 
 static bool collection_expected(void) {
-    return state.publications == 2 || state.publications == 4;
+    return state.joined_boundary || state.publications == 2 || state.publications == 4;
 }
 
 static bool payload_ok(object_t *value) {
@@ -107,7 +107,8 @@ park_impl(object_t *receiver, object_t **args, uint16_t count, thread_t *thread)
     while (!state.release)
         REQUIRE(wait_os_condition(proc->threads_changed, proc->execution_mutex) == OS_THREAD_OK);
     /* Check refusal before touching the unpublished value. */
-    REQUIRE(proc->gc_statistics->collections == (collection_expected() ? 1 : 0));
+    REQUIRE(proc->gc_statistics->collections
+            == (!state.joined_boundary && collection_expected() ? 1 : 0));
     REQUIRE(os_mutex_depth(proc->execution_mutex) == 1);
     if (publish) {
         process_execution_enter(proc);
@@ -277,13 +278,17 @@ static operation_result_t inspect(object_t **args, uint16_t count, thread_t *thr
     REQUIRE(count == 0);
     process_t *proc = thread->process;
     REQUIRE(state.request.attempted && state.request.collected == collection_expected());
+    gc_session_t *session = proc->gc_session;
+    REQUIRE(session && session->requests == 1);
+    REQUIRE(session->collections == (collection_expected() ? 1 : 0));
+    REQUIRE(session->requested == !collection_expected());
     REQUIRE(proc->gc_statistics->collections == (collection_expected() ? 1 : 0));
     REQUIRE(os_mutex_depth(proc->execution_mutex) == 1);
     REQUIRE(payload_ok(peek_object_from_stack(thread->data_stack, 0)));
     if (collection_expected())
         REQUIRE(proc->gc_statistics->last.before.objects > proc->gc_statistics->last.after.objects);
     if (state.joined_boundary) {
-        /* Only the historical first_worker guard now excludes this boundary. */
+        /* Joined OS workers are terminal participants; retained completion records stay traced. */
         REQUIRE(proc->active_threads == 1 && !proc->finished_workers);
         unsigned workers = 0;
         for (thread_t *item = thread->next; item != thread; item = item->next) {

@@ -65,6 +65,8 @@ struct vm_execution_t {
 #ifdef GOAT_TEST_GC_DISPATCH
     gc_dispatch_test_t *gc_request;
     gc_test_park_t *gc_parks;
+    gc_session_t gc_session;
+    gc_participant_t gc_main;
 #endif
 };
 
@@ -1950,8 +1952,8 @@ bool gc_test_publish_park_values(thread_t *thread, object_array_t values, gc_tes
     process_t *proc = thread->process;
     if (os_mutex_depth(proc->execution_mutex) != 1 || !proc->execution
         || !proc->execution->gc_request || !proc->execution->gc_request->published_workers
-        || !thread->program_worker || thread->finished || thread->initialization_depth
-        || thread->native_status || thread->waiting_for
+        || !proc->execution->gc_session.process || !thread->program_worker || thread->finished
+        || thread->initialization_depth || thread->native_status || thread->waiting_for
         || (thread->exception.value && !object_belongs_to_process(proc, thread->exception.value))
         || !objects_belong_to_process(proc, values))
         return false;
@@ -1968,7 +1970,19 @@ bool gc_test_publish_park_values(thread_t *thread, object_array_t values, gc_tes
             return false;
         }
     }
-    *park = (gc_test_park_t){thread, proc->execution->gc_parks, roots, values.size};
+    *park = (gc_test_park_t){.thread = thread,
+                             .next = proc->execution->gc_parks,
+                             .roots = roots,
+                             .root_count = values.size};
+    if (!gc_participant_enter(&proc->execution->gc_session, thread, &park->participant)) {
+        for (size_t i = 0; i < values.size; ++i)
+            unregister_gc_root(proc, roots[i]);
+        FREE(roots);
+        *park = (gc_test_park_t){0};
+        return false;
+    }
+    if (!gc_participant_publish(&park->participant))
+        abort();
     proc->execution->gc_parks = park;
     return true;
 }
@@ -1984,7 +1998,10 @@ bool gc_test_resume(thread_t *thread, gc_test_park_t *park) {
         link = &(*link)->next;
     if (!*link)
         return false;
-    *link = park->next; /* Withdraw stable state before releasing its owning root. */
+    /* Withdraw common protocol publication before releasing any root or resuming mutation. */
+    if (!gc_participant_withdraw(&park->participant) || !gc_participant_leave(&park->participant))
+        abort();
+    *link = park->next;
     bool removed = true;
     for (size_t i = 0; i < park->root_count; ++i)
         removed = unregister_gc_root(proc, park->roots[i]) && removed;
@@ -1993,31 +2010,6 @@ bool gc_test_resume(thread_t *thread, gc_test_park_t *park) {
     return removed;
 }
 
-/** @brief Every current worker must have explicitly published before releasing the model lock. */
-static bool test_all_workers_parked(process_t *proc) {
-    struct vm_execution_t *execution = proc->execution;
-    if (!execution || !execution->first_worker || !execution->gc_request
-        || !execution->gc_request->published_workers)
-        return false;
-    size_t workers = 0, registrations = 0;
-    for (thread_t *thread = execution->first_worker; thread != proc->main_thread;
-         thread = thread->next) {
-        if (!thread->program_worker || thread->finished || thread->initialization_depth
-            || thread->native_status || thread->waiting_for
-            || (thread->exception.value
-                && !object_belongs_to_process(proc, thread->exception.value)))
-            return false;
-        gc_test_park_t *park = execution->gc_parks;
-        while (park && park->thread != thread)
-            park = park->next;
-        if (!park || !park->roots || !park->root_count)
-            return false;
-        ++workers;
-    }
-    for (gc_test_park_t *park = execution->gc_parks; park; park = park->next)
-        ++registrations;
-    return workers && registrations == workers && proc->active_threads == workers + 1;
-}
 #endif
 
 #ifdef GOAT_TEST_GC_DISPATCH
@@ -2028,8 +2020,10 @@ static void test_post_array_gc(runtime_t *runtime,
                                instruction_t instruction,
                                bool continues) {
     gc_dispatch_test_t *request = runtime->gc_test;
-    if (!request || request->attempted || instruction.opcode != ARRAY)
+    if (!request || instruction.opcode != ARRAY || request->collected
+        || (request->attempted && !request->retry_deferred))
         return;
+    bool first_attempt = !request->attempted;
     request->attempted = true;
     process_t *process = thread->process;
     bool provenance = outer && runtime->gc_dispatch_depth == 1
@@ -2047,11 +2041,19 @@ static void test_post_array_gc(runtime_t *runtime,
         .no_worker_started = process->execution && !process->execution->first_worker,
         .no_other_clients = request->exclusive_model_client,
     };
-    if (gc_admission_allows(thread, boundary)
-        || (gc_admission_allows_mutator(thread, boundary) && test_all_workers_parked(process))) {
-        collect_garbage(process);
-        request->collected = true;
-    }
+    struct vm_execution_t *execution = process->execution;
+    if (!execution->gc_session.process)
+        return;
+    if (first_attempt && !gc_session_request(&execution->gc_session))
+        abort();
+    /* Site evidence certifies this C frame only. The common protocol decides whether
+       every other model thread has published; no separate parked-worker census. */
+    bool published = gc_admission_allows_mutator(thread, boundary);
+    if (published && !gc_participant_publish(&execution->gc_main))
+        abort();
+    request->collected = gc_session_poll(&execution->gc_session) == GC_COLLECTED;
+    if (published && !gc_participant_withdraw(&execution->gc_main))
+        abort();
 }
 #endif
 
@@ -2297,11 +2299,18 @@ static int run_standalone(process_t *proc, bytecode_t *code, gc_dispatch_test_t 
 int run(process_t *proc, bytecode_t *code) {
 #endif
     process_execution_enter(proc);
-    if (proc->execution || proc->native_failed) {
+    if (proc->execution || proc->gc_session || proc->native_failed) {
         process_execution_leave(proc);
         return 1;
     }
     struct vm_execution_t execution = {.entry_code = code};
+#ifdef GOAT_TEST_GC_DISPATCH
+    if (request && request->exclusive_model_client) {
+        if (!gc_session_begin(&execution.gc_session, proc, true)
+            || !gc_participant_enter(&execution.gc_session, proc->main_thread, &execution.gc_main))
+            abort();
+    }
+#endif
     proc->execution = &execution;
     proc->active_threads = 1;
     proc->main_thread->finished = false;
@@ -2329,6 +2338,16 @@ int run(process_t *proc, bytecode_t *code) {
     }
     execute_instructions(&runtime, thread, true);
     int status = finish_program_threads(proc, thread, runtime.status);
+#ifdef GOAT_TEST_GC_DISPATCH
+    if (execution.gc_session.process) {
+        request->requests = execution.gc_session.requests;
+        request->refusals = execution.gc_session.refusals;
+        request->collections = execution.gc_session.collections;
+        if (execution.gc_parks || !gc_participant_leave(&execution.gc_main)
+            || !gc_session_end(&execution.gc_session))
+            abort();
+    }
+#endif
     finish_string_cache(proc);
     int result = proc->native_failed ? 1 : proc->exit_requested ? proc->exit_code : status;
     process_execution_leave(proc);
@@ -2344,6 +2363,7 @@ int run_with_gc_dispatch_test(process_t *proc, bytecode_t *code, gc_dispatch_tes
     if (request) {
         request->attempted = false;
         request->collected = false;
+        request->requests = request->refusals = request->collections = 0;
     }
     return run_standalone(proc, code, request);
 }
@@ -2355,7 +2375,7 @@ int run_module_file(process_t *proc, module_file_t *file) {
     if (proc->exit_requested)
         return proc->exit_code;
     process_execution_enter(proc);
-    if (proc->execution || proc->native_failed) {
+    if (proc->execution || proc->gc_session || proc->native_failed) {
         process_execution_leave(proc);
         return 1;
     }

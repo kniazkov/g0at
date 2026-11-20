@@ -961,3 +961,5 @@ foreach(scalar_case alias substring copy failure retry host-exception host-bad-s
 endforeach()
 
 goat_suite(core.gc_protocol "core;gc-boundary" "$<TARGET_FILE:gc_protocol_testing>")
+
+set_tests_properties(core.gc_protocol PROPERTIES TIMEOUT 30)
