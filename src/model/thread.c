@@ -5,13 +5,13 @@
  */
 
 #include "thread.h"
-#include "vm/gc_protocol.h"
 
 #include "context.h"
 #include "lib/memory/allocate.h"
 #include "object.h"
 #include "object_stack.h"
 #include "process.h"
+#include "vm/gc_protocol.h"
 
 #include <stdatomic.h>
 #include <stdlib.h>

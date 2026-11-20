@@ -109,9 +109,9 @@ struct process_t {
     uint64_t gc_root_serial;          /**< Never-reused registration serial within the process. */
     struct gc_stats_t *gc_statistics; /**< Optional host-owned diagnostics, normally NULL. */
     bool gc_run_end_observation;      /**< Tags the preexisting automatic end-of-run call only. */
-    void *gc_session; /**< Active scoped collection protocol; protected by execution_mutex. */
-    bool gc_collecting;               /**< Protects the current tracing/sweep pass from reentry. */
-    bool destroying; /**< Teardown allows unregister but forbids registration and GC. */
+    void *gc_session;   /**< Active scoped collection protocol; protected by execution_mutex. */
+    bool gc_collecting; /**< Protects the current tracing/sweep pass from reentry. */
+    bool destroying;    /**< Teardown allows unregister but forbids registration and GC. */
 };
 
 /** @brief Creates a new process. */
