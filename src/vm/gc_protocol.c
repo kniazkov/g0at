@@ -155,3 +155,11 @@ void gc_session_retire_thread(thread_t *thread) {
         }
     }
 }
+
+bool configure_gc_boundaries(process_t *p, bool enabled, bool exclusive) {
+    if (!p || !os_mutex_depth(p->execution_mutex) || p->execution || p->gc_session || p->destroying
+        || (enabled && !exclusive))
+        return false;
+    p->gc_force_boundaries = enabled;
+    return true;
+}

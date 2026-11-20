@@ -642,3 +642,6 @@ target_link_libraries(gc_scalar_native_testing PRIVATE goat_validation gc_scalar
 
 add_executable(gc_protocol_testing src/component/gc_protocol_testing.c)
 target_link_libraries(gc_protocol_testing PRIVATE core m)
+
+add_executable(gc_runtime_testing src/component/gc_runtime_testing.c src/unit/analysis_test_support.c)
+target_link_libraries(gc_runtime_testing PRIVATE goat_validation m)
