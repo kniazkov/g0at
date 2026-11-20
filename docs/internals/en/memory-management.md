@@ -513,3 +513,9 @@ This is not a public callback service or a general native-worker safepoint. Conc
 ### Scalar host exception (#614)
 
 A scalar adapter now also requests an invalid host exit before the controlled collection. Pending InvalidArgument survives GC alongside borrowed strings. Returning HOST_EXCEPTION propagates a language exception with native origin; returning OK despite that host error becomes BAD_REQUEST, clears the language value and preserves a native failure trace without replay. Both outcomes are tested at ordinary and recursive lock depth. Production admission is unchanged.
+
+### Runtime collection sessions (#616)
+
+A new lock-serialized gc_session API provides deferred requests, explicit participant publication and nested exclusion counters. Every model thread must have a published token; missing participants refuse collection without consuming the request. Suspend/resume never changes publication or exclusion depth. Thread destruction retires its token; outstanding exclusions or destruction of a process with an open session fail fast. Session end requires no participants and no running VM; a new session resets counters and pending requests. Hosts must explicitly promise exclusive model ownership. Tokens are stack-owned and noncopyable.
+
+This is protocol infrastructure: VM instruction bridges and existing test-only admission have not yet migrated. No automatic requests or default in-run collection are enabled. Full #616 acceptance remains pending migration and concurrent barrier tests; #617 covers the complete path integration.

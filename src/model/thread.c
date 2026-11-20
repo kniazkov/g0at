@@ -5,6 +5,7 @@
  */
 
 #include "thread.h"
+#include "vm/gc_protocol.h"
 
 #include "context.h"
 #include "lib/memory/allocate.h"
@@ -42,6 +43,7 @@ thread_t *create_thread(process_t *process, context_t *context) {
 }
 
 void destroy_thread(thread_t *thread) {
+    gc_session_retire_thread(thread);
     if (thread->previous == thread) {
         thread->process->main_thread = NULL;
     } else {

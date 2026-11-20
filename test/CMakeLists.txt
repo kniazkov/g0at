@@ -639,3 +639,6 @@ set_target_properties(gc_scalar_native_fixture PROPERTIES
 add_executable(gc_scalar_native_testing src/component/gc_scalar_native_testing.c
   src/unit/analysis_test_support.c)
 target_link_libraries(gc_scalar_native_testing PRIVATE goat_validation gc_scalar_native_fixture m)
+
+add_executable(gc_protocol_testing src/component/gc_protocol_testing.c)
+target_link_libraries(gc_protocol_testing PRIVATE core m)
