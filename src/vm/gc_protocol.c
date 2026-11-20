@@ -104,7 +104,9 @@ gc_poll_result_t gc_session_poll(gc_session_t *s) {
         || p->native_failed || p->initializing_file || p->initialization_waiters
         || p->finished_workers)
         goto refused;
-    /* Include every model thread, even before worker startup. No registration means refusal. */
+    /* Startup records must publish. A completed program worker is terminal only after
+       schedule_and_reap has joined its OS thread and cleared the worker handle.
+       Its completion value/exception remain ordinary model roots. */
     thread_t *thread = p->main_thread;
     if (!thread)
         goto refused;
@@ -112,7 +114,9 @@ gc_poll_result_t gc_session_poll(gc_session_t *s) {
         gc_participant_t *t = s->participants;
         while (t && t->thread != thread)
             t = t->next;
-        if (!t || !t->published || t->blocked)
+        bool terminal = thread != p->main_thread && thread->program_worker && thread->finished
+                        && !thread->worker;
+        if (!terminal && (!t || !t->published || t->blocked))
             goto refused;
         thread = thread->next;
     } while (thread != p->main_thread);

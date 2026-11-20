@@ -6,22 +6,25 @@
 #ifndef GOAT_TEST_GC_DISPATCH
 #    error "GC dispatcher probes are only available in the dedicated test host"
 #endif
-#include "gc.h"
+#include "gc_protocol.h"
 #include "vm.h"
 
 /** @brief One run-scoped request at the first post-ARRAY boundary, including refusal.
  * The host must own the process and all inputs exclusively for the complete run.
  * Set exclusive_model_client false to test refusal; the VM cannot infer this promise.
- * Outputs are reset on entry, even when run cannot start. No request is stored in process_t.
+ * Outputs are reset on entry, even when run cannot start. The session is ended before run returns;
+ * requests never leak into the next run.
  */
 typedef struct {
     bool exclusive_model_client;
     bool attempted;
     bool collected;
     bool published_workers; /**< Opt in to the controlled fixture publication protocol. */
+    bool retry_deferred;    /**< Poll pending requests at subsequent reviewed ARRAY candidates. */
+    size_t requests, refusals, collections; /**< Common session counters, copied before teardown. */
 } gc_dispatch_test_t;
 
-/** @brief Execute a standalone run with at most one test collection attempt. */
+/** @brief Execute a standalone run with one request and optional deferred retries. */
 int run_with_gc_dispatch_test(process_t *proc, bytecode_t *code, gc_dispatch_test_t *request);
 
 /** @brief Stack-scoped fixture registration; zero initialize, never copy or modify while linked.
@@ -39,6 +42,7 @@ typedef struct gc_test_park_t {
     struct gc_test_park_t *next;
     gc_root_handle_t *roots;
     size_t root_count;
+    gc_participant_t participant;
 } gc_test_park_t;
 
 /** @brief Validate the entire nonempty batch before publishing any root or stable state. */
