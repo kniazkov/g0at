@@ -989,9 +989,16 @@ foreach(scalar_case alias substring copy failure retry host-exception host-bad-s
 endforeach()
 
 foreach(io_case print println input eof invalid)
-  foreach(call_kind direct method)
+  foreach(call_kind direct method startup)
     goat_suite(core.gc_io.${io_case}.${call_kind} "core;gc-boundary;integration"
       "$<TARGET_FILE:gc_io_testing>" "${io_case}" "${call_kind}")
     set_tests_properties(core.gc_io.${io_case}.${call_kind} PROPERTIES TIMEOUT 30)
   endforeach()
+endforeach()
+
+foreach(scalar_case alias substring copy failure retry host-exception host-bad-status)
+  goat_suite(core.gc_native_startup.${scalar_case} "core;gc-boundary;native-scalar"
+    "$<TARGET_FILE:gc_scalar_native_testing>" "$<TARGET_FILE:gc_scalar_native_fixture>"
+    "${scalar_case}" 0 runtime-startup)
+  set_tests_properties(core.gc_native_startup.${scalar_case} PROPERTIES TIMEOUT 30)
 endforeach()

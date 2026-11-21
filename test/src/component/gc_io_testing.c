@@ -45,19 +45,24 @@ static int peer;
 static uint64_t parked_collections;
 static const size_t payload_size = 131072;
 static bool transferred;
+static bool startup;
 
 static operation_result_t await_io(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
-    assert(!count && thread->program_worker);
+    assert(!count && (startup || thread->program_worker));
     gc_session_t *session = process->gc_session;
     gc_participant_t *main = session->participants;
-    while (main && main->thread != process->main_thread)
+    while (main && (startup ? !main->thread->program_worker : main->thread != process->main_thread))
         main = main->next;
-    assert(main);
-    /* Scheduling publication alone is insufficient: require the live reviewed CALL. */
-    while (!main->published || process->main_thread->gc_call_participant != main) {
+    /* Startup may not have registered yet. Only a live call, not scheduling,
+       proves that the pipe operation has published its managed arguments. */
+    while (!main || !main->published || main->thread->gc_call_participant != main) {
         size_t depth = process_execution_suspend(process);
         process_execution_resume(process, depth);
+        main = session->participants;
+        while (main
+               && (startup ? !main->thread->program_worker : main->thread != process->main_thread))
+            main = main->next;
     }
     assert(!main->blocked);
     parked_collections = process->gc_statistics->explicit_collections;
@@ -66,7 +71,7 @@ static operation_result_t await_io(object_t **args, uint16_t count, thread_t *th
 
 static operation_result_t transfer(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
-    assert(!count && thread->program_worker);
+    assert(!count && (startup || thread->program_worker));
     assert(process->gc_statistics->explicit_collections > parked_collections + 10);
     assert(process->gc_statistics->last.after.objects < 100);
     size_t depth = process_execution_suspend(process);
@@ -107,6 +112,7 @@ int main(int argc, char **argv) {
     eof_mode = !strcmp(argv[1], "eof");
     newline = !strcmp(argv[1], "println");
     bool method = !strcmp(argv[2], "method");
+    startup = !strcmp(argv[2], "startup");
     size_t baseline = get_allocated_memory_size();
     int pipes[2];
     assert(pipe_fds(pipes) == 0);
@@ -153,6 +159,19 @@ int main(int argc, char **argv) {
         : eof_mode   ? U"if(result!=\"\")throw 1;"
         : input_mode ? U"if(result!=\"answer\")throw 1;"
                      : U"");
+    if (startup) {
+        FREE_STRING(source);
+        source =
+            format_string(U"var t=spawn(%s,%s);awaitIO();var i=0;"
+                          U"while(i<100){var a=[];a.push(a);i+=1;}transfer();%s",
+                          operation,
+                          input_mode ? U"[42]" : U"payload+\"!\",[42]",
+                          invalid_mode ? U"var caught=false;try{join(t);}catch(e){caught=true;}"
+                                         U"if(!caught)throw 1;"
+                          : eof_mode   ? U"if(join(t)!=\"\")throw 1;"
+                          : input_mode ? U"if(join(t)!=\"answer\")throw 1;"
+                                       : U"join(t);");
+    }
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *node = parse_analysis_test_program(&memory, source);

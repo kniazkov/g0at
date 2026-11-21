@@ -624,3 +624,43 @@ This supersedes the previous scalar-execution and builtin-I/O exclusions only fo
 these reviewed call scopes. Lazy initializer gates, loading/resolution callbacks,
 worker startup and other unreviewed C chains remain possible starvation sources.
 #617 remains open, with #618 acceptance and #553 automatic thresholds still pending.
+
+### Worker bootstrap call scopes (#617)
+
+A worker created by `spawn(f, ...)` can enter a scalar native adapter, builtin I/O
+or `join` before executing any bytecode instruction. Previously that bootstrap
+had no reviewed call token: even with forced boundaries enabled, a blocking
+startup call could prevent every other participant from collecting indefinitely.
+
+Worker bootstrap now uses the same scoped call preparation as `CALL` and `CALLM`.
+It registers an independent owning root for the callable after transferring it
+out of `start_function`, installs one executor exclusion and enables only the
+existing reviewed implementations. Bytecode method calls additionally retain
+the receiver; direct join calls retain their argument. Scalar arguments remain
+on the worker's VM stack; reviewed builtins root all popped actual arguments,
+including unused extras. The scoped token, reviewed lock depth and join flag are
+restored before releasing roots. Startup restores its exclusion before processing
+success, retry, native failure or host exception, then retires the participant
+before completion. No publication survives into completion/reaping.
+
+This does not permit collection in arbitrary builtin callbacks or user operator
+bootstrap. Those paths retain their exclusion even across model-lock suspension.
+A VM function starts collecting only at its ordinary reviewed dispatcher boundary.
+Scalar callbacks still pause publication before mutating model state and restore
+it before resuming the adapter. Additional host locks and nested unreviewed
+executors remain excluded.
+
+The regression matrix runs direct spawned scalar-v2 adapters through seven
+outcomes (alias, substring, copy, retry, failure and two host-service errors).
+The main VM must collect cycles before allowing the adapter to return. Spawned
+module-v1 adapters cover alias, invalid result and host exception with collection
+inside the live adapter while the main thread joins. Five pipe cases spawn
+`print`, `println` or `input` directly and require collection before transferring
+128 KiB of output, a line, EOF or malformed UTF-8. Two join chains spawn `join`
+itself and check collection before the target returns or throws. An arbitrary
+builtin startup is a negative control. Results, exception propagation, immutable
+bytecode, root/session cleanup and allocator balance are checked.
+
+Remaining integration work: lazy initializer gates and waits, loading/resolution
+callbacks, and unreviewed nested C chains. These remain explicit starvation
+sources; #617 and #618 are not complete and automatic thresholds (#553) stay off.

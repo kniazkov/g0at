@@ -29,13 +29,14 @@ static size_t probes;
 static bool expect_host_exception;
 static bool runtime_mode;
 static bool concurrent_mode;
+static bool startup_mode;
 static bool expect_publication;
 static bool adapter_entered, worker_done;
 static uint64_t parked_collections;
 
 static operation_result_t await_adapter(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
-    assert(!count && thread->program_worker);
+    assert(!count && (startup_mode || thread->program_worker));
     while (!adapter_entered)
         wait_os_condition(process->threads_changed, process->execution_mutex);
     return operation_success(get_null_object());
@@ -43,7 +44,7 @@ static operation_result_t await_adapter(object_t **args, uint16_t count, thread_
 
 static operation_result_t finish_worker(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
-    assert(!count && thread->program_worker && adapter_entered);
+    assert(!count && (startup_mode || thread->program_worker) && adapter_entered);
     assert(process->gc_statistics->explicit_collections > parked_collections + 10);
     assert(process->gc_statistics->last.after.objects < 100);
     worker_done = true;
@@ -75,7 +76,9 @@ static void GOAT_NATIVE_CALL collect_in_adapter(void) {
         gc_session_t *session = process->gc_session;
         assert(session);
         gc_participant_t *main = session->participants;
-        while (main && main->thread != process->main_thread)
+        while (main
+               && (startup_mode ? !main->thread->program_worker
+                                : main->thread != process->main_thread))
             main = main->next;
         assert(main);
         assert(main->published == expect_publication);
@@ -94,7 +97,7 @@ static void GOAT_NATIVE_CALL collect_in_adapter(void) {
             assert(stats->collections == before + (expect_publication ? 1 : 0));
         }
         if (expect_host_exception)
-            assert(process->main_thread->exception.value == get_exception_invalid_argument());
+            assert(main->thread->exception.value == get_exception_invalid_argument());
         ++probes;
         process_execution_leave(process);
         return;
@@ -119,7 +122,12 @@ static bytecode_t *compile(void) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *node = parse_analysis_test_program(
         &memory,
-        concurrent_mode
+        startup_mode
+            ? STATIC_STRING(U"var t=spawn(func(s){return s;},"
+                            U"\"left\"+\"\U0001F980right\",\"extra\"+\"-value\");"
+                            U"awaitAdapter();var i=0;while(i<100){var a=[];a.push(a);i+=1;}"
+                            U"finishWorker();var result=join(t);")
+        : concurrent_mode
             ? STATIC_STRING(U"var f=func(s){return s;};var t=spawn(func(){awaitAdapter();"
                             U"var i=0;while(i<100){var a=[];a.push(a);i+=1;}finishWorker();});"
                             U"var result=f(\"left\"+\"\U0001F980right\",\"extra\"+\"-value\");")
@@ -147,7 +155,8 @@ static void deferred(node_t *node, code_builder_t *builder, data_builder_t *data
 int main(int argc, char **argv) {
     assert(argc == 4 || argc == 5);
     runtime_mode = argc == 5;
-    concurrent_mode = runtime_mode && !strcmp(argv[4], "runtime-workers");
+    startup_mode = runtime_mode && !strcmp(argv[4], "runtime-startup");
+    concurrent_mode = startup_mode || (runtime_mode && !strcmp(argv[4], "runtime-workers"));
     const char *modes[] =
         {"alias", "substring", "copy", "failure", "retry", "host-exception", "host-bad-status"};
     unsigned mode = 0;
@@ -163,7 +172,7 @@ int main(int argc, char **argv) {
     native_library_result_t loaded = load_native_library(argv[1]);
     assert(loaded.status == NATIVE_LIBRARY_OK);
     bytecode_t *code = compile();
-    assert(code && code->function_count == (concurrent_mode ? 2 : 1));
+    assert(code && code->function_count == (concurrent_mode && !startup_mode ? 2 : 1));
     native_function_descriptor_t *descriptor = create_native_function_descriptor(loaded.library, 1);
     assert(descriptor
            && bind_bytecode_native_function(code, code->functions[0].instruction, descriptor));
@@ -199,7 +208,8 @@ int main(int argc, char **argv) {
         assert(lock_depth ? stats.explicit_collections == 0 : stats.explicit_collections > 1);
     else
         assert(stats.explicit_collections == 1);
-    thread_t *thread = process->main_thread;
+    thread_t *thread = startup_mode ? process->main_thread->next : process->main_thread;
+    assert(!startup_mode || thread->program_worker);
     assert(thread->native_attempts == 1 && thread->native_retries == (mode == 4));
     assert(thread->native_successes == (mode < 3));
     assert(thread->native_status
@@ -211,7 +221,7 @@ int main(int argc, char **argv) {
     }
     if (mode < 3 || mode == 4) {
         object_t *key = create_string_object(process, STATIC_STRING(U"result"));
-        object_t *value = get_object_property(thread->context->data, key);
+        object_t *value = get_object_property(process->main_thread->context->data, key);
         DECREF(key);
         assert(value && value->vtbl->type == TYPE_STRING);
         string_value_t text = convert_object_to_string(value);

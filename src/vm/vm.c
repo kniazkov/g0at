@@ -1089,6 +1089,57 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
     return true;
 }
 
+/** @brief Root C-local call owners before enabling a reviewed blocking implementation.
+ * Shared by bytecode calls and worker bootstrap. Arbitrary builtins/operators keep
+ * the executor exclusion: merely passing through this wrapper never publishes.
+ */
+static bool call_with_gc_scope(runtime_t *runtime,
+                               thread_t *thread,
+                               object_t *func,
+                               object_t *receiver,
+                               uint16_t count,
+                               bool allow_join) {
+    gc_root_handle_t callable_root = {0}, receiver_root = {0}, join_argument = {0};
+    void *saved_participant = thread->gc_call_participant;
+    size_t saved_depth = thread->gc_call_extra_lock_depth;
+    bool saved_join = thread->gc_join_ready;
+    thread->gc_call_participant = NULL;
+    thread->gc_call_extra_lock_depth = runtime->gc_extra_lock_depth;
+    thread->gc_join_ready = false;
+    gc_participant_t *participant = runtime->gc_participant;
+    if (participant) {
+        callable_root = register_gc_root(thread->process, func);
+        if (!callable_root.serial)
+            abort();
+        if (receiver) {
+            receiver_root = register_gc_root(thread->process, receiver);
+            if (!receiver_root.serial)
+                abort();
+        }
+        if (allow_join && func == get_function_join() && count == 1 && participant->blocked == 1
+            && os_mutex_depth(thread->process->execution_mutex)
+                   == 1 + runtime->gc_extra_lock_depth) {
+            join_argument =
+                register_gc_root(thread->process, peek_object_from_stack(thread->data_stack, 0));
+            if (!join_argument.serial)
+                abort();
+            thread->gc_join_ready = true;
+        }
+        if (get_function_access(func) || thread->gc_join_ready || func == get_function_print()
+            || func == get_function_println() || func == get_function_input())
+            thread->gc_call_participant = participant;
+    }
+    bool result = call_object(func, count, receiver, thread);
+    thread->gc_call_participant = saved_participant;
+    thread->gc_call_extra_lock_depth = saved_depth;
+    thread->gc_join_ready = saved_join;
+    if ((join_argument.serial && !unregister_gc_root(thread->process, join_argument))
+        || (receiver_root.serial && !unregister_gc_root(thread->process, receiver_root))
+        || (callable_root.serial && !unregister_gc_root(thread->process, callable_root)))
+        abort();
+    return result;
+}
+
 /** @brief Executes @ref CALL. */
 static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     require_object_stack_size(thread->data_stack, (size_t)instr.arg0 + 1);
@@ -1101,45 +1152,7 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
                                      get_static_string_object(&key, U"()"),
                                      instr.arg0);
     }
-    /* Only the direct built-in join has a reviewed C-local wait contract. */
-    gc_participant_t *join_wait = NULL;
-    gc_root_handle_t join_argument = {0};
-    if (runtime->gc_participant && runtime->gc_participant->blocked == 1
-        && func == get_function_join() && instr.arg0 == 1
-        && os_mutex_depth(thread->process->execution_mutex) == 1 + runtime->gc_extra_lock_depth) {
-        join_argument =
-            register_gc_root(thread->process, peek_object_from_stack(thread->data_stack, 0));
-        if (!join_argument.serial)
-            abort();
-        join_wait = runtime->gc_participant;
-        thread->gc_join_ready = true;
-    }
-    void *saved_participant = thread->gc_call_participant;
-    size_t saved_depth = thread->gc_call_extra_lock_depth;
-    thread->gc_call_extra_lock_depth = runtime->gc_extra_lock_depth;
-    thread->gc_call_participant = NULL;
-    gc_root_handle_t callable_root = {0};
-    if (runtime->gc_participant) {
-        callable_root = register_gc_root(thread->process, func);
-        if (!callable_root.serial)
-            abort();
-        thread->gc_call_participant =
-            (get_function_access(func) || join_wait || func == get_function_print()
-             || func == get_function_println() || func == get_function_input())
-                ? runtime->gc_participant
-                : NULL;
-    }
-    bool result = call_object(func, instr.arg0, NULL, thread);
-    thread->gc_call_participant = saved_participant;
-    thread->gc_call_extra_lock_depth = saved_depth;
-    if (callable_root.serial && !unregister_gc_root(thread->process, callable_root))
-        abort();
-    if (join_wait) {
-        thread->gc_join_ready = false;
-        if (!unregister_gc_root(thread->process, join_argument))
-            abort();
-    }
-    // The ID of the following instruction was set inside the call method
+    bool result = call_with_gc_scope(runtime, thread, func, NULL, instr.arg0, true);
     DECREF(func);
     return finish_call(runtime, thread, result);
 }
@@ -1150,8 +1163,7 @@ static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread
     object_t *func = pop_object_from_stack(thread->data_stack);
     object_t *receiver = pop_object_from_stack(thread->data_stack);
     if (func->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
-        /* A callable property value is its own receiver, not the containing object.
-           Select its handler now, after the arguments, just as for a plain call. */
+        /* A callable property value is its own receiver, not the containing object. */
         static object_static_string_t key;
         DECREF(receiver);
         return execute_user_operator(runtime,
@@ -1160,30 +1172,7 @@ static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread
                                      get_static_string_object(&key, U"()"),
                                      instr.arg0);
     }
-    gc_root_handle_t callable_root = {0}, receiver_root = {0};
-    void *saved_participant = thread->gc_call_participant;
-    size_t saved_depth = thread->gc_call_extra_lock_depth;
-    thread->gc_call_extra_lock_depth = runtime->gc_extra_lock_depth;
-    thread->gc_call_participant = NULL;
-    if (runtime->gc_participant) {
-        callable_root = register_gc_root(thread->process, func);
-        receiver_root = register_gc_root(thread->process, receiver);
-        if (!callable_root.serial || !receiver_root.serial)
-            abort();
-        thread->gc_call_participant =
-            (get_function_access(func) || func == get_function_print()
-             || func == get_function_println() || func == get_function_input())
-                ? runtime->gc_participant
-                : NULL;
-    }
-    bool result = call_object(func, instr.arg0, receiver, thread);
-    thread->gc_call_participant = saved_participant;
-    thread->gc_call_extra_lock_depth = saved_depth;
-    if (callable_root.serial
-        && (!unregister_gc_root(thread->process, callable_root)
-            || !unregister_gc_root(thread->process, receiver_root)))
-        abort();
-    // The ID of the following instruction was set inside the call method
+    bool result = call_with_gc_scope(runtime, thread, func, receiver, instr.arg0, false);
     DECREF(func);
     DECREF(receiver);
     return finish_call(runtime, thread, result);
@@ -2255,9 +2244,17 @@ static void *program_thread_entry(void *data) {
     thread->instr_id = BAD_INSTR_INDEX - 1;
     object_t *function = thread->start_function;
     thread->start_function = NULL;
-    bool started = !process->exit_requested && !process->native_failed
-                   && call_object(function, thread->start_argument_count, NULL, thread);
+    /* Bootstrap is a complete call scope even before the first VM instruction.
+       The function root outlives native callbacks; arguments remain stack roots
+       or are independently rooted by the reviewed builtin implementation. */
+    if (runtime.gc_participant && !gc_participant_block(&participant))
+        abort();
+    bool started =
+        !process->exit_requested && !process->native_failed
+        && call_with_gc_scope(&runtime, thread, function, NULL, thread->start_argument_count, true);
     DECREF(function);
+    if (runtime.gc_participant && !gc_participant_unblock(&participant))
+        abort();
     if (thread->native_status) {
         process->native_failed = true;
         broadcast_os_condition(process->threads_changed);
