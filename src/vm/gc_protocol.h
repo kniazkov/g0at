@@ -13,6 +13,7 @@ typedef struct {
     gc_participant_t *participants;
     bool requested;
     size_t requests, refusals, collections;
+    size_t initializers, initialization_waiters; /**< Reviewed model gate frames only. */
 } gc_session_t;
 
 struct gc_participant_t {

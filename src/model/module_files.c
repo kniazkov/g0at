@@ -401,7 +401,8 @@ static module_initialize_status_t initialize_file(module_file_t *file,
                                                   void *data,
                                                   object_t **scope,
                                                   exception_t *failure,
-                                                  bool direct) {
+                                                  bool direct,
+                                                  module_file_wait_observer_t wait) {
     if (scope)
         *scope = NULL;
     if (failure)
@@ -419,11 +420,15 @@ static module_initialize_status_t initialize_file(module_file_t *file,
         if (!direct) {
             ++process->initialization_waiters;
             broadcast_os_condition(process->threads_changed);
+            if (wait)
+                wait(data, true);
             size_t depth = process_execution_suspend(process);
             os_thread_status_t status = lock_os_mutex(process->initialization_mutex);
             assert(status == OS_THREAD_OK);
             (void)status;
             process_execution_resume(process, depth);
+            if (wait)
+                wait(data, false);
             --process->initialization_waiters;
             locked = true;
         }
@@ -443,8 +448,10 @@ static module_initialize_status_t initialize_file(module_file_t *file,
     file->initialization_parent = current_initializing_file;
     current_initializing_file = file;
     module_file_t *previous = process->initializing_file;
-    if (!direct)
+    if (!direct) {
         process->initializing_file = file;
+        ++process->initialization_count;
+    }
     /* The launch file executes sequential declarations until it publishes its
        first worker. Imported/included initializers reserve their complete scope
        before exposing it to recursive consumers. */
@@ -457,8 +464,10 @@ static module_initialize_status_t initialize_file(module_file_t *file,
             failure->trace = capture_exception_trace(frame, frame->instruction);
         destroy_context(frame);
     }
-    if (!direct)
+    if (!direct) {
         process->initializing_file = previous;
+        --process->initialization_count;
+    }
     current_initializing_file = file->initialization_parent;
     file->initialization_parent = NULL;
     success = success && !failure->value;
@@ -490,7 +499,17 @@ module_initialize_status_t initialize_module_file(module_file_t *file,
                                                   void *data,
                                                   object_t **scope,
                                                   exception_t *failure) {
-    return initialize_file(file, caller, execute, data, scope, failure, false);
+    return initialize_file(file, caller, execute, data, scope, failure, false, NULL);
+}
+
+module_initialize_status_t initialize_module_file_observed(module_file_t *file,
+                                                           context_t *caller,
+                                                           module_file_executor_t execute,
+                                                           void *data,
+                                                           object_t **scope,
+                                                           exception_t *failure,
+                                                           module_file_wait_observer_t wait) {
+    return initialize_file(file, caller, execute, data, scope, failure, false, wait);
 }
 
 module_initialize_status_t initialize_module_file_direct(module_file_t *file,
@@ -499,7 +518,7 @@ module_initialize_status_t initialize_module_file_direct(module_file_t *file,
                                                          void *data,
                                                          object_t **scope,
                                                          exception_t *failure) {
-    return initialize_file(file, caller, execute, data, scope, failure, true);
+    return initialize_file(file, caller, execute, data, scope, failure, true, NULL);
 }
 
 bool module_initialization_active(process_t *process) {
