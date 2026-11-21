@@ -101,8 +101,9 @@ gc_poll_result_t gc_session_poll(gc_session_t *s) {
         return GC_IDLE;
     process_t *p = s->process;
     if (p->gc_collecting || p->draining_releases || p->destroying || p->exit_requested
-        || p->native_failed || p->initializing_file || p->initialization_waiters
-        || p->finished_workers)
+        || p->native_failed || (p->initializing_file && !s->initializers)
+        || p->initialization_count != s->initializers
+        || p->initialization_waiters != s->initialization_waiters || p->finished_workers)
         goto refused;
     /* Startup records must publish. A completed program worker is terminal only after
        schedule_and_reap has joined its OS thread and cleared the worker handle.
@@ -133,7 +134,8 @@ refused:
 }
 
 bool gc_session_end(gc_session_t *s) {
-    if (!locked(s) || s->participants || s->process->execution)
+    if (!locked(s) || s->participants || s->process->execution || s->initializers
+        || s->initialization_waiters)
         return false;
     s->process->gc_session = NULL;
     s->process = NULL;
@@ -167,7 +169,7 @@ bool configure_gc_boundaries(process_t *p, bool enabled, bool exclusive) {
 gc_participant_t *gc_call_wait_begin(thread_t *thread) {
     gc_participant_t *token = thread->gc_call_participant;
     if (!token || !member(token) || token->thread != thread || token->blocked != 1
-        || token->published || thread->initialization_depth
+        || token->published || thread->initialization_depth != thread->gc_initialization_depth
         || os_mutex_depth(thread->process->execution_mutex) != 1 + thread->gc_call_extra_lock_depth)
         return NULL;
     if (!gc_participant_unblock(token) || !gc_participant_publish(token))

@@ -40,6 +40,7 @@ struct process_t {
     size_t active_threads;      /**< Unfinished program executions, including descendants. */
     /** @brief Loader waiters, guarded by execution_mutex, for lifecycle diagnostics. */
     size_t initialization_waiters;
+    size_t initialization_count;      /**< Active included-file executors, under the model lock. */
     struct vm_execution_t *execution; /**< Borrowed while the VM owns execution. */
 
     /** @brief Owned default program identity; loaded module file sets retain their own identities.

@@ -48,6 +48,7 @@ struct thread_t {
     /** @brief Dynamic included/imported initializer depth, propagated through calls.
      * Direct launch is excluded. Future thread serialization uses this same context. */
     size_t initialization_depth;
+    size_t gc_initialization_depth; /**< Initializer frames with reviewed VM ownership. */
 
     /** @brief Backend failure status; independent of Goat exceptions. */
     uint32_t native_status;

@@ -234,6 +234,7 @@ static void module_case(bool enabled) {
 static process_t *adapter_process;
 static bool adapter_failure;
 static bool adapter_startup;
+static bool adapter_initializer;
 static bool adapter_recursive;
 static bool adapter_host_exception;
 static size_t adapter_calls;
@@ -255,6 +256,10 @@ static uint32_t GOAT_MODULE_CALL module_adapter(uint32_t abi,
     assert(!os_mutex_depth(adapter_process->execution_mutex));
     process_execution_enter(adapter_process);
     gc_session_t *session = adapter_process->gc_session;
+    if (adapter_initializer) {
+        assert(adapter_process->main_thread->initialization_depth == 1);
+        assert(session->initializers == (adapter_recursive ? 0 : 1));
+    }
     if (adapter_startup) {
         /* The main thread must reach its real join before this worker can collect. */
         while (!adapter_process->main_thread->waiting_for) {
@@ -293,11 +298,22 @@ static void module_native_case(bool failure, bool recursive) {
                          "external result=join(t);if(result!=\"ab\")throw 42;"
                        : "external f=func(x){return x;};external result=f(\"a\"+\"b\",\"c\"+\"d\");"
                          "if(result!=\"ab\")throw 42;";
-    module_source_t file = {.path = "main.goat",
-                            .name = "main.goat",
-                            .source = source,
-                            .length = strlen(source)};
-    module_sources_t sources = {.files = &file, .count = 1};
+    module_source_t input[] = {{.path = "main.goat", .name = "main.goat", .source = source},
+                               {.path = "init.goat", .name = "init.goat", .source = source}};
+    size_t target = 1;
+    if (adapter_initializer)
+        input[0].source = "external result=(include \"init.goat\").result;";
+    module_sources_t sources = {.files = input, .count = adapter_initializer ? 2 : 1};
+    for (size_t i = 0; i < sources.count; ++i) {
+        input[i].length = strlen(input[i].source);
+        source_include_error_t syntax = {0};
+        assert(parse_source_includes(input[i].path,
+                                     input[i].source,
+                                     input[i].length,
+                                     &input[i].includes,
+                                     &syntax));
+        input[i].targets = &target;
+    }
     module_compilation_t *compiled = NULL;
     module_compilation_error_t error = {0};
     assert(compile_module_sources(&sources, &compiled, &error));
@@ -346,6 +362,8 @@ static void module_native_case(bool failure, bool recursive) {
     adapter_process = NULL;
     free_module_compilation(compiled);
     clear_module_compilation_error(&error);
+    for (size_t i = 0; i < sources.count; ++i)
+        clear_source_includes(&input[i].includes);
     assert(get_allocated_memory_size() == before);
 }
 
@@ -365,6 +383,15 @@ int main(void) {
     module_native_case(true, false);
     adapter_host_exception = false;
     adapter_startup = false;
+    adapter_initializer = true;
+    module_native_case(false, false);
+    module_native_case(true, false);
+    module_native_case(false, true);
+    adapter_host_exception = true;
+    module_native_case(true, false);
+    module_native_case(true, true);
+    adapter_host_exception = false;
+    adapter_initializer = false;
     module_case(false);
     module_case(true);
     const string_value_t cases[] = {

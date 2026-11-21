@@ -664,3 +664,50 @@ bytecode, root/session cleanup and allocator balance are checked.
 Remaining integration work: lazy initializer gates and waits, loading/resolution
 callbacks, and unreviewed nested C chains. These remain explicit starvation
 sources; #617 and #618 are not complete and automatic thresholds (#553) stay off.
+
+### Reviewed lazy initialization and gate waits (#617)
+
+`MODULE_INCLUDE` and `MODULE_IMPORT` now carry a reviewed scope through the
+persistent initialization gate. A nested initializer temporarily replaces exactly
+one enclosing instruction exclusion after its context has been linked to the
+caller's chain and its displaced exception has an independent owning root.
+Persistent file scopes, cached failures and image-backed strings remain registry
+roots. The wrapper accounts for its own recursive model-lock level, restores the
+outer exclusion before transferring a result or exception, and never admits an
+additional embedding-host frame. An idle `run_module_file` of a non-launch file
+uses the same ownership proof without an enclosing instruction exclusion.
+
+The process counts active included-file executors; the session separately counts
+reviewed VM executors. Collection requires equal counts. Dynamic
+`initialization_depth` is preserved for language restrictions; a separate reviewed
+depth permits ordinary dispatcher boundaries and already reviewed scalar/I/O
+calls only when the entire initializer chain is covered. `spawn`, `join` and
+`exit` restrictions during initialization are unchanged. An arbitrary builtin
+inside an initializer remains excluded even when all initializer frames are counted.
+
+The observed gate API pairs notifications under the model lock, immediately before
+suspension and after reacquisition. At that point no scope or failure has been
+returned, operands and caller contexts are ordinary thread roots, and file records
+belong to the registry. Only the reviewed VM observer publishes its participant
+and accounts for a waiter. Poll also requires the process and session waiter counts
+to match: an unreviewed embedding waiter still vetoes collection. Lock order remains
+suspend model, acquire initializer gate, reacquire model; no GC path acquires the
+initializer gate. Withdrawal and exclusion restoration precede all file-state work.
+Completed/failed files and reentrant inclusion preserve their existing once-only
+semantics and cached exception identity/trace.
+
+Eight dedicated cases cover two nested initializers, success/failure, two real VM
+workers competing for the same gate, recursive-host refusal and direct non-launch
+entry. Collection must happen before the nested initializer finishes; failed-file
+retries must reuse the same exception and trace. Five additional real pipe cases
+require collection while an initializer blocks on print/println/input (large
+output, line, EOF and malformed UTF-8). Module-v1 adapter cases cover collection
+inside initialization, alias/invalid results, host exception and recursive-host
+refusal. Protocol controls reject unmatched executor or waiter counts. Bytecode,
+roots, depths, session state and allocator balance are checked after completion.
+
+Still excluded: generic property-read publication waits (`await_file_publication`),
+loading/resolution callbacks and other unreviewed nested C chains. Those paths
+can still delay collection indefinitely. The ordinary embedding initialization API
+has no observer and remains excluded. This is partial #617 integration, not its
+acceptance or permission to enable automatic thresholds (#553).

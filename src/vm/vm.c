@@ -1658,7 +1658,33 @@ typedef struct {
     runtime_t *runtime;
     thread_t *thread;
     bool direct_entry;
+    bool gc_reviewed;
+    bool gc_executor;
 } file_execution_t;
+
+/** @brief Only MODULE_INCLUDE/IMPORT (or an idle entry) may publish this wait.
+ * No scope/result has been returned yet. Caller contexts and operands are still
+ * ordinary thread roots, and all file scopes belong to the persistent registry.
+ */
+static void observe_module_wait(void *data, bool waiting) {
+    file_execution_t *execution = data;
+    if (!execution->gc_reviewed)
+        return;
+    gc_participant_t *token = execution->runtime->gc_participant;
+    if (waiting) {
+        if (execution->gc_executor && !gc_participant_unblock(token))
+            abort();
+        if (!gc_participant_publish(token))
+            abort();
+        ++token->session->initialization_waiters;
+    } else {
+        --token->session->initialization_waiters;
+        if (!gc_participant_withdraw(token))
+            abort();
+        if (execution->gc_executor && !gc_participant_block(token))
+            abort();
+    }
+}
 
 static bool
 execute_module_file(module_file_t *file, context_t *frame, void *data, exception_t *failure) {
@@ -1694,7 +1720,26 @@ execute_module_file(module_file_t *file, context_t *frame, void *data, exception
         || module_file_id(file) != thread->process->launch_file || !execution->direct_entry;
     if (initializer)
         thread->initialization_depth++;
+    size_t saved_lock_depth = runtime->gc_extra_lock_depth;
+    bool reviewed = initializer && execution->gc_reviewed;
+    if (reviewed) {
+        /* frame->previous retains the suspended caller chain, saved_root owns
+           the displaced exception, and the registry owns every file scope.
+           No other executor exclusion may be silently removed on reentry. */
+        if (execution->gc_executor && !gc_participant_unblock(runtime->gc_participant))
+            abort();
+        ++runtime->gc_participant->session->initializers;
+        ++thread->gc_initialization_depth;
+        ++runtime->gc_extra_lock_depth;
+    }
     execute_instructions(runtime, thread, false);
+    if (reviewed) {
+        runtime->gc_extra_lock_depth = saved_lock_depth;
+        --thread->gc_initialization_depth;
+        --runtime->gc_participant->session->initializers;
+        if (execution->gc_executor && !gc_participant_block(runtime->gc_participant))
+            abort();
+    }
     if (initializer)
         thread->initialization_depth--;
     bool success =
@@ -1722,15 +1767,20 @@ static bool execute_file_link(runtime_t *runtime, thread_t *thread, module_file_
         return dispatch_exception(runtime,
                                   thread,
                                   (exception_t){.value = get_exception_invalid_operation()});
-    file_execution_t execution = {runtime, thread};
+    file_execution_t execution = {.runtime = runtime, .thread = thread, .gc_executor = true};
+    execution.gc_reviewed =
+        runtime->gc_participant && runtime->gc_participant->blocked == 1
+        && thread->initialization_depth == thread->gc_initialization_depth
+        && os_mutex_depth(thread->process->execution_mutex) == 1 + runtime->gc_extra_lock_depth;
     object_t *scope = NULL;
     exception_t failure = {0};
-    module_initialize_status_t status = initialize_module_file(file,
-                                                               thread->context,
-                                                               execute_module_file,
-                                                               &execution,
-                                                               &scope,
-                                                               &failure);
+    module_initialize_status_t status = initialize_module_file_observed(file,
+                                                                        thread->context,
+                                                                        execute_module_file,
+                                                                        &execution,
+                                                                        &scope,
+                                                                        &failure,
+                                                                        observe_module_wait);
     if (thread->native_status || thread->process->native_failed) {
         clear_exception(&thread->exception);
         thread->exception = failure;
@@ -2135,9 +2185,11 @@ static bool execute_runtime_instruction(runtime_t *runtime, thread_t *thread, in
         if (!gc_participant_unblock(participant))
             abort();
         /* An enclosing executor owns any untraced C locals during reentry.
-           Module gates and recursive host frames are not published here. */
+           Only explicitly reviewed module frames adjust the exclusion and lock
+           depth; arbitrary reentry and recursive host frames stay excluded. */
         bool safe =
-            !participant->blocked && !runtime->status && !thread->initialization_depth
+            !participant->blocked && !runtime->status
+            && thread->initialization_depth == thread->gc_initialization_depth
             && os_mutex_depth(thread->process->execution_mutex) == 1 + runtime->gc_extra_lock_depth;
         if (!participant->session->requested && !gc_session_request(participant->session))
             abort();
@@ -2549,11 +2601,13 @@ int run_module_file(process_t *proc, module_file_t *file) {
                          .entry_code = code,
                          .gc_participant = program.gc_runtime ? &program.gc_main : NULL};
     thread_t *thread = proc->main_thread;
-    file_execution_t execution = {&runtime, thread, true};
+    file_execution_t execution = {.runtime = &runtime, .thread = thread};
     object_t *scope = NULL;
     exception_t failure = {0};
     module_files_t *launch = find_module_files(proc, proc->launch_module);
     bool direct = launch && module_files_get(launch, proc->launch_file) == file;
+    execution.direct_entry = direct;
+    execution.gc_reviewed = runtime.gc_participant && os_mutex_depth(proc->execution_mutex) == 1;
     if (direct) {
         /* initialize_module_file_direct adds one reviewed lock frame. Its scope and
            caller remain roots; recursive embedding-host frames are still excluded. */
@@ -2567,13 +2621,20 @@ int run_module_file(process_t *proc, module_file_t *file) {
                 abort();
         }
     }
-    module_initialize_status_t status =
-        (direct ? initialize_module_file_direct : initialize_module_file)(file,
-                                                                          thread->context,
-                                                                          execute_module_file,
-                                                                          &execution,
-                                                                          &scope,
-                                                                          &failure);
+    module_initialize_status_t status = direct
+                                            ? initialize_module_file_direct(file,
+                                                                            thread->context,
+                                                                            execute_module_file,
+                                                                            &execution,
+                                                                            &scope,
+                                                                            &failure)
+                                            : initialize_module_file_observed(file,
+                                                                              thread->context,
+                                                                              execute_module_file,
+                                                                              &execution,
+                                                                              &scope,
+                                                                              &failure,
+                                                                              observe_module_wait);
     clear_exception(&thread->exception);
     thread->exception = failure;
     int result = finish_program_threads(proc, thread, status == MODULE_INITIALIZE_OK ? 0 : 1);

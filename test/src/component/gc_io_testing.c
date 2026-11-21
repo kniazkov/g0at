@@ -6,9 +6,11 @@
 #    undef NDEBUG
 #endif
 #include "codegen/linker.h"
+#include "common/module_compilation.h"
 #include "lib/memory/allocate.h"
 #include "model/builtin_function.h"
 #include "model/context.h"
+#include "model/module_files.h"
 #include "unit/analysis_test_support.h"
 #include "vm/gc_protocol.h"
 #include "vm/gc_stats.h"
@@ -112,6 +114,7 @@ int main(int argc, char **argv) {
     eof_mode = !strcmp(argv[1], "eof");
     newline = !strcmp(argv[1], "println");
     bool method = !strcmp(argv[2], "method");
+    bool initializer = !strcmp(argv[2], "initializer");
     startup = !strcmp(argv[2], "startup");
     size_t baseline = get_allocated_memory_size();
     int pipes[2];
@@ -172,29 +175,83 @@ int main(int argc, char **argv) {
                           : input_mode ? U"if(join(t)!=\"answer\")throw 1;"
                                        : U"join(t);");
     }
-    arena_t *arena = create_arena(16);
-    parser_memory_t memory = {arena, arena, arena, arena};
-    node_t *node = parse_analysis_test_program(&memory, source);
-    assert(node);
-    code_builder_t *builder = create_code_builder();
-    data_builder_t *data = create_data_builder();
-    generate_bytecode_from_node(node, builder, data);
-    deferred(node, builder, data);
-    bytecode_t *code = link_code_and_data(builder, data);
-    destroy_code_builder(builder);
-    destroy_data_builder(data);
-    destroy_arena(arena);
+    bytecode_t *code = NULL;
+    module_compilation_t *compiled = NULL;
+    module_files_t *files = NULL;
+    module_compilation_error_t error = {0};
+    if (!initializer) {
+        arena_t *arena = create_arena(16);
+        parser_memory_t memory = {arena, arena, arena, arena};
+        node_t *node = parse_analysis_test_program(&memory, source);
+        assert(node);
+        code_builder_t *builder = create_code_builder();
+        data_builder_t *data = create_data_builder();
+        generate_bytecode_from_node(node, builder, data);
+        deferred(node, builder, data);
+        code = link_code_and_data(builder, data);
+        destroy_code_builder(builder);
+        destroy_data_builder(data);
+        destroy_arena(arena);
+    } else {
+        char *text = encode_utf8(source.data);
+        char *body = strstr(text, "var obj=");
+        assert(body);
+        char *main_source =
+            "var t=spawn(func(){awaitIO();var i=0;while(i<100){var a=[];a.push(a);i+=1;}"
+            "transfer();});include \"io.goat\";";
+        module_source_t input[] = {
+            {.path = "main.goat",
+             .name = "main.goat",
+             .source = main_source,
+             .length = strlen(main_source)},
+            {.path = "io.goat", .name = "io.goat", .source = body, .length = strlen(body)}};
+        source_include_error_t syntax = {0};
+        size_t target = 1;
+        assert(parse_source_includes(input[0].path,
+                                     main_source,
+                                     input[0].length,
+                                     &input[0].includes,
+                                     &syntax));
+        input[0].targets = &target;
+        module_sources_t sources = {.files = input, .count = 2};
+        assert(compile_module_sources(&sources, &compiled, &error));
+        assert(
+            create_module_files_from_snapshot(process, compiled->metadata, compiled->code, &files));
+        assert(prepare_process_launch(process, module_files_identity(files), 0, "/gc/main.goat"));
+        for (size_t i = 0; i < 2; ++i) {
+            object_t *scope = module_file_scope(module_files_get(files, i));
+            for (size_t j = 0; j < 2; ++j)
+                assert(create_object_property(
+                           scope,
+                           get_static_string_object(&keys[j], descriptors[j].name),
+                           get_builtin_function_object(&storage[j], &descriptors[j]),
+                           true)
+                       == MSTAT_OK);
+            assert(create_object_property(scope,
+                                          get_static_string_object(&payload_key, U"payload"),
+                                          value,
+                                          true)
+                   == MSTAT_OK);
+        }
+        clear_source_includes(&input[0].includes);
+        FREE(text);
+    }
     FREE_STRING(source);
     gc_stats_t stats;
     assert(configure_gc_statistics(process, &stats));
     process_execution_enter(process);
     assert(configure_gc_boundaries(process, true, true));
     process_execution_leave(process);
-    assert(run(process, code) == 0 && transferred);
+    assert((initializer ? run_module_file(process, module_files_main(files)) : run(process, code))
+               == 0
+           && transferred);
     assert(!process->gc_session && !process->gc_roots_size);
     assert(!process->main_thread->gc_call_participant);
     destroy_process(process);
-    free_bytecode(code);
+    if (code)
+        free_bytecode(code);
+    free_module_compilation(compiled);
+    clear_module_compilation_error(&error);
     assert(dup_to(saved, descriptor) >= 0 && close_fd(saved) == 0);
     clearerr(stream);
     assert(get_allocated_memory_size() == baseline);

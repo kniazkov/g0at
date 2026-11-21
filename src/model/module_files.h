@@ -153,6 +153,19 @@ module_initialize_status_t initialize_module_file(module_file_t *file,
                                                   void *data,
                                                   object_t **scope,
                                                   exception_t *failure);
+/** @brief Internal reviewed VM gate observer. Called under the model lock immediately
+ * before suspension and after reacquisition. It must not execute Goat or change
+ * file state. The ordinary embedding API supplies no observer and stays excluded.
+ */
+typedef void (*module_file_wait_observer_t)(void *data, bool waiting);
+module_initialize_status_t initialize_module_file_observed(module_file_t *file,
+                                                           context_t *caller,
+                                                           module_file_executor_t execute,
+                                                           void *data,
+                                                           object_t **scope,
+                                                           exception_t *failure,
+                                                           module_file_wait_observer_t wait);
+
 /** @brief Format current root-to-leaf initialization chain, optionally ending at
  * target (e.g. the declaration read too early). Names are escaped, indices and
  * external markers disambiguate source files. Caller frees with FREE_STRING.
