@@ -21,7 +21,7 @@
 
 struct module_native_binding_t {
     yyjson_doc *metadata;
-    bool required, unavailable;
+    bool required, unavailable, gc_resolution;
     module_native_resolver_t resolve;
     void *state;
     void (*cleanup)(void *);
@@ -193,6 +193,17 @@ bool bind_module_files_native(module_files_t *files,
     return true;
 }
 
+bool configure_module_native_gc_resolution(module_files_t *files, bool reviewed) {
+    if (!files)
+        return false;
+    process_t *process = module_file_process(module_files_main(files));
+    module_native_binding_t *binding = module_files_native(files);
+    if (!binding || process->execution || process->gc_session || process->active_threads)
+        return false;
+    binding->gc_resolution = reviewed;
+    return true;
+}
+
 void destroy_module_native_binding(module_native_binding_t *binding) {
     if (binding) {
         if (binding->cleanup)
@@ -349,10 +360,12 @@ module_native_call_status_t call_module_native(module_files_t *files,
     }
     if (!selected || !native_stack_has_headroom())
         goto done;
+    gc_participant_t *resolution_wait = binding->gc_resolution ? gc_call_wait_begin(thread) : NULL;
     bool resolved = binding->resolve(binding->state,
                                      integer_field(selected, "specializationId"),
                                      yyjson_get_str(yyjson_obj_get(selected, "symbol")),
                                      &memory.entry);
+    gc_call_wait_end(resolution_wait);
     /* Loading can release the execution lock. A different thread may terminate
        the run during I/O; do not begin native code or replace its exit status. */
     if (thread->process->native_failed || thread->process->exit_requested) {

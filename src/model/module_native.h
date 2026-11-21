@@ -43,6 +43,12 @@ bool bind_module_files_native(module_files_t *files,
                               void *state,
                               void (*cleanup)(void *));
 
+/** Internal idle-only opt-in for a resolver audited to keep all managed owners
+ * on the VM stack/registry and never reenter Goat or mutate the model. Default
+ * embedding resolvers remain excluded. The production loader opts in only when
+ * no custom writer or unreviewed diagnostic callback is installed. */
+bool configure_module_native_gc_resolution(module_files_t *files, bool reviewed);
+
 typedef struct module_native_binding_t module_native_binding_t;
 /** Internal lifetime/access hooks; ordinary clients use bind_module_files_native. */
 module_native_binding_t *module_files_native(const module_files_t *files);

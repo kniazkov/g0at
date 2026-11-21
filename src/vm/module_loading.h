@@ -16,6 +16,9 @@
 
 /** Synchronous host diagnostic; borrowed text, no Goat callbacks or reentry. */
 typedef void (*module_loading_report_t)(void *state, size_t node, const char *message);
+/** Standard CLI warning sink, with no model access or managed callback state.
+ * The loader recognizes this sink as safe during a published resolution wait. */
+void module_loading_warning(void *state, size_t node, const char *message);
 /** Optional host writer, chiefly for bounded I/O integration and fault testing.
  * Must write exactly the supplied bytes on success; may leave a partial file on
  * failure. Never closes the stream. The loader closes and verifies the result

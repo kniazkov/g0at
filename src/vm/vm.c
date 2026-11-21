@@ -262,6 +262,56 @@ static bool exec_CLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
+/** @brief A synchronous initializer shares runtime control, not image-local caches. */
+typedef struct {
+    runtime_t *runtime;
+    thread_t *thread;
+    bool direct_entry;
+    bool gc_reviewed;
+    bool gc_executor;
+} file_execution_t;
+
+/** @brief Reviewed module entry and direct property preflight may publish this wait.
+ * No scope/result has been returned yet. Caller contexts and operands are still
+ * ordinary thread roots, and all file scopes belong to the persistent registry.
+ */
+static void observe_module_wait(void *data, bool waiting) {
+    file_execution_t *execution = data;
+    if (!execution->gc_reviewed)
+        return;
+    gc_participant_t *token = execution->runtime->gc_participant;
+    if (waiting) {
+        if (execution->gc_executor && !gc_participant_unblock(token))
+            abort();
+        if (!gc_participant_publish(token))
+            abort();
+        ++token->session->initialization_waiters;
+    } else {
+        --token->session->initialization_waiters;
+        if (!gc_participant_withdraw(token))
+            abort();
+        if (execution->gc_executor && !gc_participant_block(token))
+            abort();
+    }
+}
+
+/** @brief Wait before property access acquires C-local topology/cell pointers.
+ * Receiver/RHS are still stack or context roots. Only the receiver's own file
+ * is reviewed here; inherited-scope waits keep the ordinary fail-closed path.
+ */
+static void await_vm_scope(runtime_t *runtime, thread_t *thread, object_t *receiver) {
+    gc_participant_t *token = runtime->gc_participant;
+    if (!token || token->blocked != 1
+        || thread->initialization_depth != thread->gc_initialization_depth
+        || os_mutex_depth(thread->process->execution_mutex) != 1 + runtime->gc_extra_lock_depth)
+        return;
+    file_execution_t execution = {.runtime = runtime,
+                                  .thread = thread,
+                                  .gc_reviewed = true,
+                                  .gc_executor = true};
+    module_file_exception_observed(module_scope_file(receiver), observe_module_wait, &execution);
+}
+
 /** @brief Executes @ref VLOAD. */
 static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
@@ -293,6 +343,7 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
         return true;
     }
     object_t *key = load_string(runtime, thread->process, string_id);
+    await_vm_scope(runtime, thread, thread->context->data);
     operation_result_t result =
         read_accessible_property(&thread->context->access, thread->context->data, key);
     if (result.is_exception)
@@ -379,6 +430,7 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
+    await_vm_scope(runtime, thread, thread->context->data);
     operation_result_t result = write_accessible_property_result(&thread->context->access,
                                                                  thread->context->data,
                                                                  key,
@@ -400,6 +452,7 @@ static bool exec_GETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
         return false; // bad bytecode
     }
     object_t *key = load_string(runtime, thread->process, string_id);
+    await_vm_scope(runtime, thread, peek_object_from_stack(thread->data_stack, 0));
     object_t *obj = pop_object_from_stack(thread->data_stack);
     operation_result_t result = read_accessible_property(&thread->context->access, obj, key);
     DECREF(obj);
@@ -427,6 +480,7 @@ static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
         return false; // bad bytecode
     }
     object_t *key = load_string(runtime, thread->process, string_id);
+    await_vm_scope(runtime, thread, peek_object_from_stack(thread->data_stack, 0));
     object_t *obj = pop_object_from_stack(thread->data_stack);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
     operation_result_t result =
@@ -451,6 +505,7 @@ static bool exec_write_check(runtime_t *runtime, instruction_t instr, thread_t *
     object_t *key = load_string(runtime, thread->process, instr.arg1);
     object_t *receiver = instr.opcode == CHECKVAR ? thread->context->data
                                                   : peek_object_from_stack(thread->data_stack, 0);
+    await_vm_scope(runtime, thread, receiver);
     operation_result_t result =
         instr.opcode != CHECKVAR && is_current_this(thread, receiver)
             ? write_accessible_own_property_result(&thread->context->access, receiver, key, NULL)
@@ -1651,39 +1706,6 @@ static bool exec_binding(runtime_t *runtime, instruction_t instr, thread_t *thre
     }
     thread->instr_id++;
     return true;
-}
-
-/** @brief A synchronous initializer shares runtime control, not image-local caches. */
-typedef struct {
-    runtime_t *runtime;
-    thread_t *thread;
-    bool direct_entry;
-    bool gc_reviewed;
-    bool gc_executor;
-} file_execution_t;
-
-/** @brief Only MODULE_INCLUDE/IMPORT (or an idle entry) may publish this wait.
- * No scope/result has been returned yet. Caller contexts and operands are still
- * ordinary thread roots, and all file scopes belong to the persistent registry.
- */
-static void observe_module_wait(void *data, bool waiting) {
-    file_execution_t *execution = data;
-    if (!execution->gc_reviewed)
-        return;
-    gc_participant_t *token = execution->runtime->gc_participant;
-    if (waiting) {
-        if (execution->gc_executor && !gc_participant_unblock(token))
-            abort();
-        if (!gc_participant_publish(token))
-            abort();
-        ++token->session->initialization_waiters;
-    } else {
-        --token->session->initialization_waiters;
-        if (!gc_participant_withdraw(token))
-            abort();
-        if (execution->gc_executor && !gc_participant_block(token))
-            abort();
-    }
 }
 
 static bool

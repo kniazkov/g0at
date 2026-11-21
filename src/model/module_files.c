@@ -332,17 +332,22 @@ process_t *module_file_process(const module_file_t *file) {
 }
 
 /** @brief Wait only for a foreign included initializer, never for ordinary direct main. */
-static void await_file_publication(const module_file_t *file) {
+static void
+await_file_publication(const module_file_t *file, module_file_wait_observer_t wait, void *data) {
     process_t *process = file->owner->process;
     if (file->state != MODULE_FILE_INITIALIZING || file->direct_entry
         || os_mutex_depth(process->initialization_mutex))
         return;
     ++process->initialization_waiters;
     broadcast_os_condition(process->threads_changed);
+    if (wait)
+        wait(data, true);
     size_t depth = process_execution_suspend(process);
     os_thread_status_t status = lock_os_mutex(process->initialization_mutex);
     assert(status == OS_THREAD_OK);
     process_execution_resume(process, depth);
+    if (wait)
+        wait(data, false);
     --process->initialization_waiters;
     status = unlock_os_mutex(process->initialization_mutex);
     assert(status == OS_THREAD_OK);
@@ -354,11 +359,17 @@ object_t *module_file_failure(const module_file_t *file) {
 }
 
 exception_t module_file_exception(const module_file_t *file) {
+    return module_file_exception_observed(file, NULL, NULL);
+}
+
+exception_t module_file_exception_observed(const module_file_t *file,
+                                           module_file_wait_observer_t wait,
+                                           void *data) {
     if (!file)
         return (exception_t){0};
     process_t *process = file->owner->process;
     process_execution_enter(process);
-    await_file_publication(file);
+    await_file_publication(file, wait, data);
     exception_t result = file->state == MODULE_FILE_FAILED ? file->failure : (exception_t){0};
     process_execution_leave(process);
     return result;

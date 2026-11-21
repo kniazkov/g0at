@@ -38,6 +38,12 @@ struct loading_run_t {
     size_t count;
 };
 
+void module_loading_warning(void *state, size_t node, const char *message) {
+    (void)state;
+    (void)node;
+    FPRINTF(stderr, "warning: %s\n", message);
+}
+
 static char *copy_text(const char *text) {
     size_t size = strlen(text) + 1;
     char *copy = ALLOC(size);
@@ -399,6 +405,15 @@ module_loading_result_t prepare_module_snapshot_native(module_snapshot_t *snapsh
                                       NULL)) {
             process->native_failed = true;
             return result(MODULE_LOADING_BINDING, i, "native specialization binding failed");
+        }
+        /* Snapshot/library state is unmanaged and stable for this run. Custom
+           callbacks may own untraced C locals, so they retain the default veto. */
+        if (!configure_module_native_gc_resolution(
+                module_snapshot_files(snapshot, i),
+                !options->write
+                    && (!options->report || options->report == module_loading_warning))) {
+            process->native_failed = true;
+            return result(MODULE_LOADING_BINDING, i, "native GC resolver configuration failed");
         }
     }
     return outcome;

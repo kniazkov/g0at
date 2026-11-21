@@ -45,6 +45,17 @@ static operation_result_t await_gate(object_t **args, uint16_t count, thread_t *
     return operation_success(get_null_object());
 }
 
+static operation_result_t await_start(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count);
+    process_t *p = thread->process;
+    while (!p->initialization_count) {
+        size_t depth = process_execution_suspend(p);
+        process_execution_resume(p, depth);
+    }
+    return operation_success(get_null_object());
+}
+
 static operation_result_t probe(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
     assert(!count && thread->initialization_depth == 2);
@@ -70,7 +81,8 @@ static operation_result_t probe(object_t **args, uint16_t count, thread_t *threa
 
 int main(int argc, char **argv) {
     assert(argc == 2);
-    concurrent = strstr(argv[1], "workers") != NULL;
+    bool property = strstr(argv[1], "property") != NULL;
+    concurrent = property || strstr(argv[1], "workers") != NULL;
     recursive = strstr(argv[1], "recursive") != NULL;
     failed = strstr(argv[1], "failure") != NULL;
     entry = strstr(argv[1], "entry") != NULL;
@@ -86,8 +98,25 @@ int main(int argc, char **argv) {
             : (failed ? "var sum=0;try{include \"init.goat\";}catch(e){sum=e[0];}"
                         "try{include \"init.goat\";}catch(e){sum+=e[0];}external result=sum;"
                       : "external result=(include \"init.goat\").result*2;");
+    char *property_source = NULL;
+    if (property) {
+        const char *operation = strstr(argv[1], "write")   ? "shared.result=42;"
+                                : strstr(argv[1], "check") ? "shared.result+=0;"
+                                                           : "";
+        const char *tail = failed ? "var sum=0;try{join(a);}catch(e){sum+=e[0];}"
+                                    "try{join(b);}catch(e){sum+=e[0];}external result=sum;"
+                                  : "external result=join(a).result+join(b);";
+        property_source = ALLOC(1024);
+        snprintf(property_source,
+                 1024,
+                 "var a=spawn(func(){return include \"init.goat\";});"
+                 "var b=spawn(func(){awaitStart();%sreturn shared.result;});%s",
+                 operation,
+                 tail);
+        main_source = property_source;
+    }
     char *init_source = "awaitGate();var held=[21];var leaf=include \"leaf.goat\";"
-                        "external result=held[0]+leaf.result;";
+                        "external var result=held[0]+leaf.result;";
     char *leaf_source =
         failed ? "var i=0;while(i<100){var a=[];a.push(a);i+=1;}probe();throw [42];"
                : "var i=0;while(i<100){var a=[];a.push(a);i+=1;}probe();external result=21;";
@@ -129,6 +158,22 @@ int main(int argc, char **argv) {
                                       get_builtin_function_object(&storage[i], &descriptors[i]),
                                       true)
                == MSTAT_OK);
+    static const builtin_function_t ready = {.name = U"awaitStart", .execute = await_start};
+    builtin_function_object_t ready_storage = {0};
+    object_static_string_t ready_key = {0}, shared_key = {0};
+    if (property) {
+        object_t *scope = module_file_scope(module_files_main(files));
+        assert(create_object_property(scope,
+                                      get_static_string_object(&ready_key, U"awaitStart"),
+                                      get_builtin_function_object(&ready_storage, &ready),
+                                      true)
+               == MSTAT_OK);
+        assert(create_object_property(scope,
+                                      get_static_string_object(&shared_key, U"shared"),
+                                      module_file_scope(module_files_get(files, 1)),
+                                      true)
+               == MSTAT_OK);
+    }
     gc_stats_t stats;
     assert(configure_gc_statistics(p, &stats));
     process_execution_enter(p);
@@ -175,6 +220,7 @@ int main(int argc, char **argv) {
     clear_module_compilation_error(&error);
     for (size_t i = 0; i < 3; ++i)
         clear_source_includes(&input[i].includes);
+    FREE(property_source);
     assert(get_allocated_memory_size() == baseline);
     return 0;
 }

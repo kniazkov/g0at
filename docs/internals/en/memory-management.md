@@ -711,3 +711,51 @@ loading/resolution callbacks and other unreviewed nested C chains. Those paths
 can still delay collection indefinitely. The ordinary embedding initialization API
 has no observer and remains excluded. This is partial #617 integration, not its
 acceptance or permission to enable automatic thresholds (#553).
+
+### Direct property publication waits and lazy resolver scopes (#617)
+
+The VM preflights the receiver's own module before direct property reads, writes
+and write checks, and the current context's module before VLOAD/STORE. This occurs
+before popping a receiver or borrowing topology/field-cell pointers. Receiver,
+RHS and context therefore remain normal traced roots while the observed model
+wait publishes the participant. The existing gate observer accounts for this
+waiter and restores its executor exclusion after reacquiring the model lock.
+Normal property access then runs against the initialized or failed module and
+retains the existing access checks and original cached exception/trace. Direct
+launch-file visibility and same-thread recursive initialization remain unchanged.
+
+This admission is deliberately limited to the receiver's own file. A lookup
+through inherited module scopes can hold borrowed topology/cell pointers across
+its later wait; it remains excluded. Arbitrary model/embedding property reads
+still use the unobserved API. Additional host locks or enclosing unreviewed
+executors do not obtain the VM preflight scope.
+
+Module scalar dispatch can also publish around an explicitly audited lazy
+resolver. Its callable/receiver have call-scope roots; actual arguments (including
+extra borrowed strings) remain on the VM stack; metadata, selected specialization,
+loader records and library handles are unmanaged run-owned storage. Publication
+ends before checking termination, choosing fallback or converting an error.
+The production snapshot loader opts in for its default writer and either default
+reporting or the standard CLI warning sink. The warning text is unchanged.
+Custom writer/report callbacks and arbitrary embedding resolvers remain excluded.
+The internal opt-in is idle-only and rejected after execution or a GC session
+starts. It is an ownership contract, not automatic inspection of callback code.
+
+The resolver retains its existing lock order: suspend the model lock, acquire the
+loader mutex, extract/verify/load/resolve, release the loader mutex, then restore
+the model lock. No thread waits for that mutex while owning the model lock.
+The standard writer, diagnostic sink and library lookup do not reenter Goat.
+
+Six competing-worker regressions cover direct property read, write and compound
+assignment with both initializer success and cached failure, requiring collection
+before the waiting access returns. The resolver matrix covers reviewed/unreviewed
+callbacks, direct/initializer/startup calls, recursive-host refusal, invalid native
+results, required resolution failure and optional VM fallback. Both allowed and
+refused polls occur while the resolver has suspended its caller's lock; borrowed
+strings must still survive the subsequent adapter. Existing initialization,
+continuation and real-loader regression suites remain part of validation.
+
+Remaining #617 work includes inherited-scope publication waits and the audit of
+other nested C chains. Custom embedding callbacks have an explicit exclusion;
+they cannot be treated as safe without their own root/publication contract.
+Automatic thresholds (#553) remain disabled pending integration acceptance.
