@@ -539,3 +539,47 @@ The production-linked test (no replacement VM or direct collector call) compares
 Forced standalone execution now registers each real VM worker before invoking its startup callable. Startup remains unpublished, including native or builtin execution. After startup returns, the worker uses the same executor exclusions and reviewed boundaries as the main dispatcher. At a safe boundary publication now spans schedule_and_reap: it is established under the model lock, kept stable during suspension and withdrawn after reacquisition, before any further VM mutation. Other unpublished participants still veto collection. The stack-owned token is removed before completion bookkeeping on success, language failure or cancellation.
 
 The production test now runs two workers creating cyclic arrays, with 200 builtin observations proving that each worker is registered and its executor blocks polling. Both results survive join; process roots/session and allocator balance are checked. This removes the blanket exclusion of all active VM workers at scheduling boundaries, but does not publish join waits, I/O, native adapters or module initialization. Those paths can still starve collection and remain part of #617.
+
+### Published calls, module entry and waits (#617)
+
+The forced production session now also covers direct module-file entry and native
+continuation instructions. Both dispatchers use the same executor exclusion,
+request, publication, polling and scheduling sequence. CALL/CALLM register owning
+roots for the popped callable and receiver before a reviewed dynamic call can
+transfer its exclusion to a continuation. Each driver step withdraws publication
+before returning to the driver; arbitrary builtin callbacks, operator frames and
+worker startup do not inherit this permission. Constructor/reentrant paths with
+an enclosing exclusion continue to defer collection.
+
+The direct module initializer contributes one known recursive model-lock frame.
+Only that wrapper is allowed in addition to the ordinary depth-one boundary;
+additional embedding-host locks still prevent publication. The caller remains in
+the context chain, the temporarily displaced exception has an owning root, and
+the retained entry scope stays rooted until all descendants finish. Nested
+include/import initializers and initialization waiters still veto collection;
+this change does not change gate ordering or authorize arbitrary lazy initializers.
+
+A direct builtin `join` with one argument roots that popped argument and publishes
+the caller for the condition wait, after target/cycle validation. On wakeup it
+withdraws publication and restores the executor exclusion before inspecting the
+result or exception. Nested C calls and recursively locked hosts cannot acquire
+this permission. The main thread also publishes its terminal wait for descendants
+at ordinary host lock depth. Completion records remain roots, and reaping rules
+are unchanged.
+
+Tests synchronize workers against actual `waiting_for`/`finished` state, then
+require collections and bounded object counts while the main thread remains
+asleep. They cover normal join, temporary join handles, worker exceptions and
+implicit descendant waits. Module tests cover cyclic workers and a displaced
+exception. Module-v1 adapters verify temporary borrowed strings, extra actual
+arguments, aliased results, invalid results and recursive lock restoration:
+polling inside the adapter is deferred, with collection enabled after VM return.
+The continuation matrix reruns 31 existing scenarios under production forcing,
+including methods, recursion, finally, constructors, errors and cancellation;
+selected cases require collections inside `step`, not merely elsewhere in `run`.
+Session/root cleanup, bytecode immutability and allocator balance remain checked.
+
+These rules supersede the earlier blanket exclusions for module images,
+continuations and direct join waits. I/O, scalar adapter execution, loader frames,
+nested initialization gates and unreviewed C callbacks can still postpone GC
+indefinitely. #617 therefore remains open; automatic thresholds (#553) remain off.
