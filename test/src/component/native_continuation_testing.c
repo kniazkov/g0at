@@ -16,6 +16,7 @@
 #include "model/thread.h"
 #include "unit/analysis_test_support.h"
 #include "vm/gc.h"
+#include "vm/gc_protocol.h"
 #include "vm/gc_stats.h"
 #include "vm/vm.h"
 
@@ -26,6 +27,9 @@
 
 static size_t entries, steps, effects;
 static process_t *gc_process;
+static bool runtime_gc;
+static bool require_runtime_step_gc;
+static size_t runtime_step_collections;
 static bool force_init_gc;
 static bool verify_boundary_counts;
 static bool force_step_gc;
@@ -98,7 +102,10 @@ static uint32_t GOAT_NATIVE_CALL invoke(const goat_native_continuation_context_t
     for (;;) {
         uint32_t next;
         ++steps;
+        uint64_t before = runtime_gc ? gc_process->gc_statistics->explicit_collections : 0;
         uint32_t status = context->step(context->state, pc, &next);
+        if (runtime_gc)
+            runtime_step_collections += gc_process->gc_statistics->explicit_collections - before;
         collect_after_step(status);
         if (force_init_gc && status == GOAT_NATIVE_CONTINUE) {
             context_t *owner = gc_process->main_thread->context;
@@ -224,8 +231,11 @@ static void program(const gchar_t *source,
     }
     process_t *process = create_process();
     setup(process);
+    process_execution_enter(process);
+    assert(configure_gc_boundaries(process, runtime_gc, true));
+    process_execution_leave(process);
     gc_stats_t stats;
-    if (verify_boundary_counts)
+    if (verify_boundary_counts || runtime_gc)
         assert(configure_gc_statistics(process, &stats));
     gc_process = process;
     thread_t *thread = process->main_thread;
@@ -235,6 +245,7 @@ static void program(const gchar_t *source,
     failed_collections = driver_failures = 0;
     failure_payload_checks = 0;
     step_swept = false;
+    runtime_step_collections = 0;
     if (force_step_gc) {
         object_t *dead = create_array_object(process, (object_array_t){0});
         operation_result_t inserted = insert_array_elements(dead, 0, &dead, 1);
@@ -252,7 +263,7 @@ static void program(const gchar_t *source,
     if (host_cancellation)
         assert(status == (backend_failure ? 1 : 7));
     assert(entries == expected_entries && effects == expected_effects && steps >= entries);
-    if (verify_boundary_counts) {
+    if (verify_boundary_counts && !runtime_gc) {
         assert(stats.explicit_collections == expected_effects + step_collections);
         assert(stats.run_end_collections == 1
                && stats.collections == expected_effects + step_collections + 1);
@@ -273,6 +284,11 @@ static void program(const gchar_t *source,
     assert(thread->native_attempts == entries && thread->native_retries == 0);
     assert(thread->native_successes == (failure || escaping_exception ? 0 : entries));
     assert(thread->data_stack->size == 0);
+    if (runtime_gc)
+        assert(!process->gc_session && stats.explicit_collections > 0);
+    assert(!thread->gc_call_participant && !thread->gc_join_ready);
+    if (require_runtime_step_gc)
+        assert(runtime_step_collections > 0);
     assert(process->gc_roots_size == roots);
     if (force_init_gc) {
         assert(between_init_collections > 0);
@@ -317,12 +333,16 @@ static void program(const gchar_t *source,
 }
 
 int main(int argc, char **argv) {
-    assert(argc == 2);
+    assert(argc == 2 || argc == 3);
+    runtime_gc = argc == 3;
     const char *scenario = argv[1];
     if (!strncmp(scenario, "step-gc-", 8)) {
         scenario += 8;
         force_step_gc = verify_boundary_counts = true;
     }
+    require_runtime_step_gc = runtime_gc
+                              && (!strcmp(scenario, "temporaries") || !strcmp(scenario, "recursion")
+                                  || !strcmp(scenario, "method-recursion"));
     if (!strcmp(scenario, "temporaries")) {
         /* Both elements and the terminal array result have no source-level owner yet. */
         program(U"var caller=func(){return [{var tag=73;},{var tag=91;}];};"

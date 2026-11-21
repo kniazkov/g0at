@@ -6,6 +6,7 @@
 
 #include "vm.h"
 
+#include "builtins/registry.h"
 #include "gc.h"
 #include "gc_protocol.h"
 #ifdef GOAT_TEST_GC_DISPATCH
@@ -42,6 +43,7 @@ typedef struct {
     /** @brief Nonzero if an instruction failed. */
     int status;
     gc_participant_t *gc_participant;
+    size_t gc_extra_lock_depth; /**< Reviewed direct module initializer wrapper only. */
 #ifdef GOAT_TEST_GC_DISPATCH
     gc_dispatch_test_t *gc_test;
     context_t *gc_entry_context;
@@ -60,6 +62,7 @@ typedef bool (*instr_executor_t)(runtime_t *runtime, instruction_t instr, thread
 struct vm_execution_t {
     bytecode_t *entry_code;
     object_t *entry_scope; /**< Retained standalone entry scope until all threads complete. */
+    gc_root_handle_t entry_scope_root; /**< Keeps reservations live during the terminal wait. */
     uint32_t entry_file;
     thread_t
         *first_worker; /**< First worker created during this run; earlier records stay joinable. */
@@ -73,6 +76,7 @@ struct vm_execution_t {
     bool gc_runtime;
 };
 
+static bool execute_runtime_instruction(runtime_t *runtime, thread_t *thread, instruction_t instr);
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule);
 
@@ -1097,7 +1101,41 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
                                      get_static_string_object(&key, U"()"),
                                      instr.arg0);
     }
+    /* Only the direct built-in join has a reviewed C-local wait contract. */
+    gc_participant_t *join_wait = NULL;
+    gc_root_handle_t join_argument = {0};
+    if (runtime->gc_participant && runtime->gc_participant->blocked == 1
+        && func == get_function_join() && instr.arg0 == 1
+        && os_mutex_depth(thread->process->execution_mutex) == 1 + runtime->gc_extra_lock_depth) {
+        join_argument =
+            register_gc_root(thread->process, peek_object_from_stack(thread->data_stack, 0));
+        if (!join_argument.serial)
+            abort();
+        join_wait = runtime->gc_participant;
+        thread->gc_join_ready = true;
+    }
+    void *saved_participant = thread->gc_call_participant;
+    size_t saved_depth = thread->gc_call_extra_lock_depth;
+    thread->gc_call_extra_lock_depth = runtime->gc_extra_lock_depth;
+    thread->gc_call_participant = NULL;
+    gc_root_handle_t callable_root = {0};
+    if (runtime->gc_participant) {
+        callable_root = register_gc_root(thread->process, func);
+        if (!callable_root.serial)
+            abort();
+        thread->gc_call_participant =
+            (get_function_access(func) || join_wait) ? runtime->gc_participant : NULL;
+    }
     bool result = call_object(func, instr.arg0, NULL, thread);
+    thread->gc_call_participant = saved_participant;
+    thread->gc_call_extra_lock_depth = saved_depth;
+    if (callable_root.serial && !unregister_gc_root(thread->process, callable_root))
+        abort();
+    if (join_wait) {
+        thread->gc_join_ready = false;
+        if (!unregister_gc_root(thread->process, join_argument))
+            abort();
+    }
     // The ID of the following instruction was set inside the call method
     DECREF(func);
     return finish_call(runtime, thread, result);
@@ -1119,7 +1157,25 @@ static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread
                                      get_static_string_object(&key, U"()"),
                                      instr.arg0);
     }
+    gc_root_handle_t callable_root = {0}, receiver_root = {0};
+    void *saved_participant = thread->gc_call_participant;
+    size_t saved_depth = thread->gc_call_extra_lock_depth;
+    thread->gc_call_extra_lock_depth = runtime->gc_extra_lock_depth;
+    thread->gc_call_participant = NULL;
+    if (runtime->gc_participant) {
+        callable_root = register_gc_root(thread->process, func);
+        receiver_root = register_gc_root(thread->process, receiver);
+        if (!callable_root.serial || !receiver_root.serial)
+            abort();
+        thread->gc_call_participant = get_function_access(func) ? runtime->gc_participant : NULL;
+    }
     bool result = call_object(func, instr.arg0, receiver, thread);
+    thread->gc_call_participant = saved_participant;
+    thread->gc_call_extra_lock_depth = saved_depth;
+    if (callable_root.serial
+        && (!unregister_gc_root(thread->process, callable_root)
+            || !unregister_gc_root(thread->process, receiver_root)))
+        abort();
     // The ID of the following instruction was set inside the call method
     DECREF(func);
     DECREF(receiver);
@@ -1622,6 +1678,12 @@ execute_module_file(module_file_t *file, context_t *frame, void *data, exception
     int args_count = thread->args_count;
     int status = runtime->status;
     exception_t saved = thread->exception;
+    gc_root_handle_t saved_root = {0};
+    if (runtime->gc_participant && saved.value) {
+        saved_root = register_gc_root(thread->process, saved.value);
+        if (!saved_root.serial)
+            abort();
+    }
     thread->exception = (exception_t){0};
     size_t stack_size = thread->data_stack->size;
     frame->unwinding_index = stack_size ? stack_size - 1 : BAD_STACK_INDEX;
@@ -1643,6 +1705,8 @@ execute_module_file(module_file_t *file, context_t *frame, void *data, exception
         runtime->status == 0 && !thread->exception.value && !thread->process->native_failed;
     *failure = thread->exception;
     thread->exception = saved;
+    if (saved_root.serial && !unregister_gc_root(thread->process, saved_root))
+        abort();
     while (thread->context != frame)
         thread->context = destroy_context(thread->context);
     trim_to_context(thread, frame);
@@ -1815,10 +1879,7 @@ static bool continuation_instruction(native_continuation_t *state) {
     if (instruction.opcode >= sizeof(executors) / sizeof(*executors))
         return false;
     thread->context->instruction = thread->instr_id;
-    bool result = executors[instruction.opcode](runtime, instruction, thread);
-    size_t depth = process_execution_suspend(thread->process);
-    process_execution_resume(thread->process, depth);
-    return result;
+    return execute_runtime_instruction(runtime, thread, instruction);
 }
 
 /** @brief Execute exactly one driver instruction, plus the ordinary call it may suspend for. */
@@ -1885,7 +1946,16 @@ bool vm_run_native_continuation(thread_t *thread, const goat_native_continuation
     thread->native_attempts++;
     /* Unlike scalar adapters, the driver owns no model values: each step operates on the
        rooted VM stack under the execution lock. Yield only between complete instructions. */
+    gc_participant_t *participant = thread->gc_call_participant;
+    if (participant && participant->blocked == 1) {
+        if (!gc_participant_unblock(participant))
+            abort();
+        state.runtime.gc_participant = participant;
+        state.runtime.gc_extra_lock_depth = thread->gc_call_extra_lock_depth;
+    }
     uint32_t outcome = entry->invoke(&context, entry->first_instruction);
+    if (state.runtime.gc_participant && !gc_participant_block(participant))
+        abort();
     if (outcome == GOAT_NATIVE_COMPLETE && state.stopped && state.outcome == GOAT_NATIVE_COMPLETE
         && !continuation_frame_live(&state)) {
         thread->native_successes++;
@@ -2060,6 +2130,33 @@ static void test_post_array_gc(runtime_t *runtime,
 }
 #endif
 
+static bool execute_runtime_instruction(runtime_t *runtime, thread_t *thread, instruction_t instr) {
+    gc_participant_t *participant = runtime->gc_participant;
+    if (participant && !gc_participant_block(participant))
+        abort();
+    bool flag = executors[instr.opcode](runtime, instr, thread);
+    if (participant) {
+        if (!gc_participant_unblock(participant))
+            abort();
+        /* An enclosing executor owns any untraced C locals during reentry.
+           Module gates and recursive host frames are not published here. */
+        bool safe =
+            !participant->blocked && !runtime->status && !thread->initialization_depth
+            && os_mutex_depth(thread->process->execution_mutex) == 1 + runtime->gc_extra_lock_depth;
+        if (!participant->session->requested && !gc_session_request(participant->session))
+            abort();
+        if (safe && !gc_participant_publish(participant))
+            abort();
+        gc_session_poll(participant->session);
+        schedule_and_reap(thread->process);
+        if (safe && !gc_participant_withdraw(participant))
+            abort();
+    }
+    if (!participant)
+        schedule_and_reap(thread->process);
+    return flag;
+}
+
 /** @brief Executes one thread; releases the model lock between instructions. */
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule) {
 #ifdef GOAT_TEST_GC_DISPATCH
@@ -2084,34 +2181,10 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
         }
         thread->context->instruction = thread->instr_id;
         instruction_t instr = runtime->code->instructions[thread->instr_id];
-        gc_participant_t *participant = runtime->gc_participant;
-        if (participant && !gc_participant_block(participant))
-            abort();
-        flag = executors[instr.opcode](runtime, instr, thread);
-        if (participant) {
-            if (!gc_participant_unblock(participant))
-                abort();
-            /* An enclosing executor owns any untraced C locals during reentry.
-               Module gates and recursive host frames are not published here. */
-            bool safe = !participant->blocked && !runtime->files && !runtime->status
-                        && !thread->initialization_depth
-                        && os_mutex_depth(thread->process->execution_mutex) == 1;
-            if (!participant->session->requested && !gc_session_request(participant->session))
-                abort();
-            if (safe && !gc_participant_publish(participant))
-                abort();
-            gc_session_poll(participant->session);
-            schedule_and_reap(thread->process);
-            if (safe && !gc_participant_withdraw(participant))
-                abort();
-        }
+        flag = execute_runtime_instruction(runtime, thread, instr);
 #ifdef GOAT_TEST_GC_DISPATCH
         test_post_array_gc(runtime, thread, schedule, instr, flag);
 #endif
-        /* The initializer retains its own reentrant gate, not the model lock.
-           Suspend all recursive entries, including an enclosing include handler. */
-        if (!participant)
-            schedule_and_reap(thread->process);
     }
 #ifdef GOAT_TEST_GC_DISPATCH
     --runtime->gc_dispatch_depth;
@@ -2253,9 +2326,19 @@ operation_result_t join_program_thread(thread_t *caller, uint64_t id) {
     for (thread_t *cursor = target; cursor; cursor = cursor->waiting_for)
         if (cursor == caller)
             return operation_exception(get_exception_invalid_operation());
+    gc_participant_t *participant = caller->gc_join_ready ? caller->gc_call_participant : NULL;
+    if (participant && participant->thread != caller)
+        participant = NULL;
+    caller->gc_join_ready = false;
     caller->waiting_for = target;
+    if (participant
+        && (!gc_participant_unblock(participant) || !gc_participant_publish(participant)))
+        abort();
     while (!target->finished && !process->exit_requested && !process->native_failed)
         wait_os_condition(process->threads_changed, process->execution_mutex);
+    if (participant
+        && (!gc_participant_withdraw(participant) || !gc_participant_block(participant)))
+        abort();
     caller->waiting_for = NULL;
     if (process->native_failed)
         return operation_success(get_null_object());
@@ -2282,8 +2365,16 @@ operation_result_t join_program_thread(thread_t *caller, uint64_t id) {
  */
 static int finish_program_threads(process_t *process, thread_t *entry, int status) {
     complete_program_thread(entry, status);
+    gc_participant_t *participant =
+        process->execution->gc_runtime && os_mutex_depth(process->execution_mutex) == 1
+            ? &process->execution->gc_main
+            : NULL;
+    if (participant && !gc_participant_publish(participant))
+        abort();
     while (process->active_threads)
         wait_os_condition(process->threads_changed, process->execution_mutex);
+    if (participant && !gc_participant_withdraw(participant))
+        abort();
     if (entry->failure_observed && entry->exception.value && !entry->native_status)
         status = 0;
     if (process->finished_workers)
@@ -2302,6 +2393,9 @@ static int finish_program_threads(process_t *process, thread_t *entry, int statu
     }
     if (process->native_failed)
         status = 1;
+    if (process->execution->entry_scope_root.serial
+        && !unregister_gc_root(process, process->execution->entry_scope_root))
+        abort();
     DECREFIF(process->execution->entry_scope);
     process->execution = NULL;
     return status;
@@ -2380,6 +2474,11 @@ int run(process_t *proc, bytecode_t *code) {
         execution.entry_scope = thread->context->data;
         execution.entry_file = proc->launch_file;
         INCREF(execution.entry_scope);
+        if (execution.gc_runtime) {
+            execution.entry_scope_root = register_gc_root(proc, execution.entry_scope);
+            if (!execution.entry_scope_root.serial)
+                abort();
+        }
     }
     execute_instructions(&runtime, thread, true);
     int status = finish_program_threads(proc, thread, runtime.status);
@@ -2428,7 +2527,12 @@ int run_module_file(process_t *proc, module_file_t *file) {
         return 1;
     }
     bytecode_t *code = module_file_bytecode(file);
-    struct vm_execution_t program = {.entry_code = code};
+    struct vm_execution_t program = {.entry_code = code, .gc_runtime = proc->gc_force_boundaries};
+    if (program.gc_runtime) {
+        if (!gc_session_begin(&program.gc_session, proc, true)
+            || !gc_participant_enter(&program.gc_session, proc->main_thread, &program.gc_main))
+            abort();
+    }
     proc->execution = &program;
     proc->active_threads = 1;
     proc->main_thread->finished = false;
@@ -2437,7 +2541,9 @@ int run_module_file(process_t *proc, module_file_t *file) {
     proc->main_thread->native_status = 0;
     FREE(proc->main_thread->native_diagnostic);
     proc->main_thread->native_diagnostic = NULL;
-    runtime_t runtime = {.code = code, .entry_code = code};
+    runtime_t runtime = {.code = code,
+                         .entry_code = code,
+                         .gc_participant = program.gc_runtime ? &program.gc_main : NULL};
     thread_t *thread = proc->main_thread;
     file_execution_t execution = {&runtime, thread, true};
     object_t *scope = NULL;
@@ -2445,9 +2551,17 @@ int run_module_file(process_t *proc, module_file_t *file) {
     module_files_t *launch = find_module_files(proc, proc->launch_module);
     bool direct = launch && module_files_get(launch, proc->launch_file) == file;
     if (direct) {
+        /* initialize_module_file_direct adds one reviewed lock frame. Its scope and
+           caller remain roots; recursive embedding-host frames are still excluded. */
+        runtime.gc_extra_lock_depth = 1;
         program.entry_scope = module_file_scope(file);
         program.entry_file = module_file_id(file);
         INCREF(program.entry_scope);
+        if (program.gc_runtime) {
+            program.entry_scope_root = register_gc_root(proc, program.entry_scope);
+            if (!program.entry_scope_root.serial)
+                abort();
+        }
     }
     module_initialize_status_t status =
         (direct ? initialize_module_file_direct : initialize_module_file)(file,
@@ -2459,6 +2573,9 @@ int run_module_file(process_t *proc, module_file_t *file) {
     clear_exception(&thread->exception);
     thread->exception = failure;
     int result = finish_program_threads(proc, thread, status == MODULE_INITIALIZE_OK ? 0 : 1);
+    if (program.gc_runtime
+        && (!gc_participant_leave(&program.gc_main) || !gc_session_end(&program.gc_session)))
+        abort();
     finish_string_cache(proc);
     if (proc->native_failed)
         result = 1;

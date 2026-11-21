@@ -974,3 +974,8 @@ foreach(scalar_case alias substring copy failure retry host-exception host-bad-s
       "${scalar_case}" "${lock_depth}" runtime)
   endforeach()
 endforeach()
+
+foreach(gc_case temporaries mixed unwind escape trace strict-bool recursion method-gc published-finally method-recursion method-unwind init-vm init-method init-caller init-static init-validation init-return init-unwind init-trace init-native-trace init-cancel-direct init-backend-direct init-cancel init-snapshot init-gc-closure init-gc-exception init-gc-reentrant no-replay range host-cancel cancel-backend)
+  goat_suite(core.gc_continuation.${gc_case} "core;gc-boundary;native-continuation"
+    "$<TARGET_FILE:native_continuation_testing>" "${gc_case}" runtime)
+endforeach()
