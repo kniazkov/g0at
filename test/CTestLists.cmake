@@ -137,7 +137,8 @@ foreach(native_requirements_id IN LISTS native_requirements_ids)
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-requirements")
 endforeach()
 # Supplemental regressions are separate from the frozen migration corpus.
-foreach(native_requirements_case IN ITEMS pe-msvcrt-hypot pe-msvcrt-hypot-unknown)
+foreach(native_requirements_case IN ITEMS pe-msvcrt-hypot pe-msvcrt-hypot-unknown
+    pe-kernel-IsDBCSLeadByteEx-msvcrt pe-kernel-IsDBCSLeadByteEx-ucrt)
   goat_scenario(integration.native_requirements.${native_requirements_case} "integration;native-requirements-migration" TIMEOUT 30 COMMAND
     "$<TARGET_FILE:native_requirements_scenarios>" "integration.native_requirements.${native_requirements_case}"
     "$<TARGET_FILE:native_requirements_testing>" "${PROJECT_BINARY_DIR}"
@@ -731,7 +732,7 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1921 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1923 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
   message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (including four safe native retry cases for #316); found ${goat_integration_count}")
 endif()

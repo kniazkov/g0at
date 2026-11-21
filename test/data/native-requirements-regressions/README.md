@@ -2,7 +2,7 @@
 
 These cases are independent of the frozen #379 migration corpus. They reuse its
 PE32+ layout, without modifying its blobs, scenario table, or provenance hashes.
-The host only inspects bytes, so both tests run on Linux and Windows.
+The host only inspects bytes, so these tests run on Linux and Windows.
 
 ## MSVCRT `_hypot`
 
@@ -24,3 +24,22 @@ the historical corpus are intentionally not copied into these PE-only cases.
 
 The successful case requires the unchanged `10.0.0.0 0.0.0.0` OS/runtime floor.
 The negative case requires the exact unknown-import diagnostic token.
+
+## KERNEL32 `IsDBCSLeadByteEx`
+
+PR #624 exposed this import in MinGW-generated native modules: both MINGW64
+and UCRT64 rejected `KERNEL32.dll!IsDBCSLeadByteEx` before module execution.
+[Microsoft documents this function](https://learn.microsoft.com/en-us/windows/win32/api/winnls/nf-winnls-isdbcsleadbyteex)
+as a Kernel32 export available since Windows 2000. Accept its exact name in
+the Windows 10 profile for both CRTs; unknown imports remain rejected.
+
+The two additional fixtures derive from the frozen `pe-kernel-GetCPInfo` image:
+`../native-requirements/blobs/d2e89aec9d0dfb4ceb42f7521771cb8cbc1b058b00fd08fdad4242ea52d786f0.bin`.
+Replace 16 bytes at offset `0x742` with ASCII `IsDBCSLeadByteEx` plus NUL,
+without resizing the image. This produces the MSVCRT fixture
+`7b98d47317e74dd0953a36a8d07db7d8d5fe06e656921ad827145ac1b94c8d20.bin`.
+For UCRT, additionally replace 13 bytes at offset `0x300` with ASCII
+`ucrtbase.dll` plus NUL, producing
+`b74b6ff834fa21de3260eca328729649bd1d0e72c1cbf6218ea17ee432854822.bin`.
+Both 4096-byte fixtures require acceptance with the unchanged
+`10.0.0.0 0.0.0.0` OS/runtime floor. The original migration corpus is unchanged.
