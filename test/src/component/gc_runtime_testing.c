@@ -221,6 +221,8 @@ static void module_case(bool enabled) {
 
 static process_t *adapter_process;
 static bool adapter_failure;
+static bool adapter_recursive;
+static bool adapter_host_exception;
 static size_t adapter_calls;
 
 static uint32_t GOAT_MODULE_CALL module_adapter(uint32_t abi,
@@ -228,7 +230,9 @@ static uint32_t GOAT_MODULE_CALL module_adapter(uint32_t abi,
                                                 uint32_t count,
                                                 const goat_module_value_v1 *args,
                                                 goat_module_value_v1 *result) {
-    (void)context;
+    if (adapter_host_exception)
+        assert(context->services->request_exit(context->state, 0, 0, 0)
+               == GOAT_MODULE_HOST_EXCEPTION);
     assert(abi == GOAT_MODULE_ABI_VERSION && count == 2);
     assert(args[0].tag == GOAT_MODULE_STRING && args[1].tag == GOAT_MODULE_STRING);
     const goat_module_string_v1 *first = (const void *)(uintptr_t)args[0].payload;
@@ -240,13 +244,14 @@ static uint32_t GOAT_MODULE_CALL module_adapter(uint32_t abi,
     gc_session_t *session = adapter_process->gc_session;
     assert(session && gc_session_request(session));
     uint64_t before = adapter_process->gc_statistics->explicit_collections;
-    assert(gc_session_poll(session) == GC_DEFERRED);
-    assert(adapter_process->gc_statistics->explicit_collections == before);
+    assert(gc_session_poll(session) == (adapter_recursive ? GC_DEFERRED : GC_COLLECTED));
+    assert(adapter_process->gc_statistics->explicit_collections
+           == before + (adapter_recursive ? 0 : 1));
     process_execution_leave(adapter_process);
     assert(first->data[1] == 'b' && extra->data[1] == 'd');
     ++adapter_calls;
     *result = adapter_failure ? (goat_module_value_v1){99, 0, 0} : args[0];
-    return GOAT_MODULE_SUCCESS;
+    return adapter_host_exception ? GOAT_MODULE_HOST_EXCEPTION : GOAT_MODULE_SUCCESS;
 }
 
 static bool
@@ -298,9 +303,12 @@ static void module_native_case(bool failure, bool recursive) {
         process_execution_leave(p);
     adapter_process = p;
     adapter_failure = failure;
+    adapter_recursive = recursive;
     adapter_calls = 0;
     assert((run_module_file(p, module_files_main(files)) != 0) == failure);
     assert(adapter_calls == 1 && p->main_thread->native_retries == 0);
+    if (adapter_host_exception)
+        assert(p->main_thread->exception.value == get_exception_invalid_argument());
     assert(!p->gc_session && !p->gc_roots_size);
     assert(!p->main_thread->gc_call_participant && !p->main_thread->gc_join_ready);
     assert(os_mutex_depth(p->execution_mutex) == (recursive ? 1 : 0));
@@ -319,6 +327,10 @@ int main(void) {
     module_native_case(true, false);
     module_native_case(false, true);
     module_native_case(true, true);
+    adapter_host_exception = true;
+    module_native_case(true, false);
+    module_native_case(true, true);
+    adapter_host_exception = false;
     module_case(false);
     module_case(true);
     const string_value_t cases[] = {

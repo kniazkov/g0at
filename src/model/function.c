@@ -22,6 +22,7 @@
 #include "thread.h"
 #include "transfer.h"
 #include "vm/gc.h"
+#include "vm/gc_protocol.h"
 #include "vm/vm.h"
 
 #include <assert.h>
@@ -84,6 +85,15 @@ static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, t
         args[i] = args[arg_count - 1 - i];
         args[arg_count - 1 - i] = tmp;
     }
+    /* Reviewed builtin I/O may release the model lock after static_call popped
+       all actual arguments, including extras. Keep independent tracing owners. */
+    gc_root_handle_t *roots =
+        thread->gc_call_participant && arg_count ? ALLOC(arg_count * sizeof(*roots)) : NULL;
+    for (size_t i = 0; roots && i < arg_count; ++i) {
+        roots[i] = register_gc_root(thread->process, args[i]);
+        if (!roots[i].serial)
+            abort();
+    }
     operation_result_t result;
     if (arg_count < descriptor->min_args) {
         result = operation_exception(get_exception_invalid_argument());
@@ -96,6 +106,10 @@ static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, t
        releasing any existing owner, including the pending exception below. */
     const exception_trace_t *trace =
         result.is_exception ? retain_exception_trace(result.trace) : NULL;
+    for (size_t i = 0; roots && i < arg_count; ++i)
+        if (!unregister_gc_root(thread->process, roots[i]))
+            abort();
+    FREE(roots);
     for (size_t i = 0; i < arg_count; i++)
         DECREF(args[i]);
     FREE(args);
@@ -359,6 +373,7 @@ static uint32_t GOAT_NATIVE_CALL native_request_exit(void *state,
     if (!thread)
         return GOAT_NATIVE_BAD_REQUEST;
     process_execution_enter(thread->process);
+    gc_participant_t *wait = gc_call_wait_pause(thread);
     if (!memory->host_exception) {
         operation_result_t result = count == 1 && type == GOAT_NATIVE_I64
                                         ? request_program_exit(thread, code)
@@ -367,6 +382,7 @@ static uint32_t GOAT_NATIVE_CALL native_request_exit(void *state,
         thread->exception = (exception_t){result.value, retain_exception_trace(result.trace)};
         memory->host_exception = true;
     }
+    gc_call_wait_resume(wait);
     process_execution_leave(thread->process);
     return GOAT_NATIVE_HOST_EXCEPTION;
 }
@@ -399,9 +415,11 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
     }
     goat_native_value_v2_t result = {0};
     thread->native_attempts++;
+    gc_participant_t *wait = gc_call_wait_begin(thread);
     size_t execution_depth = process_execution_suspend(thread->process);
     uint32_t status = entry->invoke(GOAT_NATIVE_ABI_VERSION, &native_context, count, args, &result);
     process_execution_resume(thread->process, execution_depth);
+    gc_call_wait_end(wait);
     FREE(args);
     if (memory.host_exception && status == GOAT_NATIVE_HOST_EXCEPTION) {
         thread->native_status = GOAT_NATIVE_OK;

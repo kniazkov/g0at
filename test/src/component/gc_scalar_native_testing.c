@@ -10,6 +10,7 @@
 #include "lib/memory/allocate.h"
 #include "lib/strings/string_ext.h"
 #include "model/array.h"
+#include "model/builtin_function.h"
 #include "model/context.h"
 #include "model/native_library.h"
 #include "model/thread.h"
@@ -27,20 +28,73 @@ static process_t *process;
 static size_t probes;
 static bool expect_host_exception;
 static bool runtime_mode;
+static bool concurrent_mode;
+static bool expect_publication;
+static bool adapter_entered, worker_done;
+static uint64_t parked_collections;
+
+static operation_result_t await_adapter(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count && thread->program_worker);
+    while (!adapter_entered)
+        wait_os_condition(process->threads_changed, process->execution_mutex);
+    return operation_success(get_null_object());
+}
+
+static operation_result_t finish_worker(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count && thread->program_worker && adapter_entered);
+    assert(process->gc_statistics->explicit_collections > parked_collections + 10);
+    assert(process->gc_statistics->last.after.objects < 100);
+    worker_done = true;
+    broadcast_os_condition(process->threads_changed);
+    return operation_success(get_null_object());
+}
+
+static void install_worker_functions(void) {
+    static const builtin_function_t descriptors[] = {
+        {.name = U"awaitAdapter", .execute = await_adapter},
+        {.name = U"finishWorker", .execute = finish_worker}};
+    static builtin_function_object_t storage[2];
+    static object_static_string_t keys[2];
+    for (size_t i = 0; i < 2; ++i)
+        create_object_property(process->main_thread->context->data,
+                               get_static_string_object(&keys[i], descriptors[i].name),
+                               get_builtin_function_object(&storage[i], &descriptors[i]),
+                               true);
+}
 
 static void GOAT_NATIVE_CALL collect_in_adapter(void) {
     /* Only this test host may make the single-client promise; this is not a public callback. */
-    assert(process->active_threads == 1 && os_mutex_depth(process->execution_mutex) == 0);
+    assert(os_mutex_depth(process->execution_mutex) == 0);
+    assert(concurrent_mode || process->active_threads == 1);
     process_execution_enter(process);
     assert(os_mutex_depth(process->execution_mutex) == 1);
     gc_stats_t *stats = process->gc_statistics;
     if (runtime_mode) {
         gc_session_t *session = process->gc_session;
-        assert(session && session->participants->blocked > 0);
+        assert(session);
+        gc_participant_t *main = session->participants;
+        while (main && main->thread != process->main_thread)
+            main = main->next;
+        assert(main);
+        assert(main->published == expect_publication);
+        assert(main->blocked == (expect_publication ? 0 : 1));
         uint64_t before = stats->collections;
         assert(gc_session_request(session));
-        assert(gc_session_poll(session) == GC_DEFERRED);
-        assert(stats->collections == before);
+        if (concurrent_mode) {
+            parked_collections = stats->explicit_collections;
+            adapter_entered = true;
+            broadcast_os_condition(process->threads_changed);
+            while (!worker_done)
+                wait_os_condition(process->threads_changed, process->execution_mutex);
+            assert(stats->collections > before);
+        } else {
+            assert(gc_session_poll(session) == (expect_publication ? GC_COLLECTED : GC_DEFERRED));
+            assert(stats->collections == before + (expect_publication ? 1 : 0));
+        }
+        if (expect_host_exception)
+            assert(process->main_thread->exception.value == get_exception_invalid_argument());
         ++probes;
         process_execution_leave(process);
         return;
@@ -65,8 +119,12 @@ static bytecode_t *compile(void) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *node = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(U"var f=func(s){return s;};"
-                      U"var result=f(\"left\"+\"\U0001F980right\",\"extra\"+\"-value\");"));
+        concurrent_mode
+            ? STATIC_STRING(U"var f=func(s){return s;};var t=spawn(func(){awaitAdapter();"
+                            U"var i=0;while(i<100){var a=[];a.push(a);i+=1;}finishWorker();});"
+                            U"var result=f(\"left\"+\"\U0001F980right\",\"extra\"+\"-value\");")
+            : STATIC_STRING(U"var f=func(s){return s;};"
+                            U"var result=f(\"left\"+\"\U0001F980right\",\"extra\"+\"-value\");"));
     assert(node);
     code_builder_t *builder = create_code_builder();
     data_builder_t *data = create_data_builder();
@@ -89,6 +147,7 @@ static void deferred(node_t *node, code_builder_t *builder, data_builder_t *data
 int main(int argc, char **argv) {
     assert(argc == 4 || argc == 5);
     runtime_mode = argc == 5;
+    concurrent_mode = runtime_mode && !strcmp(argv[4], "runtime-workers");
     const char *modes[] =
         {"alias", "substring", "copy", "failure", "retry", "host-exception", "host-bad-status"};
     unsigned mode = 0;
@@ -97,12 +156,14 @@ int main(int argc, char **argv) {
     assert(mode < 7);
     size_t lock_depth = (size_t)strtoul(argv[3], NULL, 10);
     assert(lock_depth == 0 || lock_depth == 2);
+    expect_publication = runtime_mode && lock_depth == 0;
+    assert(!concurrent_mode || expect_publication);
     expect_host_exception = mode >= 5;
     size_t baseline = get_allocated_memory_size();
     native_library_result_t loaded = load_native_library(argv[1]);
     assert(loaded.status == NATIVE_LIBRARY_OK);
     bytecode_t *code = compile();
-    assert(code && code->function_count == 1);
+    assert(code && code->function_count == (concurrent_mode ? 2 : 1));
     native_function_descriptor_t *descriptor = create_native_function_descriptor(loaded.library, 1);
     assert(descriptor
            && bind_bytecode_native_function(code, code->functions[0].instruction, descriptor));
@@ -111,6 +172,8 @@ int main(int argc, char **argv) {
     assert(image);
     memcpy(image, code->buffer, code->buffer_size);
     process = create_process();
+    if (concurrent_mode)
+        install_worker_functions();
     process_execution_enter(process);
     assert(configure_gc_boundaries(process, runtime_mode, true));
     process_execution_leave(process);

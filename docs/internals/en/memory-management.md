@@ -583,3 +583,44 @@ These rules supersede the earlier blanket exclusions for module images,
 continuations and direct join waits. I/O, scalar adapter execution, loader frames,
 nested initialization gates and unreviewed C callbacks can still postpone GC
 indefinitely. #617 therefore remains open; automatic thresholds (#553) remain off.
+
+### Scalar native and builtin I/O waits (#617)
+
+Reviewed CALL/CALLM scopes now publish during scalar-v2 and module-v1 adapter
+execution and during `print`, `println` and `input` I/O. `gc_call_wait_begin`
+requires the current call token, exactly one executor exclusion, no initializer
+depth and only the reviewed lock depth. Startup, nested executors, arbitrary
+builtin callbacks and additional embedding-host locks still fail closed. The
+model lock is released only after publication and reacquired before withdrawal
+and restoration of the executor exclusion. Publication itself does not collect.
+
+Scalar actual arguments, including extras, remain on the VM stack until result
+conversion. Borrowed string views therefore keep their traced owners throughout
+the adapter. CALL/CALLM roots retain callable and receiver. Static builtin calls
+instead pop their arguments into a C array; reviewed calls now register independent
+owning roots for every actual argument until builtin return. This also protects
+unused arguments and borrowed print strings. `println`'s intermediate result is
+the immutable null singleton; input's decoded line is unmanaged storage until it
+is converted to a Goat string after withdrawal.
+
+Native exit services acquire the model lock, pause an existing publication and
+restore the executor exclusion before changing the pending exception/exit state.
+They republish before releasing the service lock. This restoration uses the
+already reviewed token, not the original caller's lock depth: a direct module
+call has two lock levels, whereas its service reacquires one. Exceptions remain
+ordinary thread roots; terminal process states still veto collection.
+
+Production tests collect inside both scalar ABIs with temporary/extra borrowed
+strings and recursive-host negative controls. Seven real-library scenarios park
+the main adapter while a VM worker allocates cycles, requiring collection before
+the adapter returns, including alias, substring, native copy, retry, failure and
+host-exception outcomes. Real pipe tests cover direct and method I/O, 128 KiB
+output, line input, EOF and malformed UTF-8. The worker observes an actual published
+call, allocates cycles and checks collection before transferring pipe data.
+Allocator/root/session cleanup and payloads are checked. The protocol test also
+covers nested exclusions, initializer refusal and callback lock-depth restoration.
+
+This supersedes the previous scalar-execution and builtin-I/O exclusions only for
+these reviewed call scopes. Lazy initializer gates, loading/resolution callbacks,
+worker startup and other unreviewed C chains remain possible starvation sources.
+#617 remains open, with #618 acceptance and #553 automatic thresholds still pending.

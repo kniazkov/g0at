@@ -1124,7 +1124,10 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
         if (!callable_root.serial)
             abort();
         thread->gc_call_participant =
-            (get_function_access(func) || join_wait) ? runtime->gc_participant : NULL;
+            (get_function_access(func) || join_wait || func == get_function_print()
+             || func == get_function_println() || func == get_function_input())
+                ? runtime->gc_participant
+                : NULL;
     }
     bool result = call_object(func, instr.arg0, NULL, thread);
     thread->gc_call_participant = saved_participant;
@@ -1167,7 +1170,11 @@ static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread
         receiver_root = register_gc_root(thread->process, receiver);
         if (!callable_root.serial || !receiver_root.serial)
             abort();
-        thread->gc_call_participant = get_function_access(func) ? runtime->gc_participant : NULL;
+        thread->gc_call_participant =
+            (get_function_access(func) || func == get_function_print()
+             || func == get_function_println() || func == get_function_input())
+                ? runtime->gc_participant
+                : NULL;
     }
     bool result = call_object(func, instr.arg0, receiver, thread);
     thread->gc_call_participant = saved_participant;

@@ -979,3 +979,18 @@ foreach(gc_case temporaries mixed unwind escape trace strict-bool recursion meth
   goat_suite(core.gc_continuation.${gc_case} "core;gc-boundary;native-continuation"
     "$<TARGET_FILE:native_continuation_testing>" "${gc_case}" runtime)
 endforeach()
+
+foreach(scalar_case alias substring copy failure retry host-exception host-bad-status)
+  goat_suite(core.gc_native_wait.${scalar_case} "core;gc-boundary;native-scalar"
+    "$<TARGET_FILE:gc_scalar_native_testing>" "$<TARGET_FILE:gc_scalar_native_fixture>"
+    "${scalar_case}" 0 runtime-workers)
+  set_tests_properties(core.gc_native_wait.${scalar_case} PROPERTIES TIMEOUT 30)
+endforeach()
+
+foreach(io_case print println input eof invalid)
+  foreach(call_kind direct method)
+    goat_suite(core.gc_io.${io_case}.${call_kind} "core;gc-boundary;integration"
+      "$<TARGET_FILE:gc_io_testing>" "${io_case}" "${call_kind}")
+    set_tests_properties(core.gc_io.${io_case}.${call_kind} PROPERTIES TIMEOUT 30)
+  endforeach()
+endforeach()
