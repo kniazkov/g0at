@@ -81,21 +81,33 @@ static operation_result_t sample(object_t **args, uint16_t count, thread_t *thre
 /* Synchronize through model state, not sleeps: the worker cannot proceed until
    the real main-thread wait has released the model lock. */
 static bool terminal_wait;
+static bool startup_join;
 static uint64_t wait_collections;
 static size_t verified_waits;
+
+static thread_t *joining_thread(thread_t *target) {
+    process_t *p = target->process;
+    if (!startup_join)
+        return terminal_wait ? (p->main_thread->finished ? p->main_thread : NULL)
+                             : (p->main_thread->waiting_for == target ? p->main_thread : NULL);
+    for (thread_t *t = p->main_thread->next; t != p->main_thread; t = t->next)
+        if (t->waiting_for == target)
+            return t;
+    return NULL;
+}
 
 static operation_result_t await_main(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
     assert(count == 0 && thread->program_worker);
     process_t *p = thread->process;
-    while (terminal_wait ? !p->main_thread->finished : !p->main_thread->waiting_for) {
+    while (!joining_thread(thread)) {
         size_t depth = process_execution_suspend(p);
         process_execution_resume(p, depth);
     }
     if (forced) {
         gc_session_t *session = p->gc_session;
         gc_participant_t *main = session->participants;
-        while (main && main->thread != p->main_thread)
+        while (main && main->thread != joining_thread(thread))
             main = main->next;
         assert(main && main->published && !main->blocked);
     }
@@ -107,7 +119,7 @@ static operation_result_t verify_wait(object_t **args, uint16_t count, thread_t 
     (void)args;
     assert(count == 0 && thread->program_worker);
     process_t *p = thread->process;
-    assert(terminal_wait ? p->main_thread->finished : p->main_thread->waiting_for == thread);
+    assert(joining_thread(thread));
     if (forced) {
         assert(p->gc_statistics->explicit_collections > wait_collections + 10);
         assert(p->gc_statistics->last.after.objects < 100);
@@ -221,6 +233,7 @@ static void module_case(bool enabled) {
 
 static process_t *adapter_process;
 static bool adapter_failure;
+static bool adapter_startup;
 static bool adapter_recursive;
 static bool adapter_host_exception;
 static size_t adapter_calls;
@@ -242,6 +255,17 @@ static uint32_t GOAT_MODULE_CALL module_adapter(uint32_t abi,
     assert(!os_mutex_depth(adapter_process->execution_mutex));
     process_execution_enter(adapter_process);
     gc_session_t *session = adapter_process->gc_session;
+    if (adapter_startup) {
+        /* The main thread must reach its real join before this worker can collect. */
+        while (!adapter_process->main_thread->waiting_for) {
+            size_t depth = process_execution_suspend(adapter_process);
+            process_execution_resume(adapter_process, depth);
+        }
+        thread_t *worker = adapter_process->main_thread->waiting_for;
+        assert(worker->program_worker && !worker->start_function);
+        gc_participant_t *token = worker->gc_call_participant;
+        assert(token && token->published && !token->blocked);
+    }
     assert(session && gc_session_request(session));
     uint64_t before = adapter_process->gc_statistics->explicit_collections;
     assert(gc_session_poll(session) == (adapter_recursive ? GC_DEFERRED : GC_COLLECTED));
@@ -264,8 +288,11 @@ resolve_adapter(void *state, uint32_t id, const char *symbol, module_native_entr
 
 static void module_native_case(bool failure, bool recursive) {
     size_t before = get_allocated_memory_size();
-    char *source = "external f=func(x){return x;};external result=f(\"a\"+\"b\",\"c\"+\"d\");"
-                   "if(result!=\"ab\")throw 42;";
+    char *source = adapter_startup
+                       ? "external t=spawn(func(x){return x;},\"a\"+\"b\",\"c\"+\"d\");"
+                         "external result=join(t);if(result!=\"ab\")throw 42;"
+                       : "external f=func(x){return x;};external result=f(\"a\"+\"b\",\"c\"+\"d\");"
+                         "if(result!=\"ab\")throw 42;";
     module_source_t file = {.path = "main.goat",
                             .name = "main.goat",
                             .source = source,
@@ -331,6 +358,13 @@ int main(void) {
     module_native_case(true, false);
     module_native_case(true, true);
     adapter_host_exception = false;
+    adapter_startup = true;
+    module_native_case(false, false);
+    module_native_case(true, false);
+    adapter_host_exception = true;
+    module_native_case(true, false);
+    adapter_host_exception = false;
+    adapter_startup = false;
     module_case(false);
     module_case(true);
     const string_value_t cases[] = {
@@ -338,6 +372,8 @@ int main(void) {
             U"var work=func(){var i=0;while(i<100){var a=[];a.push(a);sample();i+=1;}return "
             U"[21];};var a=spawn(work);var b=spawn(work);var i=0;while(i<100){i+=1;}var "
             U"result=join(a)[0]+join(b)[0];"),
+        /* An arbitrary builtin bootstrap remains excluded even after suspension. */
+        STATIC_STRING(U"join(spawn(sample));var result=42;"),
         STATIC_STRING(U"var f=func(x){return [x+1];}; var result=f(41)[0];"),
         STATIC_STRING(U"var f=func(x){if(x==0){return 42;} return f(x-1);}; var result=f(20);"),
         STATIC_STRING(U"var a=[40]; var f=func(){a[0]+=2;return a[0];}; var result=f();"),
@@ -359,10 +395,17 @@ int main(void) {
                       U"while(i<100){var a=[];a.push(a);i+=1;}verifyWait();throw [42];}));}"
                       U"catch(e){result=e[0];}"),
         STATIC_STRING(U"var result=42;spawn(func(){awaitMain();var i=0;while(i<100){"
-                      U"var a=[];a.push(a);i+=1;}verifyWait();});")};
+                      U"var a=[];a.push(a);i+=1;}verifyWait();});"),
+        STATIC_STRING(U"var t=spawn(func(){awaitMain();var i=0;while(i<100){"
+                      U"var a=[];a.push(a);i+=1;}verifyWait();return [42];});"
+                      U"var result=join(spawn(join,t))[0];"),
+        STATIC_STRING(U"var t=spawn(func(){awaitMain();var i=0;while(i<100){"
+                      U"var a=[];a.push(a);i+=1;}verifyWait();throw [42];});"
+                      U"var result=0;try{join(spawn(join,t));}catch(e){result=e[0];}")};
     expect_workers = false;
     for (size_t i = 0; i < sizeof(waits) / sizeof(waits[0]); ++i) {
         terminal_wait = i == 2;
+        startup_join = i >= 3;
         verified_waits = 0;
         check(waits[i], false);
         check(waits[i], true);

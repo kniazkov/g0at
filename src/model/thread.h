@@ -30,7 +30,8 @@ struct thread_t {
     process_t *process;
     bool gc_join_ready; /**< Only the direct reviewed join builtin may publish its wait. */
     size_t gc_call_extra_lock_depth; /**< Reviewed module lock frame inherited by a driver. */
-    void *gc_call_participant;       /**< Reviewed rooted CALL/CALLM scope, model-lock protected. */
+    void *gc_call_participant;       /**< Reviewed rooted CALL/CALLM/bootstrap scope, model-lock
+                                        protected. */
 
     /** @brief The previous thread in the circular linked list. */
     thread_t *previous;
