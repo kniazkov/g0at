@@ -114,7 +114,62 @@ static void concurrent_protocol(void) {
     assert(get_allocated_memory_size() == before);
 }
 
+/** A released model lock is not enough: only a reviewed call can publish its wait. */
+static void call_wait_protocol(void) {
+    size_t before = get_allocated_memory_size();
+    process_t *p = create_process();
+    thread_t *thread = p->main_thread;
+    gc_session_t session = {0};
+    gc_participant_t token = {0};
+    process_execution_enter(p);
+    assert(gc_session_begin(&session, p, true));
+    assert(gc_participant_enter(&session, thread, &token));
+    assert(gc_participant_block(&token));
+    assert(!gc_call_wait_begin(thread));
+    thread->gc_call_participant = &token;
+    assert(gc_participant_block(&token));
+    assert(!gc_call_wait_begin(thread));
+    assert(gc_participant_unblock(&token));
+    thread->initialization_depth = 1;
+    assert(!gc_call_wait_begin(thread));
+    thread->initialization_depth = 0;
+    process_execution_enter(p);
+    assert(!gc_call_wait_begin(thread));
+    /* Direct module entry has one reviewed wrapper, not arbitrary host recursion. */
+    thread->gc_call_extra_lock_depth = 1;
+    assert(gc_call_wait_begin(thread) == &token);
+    assert(token.published && !token.blocked);
+    assert(!gc_call_wait_begin(thread));
+    size_t depth = process_execution_suspend(p);
+    assert(depth == 2);
+    process_execution_enter(p);
+    /* Services reacquire only one lock level, regardless of the original entry. */
+    assert(gc_call_wait_pause(thread) == &token);
+    assert(!token.published && token.blocked == 1);
+    assert(gc_session_request(&session));
+    assert(gc_session_poll(&session) == GC_DEFERRED);
+    assert(!gc_call_wait_pause(thread));
+    gc_call_wait_resume(&token);
+    assert(token.published && !token.blocked);
+    assert(gc_session_poll(&session) == GC_COLLECTED);
+    process_execution_leave(p);
+    process_execution_resume(p, depth);
+    gc_call_wait_end(&token);
+    assert(!token.published && token.blocked == 1);
+    thread->gc_call_extra_lock_depth = 0;
+    thread->gc_call_participant = NULL;
+    gc_call_wait_end(NULL);
+    gc_call_wait_resume(NULL);
+    assert(gc_participant_unblock(&token));
+    assert(gc_participant_leave(&token) && gc_session_end(&session));
+    process_execution_leave(p);
+    process_execution_leave(p);
+    destroy_process(p);
+    assert(get_allocated_memory_size() == before);
+}
+
 int main(void) {
+    call_wait_protocol();
     concurrent_protocol();
     size_t before = get_allocated_memory_size();
     process_t *p = create_process();

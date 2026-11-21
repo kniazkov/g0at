@@ -6,14 +6,17 @@
 #include "model/process.h"
 #include "model/thread.h"
 #include "registry.h"
+#include "vm/gc_protocol.h"
 
 /** @brief Prints the same value as print, followed by one newline. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
     operation_result_t result = builtin_print.execute(args, count, thread);
     if (!result.is_exception) {
+        gc_participant_t *wait = gc_call_wait_begin(thread);
         size_t depth = process_execution_suspend(thread->process);
         print_utf8(U"\n");
         process_execution_resume(thread->process, depth);
+        gc_call_wait_end(wait);
     }
     return result;
 }

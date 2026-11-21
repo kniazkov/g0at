@@ -22,5 +22,29 @@
     "files": {
       "image.bin": "blobs/ceaedf64bc8663f722e7fe0c175d090cd5412bd2303288b7653b49ba04a52181.bin"
     }
+  },
+  {
+    "id": "integration.native_requirements.pe-kernel-IsDBCSLeadByteEx-msvcrt",
+    "name": "pe-kernel-IsDBCSLeadByteEx-msvcrt",
+    "target": "msvcrt",
+    "succeeds": true,
+    "contains": [
+      "10.0.0.0 0.0.0.0"
+    ],
+    "files": {
+      "image.bin": "blobs/7b98d47317e74dd0953a36a8d07db7d8d5fe06e656921ad827145ac1b94c8d20.bin"
+    }
+  },
+  {
+    "id": "integration.native_requirements.pe-kernel-IsDBCSLeadByteEx-ucrt",
+    "name": "pe-kernel-IsDBCSLeadByteEx-ucrt",
+    "target": "ucrt",
+    "succeeds": true,
+    "contains": [
+      "10.0.0.0 0.0.0.0"
+    ],
+    "files": {
+      "image.bin": "blobs/b74b6ff834fa21de3260eca328729649bd1d0e72c1cbf6218ea17ee432854822.bin"
+    }
   }
 ]

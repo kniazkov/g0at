@@ -645,3 +645,6 @@ target_link_libraries(gc_protocol_testing PRIVATE core m)
 
 add_executable(gc_runtime_testing src/component/gc_runtime_testing.c src/unit/analysis_test_support.c)
 target_link_libraries(gc_runtime_testing PRIVATE goat_validation m)
+
+add_executable(gc_io_testing src/component/gc_io_testing.c src/unit/analysis_test_support.c)
+target_link_libraries(gc_io_testing PRIVATE goat_validation m)

@@ -10,6 +10,7 @@
 #include "model/process.h"
 #include "model/thread.h"
 #include "registry.h"
+#include "vm/gc_protocol.h"
 
 /** @brief Runtime executor; the shared caller has checked minimum arity. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
@@ -20,9 +21,11 @@ static operation_result_t execute(object_t **args, uint16_t count, thread_t *thr
     }
     string_value_t str = object_to_string_with_access(args[0], &thread->context->access);
     if (str.data) {
+        gc_participant_t *wait = gc_call_wait_begin(thread);
         size_t depth = process_execution_suspend(thread->process);
         print_utf8_view(VALUE_TO_VIEW(str));
         process_execution_resume(thread->process, depth);
+        gc_call_wait_end(wait);
         FREE_STRING(str);
     }
     return operation_success(get_null_object());

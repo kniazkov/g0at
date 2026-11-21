@@ -137,7 +137,8 @@ foreach(native_requirements_id IN LISTS native_requirements_ids)
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-requirements")
 endforeach()
 # Supplemental regressions are separate from the frozen migration corpus.
-foreach(native_requirements_case IN ITEMS pe-msvcrt-hypot pe-msvcrt-hypot-unknown)
+foreach(native_requirements_case IN ITEMS pe-msvcrt-hypot pe-msvcrt-hypot-unknown
+    pe-kernel-IsDBCSLeadByteEx-msvcrt pe-kernel-IsDBCSLeadByteEx-ucrt)
   goat_scenario(integration.native_requirements.${native_requirements_case} "integration;native-requirements-migration" TIMEOUT 30 COMMAND
     "$<TARGET_FILE:native_requirements_scenarios>" "integration.native_requirements.${native_requirements_case}"
     "$<TARGET_FILE:native_requirements_testing>" "${PROJECT_BINARY_DIR}"
@@ -731,7 +732,7 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1921 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1923 + ${native_runner_count}")
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
   message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (including four safe native retry cases for #316); found ${goat_integration_count}")
 endif()
@@ -978,4 +979,19 @@ endforeach()
 foreach(gc_case temporaries mixed unwind escape trace strict-bool recursion method-gc published-finally method-recursion method-unwind init-vm init-method init-caller init-static init-validation init-return init-unwind init-trace init-native-trace init-cancel-direct init-backend-direct init-cancel init-snapshot init-gc-closure init-gc-exception init-gc-reentrant no-replay range host-cancel cancel-backend)
   goat_suite(core.gc_continuation.${gc_case} "core;gc-boundary;native-continuation"
     "$<TARGET_FILE:native_continuation_testing>" "${gc_case}" runtime)
+endforeach()
+
+foreach(scalar_case alias substring copy failure retry host-exception host-bad-status)
+  goat_suite(core.gc_native_wait.${scalar_case} "core;gc-boundary;native-scalar"
+    "$<TARGET_FILE:gc_scalar_native_testing>" "$<TARGET_FILE:gc_scalar_native_fixture>"
+    "${scalar_case}" 0 runtime-workers)
+  set_tests_properties(core.gc_native_wait.${scalar_case} PROPERTIES TIMEOUT 30)
+endforeach()
+
+foreach(io_case print println input eof invalid)
+  foreach(call_kind direct method)
+    goat_suite(core.gc_io.${io_case}.${call_kind} "core;gc-boundary;integration"
+      "$<TARGET_FILE:gc_io_testing>" "${io_case}" "${call_kind}")
+    set_tests_properties(core.gc_io.${io_case}.${call_kind} PROPERTIES TIMEOUT 30)
+  endforeach()
 endforeach()

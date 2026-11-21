@@ -339,6 +339,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                                  "HeapFree",
                                                  "InitializeCriticalSection",
                                                  "InitializeCriticalSectionAndSpinCount",
+                                                 "IsDBCSLeadByteEx",
                                                  "IsDebuggerPresent",
                                                  "IsProcessorFeaturePresent",
                                                  "LeaveCriticalSection",
