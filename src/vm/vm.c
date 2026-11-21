@@ -7,6 +7,7 @@
 #include "vm.h"
 
 #include "gc.h"
+#include "gc_protocol.h"
 #ifdef GOAT_TEST_GC_DISPATCH
 #    include "gc_admission.h"
 #    include "gc_admission_testing.h"
@@ -40,6 +41,7 @@ typedef struct {
     module_files_t *files;
     /** @brief Nonzero if an instruction failed. */
     int status;
+    gc_participant_t *gc_participant;
 #ifdef GOAT_TEST_GC_DISPATCH
     gc_dispatch_test_t *gc_test;
     context_t *gc_entry_context;
@@ -65,9 +67,9 @@ struct vm_execution_t {
 #ifdef GOAT_TEST_GC_DISPATCH
     gc_dispatch_test_t *gc_request;
     gc_test_park_t *gc_parks;
+#endif
     gc_session_t gc_session;
     gc_participant_t gc_main;
-#endif
 };
 
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
@@ -2081,7 +2083,26 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
         }
         thread->context->instruction = thread->instr_id;
         instruction_t instr = runtime->code->instructions[thread->instr_id];
+        gc_participant_t *participant = runtime->gc_participant;
+        if (participant && !gc_participant_block(participant))
+            abort();
         flag = executors[instr.opcode](runtime, instr, thread);
+        if (participant) {
+            if (!gc_participant_unblock(participant))
+                abort();
+            /* An enclosing executor owns any untraced C locals during reentry.
+               Module gates and recursive host frames are not published here. */
+            bool safe = !participant->blocked && !runtime->files && !runtime->status
+                        && !thread->initialization_depth
+                        && os_mutex_depth(thread->process->execution_mutex) == 1;
+            if (!participant->session->requested && !gc_session_request(participant->session))
+                abort();
+            if (safe && !gc_participant_publish(participant))
+                abort();
+            gc_session_poll(participant->session);
+            if (safe && !gc_participant_withdraw(participant))
+                abort();
+        }
 #ifdef GOAT_TEST_GC_DISPATCH
         test_post_array_gc(runtime, thread, schedule, instr, flag);
 #endif
@@ -2304,6 +2325,16 @@ int run(process_t *proc, bytecode_t *code) {
         return 1;
     }
     struct vm_execution_t execution = {.entry_code = code};
+    bool force_gc = proc->gc_force_boundaries;
+#ifdef GOAT_TEST_GC_DISPATCH
+    if (request)
+        force_gc = false; /* Legacy probe owns its independent run-scoped request. */
+#endif
+    if (force_gc) {
+        if (!gc_session_begin(&execution.gc_session, proc, true)
+            || !gc_participant_enter(&execution.gc_session, proc->main_thread, &execution.gc_main))
+            abort();
+    }
 #ifdef GOAT_TEST_GC_DISPATCH
     if (request && request->exclusive_model_client) {
         if (!gc_session_begin(&execution.gc_session, proc, true)
@@ -2319,7 +2350,9 @@ int run(process_t *proc, bytecode_t *code) {
     proc->main_thread->native_status = 0;
     FREE(proc->main_thread->native_diagnostic);
     proc->main_thread->native_diagnostic = NULL;
-    runtime_t runtime = {.code = code, .entry_code = code};
+    runtime_t runtime = {.code = code,
+                         .entry_code = code,
+                         .gc_participant = force_gc ? &execution.gc_main : NULL};
 #ifdef GOAT_TEST_GC_DISPATCH
     execution.gc_request = request;
     runtime.gc_test = request;
@@ -2338,16 +2371,19 @@ int run(process_t *proc, bytecode_t *code) {
     }
     execute_instructions(&runtime, thread, true);
     int status = finish_program_threads(proc, thread, runtime.status);
-#ifdef GOAT_TEST_GC_DISPATCH
     if (execution.gc_session.process) {
-        request->requests = execution.gc_session.requests;
-        request->refusals = execution.gc_session.refusals;
-        request->collections = execution.gc_session.collections;
-        if (execution.gc_parks || !gc_participant_leave(&execution.gc_main)
-            || !gc_session_end(&execution.gc_session))
+#ifdef GOAT_TEST_GC_DISPATCH
+        if (request) {
+            request->requests = execution.gc_session.requests;
+            request->refusals = execution.gc_session.refusals;
+            request->collections = execution.gc_session.collections;
+        }
+        if (execution.gc_parks)
+            abort();
+#endif
+        if (!gc_participant_leave(&execution.gc_main) || !gc_session_end(&execution.gc_session))
             abort();
     }
-#endif
     finish_string_cache(proc);
     int result = proc->native_failed ? 1 : proc->exit_requested ? proc->exit_code : status;
     process_execution_leave(proc);

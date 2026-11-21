@@ -43,3 +43,7 @@ bool gc_session_end(gc_session_t *session);
 
 /** Internal lifecycle hook: retire a thread token before freeing the model record. */
 void gc_session_retire_thread(thread_t *thread);
+
+/** Configure forced runtime collection while idle under the model lock. Enabling
+ * requires exclusive host ownership for each run; disabled by default. */
+bool configure_gc_boundaries(process_t *process, bool enabled, bool exclusive_host);

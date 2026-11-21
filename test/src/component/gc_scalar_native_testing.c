@@ -15,6 +15,7 @@
 #include "model/thread.h"
 #include "unit/analysis_test_support.h"
 #include "vm/gc.h"
+#include "vm/gc_protocol.h"
 #include "vm/gc_stats.h"
 #include "vm/vm.h"
 
@@ -25,6 +26,7 @@
 static process_t *process;
 static size_t probes;
 static bool expect_host_exception;
+static bool runtime_mode;
 
 static void GOAT_NATIVE_CALL collect_in_adapter(void) {
     /* Only this test host may make the single-client promise; this is not a public callback. */
@@ -32,6 +34,17 @@ static void GOAT_NATIVE_CALL collect_in_adapter(void) {
     process_execution_enter(process);
     assert(os_mutex_depth(process->execution_mutex) == 1);
     gc_stats_t *stats = process->gc_statistics;
+    if (runtime_mode) {
+        gc_session_t *session = process->gc_session;
+        assert(session && session->participants->blocked > 0);
+        uint64_t before = stats->collections;
+        assert(gc_session_request(session));
+        assert(gc_session_poll(session) == GC_DEFERRED);
+        assert(stats->collections == before);
+        ++probes;
+        process_execution_leave(process);
+        return;
+    }
     assert(stats->collections == 0);
     if (expect_host_exception)
         assert(process->main_thread->exception.value == get_exception_invalid_argument());
@@ -74,7 +87,8 @@ static void deferred(node_t *node, code_builder_t *builder, data_builder_t *data
 }
 
 int main(int argc, char **argv) {
-    assert(argc == 4);
+    assert(argc == 4 || argc == 5);
+    runtime_mode = argc == 5;
     const char *modes[] =
         {"alias", "substring", "copy", "failure", "retry", "host-exception", "host-bad-status"};
     unsigned mode = 0;
@@ -97,6 +111,9 @@ int main(int argc, char **argv) {
     assert(image);
     memcpy(image, code->buffer, code->buffer_size);
     process = create_process();
+    process_execution_enter(process);
+    assert(configure_gc_boundaries(process, runtime_mode, true));
+    process_execution_leave(process);
     gc_stats_t stats;
     assert(configure_gc_statistics(process, &stats));
     object_t *dead = create_array_object(process, (object_array_t){0});
@@ -114,7 +131,11 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < lock_depth; ++i)
         process_execution_leave(process);
     assert((status != 0) == (mode == 3 || mode >= 5));
-    assert(probes == 1 && stats.explicit_collections == 1 && stats.run_end_collections == 1);
+    assert(probes == 1 && stats.run_end_collections == 1 && !process->gc_session);
+    if (runtime_mode)
+        assert(lock_depth ? stats.explicit_collections == 0 : stats.explicit_collections > 1);
+    else
+        assert(stats.explicit_collections == 1);
     thread_t *thread = process->main_thread;
     assert(thread->native_attempts == 1 && thread->native_retries == (mode == 4));
     assert(thread->native_successes == (mode < 3));

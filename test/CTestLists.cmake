@@ -963,3 +963,14 @@ endforeach()
 goat_suite(core.gc_protocol "core;gc-boundary" "$<TARGET_FILE:gc_protocol_testing>")
 
 set_tests_properties(core.gc_protocol PROPERTIES TIMEOUT 30)
+
+goat_suite(core.gc_runtime "core;integration;gc-boundary" "$<TARGET_FILE:gc_runtime_testing>")
+set_tests_properties(core.gc_runtime PROPERTIES TIMEOUT 30)
+
+foreach(scalar_case alias substring copy failure retry host-exception host-bad-status)
+  foreach(lock_depth 0 2)
+    goat_suite(core.gc_runtime_native.${scalar_case}.${lock_depth} "core;gc-boundary;native-scalar"
+      "$<TARGET_FILE:gc_scalar_native_testing>" "$<TARGET_FILE:gc_scalar_native_fixture>"
+      "${scalar_case}" "${lock_depth}" runtime)
+  endforeach()
+endforeach()
