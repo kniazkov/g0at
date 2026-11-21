@@ -163,3 +163,34 @@ bool configure_gc_boundaries(process_t *p, bool enabled, bool exclusive) {
     p->gc_force_boundaries = enabled;
     return true;
 }
+
+gc_participant_t *gc_call_wait_begin(thread_t *thread) {
+    gc_participant_t *token = thread->gc_call_participant;
+    if (!token || !member(token) || token->thread != thread || token->blocked != 1
+        || token->published || thread->initialization_depth
+        || os_mutex_depth(thread->process->execution_mutex) != 1 + thread->gc_call_extra_lock_depth)
+        return NULL;
+    if (!gc_participant_unblock(token) || !gc_participant_publish(token))
+        abort();
+    return token;
+}
+
+void gc_call_wait_end(gc_participant_t *token) {
+    if (token && (!gc_participant_withdraw(token) || !gc_participant_block(token)))
+        abort();
+}
+
+gc_participant_t *gc_call_wait_pause(thread_t *thread) {
+    gc_participant_t *token = thread->gc_call_participant;
+    if (!token || !member(token) || token->thread != thread || !token->published)
+        return NULL;
+    gc_call_wait_end(token);
+    return token;
+}
+
+void gc_call_wait_resume(gc_participant_t *token) {
+    if (token
+        && (!member(token) || token->blocked != 1 || !gc_participant_unblock(token)
+            || !gc_participant_publish(token)))
+        abort();
+}

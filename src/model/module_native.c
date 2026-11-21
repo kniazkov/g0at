@@ -12,6 +12,7 @@
 #include "native_library.h"
 #include "object.h"
 #include "process.h"
+#include "vm/gc_protocol.h"
 
 #include <goat/unicode.h>
 #include <stdio.h>
@@ -92,6 +93,7 @@ static uint32_t GOAT_MODULE_CALL request_exit(void *state,
     call_memory_t *memory = state;
     thread_t *thread = memory->thread;
     process_execution_enter(thread->process);
+    gc_participant_t *wait = gc_call_wait_pause(thread);
     if (!memory->host_exception) {
         operation_result_t result = count == 1 && type == GOAT_MODULE_INTEGER
                                         ? request_program_exit(thread, code)
@@ -100,6 +102,7 @@ static uint32_t GOAT_MODULE_CALL request_exit(void *state,
         thread->exception = (exception_t){result.value, retain_exception_trace(result.trace)};
         memory->host_exception = true;
     }
+    gc_call_wait_resume(wait);
     process_execution_leave(thread->process);
     return GOAT_MODULE_HOST_EXCEPTION;
 }
@@ -382,6 +385,7 @@ module_native_call_status_t call_module_native(module_files_t *files,
     uint32_t result_tag =
         goat_module_scalar_tag(yyjson_obj_get(yyjson_obj_get(selected, "signature"), "result"));
     thread->native_attempts++;
+    gc_participant_t *wait = gc_call_wait_begin(thread);
     size_t depth = process_execution_suspend(thread->process);
     goat_module_abi_error error = goat_module_abi_invoke(memory.entry.adapter,
                                                          result_tag,
@@ -393,6 +397,7 @@ module_native_call_status_t call_module_native(module_files_t *files,
                                                          &memory,
                                                          &native_status);
     process_execution_resume(thread->process, depth);
+    gc_call_wait_end(wait);
     if (memory.host_exception && native_status == GOAT_MODULE_HOST_EXCEPTION) {
         /* A language exception requested through the host is not a broken ABI.
            The operation already happened, so it must never replay on the VM. */

@@ -517,10 +517,13 @@ jobs:
         include:
           - msystem: MINGW32
             prefix: mingw-w64-i686
+            tools_prefix: mingw-w64-x86_64
           - msystem: MINGW64
             prefix: mingw-w64-x86_64
+            tools_prefix: mingw-w64-x86_64
           - msystem: UCRT64
             prefix: mingw-w64-ucrt-x86_64
+            tools_prefix: mingw-w64-ucrt-x86_64
     steps:
       - uses: actions/checkout@v4
       - name: Record native checkout Git
@@ -545,8 +548,22 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-ucrt-x86_64-gcc
             ${{ matrix.prefix }}-cmake
-            ${{ matrix.prefix }}-make
-            ${{ matrix.prefix }}-ninja
+            ${{ matrix.tools_prefix }}-make
+            ${{ matrix.tools_prefix }}-ninja
+      - name: Expose native host build tools for the 32-bit compiler
+        if: matrix.msystem == 'MINGW32'
+        shell: msys2 {0}
+        run: |
+          # MSYS2 no longer ships i686 Make/Ninja. Keep /mingw32/bin first:
+          # the host tool architecture must not change the selected compiler.
+          printf '%s\n' 'export PATH="$PATH:/mingw64/bin"' > /etc/profile.d/goat-host-tools.sh
+      - name: Verify selected Windows compiler and host build tools
+        shell: msys2 {0}
+        run: |
+          test "$(command -v gcc)" = "$MINGW_PREFIX/bin/gcc"
+          gcc -dumpmachine
+          mingw32-make --version
+          ninja --version
       - name: Locate both Windows native delivery compilers
         shell: msys2 {0}
         run: |

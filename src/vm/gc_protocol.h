@@ -47,3 +47,15 @@ void gc_session_retire_thread(thread_t *thread);
 /** Configure forced runtime collection while idle under the model lock. Enabling
  * requires exclusive host ownership for each run; disabled by default. */
 bool configure_gc_boundaries(process_t *process, bool enabled, bool exclusive_host);
+
+/** Reviewed CALL/CALLM wait scopes only. The caller must root every managed C local
+ * before begin. Returns NULL for startup, nested executors or additional host locks.
+ * End requires the reacquired model lock and restores the executor exclusion.
+ * A native host service must pause publication while mutating the model, then resume
+ * publication before releasing the lock. No operation here releases or acquires that lock. */
+gc_participant_t *gc_call_wait_begin(thread_t *thread);
+void gc_call_wait_end(gc_participant_t *token);
+gc_participant_t *gc_call_wait_pause(thread_t *thread);
+
+/** Restore a wait paused by a serialized host service, at that service's lock depth. */
+void gc_call_wait_resume(gc_participant_t *token);
