@@ -70,6 +70,7 @@ struct vm_execution_t {
 #endif
     gc_session_t gc_session;
     gc_participant_t gc_main;
+    bool gc_runtime;
 };
 
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
@@ -2100,6 +2101,7 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
             if (safe && !gc_participant_publish(participant))
                 abort();
             gc_session_poll(participant->session);
+            schedule_and_reap(thread->process);
             if (safe && !gc_participant_withdraw(participant))
                 abort();
         }
@@ -2108,7 +2110,8 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
 #endif
         /* The initializer retains its own reentrant gate, not the model lock.
            Suspend all recursive entries, including an enclosing include handler. */
-        schedule_and_reap(thread->process);
+        if (!participant)
+            schedule_and_reap(thread->process);
     }
 #ifdef GOAT_TEST_GC_DISPATCH
     --runtime->gc_dispatch_depth;
@@ -2161,6 +2164,12 @@ static void *program_thread_entry(void *data) {
     process_execution_enter(process);
     runtime_t runtime = {.code = process->execution->entry_code,
                          .entry_code = process->execution->entry_code};
+    gc_participant_t participant = {0};
+    if (process->execution->gc_runtime) {
+        if (!gc_participant_enter(&process->execution->gc_session, thread, &participant))
+            abort();
+        runtime.gc_participant = &participant;
+    }
     /* A normal CALL increments or saves PC+1. This sentinel is the worker's
        ordinary function-return boundary, independent of the entry file. */
     thread->instr_id = BAD_INSTR_INDEX - 1;
@@ -2180,6 +2189,8 @@ static void *program_thread_entry(void *data) {
             thread->exception.value = get_exception_invalid_operation();
         runtime.status = 1;
     }
+    if (participant.session && !gc_participant_leave(&participant))
+        abort();
     complete_program_thread(thread, runtime.status);
     process_execution_leave(process);
     return NULL;
@@ -2330,6 +2341,7 @@ int run(process_t *proc, bytecode_t *code) {
     if (request)
         force_gc = false; /* Legacy probe owns its independent run-scoped request. */
 #endif
+    execution.gc_runtime = force_gc;
     if (force_gc) {
         if (!gc_session_begin(&execution.gc_session, proc, true)
             || !gc_participant_enter(&execution.gc_session, proc->main_thread, &execution.gc_main))

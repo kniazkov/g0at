@@ -46,14 +46,22 @@ static void deferred(node_t *node, code_builder_t *builder, data_builder_t *data
 }
 
 static bool forced;
+static bool expect_workers;
+static size_t worker_samples;
 
 static operation_result_t sample(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
     assert(count == 0);
     process_t *p = thread->process;
     if (forced) {
+        if (thread->program_worker)
+            ++worker_samples;
         gc_session_t *session = p->gc_session;
-        assert(session && session->participants->blocked > 0);
+        assert(session);
+        gc_participant_t *participant = session->participants;
+        while (participant && participant->thread != thread)
+            participant = participant->next;
+        assert(participant && participant->blocked > 0);
         assert(p->gc_statistics->explicit_collections > 0);
         assert(p->gc_statistics->last.after.objects < 100);
         assert(gc_session_request(session));
@@ -73,6 +81,7 @@ static void check(string_value_t source, bool enabled) {
     memcpy(image, code->buffer, code->buffer_size);
     process_t *p = create_process();
     forced = enabled;
+    worker_samples = 0;
     static const builtin_function_t descriptor = {.name = U"sample", .execute = sample};
     static builtin_function_object_t storage;
     static object_static_string_t sample_key;
@@ -93,6 +102,8 @@ static void check(string_value_t source, bool enabled) {
     DECREF(inserted.value);
     DECREF(dead);
     assert(run(p, code) == 0);
+    if (enabled && expect_workers)
+        assert(worker_samples == 200);
     assert(!p->gc_session && p->gc_roots_size == 0);
     assert(stats.run_end_collections == 1);
     assert(enabled ? stats.explicit_collections > 5 : stats.explicit_collections == 0);
@@ -109,6 +120,10 @@ static void check(string_value_t source, bool enabled) {
 
 int main(void) {
     const string_value_t cases[] = {
+        STATIC_STRING(
+            U"var work=func(){var i=0;while(i<100){var a=[];a.push(a);sample();i+=1;}return "
+            U"[21];};var a=spawn(work);var b=spawn(work);var i=0;while(i<100){i+=1;}var "
+            U"result=join(a)[0]+join(b)[0];"),
         STATIC_STRING(U"var f=func(x){return [x+1];}; var result=f(41)[0];"),
         STATIC_STRING(U"var f=func(x){if(x==0){return 42;} return f(x-1);}; var result=f(20);"),
         STATIC_STRING(U"var a=[40]; var f=func(){a[0]+=2;return a[0];}; var result=f();"),
@@ -118,6 +133,7 @@ int main(void) {
         STATIC_STRING(U"var t=spawn(func(){return [42];}); var result=join(t)[0];"),
         STATIC_STRING(U"var result=0; try{throw [42];}catch(e){result=e[0];}finally{var a=[1];}")};
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
+        expect_workers = i == 0;
         check(cases[i], false);
         check(cases[i], true);
     }
