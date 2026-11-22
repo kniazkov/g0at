@@ -18,6 +18,64 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+    const char *name;
+    const gchar_t *key;
+    const char *handler;
+    const char *expression;
+    size_t effects;
+} operator_case_t;
+
+static const operator_case_t operator_cases[] = {
+    {"add",
+     U"+",
+     "func(x){calls+=1;if(this.marker[0]!=21){throw [0];}return x[0];}",
+     "return lhs()+rhs();",
+     2},
+    {"unary",
+     U"-",
+     "func(){calls+=1;if(this.marker[0]!=21){throw [0];}return 42;}",
+     "return -lhs();",
+     1},
+    {"not",
+     U"!",
+     "func(){calls+=1;if(this.marker[0]!=21){throw [0];}return true;}",
+     "if(!lhs()){return 42;}return 0;",
+     1},
+    {"and",
+     U"&&",
+     "func(x){calls+=1;if(this.marker[0]!=21){throw [0];}return x[0]==42;}",
+     "if(lhs()&&rhs()){return 42;}return 0;",
+     2},
+    {"or",
+     U"||",
+     "func(x){calls+=1;if(this.marker[0]!=21){throw [0];}return x[0]==42;}",
+     "if(lhs()||rhs()){return 42;}return 0;",
+     2},
+    {"less",
+     U"<",
+     "func(x){calls+=1;if(this.marker[0]!=21){throw [0];}return x[0]==42;}",
+     "if(lhs()<rhs()){return 42;}return 0;",
+     2},
+    {"opposite",
+     U"!=",
+     "func(x){calls+=1;if(this.marker[0]!=21){throw [0];}return x[0]!=42;}",
+     "if(lhs()==rhs()){return 42;}return 0;",
+     2},
+    {"index",
+     U"[]",
+     "func(x){calls+=1;if(this.marker[0]!=21){throw [0];}return x[0];}",
+     "return lhs()[rhs()];",
+     2},
+    {"setter",
+     U"[]=",
+     "func(i,v){calls+=1;if(this.marker[0]!=21){throw [0];}if(i[0]!=42||v[0]!=42){throw [0];}}",
+     "lhs()[rhs()]=rhs();return 42;",
+     3},
+    {"fallback", NULL, "func(){}", "return lhs()[\"result\"];", 1},
+    {"fallback-write", NULL, "func(){}", "lhs()[\"result\"]=rhs()[0];return 42;", 2}};
+static const operator_case_t *operator_case;
+
 static bool concurrent, recursive, failed, entry;
 static bool inherited, shadow, local_seen, bound, lexical, bound_heap;
 static module_files_t *test_files;
@@ -71,6 +129,15 @@ static operation_result_t await_start(object_t **args, uint16_t count, thread_t 
         size_t depth = process_execution_suspend(p);
         process_execution_resume(p, depth);
     }
+    if (operator_case && operator_case->key) {
+        static object_static_string_t handler_key, operator_key;
+        object_t *handler = get_object_property(module_file_scope(module_files_main(test_files)),
+                                                get_static_string_object(&handler_key, U"handler"));
+        object_t *scope = module_file_scope(module_files_get(test_files, 1));
+        object_t *key = get_static_string_object(&operator_key, operator_case->key);
+        assert(create_object_property(scope, key, handler, true) == MSTAT_OK);
+        get_own_field_cell(scope, key)->modifier = ACCESS_EXTERNAL;
+    }
     if (bound) {
         /* Build an explicit capture/lexical fixture for a real BLOAD/BSTORE.
          * This bypasses function-entry waits so the tested boundary is the
@@ -116,6 +183,22 @@ static operation_result_t await_start(object_t **args, uint16_t count, thread_t 
     return operation_success(get_null_object());
 }
 
+static operation_result_t make_receiver(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count);
+    object_t *prototype = module_file_scope(module_files_get(test_files, 1));
+    object_t *object = create_user_defined_object(thread->process, (object_array_t){&prototype, 1});
+    object_t *number = create_integer_object(thread->process, 21);
+    object_t *marker = create_array_object(thread->process, (object_array_t){&number, 1});
+    DECREF(number);
+    static object_static_string_t key;
+    object_t *name = get_static_string_object(&key, U"marker");
+    assert(create_object_property(object, name, marker, true) == MSTAT_OK);
+    get_own_field_cell(object, name)->modifier = ACCESS_EXTERNAL;
+    DECREF(marker);
+    return operation_success(object);
+}
+
 static operation_result_t seen_local(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
     assert(!count && thread->process->initialization_count);
@@ -148,10 +231,20 @@ static operation_result_t probe(object_t **args, uint16_t count, thread_t *threa
 
 int main(int argc, char **argv) {
     assert(argc == 2);
+    for (size_t i = 0; i < sizeof(operator_cases) / sizeof(*operator_cases); ++i) {
+        char name[80];
+        snprintf(name,
+                 sizeof(name),
+                 "operator-%s-%s",
+                 operator_cases[i].name,
+                 strstr(argv[1], "failure") ? "failure" : "success");
+        if (!strcmp(name, argv[1]))
+            operator_case = operator_cases + i;
+    }
     bound = strstr(argv[1], "bound") != NULL;
     lexical = strstr(argv[1], "lexical") != NULL;
     bound_heap = bound && strstr(argv[1], "heap") != NULL;
-    bool property = bound || strstr(argv[1], "property") != NULL;
+    bool property = operator_case || bound || strstr(argv[1], "property") != NULL;
     inherited = strstr(argv[1], "inherited") != NULL;
     shadow = strstr(argv[1], "shadow") != NULL;
     concurrent = property || strstr(argv[1], "workers") != NULL;
@@ -181,7 +274,7 @@ int main(int argc, char **argv) {
             : failed ? "var sum=0;try{join(a);}catch(e){sum+=e[0];}"
                        "try{join(b);}catch(e){sum+=e[0];}external result=sum;"
                      : "external result=join(a).result+join(b);";
-        property_source = ALLOC(1024);
+        property_source = ALLOC(2048);
         snprintf(property_source,
                  1024,
                  "var a=spawn(func(){return include \"init.goat\";});"
@@ -202,6 +295,18 @@ int main(int argc, char **argv) {
                      heap ? "" : "awaitStart();",
                      bound_operation,
                      heap ? "[0]" : "",
+                     tail);
+        }
+        if (operator_case) {
+            snprintf(property_source,
+                     2048,
+                     "external var calls=0;external var effects=0;external handler=%s;"
+                     "var lhs=func(){effects+=1;return makeReceiver();};"
+                     "var rhs=func(){effects+=1;return [42];};"
+                     "var a=spawn(func(){return include \"init.goat\";});"
+                     "var b=spawn(func(){awaitStart();%s});%s",
+                     operator_case->handler,
+                     operator_case->expression,
                      tail);
         }
         main_source = property_source;
@@ -255,6 +360,9 @@ int main(int argc, char **argv) {
     object_static_string_t ready_key = {0}, shared_key = {0}, local_key = {0}, seen_key = {0};
     static const builtin_function_t seen = {.name = U"seenLocal", .execute = seen_local};
     builtin_function_object_t seen_storage = {0};
+    static const builtin_function_t maker = {.name = U"makeReceiver", .execute = make_receiver};
+    builtin_function_object_t maker_storage = {0};
+    object_static_string_t maker_key = {0};
     if (property) {
         object_t *scope = module_file_scope(module_files_main(files));
         assert(create_object_property(scope,
@@ -262,6 +370,12 @@ int main(int argc, char **argv) {
                                       get_builtin_function_object(&ready_storage, &ready),
                                       true)
                == MSTAT_OK);
+        if (operator_case)
+            assert(create_object_property(scope,
+                                          get_static_string_object(&maker_key, U"makeReceiver"),
+                                          get_builtin_function_object(&maker_storage, &maker),
+                                          true)
+                   == MSTAT_OK);
         descendant = module_file_scope(module_files_get(files, 1));
         if (inherited) {
             for (size_t i = 0; i < 3; ++i) {
@@ -315,6 +429,21 @@ int main(int argc, char **argv) {
                             get_static_string_object(&result_key, U"result"));
     if (!(entry && failed))
         assert(result && get_object_integer_value(result).value == (entry ? 42 : 84));
+    if (operator_case) {
+        static object_static_string_t calls_key, effects_key;
+        object_t *scope = module_file_scope(module_files_main(files));
+        object_t *calls =
+            get_object_property(scope, get_static_string_object(&calls_key, U"calls"));
+        object_t *effects =
+            get_object_property(scope, get_static_string_object(&effects_key, U"effects"));
+        assert(get_object_integer_value(calls).value == (!failed && operator_case->key ? 1 : 0));
+        /* Logical dispatch waits before RHS; all other operands run first. */
+        size_t expected =
+            failed && (!strcmp(operator_case->name, "and") || !strcmp(operator_case->name, "or"))
+                ? 1
+                : operator_case->effects;
+        assert(get_object_integer_value(effects).value == (int64_t)expected);
+    }
     if (bound) {
         static object_static_string_t target_key;
         object_t *original = get_object_property(module_file_scope(module_files_main(files)),

@@ -825,6 +825,44 @@ zero. Collection is required before initializer completion, and the usual root,
 allocator, bytecode and exception checks still apply. These tests do not claim
 that function-entry origin checks have acquired publication.
 
-Remaining #617 work includes index/operator dispatch, object observation and
-serialization, callable/receiver origin checks and nested unreviewed C paths.
+Remaining #617 work includes object observation and serialization,
+callable/receiver origin checks and nested unreviewed C paths.
 The forced boundary mode is still opt-in; automatic thresholds (#553) await #618.
+
+### VM operator selection and index waits (#617)
+
+The VM operator-lookup wrapper now admits the same reviewed module waits as
+property lookup. This covers arithmetic/unary selection, logical NOT, the early
+AND/OR selection, comparisons including the opposite equality operator, and
+index getter/setter selection. It only preflights user-defined receivers; model
+operator helpers and arbitrary host calls do not acquire an implicit permission.
+
+Unlike direct GETPROP, several dispatchers have already popped operands. The
+wrapper registers an owning root for the saved receiver and, for comparisons,
+the saved RHS before publishing a wait. Arithmetic arguments and index tuples
+remain on the operand stack. Roots are removed under the model lock before the
+actual handler lookup; no collection can intervene between removal and lookup.
+The selected handler is then retained by the existing operator dispatch contract.
+Allocation failure retains the allocator's existing process-failure policy.
+
+Preflight may restart internal property traversal, but never reevaluates an
+operand or invokes an operator. Arithmetic/index selection remains after operand
+evaluation; AND/OR selection remains before RHS. A selected logical function is
+still stored on the stack through RHS evaluation. Opposite equality lookup only
+happens when the first lookup returns absence. Index property fallback preflights
+its key after operator selection and constructs the borrowed stack view after
+that wait. It does not replay selection or a getter/setter.
+
+Twenty-two competing-initializer regressions cover 11 operations with both success
+and failure: addition, unary minus, NOT, AND, OR, comparison, opposite equality,
+index getter/setter, and property fallback read/write. A host factory creates a
+fresh descendant with a heap marker for every LHS, avoiding an unrelated
+language-level prototype-validation wait. Handlers are ordinary Goat functions
+from the main file, so callable-origin waits do not mask the selected boundary.
+Counters check exact operand and handler execution; handlers verify marker and
+array arguments after collection. Missing operand roots fail the addition and
+comparison controls. These tests complement the existing operator semantics suite.
+
+Still excluded are callable/receiver origin checks, observation/serialization
+and other unreviewed nested C paths. #617 and acceptance #618 remain unfinished;
+automatic thresholds #553 stay disabled.
