@@ -267,3 +267,14 @@ void await_accessible_property(const function_access_t *access,
                                object_t *key,
                                void (*observe)(void *, bool),
                                void *data);
+
+/** @brief Preflight declaration identity lookup, restarting after module waits.
+ * Caller roots current context, access captures and RHS and holds the model lock.
+ * Module identity and declaration ID remain stable for the executing bytecode.
+ */
+void await_bound_property(const function_access_t *access,
+                          object_t *current,
+                          module_t *unit,
+                          uint32_t id,
+                          void (*observe)(void *, bool),
+                          void *data);

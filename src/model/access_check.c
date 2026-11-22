@@ -63,33 +63,6 @@ cell_result(const function_access_t *access, object_t *storage, field_cell_t *ce
     return (property_lookup_t){status, storage, cell, status == MSTAT_OK ? cell->object : NULL};
 }
 
-property_lookup_t lookup_bound_property(const function_access_t *access,
-                                        object_t *current,
-                                        module_t *unit,
-                                        uint32_t id) {
-    for (size_t s = 0; s <= access->lexical_scopes->size; s++) {
-        object_t *storage = s ? access->lexical_scopes->data[s - 1] : current;
-        object_t *failure = module_scope_failure(storage);
-        if (failure)
-            return (property_lookup_t){MSTAT_FAILED_FILE, storage, NULL, failure};
-        for (size_t i = 0; i < get_object_field_count(storage); i++) {
-            field_cell_t *cell = get_object_field_at(storage, i);
-            if (cell->binding_unit == unit && cell->declaration_id == id)
-                return cell_result(access, storage, cell);
-        }
-        if (s == 0) {
-            /* Several factory instances can share a bytecode ID after flat. Captures identify
-               their concrete cells and must precede the merged storage's generic scan. */
-            for (size_t c = 0; c < access->captures->size; c++) {
-                field_capture_t *capture = access->captures->data[c];
-                if (capture->cell->binding_unit == unit && capture->cell->declaration_id == id)
-                    return cell_result(access, capture->storage, capture->cell);
-            }
-        }
-    }
-    return (property_lookup_t){.status = MSTAT_PROPERTY_NOT_FOUND};
-}
-
 /** @brief A wait invalidates borrowed topology and field pointers. Restart lookup
  * after reacquiring the model lock; do not dereference anything from that scan.
  */
@@ -111,6 +84,60 @@ static object_t *property_scope_failure(object_t *scope, property_wait_t *wait) 
     wait->resumed = false;
     return module_file_exception_observed(module_scope_file(scope), observe_property_wait, wait)
         .value;
+}
+
+static property_lookup_t lookup_observed_bound_property(const function_access_t *access,
+                                                        object_t *current,
+                                                        module_t *unit,
+                                                        uint32_t id,
+                                                        property_wait_t *wait) {
+retry:;
+    for (size_t s = 0; s <= access->lexical_scopes->size; s++) {
+        object_t *storage = s ? access->lexical_scopes->data[s - 1] : current;
+        object_t *failure = property_scope_failure(storage, wait);
+        if (wait && wait->resumed)
+            goto retry;
+        if (failure)
+            return (property_lookup_t){MSTAT_FAILED_FILE, storage, NULL, failure};
+        for (size_t i = 0; i < get_object_field_count(storage); i++) {
+            field_cell_t *cell = get_object_field_at(storage, i);
+            if (cell->binding_unit == unit && cell->declaration_id == id)
+                return cell_result(access, storage, cell);
+        }
+        if (s == 0) {
+            /* Several factory instances can share a bytecode ID after flat. Captures identify
+               their concrete cells and must precede the merged storage's generic scan. */
+            for (size_t c = 0; c < access->captures->size; c++) {
+                field_capture_t *capture = access->captures->data[c];
+                if (capture->cell->binding_unit == unit && capture->cell->declaration_id == id) {
+                    if (wait) {
+                        property_scope_failure(capture->storage, wait);
+                        if (wait->resumed)
+                            goto retry;
+                    }
+                    return cell_result(access, capture->storage, capture->cell);
+                }
+            }
+        }
+    }
+    return (property_lookup_t){.status = MSTAT_PROPERTY_NOT_FOUND};
+}
+
+property_lookup_t lookup_bound_property(const function_access_t *access,
+                                        object_t *current,
+                                        module_t *unit,
+                                        uint32_t id) {
+    return lookup_observed_bound_property(access, current, unit, id, NULL);
+}
+
+void await_bound_property(const function_access_t *access,
+                          object_t *current,
+                          module_t *unit,
+                          uint32_t id,
+                          void (*observe)(void *, bool),
+                          void *data) {
+    property_wait_t wait = {.observe = observe, .data = data};
+    lookup_observed_bound_property(access, current, unit, id, &wait);
 }
 
 static property_lookup_t lookup_observed_property(const function_access_t *access,

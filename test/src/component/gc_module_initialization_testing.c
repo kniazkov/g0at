@@ -19,7 +19,8 @@
 #include <string.h>
 
 static bool concurrent, recursive, failed, entry;
-static bool inherited, shadow, local_seen;
+static bool inherited, shadow, local_seen, bound, lexical, bound_heap;
+static module_files_t *test_files;
 static object_t *descendant;
 static size_t observations;
 static uint64_t initial_collections;
@@ -70,6 +71,48 @@ static operation_result_t await_start(object_t **args, uint16_t count, thread_t 
         size_t depth = process_execution_suspend(p);
         process_execution_resume(p, depth);
     }
+    if (bound) {
+        /* Build an explicit capture/lexical fixture for a real BLOAD/BSTORE.
+         * This bypasses function-entry waits so the tested boundary is the
+         * declaration lookup itself, not an earlier callable-origin check. */
+        static object_static_string_t key;
+        object_t *name = get_static_string_object(&key, U"target");
+        field_cell_t *original =
+            get_own_field_cell(module_file_scope(module_files_main(test_files)), name);
+        object_t *storage = module_file_scope(module_files_get(test_files, 1));
+        object_t *value = create_integer_object(p, 42);
+        assert(create_object_property(storage, name, value, false) == MSTAT_OK);
+        DECREF(value);
+        field_cell_t *cell = get_own_field_cell(storage, name);
+        cell->modifier = ACCESS_EXTERNAL;
+        cell->binding_unit = retain_module_identity(original->binding_unit);
+        cell->declaration_id = original->declaration_id;
+        assert(cell->binding_unit && cell->declaration_id);
+        function_access_t *access = &thread->context->access;
+        for (size_t i = 0; i < access->captures->size; ++i) {
+            field_capture_t *capture = access->captures->data[i];
+            DECREF(capture->storage);
+            FREE(capture);
+        }
+        access->captures->size = 0;
+        if (lexical) {
+            for (size_t i = 0; i < access->lexical_scopes->size; ++i) {
+                object_t *scope = access->lexical_scopes->data[i];
+                DECREF(scope);
+            }
+            access->lexical_scopes->size = 0;
+            assert(add_lexical_scope(access, storage));
+        } else
+            assert(add_function_field_capture(access, storage, cell));
+        if (bound_heap) {
+            /* CHECKBOUND has already run against the old capture. Install the
+             * waiting scope while evaluating RHS so BSTORE itself must wait. */
+            object_t *number = create_integer_object(p, 42);
+            object_t *array = create_array_object(p, (object_array_t){&number, 1});
+            DECREF(number);
+            return operation_success(array);
+        }
+    }
     return operation_success(get_null_object());
 }
 
@@ -105,7 +148,10 @@ static operation_result_t probe(object_t **args, uint16_t count, thread_t *threa
 
 int main(int argc, char **argv) {
     assert(argc == 2);
-    bool property = strstr(argv[1], "property") != NULL;
+    bound = strstr(argv[1], "bound") != NULL;
+    lexical = strstr(argv[1], "lexical") != NULL;
+    bound_heap = bound && strstr(argv[1], "heap") != NULL;
+    bool property = bound || strstr(argv[1], "property") != NULL;
     inherited = strstr(argv[1], "inherited") != NULL;
     shadow = strstr(argv[1], "shadow") != NULL;
     concurrent = property || strstr(argv[1], "workers") != NULL;
@@ -143,6 +189,21 @@ int main(int argc, char **argv) {
                  inherited ? "if(shared.local!=17){throw [0];}seenLocal();" : "",
                  operation,
                  tail);
+        if (bound) {
+            bool heap = bound_heap;
+            const char *bound_operation = heap                       ? "target=awaitStart();"
+                                          : strstr(argv[1], "write") ? "target=42;"
+                                          : strstr(argv[1], "check") ? "target+=0;"
+                                                                     : "";
+            snprintf(property_source,
+                     1024,
+                     "external var target=0;var a=spawn(func(){return include \"init.goat\";});"
+                     "var b=spawn(func(){%s%sreturn target%s;});%s",
+                     heap ? "" : "awaitStart();",
+                     bound_operation,
+                     heap ? "[0]" : "",
+                     tail);
+        }
         main_source = property_source;
     }
     char *init_source = "awaitGate();var held=[21];var leaf=include \"leaf.goat\";"
@@ -177,6 +238,7 @@ int main(int argc, char **argv) {
     process_t *p = create_process();
     module_files_t *files = NULL;
     assert(create_module_files_from_snapshot(p, compiled->metadata, compiled->code, &files));
+    test_files = files;
     assert(prepare_process_launch(p, module_files_identity(files), 0, "/gc/main.goat"));
     static const builtin_function_t descriptors[] = {{.name = U"awaitGate", .execute = await_gate},
                                                      {.name = U"probe", .execute = probe}};
@@ -253,6 +315,12 @@ int main(int argc, char **argv) {
                             get_static_string_object(&result_key, U"result"));
     if (!(entry && failed))
         assert(result && get_object_integer_value(result).value == (entry ? 42 : 84));
+    if (bound) {
+        static object_static_string_t target_key;
+        object_t *original = get_object_property(module_file_scope(module_files_main(files)),
+                                                 get_static_string_object(&target_key, U"target"));
+        assert(get_object_integer_value(original).value == 0);
+    }
     if (failed) {
         exception_t first = module_file_exception(module_files_get(files, 1));
         exception_t leaf = module_file_exception(module_files_get(files, 2));
