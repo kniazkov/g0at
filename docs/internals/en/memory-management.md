@@ -788,8 +788,43 @@ initializer completion, check that an existing own field can be read before the
 wait, and retain the bytecode, original failure trace, token and allocator-balance
 checks from the direct-scope fixtures.
 
-The remaining audit must cover bound declaration/capture lookup, index and
-operator dispatch, object observation/serialization, and their nested C callers.
+The remaining audit must cover index and operator dispatch, object
+observation/serialization, function-entry origin checks, and their nested C callers.
 Those paths have not acquired this preflight merely because they eventually use
 a property helper. Their operand ownership and lock scopes require separate
 proof before admission. #617 and acceptance #618 remain open; #553 stays disabled.
+
+### Bound declaration and capture waits (#617)
+
+BLOAD, BSTORE and CHECKBOUND preflight declaration lookup under the same admission
+predicate as direct property access: exactly one executor exclusion, reviewed
+initializer depth, and the expected model-lock depth. The observer publishes only
+actual waits and restores the exclusion after reacquiring the lock. Extra host
+locks and unreviewed C callers remain excluded.
+
+The scan preserves declaration-unit identity and declaration ID, current storage
+precedence, and explicit capture precedence over later lexical scopes. An explicit
+capture retains its storage; the context traces captures and lexical scopes. A
+BSTORE RHS remains on the operand stack throughout the wait, including newly
+allocated arrays. The bytecode owns the declaration-unit identity for the run.
+No cell pointer or capture record from before a wait is dereferenced afterward:
+the observed scan restarts, then the ordinary operation performs its access,
+initialization and mutability checks under the lock. A failed scope retains its
+original exception value and trace. The model's unobserved lookup API is unchanged.
+
+Sixteen concurrent VM regressions cover explicit captures and lexical scopes,
+read/write/compound assignment, heap-valued RHS, and initializer success/failure.
+The fixture deliberately installs a retained access snapshot from a host helper
+inside an already running worker: this isolates BLOAD/BSTORE/CHECKBOUND from the
+earlier callable-origin wait. Heap-RHS cases install the snapshot during RHS
+evaluation, after CHECKBOUND, so collection must occur inside the later BSTORE
+wait while the new array is already on the operand stack. The alternate field
+has the same declaration
+identity but different storage; the original same-named main field must remain
+zero. Collection is required before initializer completion, and the usual root,
+allocator, bytecode and exception checks still apply. These tests do not claim
+that function-entry origin checks have acquired publication.
+
+Remaining #617 work includes index/operator dispatch, object observation and
+serialization, callable/receiver origin checks and nested unreviewed C paths.
+The forced boundary mode is still opt-in; automatic thresholds (#553) await #618.

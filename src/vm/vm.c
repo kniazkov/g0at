@@ -299,12 +299,18 @@ static void observe_module_wait(void *data, bool waiting) {
  * Receiver/RHS are still stack or context roots. The exact inherited lookup
  * restarts after each observed wait before reusing topology or field pointers.
  */
-static void
-await_vm_scope(runtime_t *runtime, thread_t *thread, object_t *receiver, object_t *key) {
+static bool can_await_vm_scope(runtime_t *runtime, thread_t *thread) {
     gc_participant_t *token = runtime->gc_participant;
     if (!token || token->blocked != 1
         || thread->initialization_depth != thread->gc_initialization_depth
         || os_mutex_depth(thread->process->execution_mutex) != 1 + runtime->gc_extra_lock_depth)
+        return false;
+    return true;
+}
+
+static void
+await_vm_scope(runtime_t *runtime, thread_t *thread, object_t *receiver, object_t *key) {
+    if (!can_await_vm_scope(runtime, thread))
         return;
     file_execution_t execution = {.runtime = runtime,
                                   .thread = thread,
@@ -1681,6 +1687,18 @@ static bool exec_binding(runtime_t *runtime, instruction_t instr, thread_t *thre
     declaration_descriptor_t d;
     if (!get_bytecode_declaration(runtime->code, instr.arg1, &d))
         return false;
+    if (can_await_vm_scope(runtime, thread)) {
+        file_execution_t execution = {.runtime = runtime,
+                                      .thread = thread,
+                                      .gc_reviewed = true,
+                                      .gc_executor = true};
+        await_bound_property(&thread->context->access,
+                             thread->context->data,
+                             runtime->code->declaration_unit,
+                             instr.arg1 + 1,
+                             observe_module_wait,
+                             &execution);
+    }
     property_lookup_t found = lookup_bound_property(&thread->context->access,
                                                     thread->context->data,
                                                     runtime->code->declaration_unit,
