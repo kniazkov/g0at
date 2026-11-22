@@ -1003,7 +1003,7 @@ foreach(scalar_case alias substring copy failure retry host-exception host-bad-s
   set_tests_properties(core.gc_native_startup.${scalar_case} PROPERTIES TIMEOUT 30)
 endforeach()
 
-foreach(init_case success failure workers-success workers-failure recursive-success recursive-failure entry-success entry-failure property-read-success property-read-failure property-write-success property-write-failure property-check-success property-check-failure)
+foreach(init_case success failure workers-success workers-failure recursive-success recursive-failure entry-success entry-failure property-read-success property-read-failure property-write-success property-write-failure property-check-success property-check-failure property-inherited-read-success property-inherited-read-failure property-inherited-write-success property-inherited-write-failure property-inherited-check-success property-inherited-check-failure property-inherited-shadow-read-success property-inherited-shadow-read-failure property-inherited-shadow-write-success property-inherited-shadow-write-failure property-inherited-shadow-check-success property-inherited-shadow-check-failure)
   goat_suite(core.gc_module_initialization.${init_case} "core;gc-boundary;integration"
     "$<TARGET_FILE:gc_module_initialization_testing>" "${init_case}")
   set_tests_properties(core.gc_module_initialization.${init_case} PROPERTIES TIMEOUT 30)

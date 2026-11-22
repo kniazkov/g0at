@@ -19,6 +19,8 @@
 #include <string.h>
 
 static bool concurrent, recursive, failed, entry;
+static bool inherited, shadow, local_seen;
+static object_t *descendant;
 static size_t observations;
 static uint64_t initial_collections;
 
@@ -40,6 +42,21 @@ static operation_result_t await_gate(object_t **args, uint16_t count, thread_t *
             published += t->published;
         /* One waiter on the initialization gate; main may still be reaching join. */
         assert(published >= 1);
+        assert(!inherited || local_seen);
+        if (shadow) {
+            /* An earlier slot appears while the lookup is asleep. Resumption
+             * must restart before inspecting the now failed inherited scope. */
+            static object_static_string_t key;
+            object_t *value = create_integer_object(p, 42);
+            assert(create_object_property(descendant,
+                                          get_static_string_object(&key, U"result"),
+                                          value,
+                                          false)
+                   == MSTAT_OK);
+            get_own_field_cell(descendant, get_static_string_object(&key, U"result"))->modifier =
+                ACCESS_EXTERNAL;
+            DECREF(value);
+        }
     }
     initial_collections = p->gc_statistics->explicit_collections;
     return operation_success(get_null_object());
@@ -53,6 +70,13 @@ static operation_result_t await_start(object_t **args, uint16_t count, thread_t 
         size_t depth = process_execution_suspend(p);
         process_execution_resume(p, depth);
     }
+    return operation_success(get_null_object());
+}
+
+static operation_result_t seen_local(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count && thread->process->initialization_count);
+    local_seen = true;
     return operation_success(get_null_object());
 }
 
@@ -82,6 +106,8 @@ static operation_result_t probe(object_t **args, uint16_t count, thread_t *threa
 int main(int argc, char **argv) {
     assert(argc == 2);
     bool property = strstr(argv[1], "property") != NULL;
+    inherited = strstr(argv[1], "inherited") != NULL;
+    shadow = strstr(argv[1], "shadow") != NULL;
     concurrent = property || strstr(argv[1], "workers") != NULL;
     recursive = strstr(argv[1], "recursive") != NULL;
     failed = strstr(argv[1], "failure") != NULL;
@@ -103,14 +129,18 @@ int main(int argc, char **argv) {
         const char *operation = strstr(argv[1], "write")   ? "shared.result=42;"
                                 : strstr(argv[1], "check") ? "shared.result+=0;"
                                                            : "";
-        const char *tail = failed ? "var sum=0;try{join(a);}catch(e){sum+=e[0];}"
-                                    "try{join(b);}catch(e){sum+=e[0];}external result=sum;"
-                                  : "external result=join(a).result+join(b);";
+        const char *tail =
+            shadow && failed
+                ? "var sum=0;try{join(a);}catch(e){sum=e[0];}external result=sum+join(b);"
+            : failed ? "var sum=0;try{join(a);}catch(e){sum+=e[0];}"
+                       "try{join(b);}catch(e){sum+=e[0];}external result=sum;"
+                     : "external result=join(a).result+join(b);";
         property_source = ALLOC(1024);
         snprintf(property_source,
                  1024,
                  "var a=spawn(func(){return include \"init.goat\";});"
-                 "var b=spawn(func(){awaitStart();%sreturn shared.result;});%s",
+                 "var b=spawn(func(){awaitStart();%s%sreturn shared.result;});%s",
+                 inherited ? "if(shared.local!=17){throw [0];}seenLocal();" : "",
                  operation,
                  tail);
         main_source = property_source;
@@ -160,7 +190,9 @@ int main(int argc, char **argv) {
                == MSTAT_OK);
     static const builtin_function_t ready = {.name = U"awaitStart", .execute = await_start};
     builtin_function_object_t ready_storage = {0};
-    object_static_string_t ready_key = {0}, shared_key = {0};
+    object_static_string_t ready_key = {0}, shared_key = {0}, local_key = {0}, seen_key = {0};
+    static const builtin_function_t seen = {.name = U"seenLocal", .execute = seen_local};
+    builtin_function_object_t seen_storage = {0};
     if (property) {
         object_t *scope = module_file_scope(module_files_main(files));
         assert(create_object_property(scope,
@@ -168,12 +200,35 @@ int main(int argc, char **argv) {
                                       get_builtin_function_object(&ready_storage, &ready),
                                       true)
                == MSTAT_OK);
+        descendant = module_file_scope(module_files_get(files, 1));
+        if (inherited) {
+            for (size_t i = 0; i < 3; ++i) {
+                object_t *next = create_user_defined_object(p, (object_array_t){&descendant, 1});
+                if (i)
+                    DECREF(descendant);
+                descendant = next;
+            }
+        }
+        if (inherited) {
+            object_t *local = create_integer_object(p, 17);
+            object_t *key = get_static_string_object(&local_key, U"local");
+            assert(create_object_property(descendant, key, local, true) == MSTAT_OK);
+            get_own_field_cell(descendant, key)->modifier = ACCESS_EXTERNAL;
+            DECREF(local);
+            assert(create_object_property(scope,
+                                          get_static_string_object(&seen_key, U"seenLocal"),
+                                          get_builtin_function_object(&seen_storage, &seen),
+                                          true)
+                   == MSTAT_OK);
+        }
         assert(create_object_property(scope,
                                       get_static_string_object(&shared_key, U"shared"),
-                                      module_file_scope(module_files_get(files, 1)),
+                                      descendant,
                                       true)
                == MSTAT_OK);
     }
+    if (inherited)
+        DECREF(descendant); // main scope owns the complete prototype chain
     gc_stats_t stats;
     assert(configure_gc_statistics(p, &stats));
     process_execution_enter(p);

@@ -724,9 +724,8 @@ Normal property access then runs against the initialized or failed module and
 retains the existing access checks and original cached exception/trace. Direct
 launch-file visibility and same-thread recursive initialization remain unchanged.
 
-This admission is deliberately limited to the receiver's own file. A lookup
-through inherited module scopes can hold borrowed topology/cell pointers across
-its later wait; it remains excluded. Arbitrary model/embedding property reads
+The initial admission was limited to the receiver's own file. The inherited
+lookup extension below replaces that preflight with an observed exact lookup. Arbitrary model/embedding property reads
 still use the unobserved API. Additional host locks or enclosing unreviewed
 executors do not obtain the VM preflight scope.
 
@@ -755,7 +754,42 @@ refused polls occur while the resolver has suspended its caller's lock; borrowed
 strings must still survive the subsequent adapter. Existing initialization,
 continuation and real-loader regression suites remain part of validation.
 
-Remaining #617 work includes inherited-scope publication waits and the audit of
-other nested C chains. Custom embedding callbacks have an explicit exclusion;
+Remaining #617 work includes the audit of other nested C chains. Custom embedding callbacks have an explicit exclusion;
 they cannot be treated as safe without their own root/publication contract.
 Automatic thresholds (#553) remain disabled pending integration acceptance.
+
+### Restartable inherited property waits (#617)
+
+GETPROP, SETPROP, CHECKPROP/CHECKVAR and dynamic VLOAD/STORE now preflight the
+same access-aware lookup used by the operation. The lookup stops at the selected
+slot; it does not eagerly wait for every ancestor. Thus an own field remains
+readable while a deeper module is initializing. Private-slot precedence, access
+denials, missing fields and failed-file selection retain their original rules.
+
+The observed lookup has a local wait record. Every actual wait publishes the
+reviewed VM participant and, after reacquiring the model lock, restarts lookup
+from the receiver. It never resumes traversal through borrowed topology, domain
+or field-cell pointers from before the wait. In particular, an own slot added by
+the initializer takes precedence after resumption, including when that initializer
+fails. No field mutation or user operator is executed by this preflight. The
+ordinary operation then runs under the model lock with the receiver/RHS still
+rooted on the operand stack or current context. Keys are runtime-cache roots.
+The context keeps the access domains and lexical scope owners alive.
+
+Ordinary model lookup still supplies no observer and retains its exclusion.
+Additional host locks, unreviewed enclosing executors and mismatched initializer
+depths cannot acquire the reviewed VM preflight. This is not a blanket permission
+to collect inside property helpers or embedding callbacks.
+
+Twelve new concurrent regressions use three prototype levels: read, write and
+compound assignment, each with initializer success/failure, with and without a
+new own slot installed while the reader waits. They require collection before
+initializer completion, check that an existing own field can be read before the
+wait, and retain the bytecode, original failure trace, token and allocator-balance
+checks from the direct-scope fixtures.
+
+The remaining audit must cover bound declaration/capture lookup, index and
+operator dispatch, object observation/serialization, and their nested C callers.
+Those paths have not acquired this preflight merely because they eventually use
+a property helper. Their operand ownership and lock scopes require separate
+proof before admission. #617 and acceptance #618 remain open; #553 stays disabled.
