@@ -158,6 +158,11 @@ module_initialize_status_t initialize_module_file(module_file_t *file,
  * file state. The ordinary embedding API supplies no observer and stays excluded.
  */
 typedef void (*module_file_wait_observer_t)(void *data, bool waiting);
+/** Borrowed failure with paired wait notifications. Same exclusion contract as
+ * the observed initializer; ordinary model reads use module_file_exception. */
+exception_t module_file_exception_observed(const module_file_t *file,
+                                           module_file_wait_observer_t wait,
+                                           void *data);
 module_initialize_status_t initialize_module_file_observed(module_file_t *file,
                                                            context_t *caller,
                                                            module_file_executor_t execute,

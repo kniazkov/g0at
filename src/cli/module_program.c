@@ -166,12 +166,6 @@ static native_execution_mode_t mode(const options_t *options, const module_sourc
                                                  : NATIVE_AUTO;
 }
 
-static void loading_warning(void *unused, size_t node, const char *message) {
-    (void)unused;
-    (void)node;
-    FPRINTF(stderr, "warning: %s\n", message);
-}
-
 static int execute_snapshot(const options_t *options,
                             module_snapshot_t *snapshot,
                             native_execution_mode_t native_mode,
@@ -179,7 +173,7 @@ static int execute_snapshot(const options_t *options,
                             bool native_disabled) {
     module_loading_options_t loading = {.mode = native_disabled ? NATIVE_OFF : native_mode,
                                         .cleanup = native_build_cleanup(context),
-                                        .report = loading_warning};
+                                        .report = module_loading_warning};
     module_loading_result_t preparation = prepare_module_snapshot_native(snapshot, &loading);
     if (preparation.status) {
         FPRINTF(stderr,

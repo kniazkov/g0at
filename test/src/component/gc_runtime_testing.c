@@ -238,6 +238,9 @@ static bool adapter_initializer;
 static bool adapter_recursive;
 static bool adapter_host_exception;
 static size_t adapter_calls;
+static bool resolution_probe, resolution_reviewed, resolution_failure, resolution_optional;
+static size_t resolution_calls;
+static module_files_t *resolution_files;
 
 static uint32_t GOAT_MODULE_CALL module_adapter(uint32_t abi,
                                                 const goat_module_context_v1 *context,
@@ -287,8 +290,29 @@ static bool
 resolve_adapter(void *state, uint32_t id, const char *symbol, module_native_entry_t *out) {
     (void)state;
     assert(id == 1 && !strcmp(symbol, "goat_fn_1_v1"));
-    *out = (module_native_entry_t){.adapter = module_adapter};
-    return true;
+    if (resolution_probe) {
+        process_t *p = adapter_process;
+        gc_session_t *session = p->gc_session;
+        assert(!configure_module_native_gc_resolution(resolution_files, false));
+        size_t depth = process_execution_suspend(p);
+        process_execution_enter(p);
+        if (adapter_startup) {
+            while (!p->main_thread->waiting_for) {
+                process_execution_leave(p);
+                process_execution_enter(p);
+            }
+        }
+        bool admitted = resolution_reviewed && !adapter_recursive;
+        uint64_t before = p->gc_statistics->explicit_collections;
+        assert(gc_session_request(session));
+        assert(gc_session_poll(session) == (admitted ? GC_COLLECTED : GC_DEFERRED));
+        assert(p->gc_statistics->explicit_collections == before + admitted);
+        process_execution_leave(p);
+        process_execution_resume(p, depth);
+        ++resolution_calls;
+    }
+    *out = (module_native_entry_t){.adapter = resolution_failure ? NULL : module_adapter};
+    return !resolution_failure;
 }
 
 static void module_native_case(bool failure, bool recursive) {
@@ -329,10 +353,13 @@ static void module_native_case(bool failure, bool recursive) {
     assert(create_module_files_from_snapshot(p, compiled->metadata, compiled->code, &files));
     assert(bind_module_files_native(files,
                                     yyjson_doc_get_root(variant),
-                                    true,
+                                    !resolution_optional,
                                     resolve_adapter,
                                     NULL,
                                     NULL));
+    resolution_files = files;
+    if (resolution_probe)
+        assert(configure_module_native_gc_resolution(files, resolution_reviewed));
     yyjson_doc_free(variant);
     assert(prepare_process_launch(p,
                                   module_files_identity(files),
@@ -347,9 +374,10 @@ static void module_native_case(bool failure, bool recursive) {
     adapter_process = p;
     adapter_failure = failure;
     adapter_recursive = recursive;
-    adapter_calls = 0;
+    adapter_calls = resolution_calls = 0;
     assert((run_module_file(p, module_files_main(files)) != 0) == failure);
-    assert(adapter_calls == 1 && p->main_thread->native_retries == 0);
+    assert(adapter_calls == (resolution_failure ? 0 : 1) && p->main_thread->native_retries == 0);
+    assert(resolution_calls == (resolution_probe ? 1 : 0));
     if (adapter_host_exception)
         assert(p->main_thread->exception.value == get_exception_invalid_argument());
     assert(!p->gc_session && !p->gc_roots_size);
@@ -368,6 +396,34 @@ static void module_native_case(bool failure, bool recursive) {
 }
 
 int main(void) {
+    resolution_probe = true;
+    for (int reviewed = 0; reviewed < 2; ++reviewed) {
+        resolution_reviewed = reviewed;
+        module_native_case(false, false);
+        module_native_case(true, false);
+        module_native_case(false, true);
+        adapter_initializer = true;
+        module_native_case(false, false);
+        module_native_case(true, false);
+        module_native_case(false, true);
+        adapter_initializer = false;
+        adapter_startup = true;
+        module_native_case(false, false);
+        module_native_case(true, false);
+        adapter_startup = false;
+        resolution_failure = true;
+        module_native_case(true, false);
+        adapter_initializer = true;
+        module_native_case(true, false);
+        adapter_initializer = false;
+        resolution_optional = true;
+        module_native_case(false, false);
+        adapter_startup = true;
+        module_native_case(false, false);
+        adapter_startup = false;
+        resolution_optional = resolution_failure = false;
+    }
+    resolution_probe = false;
     module_native_case(false, false);
     module_native_case(true, false);
     module_native_case(false, true);
