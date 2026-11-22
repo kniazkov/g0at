@@ -296,10 +296,11 @@ static void observe_module_wait(void *data, bool waiting) {
 }
 
 /** @brief Wait before property access acquires C-local topology/cell pointers.
- * Receiver/RHS are still stack or context roots. Only the receiver's own file
- * is reviewed here; inherited-scope waits keep the ordinary fail-closed path.
+ * Receiver/RHS are still stack or context roots. The exact inherited lookup
+ * restarts after each observed wait before reusing topology or field pointers.
  */
-static void await_vm_scope(runtime_t *runtime, thread_t *thread, object_t *receiver) {
+static void
+await_vm_scope(runtime_t *runtime, thread_t *thread, object_t *receiver, object_t *key) {
     gc_participant_t *token = runtime->gc_participant;
     if (!token || token->blocked != 1
         || thread->initialization_depth != thread->gc_initialization_depth
@@ -309,7 +310,11 @@ static void await_vm_scope(runtime_t *runtime, thread_t *thread, object_t *recei
                                   .thread = thread,
                                   .gc_reviewed = true,
                                   .gc_executor = true};
-    module_file_exception_observed(module_scope_file(receiver), observe_module_wait, &execution);
+    await_accessible_property(&thread->context->access,
+                              receiver,
+                              key,
+                              observe_module_wait,
+                              &execution);
 }
 
 /** @brief Executes @ref VLOAD. */
@@ -343,7 +348,7 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
         return true;
     }
     object_t *key = load_string(runtime, thread->process, string_id);
-    await_vm_scope(runtime, thread, thread->context->data);
+    await_vm_scope(runtime, thread, thread->context->data, key);
     operation_result_t result =
         read_accessible_property(&thread->context->access, thread->context->data, key);
     if (result.is_exception)
@@ -430,7 +435,7 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
-    await_vm_scope(runtime, thread, thread->context->data);
+    await_vm_scope(runtime, thread, thread->context->data, key);
     operation_result_t result = write_accessible_property_result(&thread->context->access,
                                                                  thread->context->data,
                                                                  key,
@@ -452,7 +457,7 @@ static bool exec_GETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
         return false; // bad bytecode
     }
     object_t *key = load_string(runtime, thread->process, string_id);
-    await_vm_scope(runtime, thread, peek_object_from_stack(thread->data_stack, 0));
+    await_vm_scope(runtime, thread, peek_object_from_stack(thread->data_stack, 0), key);
     object_t *obj = pop_object_from_stack(thread->data_stack);
     operation_result_t result = read_accessible_property(&thread->context->access, obj, key);
     DECREF(obj);
@@ -480,7 +485,7 @@ static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
         return false; // bad bytecode
     }
     object_t *key = load_string(runtime, thread->process, string_id);
-    await_vm_scope(runtime, thread, peek_object_from_stack(thread->data_stack, 0));
+    await_vm_scope(runtime, thread, peek_object_from_stack(thread->data_stack, 0), key);
     object_t *obj = pop_object_from_stack(thread->data_stack);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
     operation_result_t result =
@@ -505,7 +510,7 @@ static bool exec_write_check(runtime_t *runtime, instruction_t instr, thread_t *
     object_t *key = load_string(runtime, thread->process, instr.arg1);
     object_t *receiver = instr.opcode == CHECKVAR ? thread->context->data
                                                   : peek_object_from_stack(thread->data_stack, 0);
-    await_vm_scope(runtime, thread, receiver);
+    await_vm_scope(runtime, thread, receiver, key);
     operation_result_t result =
         instr.opcode != CHECKVAR && is_current_this(thread, receiver)
             ? write_accessible_own_property_result(&thread->context->access, receiver, key, NULL)

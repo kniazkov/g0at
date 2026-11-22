@@ -90,11 +90,38 @@ property_lookup_t lookup_bound_property(const function_access_t *access,
     return (property_lookup_t){.status = MSTAT_PROPERTY_NOT_FOUND};
 }
 
-property_lookup_t lookup_accessible_property(const function_access_t *access,
-                                             object_t *object,
-                                             object_t *key,
-                                             bool private_slots) {
-    object_t *failure = module_scope_failure(object);
+/** @brief A wait invalidates borrowed topology and field pointers. Restart lookup
+ * after reacquiring the model lock; do not dereference anything from that scan.
+ */
+typedef struct {
+    void (*observe)(void *, bool);
+    void *data;
+    bool resumed;
+} property_wait_t;
+
+static void observe_property_wait(void *data, bool waiting) {
+    property_wait_t *wait = data;
+    wait->resumed = true;
+    wait->observe(wait->data, waiting);
+}
+
+static object_t *property_scope_failure(object_t *scope, property_wait_t *wait) {
+    if (!wait)
+        return module_scope_failure(scope);
+    wait->resumed = false;
+    return module_file_exception_observed(module_scope_file(scope), observe_property_wait, wait)
+        .value;
+}
+
+static property_lookup_t lookup_observed_property(const function_access_t *access,
+                                                  object_t *object,
+                                                  object_t *key,
+                                                  bool private_slots,
+                                                  property_wait_t *wait) {
+retry:;
+    object_t *failure = property_scope_failure(object, wait);
+    if (wait && wait->resumed)
+        goto retry;
     if (failure)
         return (property_lookup_t){MSTAT_FAILED_FILE, object, NULL, failure};
     object_array_t topology = get_object_topology(object);
@@ -105,14 +132,20 @@ property_lookup_t lookup_accessible_property(const function_access_t *access,
             for (size_t i = 0; i <= topology.size; i++) {
                 object_t *storage = i ? topology.items[i - 1] : object;
                 field_cell_t *cell = get_domain_field_cell(storage, key, domain);
-                if (cell && cell->modifier == ACCESS_PRIVATE)
+                if (cell && cell->modifier == ACCESS_PRIVATE) {
+                    property_scope_failure(storage, wait);
+                    if (wait && wait->resumed)
+                        goto retry;
                     return cell_result(access, storage, cell);
+                }
             }
         }
     }
     for (size_t i = 0; i <= topology.size; i++) {
         object_t *storage = i ? topology.items[i - 1] : object;
-        failure = module_scope_failure(storage);
+        failure = property_scope_failure(storage, wait);
+        if (wait && wait->resumed)
+            goto retry;
         if (failure)
             return (property_lookup_t){MSTAT_FAILED_FILE, storage, NULL, failure};
         field_cell_t *cell = get_own_field_cell(storage, key);
@@ -123,6 +156,22 @@ property_lookup_t lookup_accessible_property(const function_access_t *access,
             return (property_lookup_t){MSTAT_OK, storage, NULL, value};
     }
     return (property_lookup_t){.status = MSTAT_PROPERTY_NOT_FOUND};
+}
+
+property_lookup_t lookup_accessible_property(const function_access_t *access,
+                                             object_t *object,
+                                             object_t *key,
+                                             bool private_slots) {
+    return lookup_observed_property(access, object, key, private_slots, NULL);
+}
+
+void await_accessible_property(const function_access_t *access,
+                               object_t *object,
+                               object_t *key,
+                               void (*observe)(void *, bool),
+                               void *data) {
+    property_wait_t wait = {.observe = observe, .data = data};
+    lookup_observed_property(access, object, key, true, &wait);
 }
 
 model_status_t create_accessible_property(const function_access_t *access,

@@ -257,3 +257,13 @@ operation_result_t
 check_accessible_property_write(const function_access_t *access, object_t *object, object_t *key);
 /** @brief Checks a resolved declaration cell without changing its value or metadata. */
 model_status_t check_field_cell_write(object_t *storage, field_cell_t *cell);
+
+/** @brief Preflight the exact lookup, restarting after observed module waits.
+ * Caller holds the model lock and roots receiver/key/access for the entire call.
+ * The observer may publish only reviewed frames; ordinary embedding lookup does not.
+ */
+void await_accessible_property(const function_access_t *access,
+                               object_t *object,
+                               object_t *key,
+                               void (*observe)(void *, bool),
+                               void *data);
