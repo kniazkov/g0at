@@ -65,3 +65,19 @@ satisfy both the action and the oracle. See [testing](testing.md).
 [Common library](https://github.com/kniazkov/g0at/blob/master/docs/common-library.md) ·
 [Child processes](https://github.com/kniazkov/g0at/blob/master/docs/child-process-api.md) ·
 [ZIP](https://github.com/kniazkov/g0at/blob/master/docs/zip-api.md)
+
+## Linux descendant discovery fallback
+
+The process supervisor supports procfs without `/proc/thread-self/children`.
+On `ENOENT` it enumerates `/proc` using `getdents64` and a fixed stack buffer.
+Every numeric entry must pass an unreaped-child `waitid(..., WNOWAIT)` ownership
+check before signalling. The private single-threaded subreaper never reaps
+between the check and signal, preventing PID reuse and interference with another
+owner's tree. Further passes discover newly adopted descendants, including
+`setsid` branches. Missing or unreadable fallback procfs remains an error.
+
+This removes the known `cleanup=2`/`ENOENT` failure on environments lacking the
+children list; it does not weaken the requirement to confirm tree cleanup.
+Linux CI also builds a forced-fallback fixture, covering success/failure/crash,
+timeout, owner death/isolation and 20 launch-death cases with the independent
+OS observer. Windows retains its existing job-object implementation.

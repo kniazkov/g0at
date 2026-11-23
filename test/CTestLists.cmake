@@ -92,6 +92,16 @@ foreach(child_process_case IN LISTS child_process_cases)
     "$<TARGET_FILE:child_process_testing>" "$<TARGET_FILE:goat>"
     "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
 endforeach()
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  foreach(fallback_case empty tree-exit tree-fail tree-crash timeout-tree owner-isolation owner-group-term parent-death launch-death-00 launch-death-01 launch-death-02 launch-death-03 launch-death-04 launch-death-05 launch-death-06 launch-death-07 launch-death-08 launch-death-09 launch-death-10 launch-death-11 launch-death-12 launch-death-13 launch-death-14 launch-death-15 launch-death-16 launch-death-17 launch-death-18 launch-death-19)
+    goat_scenario(integration.child_process_proc_fallback.${fallback_case}
+      "integration;child-process-migration;proc-fallback" TIMEOUT 150 COMMAND
+      "$<TARGET_FILE:child_process_scenarios>" "integration.child_process.${fallback_case}"
+      "$<TARGET_FILE:child_process_proc_fallback_testing>" "$<TARGET_FILE:goat>"
+      "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/test/data")
+  endforeach()
+  set_tests_properties(integration.child_process_proc_fallback.owner-isolation PROPERTIES TIMEOUT 300)
+endif()
 # Keep the independent 120-second scenario deadline; allow two owned cleanup margins.
 set_tests_properties(integration.child_process.owner-isolation PROPERTIES TIMEOUT 300)
 goat_scenario(integration.zip "integration;zip-migration" TIMEOUT 200 COMMAND
@@ -733,6 +743,9 @@ foreach(suite IN LISTS goat_registered_suites)
   endif()
 endforeach()
 math(EXPR goat_expected_integration_count "1923 + ${native_runner_count}")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  math(EXPR goat_expected_integration_count "${goat_expected_integration_count} + 28")
+endif()
 if(NOT goat_integration_count EQUAL goat_expected_integration_count)
   message(FATAL_ERROR "Expected ${goat_expected_integration_count} integration scenarios (including four safe native retry cases for #316); found ${goat_integration_count}")
 endif()
