@@ -347,6 +347,44 @@ static operator_lookup_t lookup_vm_operator(runtime_t *runtime,
     return lookup_operator_handler(&thread->context->access, receiver, key);
 }
 
+/** @brief Preflight only the origin check performed by the selected function.
+ * Call owners may already be popped; arguments remain on the operand stack.
+ * This scope ends before entering arbitrary builtin or native callback code.
+ */
+static void
+await_vm_call_origin(runtime_t *runtime, thread_t *thread, object_t *function, object_t *receiver) {
+    if (!can_await_vm_scope(runtime, thread) || !is_function_object(function)
+        || !object_belongs_to_process(thread->process, function)
+        || (receiver && !object_belongs_to_process(thread->process, receiver)))
+        return;
+    const function_access_t *access = get_function_access(function);
+    module_file_t *file = NULL;
+    if (access) {
+        if (thread->process->native_failed)
+            return;
+        module_files_t *files = find_module_files(thread->process, access->module);
+        if (files)
+            file = module_files_get(files, access->file_id);
+    } else if (receiver)
+        file = module_scope_file(receiver);
+    if (!file)
+        return;
+    gc_root_handle_t function_root = register_gc_root(thread->process, function);
+    gc_root_handle_t receiver_root = {0};
+    if (receiver)
+        receiver_root = register_gc_root(thread->process, receiver);
+    if (!function_root.serial || (receiver && !receiver_root.serial))
+        abort();
+    file_execution_t execution = {.runtime = runtime,
+                                  .thread = thread,
+                                  .gc_reviewed = true,
+                                  .gc_executor = true};
+    module_file_exception_observed(file, observe_module_wait, &execution);
+    if ((receiver_root.serial && !unregister_gc_root(thread->process, receiver_root))
+        || !unregister_gc_root(thread->process, function_root))
+        abort();
+}
+
 /** @brief Executes @ref VLOAD. */
 static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
@@ -727,6 +765,7 @@ static bool execute_selected_operator(runtime_t *runtime,
         DECREF(receiver);
         return dispatch_exception(runtime, thread, exception);
     }
+    await_vm_call_origin(runtime, thread, selected.function, receiver);
     bool result = call_operator_handler(selected.function,
                                         receiver,
                                         count,
@@ -1224,6 +1263,7 @@ static bool call_with_gc_scope(runtime_t *runtime,
             || func == get_function_println() || func == get_function_input())
             thread->gc_call_participant = participant;
     }
+    await_vm_call_origin(runtime, thread, func, receiver);
     bool result = call_object(func, count, receiver, thread);
     thread->gc_call_participant = saved_participant;
     thread->gc_call_extra_lock_depth = saved_depth;
