@@ -4,6 +4,8 @@
  */
 #include "gc_protocol.h"
 
+#include "model/context.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -195,4 +197,26 @@ void gc_call_wait_resume(gc_participant_t *token) {
         && (!member(token) || token->blocked != 1 || !gc_participant_unblock(token)
             || !gc_participant_publish(token)))
         abort();
+}
+
+static void observe_call_module_wait(void *data, bool waiting) {
+    gc_participant_t *token = data;
+    if (waiting)
+        ++token->session->initialization_waiters;
+    else {
+        if (!token->session->initialization_waiters)
+            abort();
+        --token->session->initialization_waiters;
+    }
+}
+
+exception_t gc_observe_object(thread_t *thread, object_t *object) {
+    gc_participant_t *token = gc_call_wait_begin(thread);
+    exception_t failure =
+        object_observation_exception_observed(object,
+                                              &thread->context->access,
+                                              token ? observe_call_module_wait : NULL,
+                                              token);
+    gc_call_wait_end(token);
+    return failure;
 }

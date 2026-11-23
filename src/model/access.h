@@ -246,6 +246,13 @@ object_t *object_observation_failure(object_t *object, const function_access_t *
 /** @brief Borrowed full failure record from the same observation traversal. */
 exception_t object_observation_exception(object_t *object, const function_access_t *access);
 
+/** Observe actual module waits; restart the visible graph after each wait.
+ * The caller must keep object and access alive across released model locks. */
+exception_t object_observation_exception_observed(object_t *object,
+                                                  const function_access_t *access,
+                                                  void (*observe)(void *, bool),
+                                                  void *data);
+
 /** @brief Preflights builtin destinations without mutation; user-object checks wait for the
  * late setter selection after the RHS, including when the setter is currently absent. */
 operation_result_t check_accessible_index_write(const function_access_t *access,

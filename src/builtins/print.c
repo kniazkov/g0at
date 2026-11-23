@@ -14,7 +14,7 @@
 
 /** @brief Runtime executor; the shared caller has checked minimum arity. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
-    exception_t failure = object_observation_exception(args[0], &thread->context->access);
+    exception_t failure = gc_observe_object(thread, args[0]);
     if (failure.value) {
         INCREF(failure.value);
         return (operation_result_t){failure.value, true, failure.trace};

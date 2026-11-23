@@ -11,6 +11,7 @@
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
+#include "vm/gc_protocol.h"
 
 #include <stdint.h>
 
@@ -38,8 +39,7 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
                 end++;
             }
             if (!index_overflow && index < count) {
-                exception_t failure =
-                    object_observation_exception(args[index], &thread->context->access);
+                exception_t failure = gc_observe_object(thread, args[index]);
                 if (failure.value) {
                     FREE_STRING(format);
                     FREE(builder.data);

@@ -906,3 +906,52 @@ accounting. Removing its owning roots fails the temporary operator receiver case
 The fixtures retain allocator/root/token balance and cached failure trace checks.
 Observation/serialization and remaining nested C chains still require audit before
 #617 and #618 acceptance. Automatic thresholds (#553) remain disabled.
+
+### Observing container graphs while module initialization waits
+
+The reviewed `str`, `format` (plain and method), `print` and `println` calls can
+publish a module-initialization wait discovered inside a visible object graph.
+The VM call scope owns the callable and receiver; `static_call` registers every
+popped argument, including unused extras. The executing context retains the access
+snapshot. A borrowed traversal vector is not a set of GC roots.
+
+`object_observation_exception_observed` discards that vector's contents after an
+actual wait and starts again from the rooted source. Another thread may replace
+fields or clear an array while the model lock is released. Neither the current
+object nor any queued pointer may then be dereferenced. Even a failure returned
+by the old scope is rechecked through the current graph: a removed failed scope
+must not poison a now-empty container. The ordinary model API shares this restart
+rule but does not gain permission to collect in an unreviewed embedding frame.
+
+`gc_observe_object` publishes before the model helper adds its lock frame and
+counts only actual initializer waits. It withdraws publication before returning
+the borrowed failure or rendering any text. Rendering and consuming a failure
+therefore run under the model lock. The format buffer is unmanaged; its managed
+receiver and arguments remain rooted. Only referenced placeholders are inspected,
+and already appended text and argument expressions are never replayed.
+
+Twenty concurrent regressions cover five call forms, success/failure and graph
+removal during the wait. A temporary array contains a module scope and a separate
+self-cycle. The initializer clears the array in removal cases, then allocates and
+collects cycles before publishing its result. Tests require collection during the
+wait, correct current output, balanced roots/tokens/allocator and cached failures.
+Format checks preserve a prefix, repeated placeholders and heap arguments used
+after the wait. A preliminary unused argument must cause no module wait.
+
+This is not blanket admission for model serialization. `Array.toString`,
+`StringBuilder.append`, string/container addition and clone/flat still enter
+through excluded C paths. They need separate receiver/operand lifetime and mutable
+storage checks before publication; direct embedding calls and arbitrary callbacks
+also remain excluded. Their waits may defer collection until the initializer or
+callback returns. The remaining #617 audit must account for this starvation before
+#618 acceptance and automatic collection (#553).
+
+Negative controls: disabling the restart produces an ASan heap-use-after-free in
+`module_scope_file` for a removed queued cycle, and propagates a removed scope's
+failure in the failure variant. Disabling argument roots crashes the format case;
+disabling waiter accounting fails the initializer admission assertion. Restored
+code passes all 96 initializer cases under ASan/UBSan and all 20 new cases for
+50 repetitions. The 584-case broader matrix passes 568 in Debug, 571 in Release
+and 568 under ASan/UBSan; all remaining failures are the previously recorded
+native/module operator process `cleanup=2` limitation. LSan is disabled under
+ptrace; fixture allocator accounting remains enabled.
