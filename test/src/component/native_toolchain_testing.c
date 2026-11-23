@@ -50,6 +50,26 @@ static int compiler(int argc, char **argv) {
         mode = NULL;
     }
     FREE(mode_for);
+    if (mode && !strncmp(mode, "dependency-", 11) && !strncmp(argv[1], "-print-file-name=", 17)) {
+        int code = 0;
+        if (!strcmp(mode, "dependency-failure")) {
+            fputs("controlled dependency failure", stderr);
+            code = 7;
+        } else if (!strcmp(mode, "dependency-missing")) {
+            puts(argv[1] + 17);
+        } else if (!strcmp(mode, "dependency-invalid")) {
+            puts("/goat/nonexistent/dependency.so");
+        } else if (!strcmp(mode, "dependency-timeout")) {
+#ifdef _WIN32
+            Sleep(30000);
+#else
+            sleep(30);
+#endif
+        }
+        FREE(mode);
+        FREE(real);
+        return code;
+    }
     bool preprocess = false;
     for (int i = 1; i < argc; i++)
         preprocess |= !strcmp(argv[i], "-E");

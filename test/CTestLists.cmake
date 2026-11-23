@@ -154,7 +154,7 @@ foreach(native_requirements_case IN ITEMS pe-msvcrt-hypot pe-msvcrt-hypot-unknow
     "$<TARGET_FILE:native_requirements_testing>" "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/test/data" "${PROJECT_SOURCE_DIR}/test/data/native-requirements-regressions")
 endforeach()
-foreach(native_toolchains_case IN ITEMS cache reprobe linux-relro unicode-temp timeout-cache unsupported-target zero-timeout absent-compiler link-failure hang-query hang-link avx2 sha2 crypto foreign-libc musl-trace musl-crypto unknown-profile path-first path-fallback path-timeout path-unsearched path-list explicit-failure)
+foreach(native_toolchains_case IN ITEMS dependency-failure dependency-empty dependency-missing dependency-invalid dependency-timeout cache reprobe linux-relro unicode-temp timeout-cache unsupported-target zero-timeout absent-compiler link-failure hang-query hang-link avx2 sha2 crypto foreign-libc musl-trace musl-crypto unknown-profile path-first path-fallback path-timeout path-unsearched path-list explicit-failure)
   goat_scenario(integration.native_toolchains.${native_toolchains_case} "integration;native-toolchains-migration" TIMEOUT 510 COMMAND
     "$<TARGET_FILE:native_toolchains_scenarios>" "integration.native_toolchains.${native_toolchains_case}"
     "$<TARGET_FILE:native_toolchain_testing>" "${CMAKE_C_COMPILER}" host
@@ -742,7 +742,7 @@ foreach(suite IN LISTS goat_registered_suites)
     math(EXPR goat_integration_count "${goat_integration_count} + 1")
   endif()
 endforeach()
-math(EXPR goat_expected_integration_count "1923 + ${native_runner_count}")
+math(EXPR goat_expected_integration_count "1928 + ${native_runner_count}")
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   math(EXPR goat_expected_integration_count "${goat_expected_integration_count} + 28")
 endif()

@@ -452,6 +452,29 @@ static void body(scenario_run_t *r, void *user) {
     } else if (!strcmp(k, "absent-compiler")) {
         REQUIRE(strstr(RUN(language_join(r, root, "absent"), NULL, NULL, NULL, NULL, NULL),
                        "explicit C compiler was not found"));
+    } else if (!strncmp(k, "dependency-", 11)) {
+        const char *target = host(&s);
+        if (!strstr(target, "linux") || strstr(target, "musl")) {
+            c->skipped = true;
+            puts("SKIP: compiler ELF dependency query requires glibc target");
+            return;
+        }
+        out = RUN(NULL,
+                  NULL,
+                  !strcmp(k, "dependency-timeout") ? "3" : "10",
+                  NULL,
+                  NULL,
+                  ARGS(string(r, "GOAT_TOOLCHAIN_MODE=%s", k)));
+        REQUIRE(strstr(out, "available=0"));
+        REQUIRE(strstr(out, "ELF dependency ") && strstr(out, "compiler=")
+                && strstr(out, "target="));
+        const char *reason = !strcmp(k, "dependency-failure") ? "controlled dependency failure"
+                             : !strcmp(k, "dependency-empty") ? "empty compiler response"
+                             : !strcmp(k, "dependency-missing")
+                                 ? "compiler did not locate dependency"
+                             : !strcmp(k, "dependency-timeout") ? "compiler probe timed out"
+                                                                : "invalid dependency path";
+        REQUIRE(strstr(out, reason));
     } else if (!strcmp(k, "link-failure")) {
         out = RUN(NULL, NULL, NULL, NULL, NULL, ARGS("GOAT_TOOLCHAIN_MODE=link-fail"));
         REQUIRE(strstr(out, "available=0") && strstr(out, "controlled link failure"));
@@ -529,18 +552,35 @@ static void body(scenario_run_t *r, void *user) {
 #undef SIMPLE
 }
 
-static const char *kinds[] = {"cache",         "reprobe",
-                              "linux-relro",   "unicode-temp",
-                              "timeout-cache", "unsupported-target",
-                              "zero-timeout",  "absent-compiler",
-                              "link-failure",  "hang-query",
-                              "hang-link",     "avx2",
-                              "sha2",          "crypto",
-                              "foreign-libc",  "musl-trace",
-                              "musl-crypto",   "unknown-profile",
-                              "path-first",    "path-fallback",
-                              "path-timeout",  "path-unsearched",
-                              "path-list",     "explicit-failure"};
+static const char *kinds[] = {"dependency-failure",
+                              "dependency-empty",
+                              "dependency-missing",
+                              "dependency-invalid",
+                              "dependency-timeout",
+                              "cache",
+                              "reprobe",
+                              "linux-relro",
+                              "unicode-temp",
+                              "timeout-cache",
+                              "unsupported-target",
+                              "zero-timeout",
+                              "absent-compiler",
+                              "link-failure",
+                              "hang-query",
+                              "hang-link",
+                              "avx2",
+                              "sha2",
+                              "crypto",
+                              "foreign-libc",
+                              "musl-trace",
+                              "musl-crypto",
+                              "unknown-profile",
+                              "path-first",
+                              "path-fallback",
+                              "path-timeout",
+                              "path-unsearched",
+                              "path-list",
+                              "explicit-failure"};
 
 int main(int argc, char **argv) {
 #ifdef _WIN32
