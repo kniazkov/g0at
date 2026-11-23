@@ -20,6 +20,9 @@ bool no_sweep(object_t *obj);
 /** @brief Implements @ref object_vtbl_t::compare. */
 int compare_object_addresses(const object_t *obj1, const object_t *obj2);
 
+/** @brief Object address comparator with the exact generic collection callback type. */
+int compare_object_address_keys(const void *first, const void *second);
+
 /** @brief Implements @ref object_vtbl_t::clone. */
 object_t *clone_singleton(process_t *process, object_t *obj);
 
