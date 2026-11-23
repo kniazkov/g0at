@@ -9,20 +9,28 @@ permissions:
 jobs:
   repeat:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
         compiler: [gcc, clang]
-        configuration: [Debug, Release]
+        configuration: [Debug, Release, Sanitized]
     env:
       CC: ${{ matrix.compiler }}
+      ASAN_OPTIONS: detect_leaks=0:abort_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - uses: actions/checkout@v4
       - name: Build current interpreter
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
+          if [ '${{ matrix.configuration }}' = Sanitized ]; then
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+              -DCMAKE_C_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all' \
+              -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          else
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
+          fi
           cmake --build build --parallel 2 --target goat
       - name: Repeat isolated and concurrent native-required executions
         shell: bash
@@ -33,7 +41,7 @@ jobs:
           cmake --version >> investigation/environment.txt
           git rev-parse HEAD >> investigation/environment.txt
           python3 - <<'PY'
-          import concurrent.futures, json, pathlib, subprocess, time
+          import concurrent.futures, json, os, pathlib, signal, subprocess, time
           root = pathlib.Path.cwd()
           logs = root / 'investigation'
           def run(label):
@@ -42,19 +50,26 @@ jobs:
                          '-DDATA=' + str(root / 'test/data/functional'),
                          '-DWORK=' + str(logs / label),
                          '-P', str(root / 'test/string_builder_modes.cmake')]
+              load = os.getloadavg()
               with (logs / (label + '.log')).open('w') as output:
+                  process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT,
+                                             start_new_session=True)
                   try:
-                      code = subprocess.run(command, stdout=output, stderr=subprocess.STDOUT,
-                                            timeout=600).returncode
+                      code = process.wait(timeout=600)
                   except subprocess.TimeoutExpired:
+                      os.killpg(process.pid, signal.SIGKILL)
+                      process.wait()
                       code = 124
                       output.write('\nInvestigation timeout (600 seconds)\n')
-              result = dict(case=label, status=code, seconds=round(time.monotonic()-start, 2))
+              result = dict(case=label, status=code, load=load, seconds=round(time.monotonic()-start, 2))
+              (logs / (label + ".json")).write_text(json.dumps(result))
               print(json.dumps(result), flush=True)
               return result
-          results = [run('isolated-' + str(i)) for i in range(10)]
-          with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-              results += list(pool.map(run, ['concurrent-' + str(i) for i in range(30)]))
+          results = [run('isolated-' + str(i)) for i in range(5)]
+          for workers, count in [(3, 15), (6, 30)]:
+              with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+                  labels = [f'concurrent-{workers}-{i}' for i in range(count)]
+                  results += list(pool.map(run, labels))
           (logs / 'results.json').write_text(json.dumps(results, indent=2))
           raise SystemExit(any(item['status'] for item in results))
           PY
