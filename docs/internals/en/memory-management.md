@@ -995,3 +995,12 @@ self-append; counters check exact argument/factory evaluation counts. Existing
 allocator/root/token balance, bytecode immutability and cached-failure checks
 remain in force. Plain embedding model calls remain excluded; clone/flat and the
 final nested-C audit are tracked by #634 and #635.
+
+### Native dependency probe diagnostics
+
+A failed compiler dependency query reports the ELF library name, selected compiler and target,
+and the underlying process failure (status, exit code, signal, system/cleanup error, or truncated
+output). Empty answers, unresolved names and invalid paths are distinguished. The shared probe
+deadline and fail-closed required/auto behavior are unchanged; failures are not retried or skipped.
+The intermittent dependency failure observed during GC validation is tracked in #645; successful
+repetitions alone do not establish its cause.

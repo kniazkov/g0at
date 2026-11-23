@@ -8,6 +8,7 @@
 #include "lib/memory/allocate.h"
 #include "native_requirements.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -269,8 +270,21 @@ static char *run(native_toolchain_context_t *ctx,
                              : result->status == CHILD_START_ERROR ? "compiler could not start"
                                                                    : "compiler command failed";
         size_t size = status == CLEANUP_OK ? result->err.size : 0;
-        *diagnostic = ALLOC(strlen(reason) + size + 3);
-        sprintf(*diagnostic, "%s%s", reason, size ? ": " : "");
+        char details[256];
+        if (status == CLEANUP_OK)
+            snprintf(details,
+                     sizeof(details),
+                     " [status=%d exit=%" PRId64 " signal=%d system=%lu cleanup=%lu truncated=%d]",
+                     (int)result->status,
+                     result->exit_code,
+                     result->signal_number,
+                     result->system_error,
+                     result->cleanup_error,
+                     (int)result->out.truncated);
+        else
+            snprintf(details, sizeof(details), " [cleanup service status=%d]", (int)status);
+        *diagnostic = ALLOC(strlen(reason) + strlen(details) + size + 3);
+        sprintf(*diagnostic, "%s%s%s", reason, details, size ? ": " : "");
         if (size) {
             size_t offset = strlen(*diagnostic);
             memcpy(*diagnostic + offset, result->err.data, size);
@@ -286,6 +300,7 @@ typedef struct {
     const native_toolchain_t *toolchain;
     child_deadline_t deadline;
     bool timed_out;
+    char *diagnostic;
 } resolver_t;
 
 static bool musl_library_name(const char *name, const goat_native_environment *environment) {
@@ -339,13 +354,37 @@ static char *resolve_dependency(const char *name, void *opaque) {
     char *error = NULL;
     char *answer = run(resolver->ctx, argv, NULL, resolver->deadline, &resolver->timed_out, &error);
     FREE(option);
-    FREE(error);
-    if (!answer)
+    if (!answer) {
+        resolver->diagnostic =
+            ALLOC(strlen(name) + strlen(resolver->toolchain->compiler)
+                  + strlen(resolver->toolchain->target) + (error ? strlen(error) : 0) + 128);
+        sprintf(resolver->diagnostic,
+                "ELF dependency %s (compiler=%s, target=%s): %s",
+                name,
+                resolver->toolchain->compiler,
+                resolver->toolchain->target,
+                error ? error : "compiler returned no result");
+        FREE(error);
         return NULL;
+    }
+    FREE(error);
     size_t size = strlen(answer);
     while (size && (answer[size - 1] == '\n' || answer[size - 1] == '\r'))
         answer[--size] = 0;
-    char *path = strcmp(answer, name) ? canonical_fs_path(answer, NULL) : NULL;
+    char *path = *answer && strcmp(answer, name) ? canonical_fs_path(answer, NULL) : NULL;
+    if (!path) {
+        const char *reason = !*answer                ? "empty compiler response"
+                             : !strcmp(answer, name) ? "compiler did not locate dependency"
+                                                     : "invalid dependency path";
+        resolver->diagnostic = ALLOC(strlen(name) + strlen(resolver->toolchain->compiler)
+                                     + strlen(resolver->toolchain->target) + strlen(reason) + 128);
+        sprintf(resolver->diagnostic,
+                "ELF dependency %s (compiler=%s, target=%s): %s",
+                name,
+                resolver->toolchain->compiler,
+                resolver->toolchain->target,
+                reason);
+    }
     FREE(answer);
     return path;
 }
@@ -446,6 +485,10 @@ static bool inspect(native_toolchain_context_t *ctx,
                                               &resolver,
                                               environment,
                                               diagnostic);
+    if (resolver.diagnostic) {
+        FREE(*diagnostic);
+        *diagnostic = resolver.diagnostic;
+    }
     *timed_out = resolver.timed_out;
     return result;
 }
