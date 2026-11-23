@@ -9,3 +9,6 @@
 object_array_t get_array_method_keys(void);
 /** @brief Finds a built-in Array method for the supplied property key. */
 object_t *get_array_method(const object_t *key);
+
+/** @brief Exact builtin identity admitted for reviewed serialization waits. */
+object_t *get_array_to_string_function(void);

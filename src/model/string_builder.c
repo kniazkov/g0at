@@ -11,6 +11,7 @@
 #include "context.h"
 #include "lib/memory/allocate.h"
 #include "thread.h"
+#include "vm/gc_protocol.h"
 
 #include <stdint.h>
 
@@ -74,16 +75,18 @@ initialize(object_t *receiver, object_t **args, uint16_t count, thread_t *thread
 
 static operation_result_t
 append(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    string_builder_t *buffer = get_string_builder_storage(receiver);
-    if (!buffer)
+    if (!get_string_builder_storage(receiver))
         return validate(receiver);
     if (count != 1)
         return operation_exception(get_exception_invalid_argument());
-    exception_t failure = object_observation_exception(args[0], &thread->context->access);
+    exception_t failure = gc_observe_object(thread, args[0]);
     if (failure.value) {
         INCREF(failure.value);
         return (operation_result_t){failure.value, true, failure.trace};
     }
+    /* The rooted receiver owns storage, but another thread may have changed
+     * its contents/capacity while observation waited. Acquire it afterwards. */
+    string_builder_t *buffer = get_string_builder_storage(receiver);
     /* Same conversion as str; a snapshot also makes self append safe across growth. */
     string_value_t value = object_to_string_with_access(args[0], &thread->context->access);
     size_t maximum = SIZE_MAX / sizeof(gchar_t) - 1;
@@ -146,6 +149,10 @@ METHOD(builder_append, "StringBuilder.append", append)
 METHOD(builder_clear, "StringBuilder.clear", clear)
 METHOD(builder_string, "StringBuilder.toString", to_string)
 #undef METHOD
+
+object_t *get_string_builder_append_function(void) {
+    return get_builder_append();
+}
 
 static const gchar_t *names[] = {U"init", U"append", U"clear", U"toString", U"+", U"<<"};
 

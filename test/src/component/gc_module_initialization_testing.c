@@ -10,6 +10,7 @@
 #include "model/array.h"
 #include "model/builtin_function.h"
 #include "model/module_files.h"
+#include "model/string_builder.h"
 #include "vm/gc_protocol.h"
 #include "vm/gc_stats.h"
 #include "vm/vm.h"
@@ -77,6 +78,75 @@ static const operator_case_t operator_cases[] = {
     {"fallback-write", NULL, "func(){}", "lhs()[\"result\"]=rhs()[0];return 42;", 2}};
 static const operator_case_t *operator_case;
 
+typedef struct {
+    const char *name;
+    const char *expression;
+    const char *expected;
+    const char *removed;
+    bool builder;
+} serialization_case_t;
+
+static const serialization_case_t serialization_cases[] = {
+    {"object-string-add",
+     "str(\"prefix:\")+awaitStart()",
+     "\"prefix:\"+str(awaitStart())",
+     "\"prefix:\"+str({external items=[];})",
+     false},
+    {"object-char-add",
+     "'x'+awaitStart()",
+     "\"x\"+str(awaitStart())",
+     "\"x\"+str({external items=[];})",
+     false},
+    {"object-append",
+     "checkedBuilder(makeBuilder().append(awaitStart()))",
+     "\"changed:\"+str(awaitStart())",
+     "\"changed:\"+str({external items=[];})",
+     true},
+
+    {"array", "awaitStart().toString()", "str(awaitStart())", "\"[ ]\"", false},
+    {"detached", "detached(awaitStart())", "str(awaitStart())", "\"[ ]\"", false},
+    {"separator",
+     "awaitStart().toString(str(\"::\"))",
+     "awaitStart().toString(\"::\")",
+     "\"\"",
+     false},
+    {"char-separator", "awaitStart().toString(':')", "awaitStart().toString(':')", "\"\"", false},
+    {"string-add",
+     "str(\"prefix:\")+awaitStart()",
+     "\"prefix:\"+str(awaitStart())",
+     "\"prefix:[ ]\"",
+     false},
+    {"char-add", "'x'+awaitStart()", "\"x\"+str(awaitStart())", "\"x[ ]\"", false},
+    {"append",
+     "checkedBuilder(makeBuilder().append(awaitStart()))",
+     "\"changed:\"+str(awaitStart())",
+     "\"changed:[ ]\"",
+     true},
+    {"builder-add",
+     "checkedBuilder(makeBuilder()+awaitStart())",
+     "\"changed:\"+str(awaitStart())",
+     "\"changed:[ ]\"",
+     true},
+    {"shift",
+     "checkedBuilder(makeBuilder()<<awaitStart())",
+     "\"changed:\"+str(awaitStart())",
+     "\"changed:[ ]\"",
+     true},
+    {"compound",
+     "(func(){var b=makeBuilder();b+=awaitStart();return checkedBuilder(b);})()",
+     "\"changed:\"+str(awaitStart())",
+     "\"changed:[ ]\"",
+     true},
+    {"self",
+     "(func(){var b=makeBuilder();b.append(awaitStart());b.append(b);return checkedBuilder(b);})()",
+     "(\"changed:\"+str(awaitStart()))+(\"changed:\"+str(awaitStart()))",
+     "\"changed:[ ]changed:[ ]\"",
+     true}};
+static const serialization_case_t *serialization_case;
+static bool serialization_object;
+static object_t *observed_builder; // borrowed; the language call owns the receiver
+static size_t builder_calls;
+
 static bool concurrent, recursive, failed, entry;
 static bool inherited, shadow, local_seen, bound, lexical, bound_heap;
 static bool origin, origin_method, origin_operator, origin_callable, origin_startup, origin_builtin;
@@ -123,6 +193,19 @@ static operation_result_t await_gate(object_t **args, uint16_t count, thread_t *
         }
         if (observation)
             assert(observation_arguments == 2); // unused format argument never waits
+        if (serialization_case && serialization_case->builder) {
+            assert(builder_calls == 1);
+            string_builder_t *buffer = get_string_builder_storage(observed_builder);
+            for (size_t i = 0; i < 512; ++i)
+                append_char(buffer, U'x');
+            buffer->length = 0;
+            buffer->data[0] = 0;
+            append_string(buffer, U"changed:");
+            field_cell_t *length = get_own_field_cell(observed_builder, get_string_length());
+            object_t *value = create_integer_object(p, (int64_t)buffer->length);
+            DECREF(length->object);
+            length->object = value;
+        }
         if (observation_remove) {
             operation_result_t cleared = clear_array_elements(observed_graph);
             assert(!cleared.is_exception);
@@ -148,7 +231,14 @@ static operation_result_t await_gate(object_t **args, uint16_t count, thread_t *
 }
 
 static operation_result_t await_start(object_t **args, uint16_t count, thread_t *thread) {
-    (void)args;
+    if (serialization_case && count == 1) {
+        assert(!thread->gc_call_participant);
+        observed_builder = args[0];
+        assert(get_string_builder_storage(observed_builder));
+        ++builder_calls;
+        INCREF(observed_builder);
+        return operation_success(observed_builder);
+    }
     assert(!count);
     process_t *p = thread->process;
     while (!p->initialization_count && !(observation && observations)) {
@@ -164,6 +254,16 @@ static operation_result_t await_start(object_t **args, uint16_t count, thread_t 
         object_t *items[] = {module_file_scope(module_files_get(test_files, 1)), cycle};
         observed_graph = create_array_object(p, (object_array_t){items, 2});
         DECREF(cycle);
+        if (serialization_object) {
+            object_t *root = get_root_object();
+            object_t *wrapper = create_user_defined_object(p, (object_array_t){&root, 1});
+            static object_static_string_t key;
+            object_t *name = get_static_string_object(&key, U"items");
+            assert(create_object_property(wrapper, name, observed_graph, true) == MSTAT_OK);
+            get_own_field_cell(wrapper, name)->modifier = ACCESS_EXTERNAL;
+            DECREF(observed_graph);
+            return operation_success(wrapper);
+        }
         return operation_success(observed_graph);
     }
     if (origin && !origin_builtin) {
@@ -328,6 +428,18 @@ int main(int argc, char **argv) {
         if (!strcmp(name, argv[1]))
             operator_case = operator_cases + i;
     }
+    for (size_t i = 0; i < sizeof(serialization_cases) / sizeof(*serialization_cases); ++i) {
+        char name[100];
+        snprintf(name,
+                 sizeof(name),
+                 "observation-serialize-%s-%s-%s",
+                 serialization_cases[i].name,
+                 strstr(argv[1], "remove") ? "remove" : "stable",
+                 strstr(argv[1], "failure") ? "failure" : "success");
+        if (!strcmp(argv[1], name))
+            serialization_case = serialization_cases + i;
+    }
+    serialization_object = serialization_case && strstr(argv[1], "object-") != NULL;
     origin = strstr(argv[1], "origin") != NULL;
     origin_method = origin && strstr(argv[1], "method") != NULL;
     origin_operator = origin && strstr(argv[1], "operator") != NULL;
@@ -433,14 +545,24 @@ int main(int argc, char **argv) {
                 : observation_remove ? (formatting ? "\"prefix:[21]:[ ]:[21]:[99]\"" : "\"[ ]\"")
                 : formatting         ? "format(\"prefix:%0:%1:%0:%2\",[21],awaitStart(),[99])"
                                      : "str(awaitStart())";
-            snprintf(property_source,
-                     2048,
-                     "var a=spawn(func(){return include \"init.goat\";});"
-                     "var b=spawn(func(){if(format(\"%%1\",awaitStart(),[21])!=\"[21]\"){throw "
-                     "[0];}var text=%s;if(text!=%s){throw [0];}return 42;});%s",
-                     expression,
-                     expected,
-                     tail);
+            if (serialization_case) {
+                expression = serialization_case->expression;
+                expected =
+                    observation_remove ? serialization_case->removed : serialization_case->expected;
+            }
+            snprintf(
+                property_source,
+                2048,
+                "var checkedBuilder=func(b){var text=str(b);if(b.length!=text.length){throw [0];}"
+                "return text;};"
+                "var detached=[].toString;var makeBuilder=func(){var b=StringBuilder -> {};"
+                "b.append(\"prefix:\");return awaitStart(b);};"
+                "var a=spawn(func(){return include \"init.goat\";});"
+                "var b=spawn(func(){if(format(\"%%1\",awaitStart(),[21])!=\"[21]\"){throw "
+                "[0];}var text=%s;if(text!=%s){throw [0];}return 42;});%s",
+                expression,
+                expected,
+                tail);
         }
         if (origin_builtin)
             snprintf(property_source,
@@ -590,6 +712,13 @@ int main(int argc, char **argv) {
     if (recursive)
         process_execution_leave(p);
     assert(observations == 1);
+    if (serialization_case) {
+        size_t expected_reads = 2;
+        if (!failed && !observation_remove)
+            expected_reads += !strcmp(serialization_case->name, "self") ? 2 : 1;
+        assert(observation_arguments == expected_reads);
+        assert(builder_calls == (serialization_case->builder ? 1 : 0));
+    }
     assert(builtin_origin_calls == (origin_builtin && !failed ? 1 : 0));
     object_static_string_t result_key = {0};
     object_t *result =

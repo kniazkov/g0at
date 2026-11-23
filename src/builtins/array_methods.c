@@ -10,6 +10,7 @@
 #include "model/builtin_function.h"
 #include "model/context.h"
 #include "model/thread.h"
+#include "vm/gc_protocol.h"
 
 /** @brief Operations provided by the Array prototype. */
 typedef enum {
@@ -92,13 +93,20 @@ static operation_result_t dispatch(array_method_t method,
             if (count)
                 break;
             return sort_array_elements(receiver);
-        case TO_STRING:
+        case TO_STRING: {
             if (count > 1)
                 break;
             if (count && args[0]->vtbl->type != TYPE_STRING
                 && args[0]->vtbl->type != TYPE_CHARACTER)
                 break;
+            exception_t failure = gc_observe_object(thread, receiver);
+            if (failure.value) {
+                INCREF(failure.value);
+                return (operation_result_t){failure.value, true, failure.trace};
+            }
+            /* The model helper obtains the current elements after the wait. */
             return array_to_string(receiver, count ? args[0] : NULL, &thread->context->access);
+        }
     }
     return operation_exception(get_exception_invalid_argument());
 }
@@ -342,6 +350,8 @@ static const builtin_function_t methods[] = {
      .interpret = interpret},
 };
 
+static builtin_function_object_t objects[sizeof(methods) / sizeof(*methods)];
+
 object_array_t get_array_method_keys(void) {
     enum { count = sizeof(methods) / sizeof(*methods) };
 
@@ -360,10 +370,13 @@ object_t *get_array_method(const object_t *key) {
 
     enum { count = sizeof(methods) / sizeof(*methods) };
 
-    static builtin_function_object_t objects[count];
     object_array_t names = get_array_method_keys();
     for (size_t i = 0; i < count; i++)
         if (!compare_objects_using_vtbl(key, names.items[i]))
             return get_builtin_function_object(&objects[i], &methods[i]);
     return NULL;
+}
+
+object_t *get_array_to_string_function(void) {
+    return get_builtin_function_object(&objects[TO_STRING], &methods[TO_STRING]);
 }

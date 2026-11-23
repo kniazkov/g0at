@@ -16,3 +16,6 @@ string_builder_t *initialize_string_builder_storage(object_t *obj);
 void copy_string_builder_storage(object_t *target, const object_t *source);
 /** @brief Independent owned string snapshot, including embedded zeros. */
 string_value_t string_builder_snapshot(const object_t *obj);
+
+/** @brief Exact append handler identity, also shared by + and <<. */
+object_t *get_string_builder_append_function(void);
