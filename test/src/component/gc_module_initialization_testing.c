@@ -7,6 +7,7 @@
 #endif
 #include "common/module_compilation.h"
 #include "lib/memory/allocate.h"
+#include "model/array.h"
 #include "model/builtin_function.h"
 #include "model/module_files.h"
 #include "vm/gc_protocol.h"
@@ -79,6 +80,9 @@ static const operator_case_t *operator_case;
 static bool concurrent, recursive, failed, entry;
 static bool inherited, shadow, local_seen, bound, lexical, bound_heap;
 static bool origin, origin_method, origin_operator, origin_callable, origin_startup, origin_builtin;
+static bool observation, observation_remove;
+static size_t observation_arguments;
+static object_t *observed_graph; // borrowed; only the builtin argument keeps it alive
 static size_t builtin_origin_calls;
 static module_files_t *test_files;
 static object_t *descendant;
@@ -117,6 +121,13 @@ static operation_result_t await_gate(object_t **args, uint16_t count, thread_t *
                                         get_null_object())
                    == MSTAT_OK);
         }
+        if (observation)
+            assert(observation_arguments == 2); // unused format argument never waits
+        if (observation_remove) {
+            operation_result_t cleared = clear_array_elements(observed_graph);
+            assert(!cleared.is_exception);
+            DECREF(cleared.value);
+        }
         if (shadow) {
             /* An earlier slot appears while the lookup is asleep. Resumption
              * must restart before inspecting the now failed inherited scope. */
@@ -140,9 +151,20 @@ static operation_result_t await_start(object_t **args, uint16_t count, thread_t 
     (void)args;
     assert(!count);
     process_t *p = thread->process;
-    while (!p->initialization_count) {
+    while (!p->initialization_count && !(observation && observations)) {
         size_t depth = process_execution_suspend(p);
         process_execution_resume(p, depth);
+    }
+    if (observation) {
+        ++observation_arguments;
+        object_t *cycle = create_array_object(p, (object_array_t){0});
+        operation_result_t inserted = insert_array_elements(cycle, 0, &cycle, 1);
+        assert(!inserted.is_exception);
+        DECREF(inserted.value);
+        object_t *items[] = {module_file_scope(module_files_get(test_files, 1)), cycle};
+        observed_graph = create_array_object(p, (object_array_t){items, 2});
+        DECREF(cycle);
+        return operation_success(observed_graph);
     }
     if (origin && !origin_builtin) {
         static object_static_string_t work_key, method_key, marker_key;
@@ -315,7 +337,10 @@ int main(int argc, char **argv) {
     bound = strstr(argv[1], "bound") != NULL;
     lexical = strstr(argv[1], "lexical") != NULL;
     bound_heap = bound && strstr(argv[1], "heap") != NULL;
-    bool property = origin || operator_case || bound || strstr(argv[1], "property") != NULL;
+    observation = strstr(argv[1], "observation") != NULL;
+    observation_remove = observation && strstr(argv[1], "remove") != NULL;
+    bool property =
+        observation || origin || operator_case || bound || strstr(argv[1], "property") != NULL;
     inherited = strstr(argv[1], "inherited") != NULL;
     shadow = strstr(argv[1], "shadow") != NULL;
     concurrent = property || strstr(argv[1], "workers") != NULL;
@@ -340,7 +365,7 @@ int main(int argc, char **argv) {
                                 : strstr(argv[1], "check") ? "shared.result+=0;"
                                                            : "";
         const char *tail =
-            shadow && failed
+            (shadow || observation_remove) && failed
                 ? "var sum=0;try{join(a);}catch(e){sum=e[0];}external result=sum+join(b);"
             : failed ? "var sum=0;try{join(a);}catch(e){sum+=e[0];}"
                        "try{join(b);}catch(e){sum+=e[0];}external result=sum;"
@@ -390,6 +415,31 @@ int main(int argc, char **argv) {
                      2048,
                      "var a=spawn(func(){return include \"init.goat\";});%s%s",
                      worker,
+                     tail);
+        }
+        if (observation) {
+            const char *expression =
+                strstr(argv[1], "method")
+                    ? "str(\"prefix:%0:%1:%0:%2\").format([21],awaitStart(),[99])"
+                : strstr(argv[1], "format")
+                    ? "format(\"prefix:%0:%1:%0:%2\",[21],awaitStart(),[99])"
+                : strstr(argv[1], "println") ? "println(awaitStart())"
+                : strstr(argv[1], "print")   ? "print(awaitStart())"
+                                             : "str(awaitStart())";
+            bool output = strstr(argv[1], "print") != NULL;
+            bool formatting = strstr(argv[1], "format") || strstr(argv[1], "method");
+            const char *expected =
+                output               ? "null"
+                : observation_remove ? (formatting ? "\"prefix:[21]:[ ]:[21]:[99]\"" : "\"[ ]\"")
+                : formatting         ? "format(\"prefix:%0:%1:%0:%2\",[21],awaitStart(),[99])"
+                                     : "str(awaitStart())";
+            snprintf(property_source,
+                     2048,
+                     "var a=spawn(func(){return include \"init.goat\";});"
+                     "var b=spawn(func(){if(format(\"%%1\",awaitStart(),[21])!=\"[21]\"){throw "
+                     "[0];}var text=%s;if(text!=%s){throw [0];}return 42;});%s",
+                     expression,
+                     expected,
                      tail);
         }
         if (origin_builtin)

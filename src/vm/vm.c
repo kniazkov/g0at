@@ -1260,7 +1260,8 @@ static bool call_with_gc_scope(runtime_t *runtime,
             thread->gc_join_ready = true;
         }
         if (get_function_access(func) || thread->gc_join_ready || func == get_function_print()
-            || func == get_function_println() || func == get_function_input())
+            || func == get_function_println() || func == get_function_input()
+            || func == get_function_str() || func == get_function_format())
             thread->gc_call_participant = participant;
     }
     await_vm_call_origin(runtime, thread, func, receiver);

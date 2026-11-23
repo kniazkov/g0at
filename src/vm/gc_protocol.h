@@ -60,3 +60,7 @@ gc_participant_t *gc_call_wait_pause(thread_t *thread);
 
 /** Restore a wait paused by a serialized host service, at that service's lock depth. */
 void gc_call_wait_resume(gc_participant_t *token);
+
+/** Reviewed serialization calls retain their receiver and all arguments. Publish
+ * only while checking the visible graph; rendering runs under the model lock. */
+exception_t gc_observe_object(thread_t *thread, object_t *object);

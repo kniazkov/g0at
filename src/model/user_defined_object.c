@@ -439,13 +439,42 @@ operation_result_t copy_object_with_access(process_t *process,
                                      : clone_object_with_access(process, source, access));
 }
 
-exception_t object_observation_exception(object_t *source, const function_access_t *access) {
+typedef struct {
+    void (*observe)(void *, bool);
+    void *data;
+    bool resumed;
+} observation_wait_t;
+
+static void observe_observation_wait(void *data, bool waiting) {
+    observation_wait_t *wait = data;
+    if (!waiting)
+        wait->resumed = true;
+    if (wait->observe)
+        wait->observe(wait->data, waiting);
+}
+
+exception_t object_observation_exception_observed(object_t *source,
+                                                  const function_access_t *access,
+                                                  void (*observe)(void *, bool),
+                                                  void *data) {
     vector_t *visited = create_vector();
     append_to_vector(visited, source);
     exception_t failure = {0};
     for (size_t i = 0; i < visited->size && !failure.value; i++) {
         object_t *object = visited->data[i];
-        failure = module_file_exception(module_scope_file(object));
+        observation_wait_t wait = {observe, data, false};
+        failure = module_file_exception_observed(module_scope_file(object),
+                                                 observe_observation_wait,
+                                                 &wait);
+        if (wait.resumed) {
+            /* No borrowed queue entry survives a released model lock. The source
+             * must remain rooted by the caller; rebuild its current visible graph. */
+            visited->size = 0;
+            append_to_vector(visited, source);
+            i = (size_t)-1;
+            failure = (exception_t){0};
+            continue;
+        }
         if (failure.value)
             break;
         if (object->vtbl->type == TYPE_ARRAY) {
@@ -469,6 +498,10 @@ exception_t object_observation_exception(object_t *source, const function_access
     }
     destroy_vector(visited);
     return failure;
+}
+
+exception_t object_observation_exception(object_t *source, const function_access_t *access) {
+    return object_observation_exception_observed(source, access, NULL, NULL);
 }
 
 object_t *object_observation_failure(object_t *source, const function_access_t *access) {

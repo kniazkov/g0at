@@ -9,12 +9,13 @@
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
+#include "vm/gc_protocol.h"
 
 /** @brief Runtime executor for the plain call form `str(object)`. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
     if (count < 1)
         return operation_exception(get_exception_invalid_argument());
-    exception_t failure = object_observation_exception(args[0], &thread->context->access);
+    exception_t failure = gc_observe_object(thread, args[0]);
     if (failure.value) {
         INCREF(failure.value);
         return (operation_result_t){failure.value, true, failure.trace};
