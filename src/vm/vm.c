@@ -323,6 +323,30 @@ await_vm_scope(runtime_t *runtime, thread_t *thread, object_t *receiver, object_
                               &execution);
 }
 
+/** @brief Root popped operands while a reviewed operator lookup waits.
+ * Arguments still on the operand stack need no extra root. No handler is
+ * selected until the preflight has reacquired the model lock.
+ */
+static operator_lookup_t lookup_vm_operator(runtime_t *runtime,
+                                            thread_t *thread,
+                                            object_t *receiver,
+                                            object_t *key,
+                                            object_t *other) {
+    if (receiver->vtbl->type == TYPE_USER_DEFINED_OBJECT && can_await_vm_scope(runtime, thread)) {
+        gc_root_handle_t receiver_root = register_gc_root(thread->process, receiver);
+        gc_root_handle_t other_root = {0};
+        if (other)
+            other_root = register_gc_root(thread->process, other);
+        if (!receiver_root.serial || (other && !other_root.serial))
+            abort();
+        await_vm_scope(runtime, thread, receiver, key);
+        if ((other_root.serial && !unregister_gc_root(thread->process, other_root))
+            || !unregister_gc_root(thread->process, receiver_root))
+            abort();
+    }
+    return lookup_operator_handler(&thread->context->access, receiver, key);
+}
+
 /** @brief Executes @ref VLOAD. */
 static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
@@ -578,7 +602,7 @@ static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thr
     static object_static_string_t getter_key, setter_key;
     object_t *key = store ? get_static_string_object(&setter_key, U"[]=")
                           : get_static_string_object(&getter_key, U"[]");
-    operator_lookup_t selected = lookup_operator_handler(&thread->context->access, receiver, key);
+    operator_lookup_t selected = lookup_vm_operator(runtime, thread, receiver, key, NULL);
     if (selected.status == OPERATOR_FOUND || selected.status == OPERATOR_ERROR) {
         if (selected.status == OPERATOR_FOUND && count > UINT16_MAX - (store ? 1u : 0u)) {
             clear_operator_lookup(&selected);
@@ -608,6 +632,12 @@ static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thr
             store ? OPERATOR_RESULT_DISCARD : OPERATOR_RESULT_VALUE);
     }
     clear_operator_lookup(&selected);
+    /* A property fallback may itself wait on a module. Rebuild the borrowed
+     * stack view only after the wait; operands and RHS remain stack roots. */
+    if (count == 1
+        && (store ? receiver->vtbl->set_index == common_set_index
+                  : receiver->vtbl->get_index == common_get_index))
+        await_vm_scope(runtime, thread, receiver, stack->objects[receiver_index + 1]);
     object_array_t indices = {stack->objects + receiver_index + 1, count};
     operation_result_t result =
         store && count == 1 && is_current_this(thread, receiver)
@@ -714,7 +744,7 @@ static bool execute_user_operator(runtime_t *runtime,
                                   object_t *receiver,
                                   object_t *key,
                                   uint16_t count) {
-    operator_lookup_t selected = lookup_operator_handler(&thread->context->access, receiver, key);
+    operator_lookup_t selected = lookup_vm_operator(runtime, thread, receiver, key, NULL);
     return execute_selected_operator(runtime,
                                      thread,
                                      receiver,
@@ -822,9 +852,8 @@ static bool exec_LNOT(runtime_t *runtime, instruction_t instr, thread_t *thread)
     object_t *value = pop_object_from_stack(thread->data_stack);
     if (value->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
         static object_static_string_t key;
-        operator_lookup_t selected = lookup_operator_handler(&thread->context->access,
-                                                             value,
-                                                             get_static_string_object(&key, U"!"));
+        operator_lookup_t selected =
+            lookup_vm_operator(runtime, thread, value, get_static_string_object(&key, U"!"), NULL);
         if (selected.status != OPERATOR_ABSENT)
             return execute_selected_operator(runtime,
                                              thread,
@@ -886,7 +915,7 @@ static bool logical_jump(runtime_t *runtime, instruction_t instr, thread_t *thre
         static object_static_string_t and_key, or_key;
         object_t *key = is_or ? get_static_string_object(&or_key, U"||")
                               : get_static_string_object(&and_key, U"&&");
-        operator_lookup_t selected = lookup_operator_handler(&thread->context->access, value, key);
+        operator_lookup_t selected = lookup_vm_operator(runtime, thread, value, key, NULL);
         if (selected.status == OPERATOR_FOUND) {
             push_object_onto_stack(thread->data_stack, value);
             push_object_onto_stack(thread->data_stack, selected.function);
@@ -1028,11 +1057,11 @@ static bool execute_comparison(runtime_t *runtime,
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
-        operator_lookup_t selected = lookup_operator_handler(&thread->context->access, first, key);
+        operator_lookup_t selected = lookup_vm_operator(runtime, thread, first, key, second);
         operator_result_policy_t policy = OPERATOR_RESULT_BOOL;
         if (selected.status == OPERATOR_ABSENT && opposite) {
             clear_operator_lookup(&selected);
-            selected = lookup_operator_handler(&thread->context->access, first, opposite);
+            selected = lookup_vm_operator(runtime, thread, first, opposite, second);
             policy = OPERATOR_RESULT_NEGATED_BOOL;
         }
         if (selected.status != OPERATOR_ABSENT || !opposite) {
