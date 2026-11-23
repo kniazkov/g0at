@@ -863,6 +863,46 @@ Counters check exact operand and handler execution; handlers verify marker and
 array arguments after collection. Missing operand roots fail the addition and
 comparison controls. These tests complement the existing operator semantics suite.
 
-Still excluded are callable/receiver origin checks, observation/serialization
-and other unreviewed nested C paths. #617 and acceptance #618 remain unfinished;
+Still excluded are observation/serialization and other unreviewed nested C
+paths. The reviewed function-entry extension is described below. #617 and acceptance #618 remain unfinished;
 automatic thresholds #553 stay disabled.
+
+### Selected function origin waits (#617)
+
+CALL/CALLM, worker bootstrap and selected VM operators preflight the origin check
+before invoking the function. For a dynamic function this is its declaring module
+file; for a builtin method it is the receiver's own module scope. Dynamic calls
+with an existing native failure retain their immediate refusal. Foreign owners,
+non-functions and unreviewed execution/lock depths do not acquire admission.
+The helper deliberately mirrors the selected function's check rather than waiting
+on arbitrary receiver ancestors or reselecting a method.
+
+The callable and optional receiver have temporary owning roots. Arguments,
+including unused extras, remain on the operand stack. The persistent module
+registry owns the file record; the existing module observer publishes the waiter
+and balances initializer-wait counts. After the model lock returns, publication
+ends and the ordinary function implementation handles the cached failure/trace
+or enters the body. Its original failure semantics are unchanged. No argument,
+property lookup or operator selection is replayed. Removing a method property
+while the call waits cannot replace the already selected callable.
+
+The helper ends before entering arbitrary builtin/native callbacks. In particular,
+a builtin outside the reviewed I/O/join set still has no gc_call_participant in its
+body. Direct embedding calls and unreviewed nested C invocation paths retain their
+exclusion; the helper is connected only at reviewed VM dispatch sites.
+
+Twelve concurrent regressions cover direct functions, methods, arithmetic handlers,
+callable objects, worker startup and builtin methods, with initializer success or
+failure. The source defines a real Goat closure before blocking its initializer;
+a host helper returns it and clears its module property. Method/operator cases
+create a temporary receiver with a heap marker and remove its handler property
+while the selected call waits. Argument arrays and extras must survive collection;
+the body runs exactly once on success and never on initializer failure. For builtin
+methods the argument expression starts initialization after method selection, and
+the callback explicitly verifies that arbitrary body collection is still refused.
+
+Negative controls without the preflight fail direct/operator/startup/builtin waiter
+accounting. Removing its owning roots fails the temporary operator receiver case.
+The fixtures retain allocator/root/token balance and cached failure trace checks.
+Observation/serialization and remaining nested C chains still require audit before
+#617 and #618 acceptance. Automatic thresholds (#553) remain disabled.

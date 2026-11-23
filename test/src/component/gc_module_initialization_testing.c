@@ -78,6 +78,8 @@ static const operator_case_t *operator_case;
 
 static bool concurrent, recursive, failed, entry;
 static bool inherited, shadow, local_seen, bound, lexical, bound_heap;
+static bool origin, origin_method, origin_operator, origin_callable, origin_startup, origin_builtin;
+static size_t builtin_origin_calls;
 static module_files_t *test_files;
 static object_t *descendant;
 static size_t observations;
@@ -102,6 +104,19 @@ static operation_result_t await_gate(object_t **args, uint16_t count, thread_t *
         /* One waiter on the initialization gate; main may still be reaching join. */
         assert(published >= 1);
         assert(!inherited || local_seen);
+        if (origin_method || origin_operator || origin_callable) {
+            /* Selection is already complete. Remove the receiver's last edge
+             * to the function while the entry check is asleep. */
+            static object_static_string_t selected_key;
+            object_t *key = get_static_string_object(&selected_key,
+                                                     origin_operator   ? U"+"
+                                                     : origin_callable ? U"()"
+                                                                       : U"method");
+            assert(set_field_cell_value(descendant,
+                                        get_own_field_cell(descendant, key),
+                                        get_null_object())
+                   == MSTAT_OK);
+        }
         if (shadow) {
             /* An earlier slot appears while the lookup is asleep. Resumption
              * must restart before inspecting the now failed inherited scope. */
@@ -128,6 +143,40 @@ static operation_result_t await_start(object_t **args, uint16_t count, thread_t 
     while (!p->initialization_count) {
         size_t depth = process_execution_suspend(p);
         process_execution_resume(p, depth);
+    }
+    if (origin && !origin_builtin) {
+        static object_static_string_t work_key, method_key, marker_key;
+        object_t *scope = module_file_scope(module_files_get(test_files, 1));
+        object_t *key = get_static_string_object(&work_key, U"work");
+        field_cell_t *cell = get_own_field_cell(scope, key);
+        while (!is_function_object(cell->object)) {
+            size_t depth = process_execution_suspend(p);
+            process_execution_resume(p, depth);
+            cell = get_own_field_cell(scope, key);
+        }
+        object_t *function = cell->object;
+        INCREF(function);
+        assert(set_field_cell_value(scope, cell, get_null_object()) == MSTAT_OK);
+        if (!origin_method && !origin_operator && !origin_callable)
+            return operation_success(function);
+        object_t *root = get_root_object();
+        object_t *object = create_user_defined_object(p, (object_array_t){&root, 1});
+        object_t *name = get_static_string_object(&method_key,
+                                                  origin_operator   ? U"+"
+                                                  : origin_callable ? U"()"
+                                                                    : U"method");
+        assert(create_object_property(object, name, function, false) == MSTAT_OK);
+        descendant = object; // borrowed fixture pointer, deliberately not a GC root
+        get_own_field_cell(object, name)->modifier = ACCESS_EXTERNAL;
+        DECREF(function);
+        object_t *number = create_integer_object(p, 21);
+        object_t *marker = create_array_object(p, (object_array_t){&number, 1});
+        DECREF(number);
+        name = get_static_string_object(&marker_key, U"marker");
+        assert(create_object_property(object, name, marker, true) == MSTAT_OK);
+        get_own_field_cell(object, name)->modifier = ACCESS_EXTERNAL;
+        DECREF(marker);
+        return operation_success(object);
     }
     if (operator_case && operator_case->key) {
         static object_static_string_t handler_key, operator_key;
@@ -181,6 +230,22 @@ static operation_result_t await_start(object_t **args, uint16_t count, thread_t 
         }
     }
     return operation_success(get_null_object());
+}
+
+static operation_result_t
+origin_echo(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    assert(receiver == module_file_scope(module_files_get(test_files, 1)));
+    assert(count == 2 && !thread->gc_call_participant);
+    /* Admission ended before this arbitrary builtin callback. */
+    assert(gc_session_request(thread->process->gc_session));
+    assert(gc_session_poll(thread->process->gc_session) == GC_DEFERRED);
+    object_t *first = get_array_elements(args[0]).items[0];
+    object_t *extra = get_array_elements(args[1]).items[0];
+    assert(get_object_integer_value(first).value == 42);
+    assert(get_object_integer_value(extra).value == 99);
+    ++builtin_origin_calls;
+    INCREF(first);
+    return operation_success(first);
 }
 
 static operation_result_t make_receiver(object_t **args, uint16_t count, thread_t *thread) {
@@ -241,10 +306,16 @@ int main(int argc, char **argv) {
         if (!strcmp(name, argv[1]))
             operator_case = operator_cases + i;
     }
+    origin = strstr(argv[1], "origin") != NULL;
+    origin_method = origin && strstr(argv[1], "method") != NULL;
+    origin_operator = origin && strstr(argv[1], "operator") != NULL;
+    origin_callable = origin && strstr(argv[1], "callable") != NULL;
+    origin_startup = origin && strstr(argv[1], "startup") != NULL;
+    origin_builtin = origin && strstr(argv[1], "builtin") != NULL;
     bound = strstr(argv[1], "bound") != NULL;
     lexical = strstr(argv[1], "lexical") != NULL;
     bound_heap = bound && strstr(argv[1], "heap") != NULL;
-    bool property = operator_case || bound || strstr(argv[1], "property") != NULL;
+    bool property = origin || operator_case || bound || strstr(argv[1], "property") != NULL;
     inherited = strstr(argv[1], "inherited") != NULL;
     shadow = strstr(argv[1], "shadow") != NULL;
     concurrent = property || strstr(argv[1], "workers") != NULL;
@@ -309,10 +380,43 @@ int main(int argc, char **argv) {
                      operator_case->expression,
                      tail);
         }
+        if (origin) {
+            const char *worker =
+                origin_startup    ? "var b=spawn(awaitStart(),[42],[99]);"
+                : origin_method   ? "var b=spawn(func(){return awaitStart().method([42],[99]);});"
+                : origin_operator ? "var b=spawn(func(){return awaitStart()+[42];});"
+                                  : "var b=spawn(func(){return awaitStart()([42],[99]);});";
+            snprintf(property_source,
+                     2048,
+                     "var a=spawn(func(){return include \"init.goat\";});%s%s",
+                     worker,
+                     tail);
+        }
+        if (origin_builtin)
+            snprintf(property_source,
+                     2048,
+                     "var a=null;var begin=func(){a=spawn(func(){return include \"init.goat\";});"
+                     "awaitStart();return [42];};"
+                     "var b=spawn(func(){return shared.echo(begin(),[99]);});"
+                     "var sum=0;try{sum=join(b);}catch(e){sum=e[0];}"
+                     "try{sum+=(join(a)).result;}catch(e){sum+=e[0];}external result=sum;");
         main_source = property_source;
     }
     char *init_source = "awaitGate();var held=[21];var leaf=include \"leaf.goat\";"
                         "external var result=held[0]+leaf.result;";
+    char origin_source[1024];
+    if (origin && !origin_builtin) {
+        snprintf(origin_source,
+                 sizeof(origin_source),
+                 "external var calls=0;external var work=func(x,extra){calls+=1;%s"
+                 "if(extra!=null&&extra[0]!=99){throw [0];}return x[0];};"
+                 "awaitGate();var held=[21];var leaf=include \"leaf.goat\";"
+                 "external var result=held[0]+leaf.result;",
+                 origin_method || origin_operator || origin_callable
+                     ? "if(this.marker[0]!=21){throw [0];}"
+                     : "");
+        init_source = origin_source;
+    }
     char *leaf_source =
         failed ? "var i=0;while(i<100){var a=[];a.push(a);i+=1;}probe();throw [42];"
                : "var i=0;while(i<100){var a=[];a.push(a);i+=1;}probe();external result=21;";
@@ -405,6 +509,19 @@ int main(int argc, char **argv) {
     }
     if (inherited)
         DECREF(descendant); // main scope owns the complete prototype chain
+    static const builtin_function_t echo = {.name = U"echo", .execute_method = origin_echo};
+    builtin_function_object_t echo_storage = {0};
+    object_static_string_t echo_key = {0};
+    if (origin_builtin) {
+        object_t *scope = module_file_scope(module_files_get(files, 1));
+        object_t *key = get_static_string_object(&echo_key, U"echo");
+        assert(create_object_property(scope,
+                                      key,
+                                      get_builtin_function_object(&echo_storage, &echo),
+                                      true)
+               == MSTAT_OK);
+        get_own_field_cell(scope, key)->modifier = ACCESS_EXTERNAL;
+    }
     gc_stats_t stats;
     assert(configure_gc_statistics(p, &stats));
     process_execution_enter(p);
@@ -423,6 +540,7 @@ int main(int argc, char **argv) {
     if (recursive)
         process_execution_leave(p);
     assert(observations == 1);
+    assert(builtin_origin_calls == (origin_builtin && !failed ? 1 : 0));
     object_static_string_t result_key = {0};
     object_t *result =
         get_object_property(module_file_scope(module_files_get(files, entry ? 1 : 0)),
@@ -443,6 +561,13 @@ int main(int argc, char **argv) {
                 ? 1
                 : operator_case->effects;
         assert(get_object_integer_value(effects).value == (int64_t)expected);
+    }
+    if (origin && !origin_builtin) {
+        static object_static_string_t calls_key;
+        object_t *scope = module_file_scope(module_files_get(files, 1));
+        object_t *calls =
+            get_object_property(scope, get_static_string_object(&calls_key, U"calls"));
+        assert(get_object_integer_value(calls).value == (failed ? 0 : 1));
     }
     if (bound) {
         static object_static_string_t target_key;
