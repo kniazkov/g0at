@@ -955,3 +955,43 @@ code passes all 96 initializer cases under ASan/UBSan and all 20 new cases for
 and 568 under ASan/UBSan; all remaining failures are the previously recorded
 native/module operator process `cleanup=2` limitation. LSan is disabled under
 ptrace; fixture allocator accounting remains enabled.
+
+### Array and StringBuilder serialization boundaries (#633)
+
+The reviewed call set now includes the exact `Array.toString` and
+`StringBuilder.append` builtin identities. Array method calls retain their receiver
+and separator; the detached plain form retains the array as its first argument.
+Arity/type checks precede observation. The preflight traverses the current visible
+graph, restarts after actual waits, and returns a cached failure with its trace.
+Only after that does the model renderer acquire the current array elements and
+separator text. No borrowed element slice crosses an admitted wait.
+
+Builder append validates its receiver before waiting, then reacquires native
+storage and snapshots the appended value under the model lock. Another worker
+may have changed the builder's text, length or capacity during the wait. Appending
+uses that current state exactly once, with the existing overflow check and length
+update. Self-append still uses an independent snapshot. Detached unsupported
+builder calls retain their previous error behavior.
+
+The `+`, `+=` and `<<` builder forms reach selected-operator dispatch, which bypasses
+ordinary CALL/CALLM. This path admits only the exact append builtin; the existing
+model operator wrapper owns roots for the receiver and arguments before static_call.
+The VM restores the prior participant/depth before ordinary operator completion.
+A user function or unrelated builtin with the same name gets no extra admission.
+
+String/character addition to an array or user object has no builtin call frame.
+Its VM preflight therefore runs while both already evaluated operands remain on
+the operand stack. It uses the existing module-wait observer, and ends under the
+model lock before either operand is popped. The ordinary access-aware addition
+then handles the current graph and failure. Operand expressions are not replayed;
+arithmetic and user-defined left-hand dispatch keep their existing behavior.
+
+56 concurrent scenarios cover 14 forms, initializer success/failure and removal
+of the observed graph during the wait. Inputs include temporary arrays, user
+objects wrapping arrays, owned string separators and temporary builders. The
+initializer grows the builder by 512 characters, clears it and writes new text
+while the call waits. Results check the current text and public length, including
+self-append; counters check exact argument/factory evaluation counts. Existing
+allocator/root/token balance, bytecode immutability and cached-failure checks
+remain in force. Plain embedding model calls remain excluded; clone/flat and the
+final nested-C audit are tracked by #634 and #635.

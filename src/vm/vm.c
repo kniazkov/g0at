@@ -6,6 +6,7 @@
 
 #include "vm.h"
 
+#include "builtins/array_methods.h"
 #include "builtins/registry.h"
 #include "gc.h"
 #include "gc_protocol.h"
@@ -22,6 +23,7 @@
 #include "model/module_file_declarations.h"
 #include "model/module_files.h"
 #include "model/operator.h"
+#include "model/string_builder.h"
 #include "model/thread.h"
 
 #include <assert.h>
@@ -766,12 +768,23 @@ static bool execute_selected_operator(runtime_t *runtime,
         return dispatch_exception(runtime, thread, exception);
     }
     await_vm_call_origin(runtime, thread, selected.function, receiver);
+    /* Operators bypass CALL/CALLM. The model operator wrapper roots the receiver
+     * and arguments before static_call; admit only the reviewed append builtin. */
+    void *saved_participant = thread->gc_call_participant;
+    size_t saved_depth = thread->gc_call_extra_lock_depth;
+    if (selected.function == get_string_builder_append_function()
+        && can_await_vm_scope(runtime, thread)) {
+        thread->gc_call_participant = runtime->gc_participant;
+        thread->gc_call_extra_lock_depth = runtime->gc_extra_lock_depth;
+    }
     bool result = call_operator_handler(selected.function,
                                         receiver,
                                         count,
                                         policy,
                                         thread->instr_id + 1,
                                         thread);
+    thread->gc_call_participant = saved_participant;
+    thread->gc_call_extra_lock_depth = saved_depth;
     clear_operator_lookup(&selected);
     DECREF(receiver);
     return finish_call(runtime, thread, result);
@@ -854,6 +867,23 @@ execute_binary_operation(runtime_t *runtime,
                          thread_t *thread,
                          operation_result_t (*operation)(process_t *, object_t *, object_t *),
                          object_t *key) {
+    /* String/container addition observes the RHS without a callable frame.
+     * Both evaluated operands must still be stack roots throughout this wait. */
+    if (operation == add_objects && can_await_vm_scope(runtime, thread)) {
+        object_t *left = peek_object_from_stack(thread->data_stack, 1);
+        object_t *right = peek_object_from_stack(thread->data_stack, 0);
+        if ((left->vtbl->type == TYPE_STRING || left->vtbl->type == TYPE_CHARACTER)
+            && (right->vtbl->type == TYPE_ARRAY || right->vtbl->type == TYPE_USER_DEFINED_OBJECT)) {
+            file_execution_t execution = {.runtime = runtime,
+                                          .thread = thread,
+                                          .gc_reviewed = true,
+                                          .gc_executor = true};
+            object_observation_exception_observed(right,
+                                                  &thread->context->access,
+                                                  observe_module_wait,
+                                                  &execution);
+        }
+    }
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (key && first->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
@@ -1261,7 +1291,9 @@ static bool call_with_gc_scope(runtime_t *runtime,
         }
         if (get_function_access(func) || thread->gc_join_ready || func == get_function_print()
             || func == get_function_println() || func == get_function_input()
-            || func == get_function_str() || func == get_function_format())
+            || func == get_function_str() || func == get_function_format()
+            || func == get_array_to_string_function()
+            || func == get_string_builder_append_function())
             thread->gc_call_participant = participant;
     }
     await_vm_call_origin(runtime, thread, func, receiver);

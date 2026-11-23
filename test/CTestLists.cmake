@@ -1021,3 +1021,15 @@ foreach(init_case success failure workers-success workers-failure recursive-succ
     "$<TARGET_FILE:gc_module_initialization_testing>" "${init_case}")
   set_tests_properties(core.gc_module_initialization.${init_case} PROPERTIES TIMEOUT 30)
 endforeach()
+
+# Remaining container serialization paths, including operator forms.
+foreach(serialization_case object-string-add object-char-add object-append array detached separator char-separator string-add char-add append builder-add shift compound self)
+  foreach(graph_mode stable remove)
+    foreach(outcome success failure)
+      set(case_name "observation-serialize-${serialization_case}-${graph_mode}-${outcome}")
+      goat_suite(core.gc_module_initialization.${case_name} "core;gc-boundary;integration"
+        "$<TARGET_FILE:gc_module_initialization_testing>" "${case_name}")
+      set_tests_properties(core.gc_module_initialization.${case_name} PROPERTIES TIMEOUT 30)
+    endforeach()
+  endforeach()
+endforeach()
