@@ -464,6 +464,17 @@ add_dependencies(module_merge_scenarios goat-merge goat-inspect)
 add_executable(child_process_scenarios src/functional/child_process_scenarios.c support/module_loading_owner.c)
 target_link_libraries(child_process_scenarios PRIVATE goat_language_execution_support goat_format_oracle goat_process_watch_support yyjson)
 add_dependencies(child_process_scenarios child_process_testing goat)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  # Link the forced-fallback implementation directly, before the common archive.
+  # No production environment switch or public test hook is introduced.
+  add_executable(child_process_proc_fallback_testing
+    src/component/child_process_testing.c
+    "${PROJECT_SOURCE_DIR}/lib/process/child_process_linux.c")
+  target_compile_definitions(child_process_proc_fallback_testing PRIVATE GOAT_TEST_PROC_CHILDREN_MISSING)
+  target_link_libraries(child_process_proc_fallback_testing PRIVATE core m)
+  add_dependencies(child_process_scenarios child_process_proc_fallback_testing)
+endif()
+
 
 add_executable(cleanup_service_scenarios src/functional/cleanup_service_scenarios.c support/module_loading_owner.c)
 target_link_libraries(cleanup_service_scenarios PRIVATE goat_language_execution_support goat_process_watch_support yyjson)

@@ -58,3 +58,26 @@ retains its original handle. `release_child_service` releases only a
 `survive_parent` object, without stopping its process. On Linux its supervisor is
 detached by double fork, so the client need not wait for it before exit. See
 [cleanup-service-api.md](cleanup-service-api.md) for the shared service contract.
+
+### Linux without the procfs children list
+
+A private single-threaded subreaper first uses `/proc/thread-self/children` to
+find adopted descendants, including those that called `setsid`. When that file
+is absent (`ENOENT`), it enumerates numeric process entries in `/proc` with
+`getdents64`. The fallback uses fixed stack storage and no directory-stream
+allocation or inherited libc locks after fork.
+
+A procfs entry is only a candidate. Before signalling, the supervisor calls
+`waitid(P_PID, pid, ..., WEXITED | WNOHANG | WNOWAIT)`. `ECHILD` rejects unrelated
+or disappeared processes. Success establishes an unreaped child owned by this
+supervisor; its sole thread does not reap between this check and `kill`, so the
+PID cannot be reused in that interval. Repeated cleanup passes handle further
+adoption as intermediate parents exit. Enumeration, ownership-check and signal
+errors remain cleanup failures; missing procfs is not treated as success.
+
+`cleanup_error=2` on Linux is `ENOENT`, not a GC status or the root's exit code.
+Before the fallback, this occurred only when live adopted descendants remained
+at cleanup; an already empty tree could succeed in the same environment.
+The Linux-only `integration.child_process_proc_fallback.*` tests force the missing
+children interface at compile time and reuse the independent process observer.
+Production code has no environment variable for disabling the normal interface.

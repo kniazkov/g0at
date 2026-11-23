@@ -152,3 +152,25 @@ glibc/Windows platforms. All shared loading/probe regression suites passed too.
 Only after this complete green gate were the original runner and its temporary
 validation registration removed. The C sources, helpers and five byte fixtures
 are unchanged from that validated head; local limitations above are not hidden.
+
+## Missing procfs children list regression (#636)
+
+The historical ENOENT limitation above is addressed by the Linux `/proc`
+enumeration fallback, with `waitid(WNOWAIT)` ownership checks before signalling.
+The original 55 scenarios retain all cleanup and process-disappearance assertions.
+An additional 28 Linux-only `integration.child_process_proc_fallback.*` cases
+compile the production supervisor with `GOAT_TEST_PROC_CHILDREN_MISSING`; they
+run even on hosts that provide `/proc/thread-self/children`. The fixture covers
+an empty tree, root success/failure/crash, timeout, independent owner isolation,
+owner group termination, parent death and all 20 launch-death variants. Existing
+descendants call `setsid`, so killing only the original process group cannot pass.
+The runner's independent OS observer and cleanup transport are unchanged.
+
+Local validation for the fallback: Debug, Release and ASan/UBSan each run the
+474-case process/cleanup/exit/native-operator/GC selection with 472 passed and
+two expected Windows-file-sharing skips. All 16 previously affected native/module
+operator scenarios pass in each configuration. All 28 forced-fallback cases pass
+50 repetitions each. Removing the fallback reproduces root exit zero with
+`cleanup=2` in `tree-exit`; restoring it passes. LSan is disabled under ptrace;
+normal fixture allocator accounting and independent process-lifetime assertions
+remain enabled. Remote CI supplies the ordinary Linux fast path and Windows checks.

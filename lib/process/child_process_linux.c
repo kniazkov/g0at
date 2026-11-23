@@ -89,12 +89,99 @@ static void close_except(const int *keep, size_t count, int maximum) {
     }
 }
 
+/* The private supervisor has one thread and never reaps between this ownership
+ * check and kill. A successful waitid pins the PID as our unreaped child, even
+ * when it is still running. A stale /proc entry cannot authorize a signal. */
+static int kill_owned_child(pid_t pid) {
+    siginfo_t info = {0};
+    int result;
+    do {
+        result = waitid(P_PID, pid, &info, WEXITED | WNOHANG | WNOWAIT);
+    } while (result < 0 && errno == EINTR);
+    if (result < 0)
+        return errno == ECHILD ? 0 : errno;
+    return kill(pid, SIGKILL) && errno != ESRCH ? errno : 0;
+}
+
+/* getdents64 uses fixed stack storage: opendir/readdir may acquire inherited
+ * libc locks or allocate after fork. Only numeric process entries are candidates;
+ * waitid, not procfs metadata, establishes ownership before any signal. */
+static int kill_adopted_from_proc(void) {
+    struct proc_entry {
+        uint64_t inode;
+        int64_t offset;
+        unsigned short length;
+        unsigned char type;
+        char name[];
+    };
+
+    int fd = open("/proc", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (fd < 0)
+        return errno;
+
+    union {
+        uint64_t alignment;
+        char bytes[4096];
+    } buffer;
+
+    int error = 0;
+    for (;;) {
+        long size = syscall(SYS_getdents64, fd, buffer.bytes, sizeof(buffer.bytes));
+        if (size < 0) {
+            if (errno == EINTR)
+                continue;
+            error = errno;
+            break;
+        }
+        if (!size)
+            break;
+        size_t pos = 0;
+        while (pos < (size_t)size) {
+            size_t remaining = (size_t)size - pos;
+            size_t header = offsetof(struct proc_entry, name);
+            if (remaining < header + 1) {
+                error = EIO;
+                break;
+            }
+            struct proc_entry *entry = (struct proc_entry *)(buffer.bytes + pos);
+            if (entry->length < header + 1 || entry->length > remaining
+                || entry->length % sizeof(uint64_t)
+                || !memchr(entry->name, 0, entry->length - header)) {
+                error = EIO;
+                break;
+            }
+            pid_t pid = 0;
+            const char *name = entry->name;
+            while (*name >= '0' && *name <= '9') {
+                if (pid > (INT_MAX - (*name - '0')) / 10)
+                    break;
+                pid = pid * 10 + *name++ - '0';
+            }
+            if (!*name && pid > 0) {
+                error = kill_owned_child(pid);
+                if (error)
+                    break;
+            }
+            pos += entry->length;
+        }
+        if (error)
+            break;
+    }
+    close(fd);
+    return error;
+}
+
 /* Only unreaped direct children are signalled: their PIDs cannot have been reused.
  * The subreaper adopts orphans (including setsid descendants) as ancestors die. */
 static int kill_adopted(void) {
+#ifdef GOAT_TEST_PROC_CHILDREN_MISSING
+    int fd = -1;
+    errno = ENOENT;
+#else
     int fd = open("/proc/thread-self/children", O_RDONLY | O_CLOEXEC);
+#endif
     if (fd < 0)
-        return errno;
+        return errno == ENOENT ? kill_adopted_from_proc() : errno;
     char bytes[4096];
     pid_t pid = 0;
     ssize_t n;
