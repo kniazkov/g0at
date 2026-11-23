@@ -1,0 +1,71 @@
+name: Native dependency investigation
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/native_dependency_diagnostics.yml'
+permissions:
+  contents: read
+jobs:
+  repeat:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        compiler: [gcc, clang]
+        configuration: [Debug, Release]
+    env:
+      CC: ${{ matrix.compiler }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build current interpreter
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
+          cmake --build build --parallel 2 --target goat
+      - name: Repeat isolated and concurrent native-required executions
+        shell: bash
+        run: |
+          mkdir -p investigation
+          uname -a > investigation/environment.txt
+          "$CC" --version >> investigation/environment.txt
+          cmake --version >> investigation/environment.txt
+          git rev-parse HEAD >> investigation/environment.txt
+          python3 - <<'PY'
+          import concurrent.futures, json, pathlib, subprocess, time
+          root = pathlib.Path.cwd()
+          logs = root / 'investigation'
+          def run(label):
+              start = time.monotonic()
+              command = ['cmake', '-DGOAT=' + str(root / 'build/goat'),
+                         '-DDATA=' + str(root / 'test/data/functional'),
+                         '-DWORK=' + str(logs / label),
+                         '-P', str(root / 'test/string_builder_modes.cmake')]
+              with (logs / (label + '.log')).open('w') as output:
+                  try:
+                      code = subprocess.run(command, stdout=output, stderr=subprocess.STDOUT,
+                                            timeout=600).returncode
+                  except subprocess.TimeoutExpired:
+                      code = 124
+                      output.write('\nInvestigation timeout (600 seconds)\n')
+              result = dict(case=label, status=code, seconds=round(time.monotonic()-start, 2))
+              print(json.dumps(result), flush=True)
+              return result
+          results = [run('isolated-' + str(i)) for i in range(10)]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+              results += list(pool.map(run, ['concurrent-' + str(i) for i in range(30)]))
+          (logs / 'results.json').write_text(json.dumps(results, indent=2))
+          raise SystemExit(any(item['status'] for item in results))
+          PY
+      - name: Preserve evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          path: |
+            investigation/*.log
+            investigation/*.json
+            investigation/environment.txt
+            build/CMakeCache.txt
+          retention-days: 14
