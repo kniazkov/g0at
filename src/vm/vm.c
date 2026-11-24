@@ -1292,6 +1292,7 @@ static bool call_with_gc_scope(runtime_t *runtime,
         if (get_function_access(func) || thread->gc_join_ready || func == get_function_print()
             || func == get_function_println() || func == get_function_input()
             || func == get_function_str() || func == get_function_format()
+            || func == get_function_clone() || func == get_function_flat()
             || func == get_array_to_string_function()
             || func == get_string_builder_append_function())
             thread->gc_call_participant = participant;

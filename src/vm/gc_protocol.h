@@ -64,3 +64,6 @@ void gc_call_wait_resume(gc_participant_t *token);
 /** Reviewed serialization calls retain their receiver and all arguments. Publish
  * only while checking the visible graph; rendering runs under the model lock. */
 exception_t gc_observe_object(thread_t *thread, object_t *object);
+
+/** Reviewed copy preflight; source is rooted by CALL/CALLM until materialization ends. */
+operation_result_t gc_copy_object(thread_t *thread, object_t *source, bool flatten);
