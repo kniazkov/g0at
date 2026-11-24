@@ -54,6 +54,88 @@ static bool forced;
 static bool expect_workers;
 static size_t worker_samples;
 
+static gc_session_t *embedding_outer;
+static bytecode_t *embedding_code;
+static module_compilation_t *embedding_module;
+static module_file_t *embedding_file;
+static bool embedding_mode, embedding_throw;
+static unsigned embedding_depth;
+static uint64_t embedding_collections;
+static size_t embedding_verified;
+
+static operation_result_t embedding_probe(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count && !thread->gc_call_participant);
+    assert(!gc_call_wait_begin(thread));
+    assert(embedding_outer && embedding_outer->requested);
+    assert(gc_session_poll(embedding_outer) == GC_DEFERRED);
+    assert(embedding_outer->requested && embedding_outer->collections == embedding_collections);
+    return operation_success(get_null_object());
+}
+
+static operation_result_t embedding_verify(object_t **args, uint16_t count, thread_t *thread) {
+    (void)args;
+    assert(!count);
+    gc_session_t *s = thread->process->gc_session;
+    assert(s && !s->requested && s->collections > embedding_collections);
+    ++embedding_verified;
+    return operation_success(get_null_object());
+}
+
+static void exercise_embedding(thread_t *thread) {
+    process_t *p = thread->process;
+    gc_session_t *s = p->gc_session;
+    assert(!thread->gc_call_participant && !gc_call_wait_begin(thread));
+    struct vm_execution_t *execution = p->execution;
+    context_t *context = thread->context;
+    instr_index_t instruction = thread->instr_id;
+    size_t stack_size = thread->data_stack->size;
+    size_t depth = os_mutex_depth(p->execution_mutex);
+    object_t *local = create_array_object(p, (object_array_t){0});
+    operation_result_t appended = insert_array_elements(local, 0, &local, 1);
+    assert(!appended.is_exception);
+    DECREF(appended.value);
+    assert(gc_session_request(s));
+    embedding_outer = s;
+    embedding_collections = s->collections;
+    for (unsigned i = 0; i < embedding_depth; ++i)
+        process_execution_enter(p);
+    assert(run(p, embedding_code) != 0);
+    assert(module_file_state(embedding_file) == MODULE_FILE_UNINITIALIZED);
+    assert(run_module_file(p, embedding_file) != 0);
+    assert(module_file_state(embedding_file) == MODULE_FILE_UNINITIALIZED);
+    assert(!configure_gc_boundaries(p, false, true));
+    assert(p->execution == execution && p->gc_session == s && thread->context == context);
+    assert(thread->instr_id == instruction && thread->data_stack->size == stack_size);
+    assert(os_mutex_depth(p->execution_mutex) == depth + embedding_depth);
+    assert(!gc_call_wait_begin(thread));
+    size_t released = process_execution_suspend(p);
+    process_execution_resume(p, released);
+    assert(gc_session_poll(s) == GC_DEFERRED && s->requested);
+    process_t *inner = create_process();
+    static const builtin_function_t probe = {.name = U"embeddingProbe", .execute = embedding_probe};
+    static builtin_function_object_t storage;
+    static object_static_string_t key;
+    assert(create_object_property(inner->main_thread->context->data,
+                                  get_static_string_object(&key, probe.name),
+                                  get_builtin_function_object(&storage, &probe),
+                                  true)
+           == MSTAT_OK);
+    process_execution_enter(inner);
+    assert(configure_gc_boundaries(inner, true, true));
+    process_execution_leave(inner);
+    assert(!run(inner, embedding_code));
+    assert(!inner->gc_session && !inner->gc_roots_size);
+    destroy_process(inner);
+    assert(s->requested && s->collections == embedding_collections);
+    assert(get_array_elements(local).items[0] == local);
+    DECREF(local); // cycle becomes garbage only after the excluded C frame returns
+    for (unsigned i = 0; i < embedding_depth; ++i)
+        process_execution_leave(p);
+    assert(os_mutex_depth(p->execution_mutex) == depth);
+    embedding_outer = NULL;
+}
+
 static operation_result_t sample(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
     assert(count == 0);
@@ -74,6 +156,11 @@ static operation_result_t sample(object_t **args, uint16_t count, thread_t *thre
         size_t depth = process_execution_suspend(p);
         process_execution_resume(p, depth);
         assert(gc_session_poll(session) == GC_DEFERRED);
+    }
+    if (embedding_mode) {
+        exercise_embedding(thread);
+        if (embedding_throw)
+            return operation_exception(get_exception_invalid_operation());
     }
     return operation_success(get_null_object());
 }
@@ -160,6 +247,23 @@ static void check(string_value_t source, bool enabled) {
                            get_static_string_object(&sample_key, U"sample"),
                            get_builtin_function_object(&storage, &descriptor),
                            true);
+    if (embedding_mode) {
+        module_files_t *files = NULL;
+        assert(create_module_files_from_snapshot(p,
+                                                 embedding_module->metadata,
+                                                 embedding_module->code,
+                                                 &files));
+        embedding_file = module_files_main(files);
+        static const builtin_function_t verify = {.name = U"embeddingVerify",
+                                                  .execute = embedding_verify};
+        static builtin_function_object_t verify_storage;
+        static object_static_string_t verify_key;
+        assert(create_object_property(p->main_thread->context->data,
+                                      get_static_string_object(&verify_key, verify.name),
+                                      get_builtin_function_object(&verify_storage, &verify),
+                                      true)
+               == MSTAT_OK);
+    }
     gc_stats_t stats;
     assert(configure_gc_statistics(p, &stats));
     assert(!configure_gc_boundaries(p, enabled, true));
@@ -395,7 +499,36 @@ static void module_native_case(bool failure, bool recursive) {
     assert(get_allocated_memory_size() == before);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+    if (argc == 2 && !strcmp(argv[1], "embedding")) {
+        embedding_code = compile(STATIC_STRING(U"embeddingProbe();var a=[];a.push(a);"));
+        char *source = "external result=42;";
+        module_source_t file = {.path = "main.goat",
+                                .name = "main.goat",
+                                .source = source,
+                                .length = strlen(source)};
+        module_sources_t sources = {.files = &file, .count = 1};
+        module_compilation_error_t error = {0};
+        assert(compile_module_sources(&sources, &embedding_module, &error));
+        clear_module_compilation_error(&error);
+        embedding_mode = true;
+        for (embedding_depth = 0; embedding_depth < 3; ++embedding_depth) {
+            for (unsigned failure = 0; failure < 2; ++failure) {
+                embedding_throw = failure != 0;
+                if (embedding_throw)
+                    check(STATIC_STRING(U"var caught=false;try{sample();}catch(e){caught=true;}"
+                                        U"if(!caught){throw 1;}embeddingVerify();var result=42;"),
+                          true);
+                else
+                    check(STATIC_STRING(U"sample();embeddingVerify();var result=42;"), true);
+            }
+        }
+        assert(embedding_verified == 6);
+        free_bytecode(embedding_code);
+        free_module_compilation(embedding_module);
+        return 0;
+    }
+    assert(argc == 1);
     resolution_probe = true;
     for (int reviewed = 0; reviewed < 2; ++reviewed) {
         resolution_reviewed = reviewed;
