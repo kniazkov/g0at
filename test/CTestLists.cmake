@@ -1033,3 +1033,18 @@ foreach(serialization_case object-string-add object-char-add object-append array
     endforeach()
   endforeach()
 endforeach()
+
+foreach(copy_mode clone flat)
+  foreach(copy_call method detached)
+    foreach(copy_result success failure)
+      goat_suite(core.gc_module_initialization.copying-${copy_mode}-${copy_call}-${copy_result} "core;gc-boundary;integration"
+        "$<TARGET_FILE:gc_module_initialization_testing>" "copying-${copy_mode}-${copy_call}-${copy_result}")
+      set_tests_properties(core.gc_module_initialization.copying-${copy_mode}-${copy_call}-${copy_result} PROPERTIES TIMEOUT 30)
+      if(copy_mode STREQUAL "flat")
+        goat_suite(core.gc_module_initialization.copying-flat-${copy_call}-remove-${copy_result} "core;gc-boundary;integration"
+          "$<TARGET_FILE:gc_module_initialization_testing>" "copying-flat-${copy_call}-remove-${copy_result}")
+        set_tests_properties(core.gc_module_initialization.copying-flat-${copy_call}-remove-${copy_result} PROPERTIES TIMEOUT 30)
+      endif()
+    endforeach()
+  endforeach()
+endforeach()

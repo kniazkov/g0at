@@ -1004,3 +1004,22 @@ output). Empty answers, unresolved names and invalid paths are distinguished. Th
 deadline and fail-closed required/auto behavior are unchanged; failures are not retried or skipped.
 The intermittent dependency failure observed during GC validation is tracked in #645; successful
 repetitions alone do not establish its cause.
+
+### Copy waits: clone and flat
+
+Reviewed VM calls to the exact Object.clone/Object.flat builtins publish only the
+preflight wait. CALL/CALLM retain the source and arguments as owning roots. Clone
+checks the source scope only: it does not observe referenced values or prototype
+contents. Flat additionally checks actual inheritance ancestors, excluding lexical
+lookup fallback. These checks do not filter hidden fields or alter copy semantics.
+
+After any released model lock, preflight discards its borrowed queue and restarts
+from the rooted source. Removed ancestors (including their cached failures) no
+longer affect flat. Fields and inheritance edges are read again after resumption.
+Only once preflight finishes does materialization begin under the model lock, with
+GC publication ended. No partial target exists during a wait and no user expression
+is evaluated twice. Constness, module provenance, hidden/shadowed cells and capture
+adaptation retain their existing transfer rules. Cached exception traces propagate.
+
+Direct model copy and unreviewed nested C calls gain no GC publication permission.
+Automatic collection policy remains disabled pending the later policy tasks.

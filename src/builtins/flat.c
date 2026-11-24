@@ -6,16 +6,17 @@
 #include "model/builtin_function.h"
 #include "model/context.h"
 #include "model/thread.h"
+#include "vm/gc_protocol.h"
 
 static operation_result_t
 execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return copy_object_with_access(thread->process, receiver, &thread->context->access, true);
+    return gc_copy_object(thread, receiver, true);
 }
 
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return copy_object_with_access(thread->process, args[0], &thread->context->access, true);
+    return gc_copy_object(thread, args[0], true);
 }
 
 static const lattice_element_t *

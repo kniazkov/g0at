@@ -453,6 +453,37 @@ static void observe_observation_wait(void *data, bool waiting) {
         wait->observe(wait->data, waiting);
 }
 
+exception_t object_copy_exception_observed(object_t *source,
+                                           bool flatten,
+                                           void (*observe)(void *, bool),
+                                           void *data) {
+    vector_t *visited = create_vector();
+    append_to_vector(visited, source);
+    exception_t failure = {0};
+    for (size_t i = 0; i < visited->size && !failure.value; ++i) {
+        object_t *object = visited->data[i];
+        observation_wait_t wait = {observe, data, false};
+        failure = module_file_exception_observed(module_scope_file(object),
+                                                 observe_observation_wait,
+                                                 &wait);
+        if (wait.resumed) {
+            visited->size = 0;
+            append_to_vector(visited, source);
+            i = (size_t)-1;
+            failure = (exception_t){0};
+            continue;
+        }
+        if (!failure.value && flatten && source->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+            object_array_t parents = get_inheritance_prototypes(object);
+            for (size_t j = 0; j < parents.size; ++j)
+                if (!contains_storage(visited, parents.items[j]))
+                    append_to_vector(visited, parents.items[j]);
+        }
+    }
+    destroy_vector(visited);
+    return failure;
+}
+
 exception_t object_observation_exception_observed(object_t *source,
                                                   const function_access_t *access,
                                                   void (*observe)(void *, bool),

@@ -158,6 +158,9 @@ static module_files_t *test_files;
 static object_t *descendant;
 static size_t observations;
 static uint64_t initial_collections;
+static bool copying, copying_flat, copying_remove;
+static size_t copying_calls;
+static object_t *copy_source;
 
 static operation_result_t await_gate(object_t **args, uint16_t count, thread_t *thread) {
     (void)args;
@@ -190,6 +193,17 @@ static operation_result_t await_gate(object_t **args, uint16_t count, thread_t *
                                         get_own_field_cell(descendant, key),
                                         get_null_object())
                    == MSTAT_OK);
+        }
+        if (copying) {
+            assert(copying_calls == 1);
+            static object_static_string_t key;
+            object_t *name = get_static_string_object(&key, U"changed");
+            object_t *value = create_integer_object(p, 42);
+            assert(create_object_property(copy_source, name, value, false) == MSTAT_OK);
+            get_own_field_cell(copy_source, name)->modifier = ACCESS_EXTERNAL;
+            DECREF(value);
+            if (copying_remove)
+                set_inheritance_prototype_count(copy_source, 0);
         }
         if (observation)
             assert(observation_arguments == 2); // unused format argument never waits
@@ -244,6 +258,38 @@ static operation_result_t await_start(object_t **args, uint16_t count, thread_t 
     while (!p->initialization_count && !(observation && observations)) {
         size_t depth = process_execution_suspend(p);
         process_execution_resume(p, depth);
+    }
+    if (copying) {
+        ++copying_calls;
+        object_t *scope = module_file_scope(module_files_get(test_files, 1));
+        if (copying_flat) {
+            copy_source = create_user_defined_object(p, (object_array_t){&scope, 1});
+            static object_static_string_t flat_key;
+            assert(create_object_property(copy_source,
+                                          get_static_string_object(&flat_key, U"flat"),
+                                          get_function_flat(),
+                                          true)
+                   == MSTAT_OK);
+            get_own_field_cell(copy_source, get_static_string_object(&flat_key, U"flat"))
+                ->modifier = ACCESS_EXTERNAL;
+            object_t *cycle = create_array_object(p, (object_array_t){0});
+            operation_result_t inserted = insert_array_elements(cycle, 0, &cycle, 1);
+            assert(!inserted.is_exception);
+            DECREF(inserted.value);
+            static object_static_string_t marker;
+            assert(create_object_property(copy_source,
+                                          get_static_string_object(&marker, U"marker"),
+                                          cycle,
+                                          true)
+                   == MSTAT_OK);
+            get_own_field_cell(copy_source, get_static_string_object(&marker, U"marker"))
+                ->modifier = ACCESS_EXTERNAL;
+            DECREF(cycle);
+        } else {
+            copy_source = scope;
+            INCREF(scope);
+        }
+        return operation_success(copy_source);
     }
     if (observation) {
         ++observation_arguments;
@@ -440,6 +486,9 @@ int main(int argc, char **argv) {
             serialization_case = serialization_cases + i;
     }
     serialization_object = serialization_case && strstr(argv[1], "object-") != NULL;
+    copying = strstr(argv[1], "copying-") != NULL;
+    copying_flat = copying && strstr(argv[1], "flat");
+    copying_remove = copying_flat && strstr(argv[1], "remove");
     origin = strstr(argv[1], "origin") != NULL;
     origin_method = origin && strstr(argv[1], "method") != NULL;
     origin_operator = origin && strstr(argv[1], "operator") != NULL;
@@ -451,8 +500,8 @@ int main(int argc, char **argv) {
     bound_heap = bound && strstr(argv[1], "heap") != NULL;
     observation = strstr(argv[1], "observation") != NULL;
     observation_remove = observation && strstr(argv[1], "remove") != NULL;
-    bool property =
-        observation || origin || operator_case || bound || strstr(argv[1], "property") != NULL;
+    bool property = copying || observation || origin || operator_case || bound
+                    || strstr(argv[1], "property") != NULL;
     inherited = strstr(argv[1], "inherited") != NULL;
     shadow = strstr(argv[1], "shadow") != NULL;
     concurrent = property || strstr(argv[1], "workers") != NULL;
@@ -477,7 +526,7 @@ int main(int argc, char **argv) {
                                 : strstr(argv[1], "check") ? "shared.result+=0;"
                                                            : "";
         const char *tail =
-            (shadow || observation_remove) && failed
+            (shadow || observation_remove || copying_remove) && failed
                 ? "var sum=0;try{join(a);}catch(e){sum=e[0];}external result=sum+join(b);"
             : failed ? "var sum=0;try{join(a);}catch(e){sum+=e[0];}"
                        "try{join(b);}catch(e){sum+=e[0];}external result=sum;"
@@ -563,6 +612,22 @@ int main(int argc, char **argv) {
                 expression,
                 expected,
                 tail);
+        }
+        if (copying) {
+            const char *method = copying_flat ? "flat" : "clone";
+            char expression[128];
+            snprintf(expression,
+                     sizeof(expression),
+                     strstr(argv[1], "detached") ? "detached(awaitStart())" : "awaitStart().%s()",
+                     method);
+            snprintf(property_source,
+                     2048,
+                     "var detached={}.%s;var a=spawn(func(){return include \"init.goat\";});"
+                     "var b=spawn(func(){var copied=%s;%sreturn copied.changed;});%s",
+                     method,
+                     expression,
+                     copying_flat ? "if(copied.marker[0]!=copied.marker){throw [0];}" : "",
+                     tail);
         }
         if (origin_builtin)
             snprintf(property_source,
@@ -712,6 +777,7 @@ int main(int argc, char **argv) {
     if (recursive)
         process_execution_leave(p);
     assert(observations == 1);
+    assert(copying_calls == (copying ? 1 : 0));
     if (serialization_case) {
         size_t expected_reads = 2;
         if (!failed && !observation_remove)

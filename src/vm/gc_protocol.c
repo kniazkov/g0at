@@ -220,3 +220,19 @@ exception_t gc_observe_object(thread_t *thread, object_t *object) {
     gc_call_wait_end(token);
     return failure;
 }
+
+operation_result_t gc_copy_object(thread_t *thread, object_t *source, bool flatten) {
+    if (!object_belongs_to_process(thread->process, source))
+        return operation_exception(get_exception_invalid_argument());
+    gc_participant_t *token = gc_call_wait_begin(thread);
+    exception_t failure = object_copy_exception_observed(source,
+                                                         flatten,
+                                                         token ? observe_call_module_wait : NULL,
+                                                         token);
+    gc_call_wait_end(token);
+    if (failure.value) {
+        INCREF(failure.value);
+        return (operation_result_t){failure.value, true, failure.trace};
+    }
+    return copy_object_with_access(thread->process, source, &thread->context->access, flatten);
+}

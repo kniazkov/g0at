@@ -239,6 +239,13 @@ operation_result_t copy_object_with_access(process_t *process,
                                            const function_access_t *access,
                                            bool flatten);
 
+/** @brief Check copy scopes before materialization; restart after actual waits.
+ * Source must remain rooted. Clone checks source only; flat follows actual ancestors. */
+exception_t object_copy_exception_observed(object_t *source,
+                                           bool flatten,
+                                           void (*observe)(void *, bool),
+                                           void *data);
+
 /** @brief Borrow the first failed scope observable by recursive container formatting.
  * Hidden and pending fields are not inspected; cycles terminate without recursion.
  */
