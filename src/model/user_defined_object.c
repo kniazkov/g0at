@@ -864,8 +864,7 @@ static void build_topology(object_array_t proto, vector_t *topology) {
     size_t index;
     if (proto.size > 1) {
         // multiple inheritance
-        avl_tree_t *processed =
-            create_avl_tree((int (*)(const void *, const void *))compare_object_addresses);
+        avl_tree_t *processed = create_avl_tree(compare_object_address_keys);
         index = proto.size;
         do {
             index--;

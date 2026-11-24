@@ -37,8 +37,7 @@ init_snapshot_result_t collect_init_snapshot(process_t *process, object_t *recei
     object_t *key = get_static_string_object(&storage, U"init");
     vector_t *stack = create_vector();
     vector_t *values = create_vector();
-    avl_tree_t *seen =
-        create_avl_tree((int (*)(const void *, const void *))compare_object_addresses);
+    avl_tree_t *seen = create_avl_tree(compare_object_address_keys);
     append_to_vector(values, receiver);
     push_ancestor(stack, seen, receiver);
     /* Mirror prototype lookup's right-to-left postorder, without its final reversal.
