@@ -6,6 +6,7 @@
 
 #include "gc.h"
 
+#include "gc_policy.h"
 #include "gc_stats.h"
 #include "lib/memory/allocate.h"
 #include "model/context.h"
@@ -120,15 +121,21 @@ static void sweep_unreachable_objects(process_t *proc) {
     }
 }
 
+static size_t sum_payload(size_t a, size_t b) {
+    return b > SIZE_MAX - a ? SIZE_MAX : a + b;
+}
+
 /** @brief Scoped live payload, not the allocator-wide total. */
-static gc_memory_sample_t measure_gc_memory(const process_t *proc) {
+gc_memory_sample_t gc_measure_memory(const process_t *proc) {
     gc_memory_sample_t sample = {.objects = proc->objects.size,
                                  .pooled_bytes = proc->pooled_bytes,
-                                 .auxiliary_bytes = allocation_payload_size(proc->gc_roots)
-                                                    + allocation_payload_size(proc->string_cache)};
+                                 .auxiliary_bytes =
+                                     sum_payload(allocation_payload_size(proc->gc_roots),
+                                                 allocation_payload_size(proc->string_cache))};
     for (const object_t *obj = proc->objects.head; obj; obj = obj->next)
         if (obj->vtbl->gc_owned_payload)
-            sample.active_bytes += obj->vtbl->gc_owned_payload(obj);
+            sample.active_bytes =
+                sum_payload(sample.active_bytes, obj->vtbl->gc_owned_payload(obj));
     return sample;
 }
 
@@ -140,13 +147,14 @@ void collect_garbage(process_t *proc) {
         return;
     proc->gc_collecting = true;
     gc_stats_t *stats = proc->gc_statistics;
+    bool measure = stats || proc->gc_policy.enabled;
     gc_pass_sample_t sample;
     uint64_t started = 0;
     bool have_start = false;
-    if (stats) {
+    if (measure) {
         sample = (gc_pass_sample_t){.run_end = proc->gc_run_end_observation};
-        have_start = gc_statistics_now(&started);
-        sample.before = measure_gc_memory(proc);
+        have_start = stats && gc_statistics_now(&started);
+        sample.before = gc_measure_memory(proc);
     }
     mark_reachable_objects(proc, stats ? &sample : NULL);
     /* Correct counts before sweep can free any edge target or clear its mark.
@@ -154,18 +162,20 @@ void collect_garbage(process_t *proc) {
     for (object_t *obj = proc->objects.head; obj; obj = obj->next)
         reconcile_swept_edges(obj);
     sweep_unreachable_objects(proc);
-    if (stats) {
-        sample.after = measure_gc_memory(proc);
+    if (measure) {
+        sample.after = gc_measure_memory(proc);
         /* Collection leaves exactly the marked managed vertices in the active list. */
         sample.vertices = sample.after.objects;
-        size_t before = sample.before.active_bytes + sample.before.pooled_bytes;
-        size_t after = sample.after.active_bytes + sample.after.pooled_bytes;
+        size_t before = sum_payload(sample.before.active_bytes, sample.before.pooled_bytes);
+        size_t after = sum_payload(sample.after.active_bytes, sample.after.pooled_bytes);
         sample.freed_bytes = before >= after ? before - after : 0;
         uint64_t finished;
         sample.clock_valid = have_start && gc_statistics_now(&finished) && finished >= started;
         if (sample.clock_valid)
             sample.pause_ns = finished - started;
-        gc_statistics_record(stats, sample);
+        if (stats)
+            gc_statistics_record(stats, sample);
+        gc_policy_collected(proc, sample.before.active_bytes, sample.after.active_bytes);
     }
     proc->gc_collecting = false;
 }

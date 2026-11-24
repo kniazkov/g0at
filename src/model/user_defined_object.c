@@ -18,6 +18,7 @@
 #include "process.h"
 #include "string_builder.h"
 #include "transfer.h"
+#include "vm/gc_policy.h"
 
 #include <assert.h>
 
@@ -1078,6 +1079,7 @@ static field_cell_t *append_field(object_t *obj,
                                   access_domain_t *domain,
                                   bool selected) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    size_t before = gc_policy_object_bytes(obj);
     field_cell_t *cell = ALLOC(sizeof(*cell));
     *cell = (field_cell_t){key,
                            value,
@@ -1094,6 +1096,7 @@ static field_cell_t *append_field(object_t *obj,
         append_to_vector(uobj->keys, key);
         set_in_avl_tree(uobj->properties, key, (value_t){.ptr = cell});
     }
+    gc_policy_note_growth(obj, before);
     return cell;
 }
 
@@ -1200,8 +1203,10 @@ string_builder_t *initialize_string_builder_storage(object_t *obj) {
         return NULL;
     object_user_defined_t *user = (object_user_defined_t *)obj;
     if (!user->string_builder) {
+        size_t before = gc_policy_object_bytes(obj);
         user->string_builder = ALLOC(sizeof(*user->string_builder));
         init_string_builder(user->string_builder, 0);
+        gc_policy_note_growth(obj, before);
     }
     return user->string_builder;
 }
@@ -1210,6 +1215,8 @@ void copy_string_builder_storage(object_t *target, const object_t *source) {
     string_builder_t *original = get_string_builder_storage(source);
     if (original) {
         string_builder_t *copy = initialize_string_builder_storage(target);
+        size_t before = gc_policy_object_bytes(target);
         append_substring(copy, original->data, original->length);
+        gc_policy_note_growth(target, before);
     }
 }

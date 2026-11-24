@@ -57,3 +57,6 @@ void gc_statistics_record(gc_stats_t *stats, gc_pass_sample_t sample);
 
 /** @brief Internal monotonic nanosecond timestamp, false if unavailable. */
 bool gc_statistics_now(uint64_t *value);
+
+/** @brief Saturating owned-payload sample under stable model ownership; no collection. */
+gc_memory_sample_t gc_measure_memory(const process_t *process);

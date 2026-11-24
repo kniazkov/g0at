@@ -4,7 +4,7 @@ The combined acceptance selection and mixed workload are described in [GC protoc
 
 This is the current integration contract after #633/#634. Earlier chronological
 sections in memory-management.md describe implementation stages, not additional
-permissions. Automatic allocation thresholds remain a separate task (#638/#639).
+permissions. Opt-in [allocation policy](gc-allocation-policy.md) is implemented in #638; default enablement remains #639.
 
 ## Admission and ownership
 
