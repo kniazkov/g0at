@@ -662,3 +662,13 @@ target_link_libraries(gc_io_testing PRIVATE goat_validation m)
 
 add_executable(gc_module_initialization_testing src/component/gc_module_initialization_testing.c)
 target_link_libraries(gc_module_initialization_testing PRIVATE goat_validation m)
+
+add_executable(gc_acceptance_testing src/component/gc_acceptance_testing.c src/unit/analysis_test_support.c)
+target_link_libraries(gc_acceptance_testing PRIVATE goat_validation m)
+
+# Build exactly the runners needed by ctest -L gc-acceptance, including the
+# separately loaded scalar-v2 adapter via gc_scalar_native_testing's dependency.
+add_custom_target(gc_acceptance_runners DEPENDS
+  gc_acceptance_testing gc_dispatch_testing gc_protocol_testing gc_runtime_testing
+  gc_scalar_native_testing gc_io_testing gc_module_initialization_testing
+  native_continuation_testing init_snapshot_testing module_thread_lifetime_testing unit_testing)

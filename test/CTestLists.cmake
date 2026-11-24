@@ -1051,3 +1051,16 @@ endforeach()
 
 goat_suite(core.gc_embedding "core;integration;gc-boundary" "$<TARGET_FILE:gc_runtime_testing>" embedding)
 set_tests_properties(core.gc_embedding PROPERTIES TIMEOUT 30)
+
+foreach(mode vm native native-error)
+  goat_suite(core.gc_acceptance.${mode} "core;integration;gc-boundary" "$<TARGET_FILE:gc_acceptance_testing>" ${mode})
+  set_tests_properties(core.gc_acceptance.${mode} PROPERTIES TIMEOUT 90)
+endforeach()
+
+# One acceptance selection for Debug/Release on every supported CI platform.
+get_property(gc_acceptance_tests DIRECTORY PROPERTY TESTS)
+foreach(suite IN LISTS gc_acceptance_tests)
+  if(suite MATCHES "^core[.]gc_|^core[.]thread_memory[.]|^component[.]init_snapshot[.]")
+    set_property(TEST ${suite} APPEND PROPERTY LABELS gc-acceptance)
+  endif()
+endforeach()

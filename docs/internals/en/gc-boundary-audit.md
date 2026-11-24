@@ -1,5 +1,7 @@
 # GC boundary and embedding audit (#635)
 
+The combined acceptance selection and mixed workload are described in [GC protocol acceptance](gc-acceptance.md).
+
 This is the current integration contract after #633/#634. Earlier chronological
 sections in memory-management.md describe implementation stages, not additional
 permissions. Automatic allocation thresholds remain a separate task (#638/#639).
