@@ -1,5 +1,7 @@
 # Runtime ownership and tracing (GC-01)
 
+[Current GC boundary and embedding matrix (#635)](gc-boundary-audit.md).
+
 ## Two separate contracts
 
 **Ownership**: a returned owned value, or a reference retained using `INCREF`,

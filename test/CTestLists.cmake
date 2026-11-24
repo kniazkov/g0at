@@ -1048,3 +1048,6 @@ foreach(copy_mode clone flat)
     endforeach()
   endforeach()
 endforeach()
+
+goat_suite(core.gc_embedding "core;integration;gc-boundary" "$<TARGET_FILE:gc_runtime_testing>" embedding)
+set_tests_properties(core.gc_embedding PROPERTIES TIMEOUT 30)
