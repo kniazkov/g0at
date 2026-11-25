@@ -310,6 +310,10 @@ static const char *compile_host(scenario_run_t *r, config_t *c, bool automatic) 
                                repository(r, c, "src/model/native_services.c"),
                                repository(r, c, "lib/strings/unicode.c"),
                                repository(r, c, "lib/memory/allocate.c"),
+                               repository(r, c, "lib/process/process_exit.c"),
+#ifndef _WIN32
+                               "-pthread",
+#endif
                                "-o",
                                host),
                           loader_libraries,

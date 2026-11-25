@@ -8,8 +8,8 @@
 #include "lib/process/process_exit.h"
 
 #include "lib/platform/windows_target.h"
-#include "lib/process/child_process.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _WIN32
@@ -22,6 +22,18 @@
 #    include <time.h>
 #    include <unistd.h>
 #endif
+
+/* Keep the shutdown service linkable without the child-process launcher. */
+static uint64_t exit_monotonic_ms(void) {
+#ifdef _WIN32
+    return GetTickCount64();
+#else
+    struct timespec value;
+    if (clock_gettime(CLOCK_MONOTONIC, &value))
+        abort();
+    return (uint64_t)value.tv_sec * 1000 + value.tv_nsec / 1000000;
+#endif
+}
 
 bool process_exit_select(process_exit_arbiter_t *arbiter, unsigned code) {
     if (!arbiter || code > 255)
@@ -114,7 +126,7 @@ static void *watchdog(void *unused) {
     while (!atomic_load_explicit(&flush_started, memory_order_acquire))
         pause_ms(1);
     for (;;) {
-        uint64_t now = child_monotonic_ms();
+        uint64_t now = exit_monotonic_ms();
         if (now >= deadline)
             terminate_selected();
         pause_ms((unsigned)(deadline - now));
@@ -139,7 +151,7 @@ bool process_exit_prepare(void) {
     atomic_store_explicit(&preparation, 3, memory_order_release);
     return false;
 #endif
-    uint64_t ready_deadline = child_monotonic_ms() + 1000;
+    uint64_t ready_deadline = exit_monotonic_ms() + 1000;
 #ifdef _WIN32
     wake_event = CreateEventW(NULL, FALSE, FALSE, NULL);
     HANDLE thread = wake_event ? CreateThread(NULL, 0, watchdog, NULL, 0, NULL) : NULL;
@@ -161,7 +173,7 @@ bool process_exit_prepare(void) {
 #endif
     if (success) {
         while (!atomic_load_explicit(&watchdog_ready, memory_order_acquire)
-               && child_monotonic_ms() < ready_deadline)
+               && exit_monotonic_ms() < ready_deadline)
             pause_ms(1);
         success = atomic_load_explicit(&watchdog_ready, memory_order_acquire);
         /* A late thread retains its event and process-lifetime state. Never
@@ -184,7 +196,7 @@ static void begin_exit(unsigned code) {
     }
     if (atomic_load_explicit(&preparation, memory_order_acquire) != 2)
         terminate_selected();
-    deadline = child_monotonic_ms() + 1000;
+    deadline = exit_monotonic_ms() + 1000;
     atomic_store_explicit(&flush_started, true, memory_order_release);
 #ifdef _WIN32
     if (!SetEvent(wake_event))

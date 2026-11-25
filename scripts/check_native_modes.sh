@@ -7,6 +7,8 @@ functional="$(realpath "${2:?functional test executable required}")"
 mkdir -p "${3:?output directory required}"
 output_dir="$(realpath "$3")"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+oom_thread_flags=()
+if [[ ${OS:-} != Windows_NT ]]; then oom_thread_flags=(-pthread); fi
 fixtures="$repo_root/test/data/functional/native_modes"
 compiler="$(command -v "${CC:-gcc}")"
 compiler_env="$compiler"
@@ -129,7 +131,7 @@ current='build compiler substitutes'
     "${shared[@]}" -DGOAT_NATIVE_BUILD "$repo_root/test/src/functional/native_pipeline/empty.c" -o "$output_dir/empty.$ext"
 "$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 \
     "$repo_root/test/src/functional/native_pipeline/compiler.c" -I"$repo_root" -I"$repo_root/src" \
-    "$repo_root/lib/process/windows_command_line.c" "$repo_root/lib/memory/allocate.c" -o "$output_dir/invalid-compiler$exe"
+    "$repo_root/lib/process/windows_command_line.c" "$repo_root/lib/memory/allocate.c" "$repo_root/lib/process/process_exit.c" "${oom_thread_flags[@]}" -o "$output_dir/invalid-compiler$exe"
 cp "$output_dir/invalid-compiler$exe" "$output_dir/wrong-compiler$exe"
 cp "$output_dir/invalid-compiler$exe" "$output_dir/failing-compiler$exe"
 export GOAT_PIPELINE_WRONG_LIBRARY="$output_dir/empty.$ext"
