@@ -99,6 +99,8 @@ bool gc_session_request(gc_session_t *s) {
 gc_poll_result_t gc_session_poll(gc_session_t *s) {
     if (!locked(s))
         return GC_DEFERRED;
+    if (s->process->gc_policy.pending && !s->requested)
+        gc_session_request(s);
     if (!s->requested)
         return GC_IDLE;
     process_t *p = s->process;

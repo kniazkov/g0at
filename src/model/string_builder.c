@@ -11,6 +11,7 @@
 #include "context.h"
 #include "lib/memory/allocate.h"
 #include "thread.h"
+#include "vm/gc_policy.h"
 #include "vm/gc_protocol.h"
 
 #include <stdint.h>
@@ -96,7 +97,9 @@ append(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
         FREE_STRING(value);
         return operation_exception(get_exception_invalid_operation());
     }
+    size_t before = gc_policy_object_bytes(receiver);
     append_string_value(buffer, value);
+    gc_policy_note_growth(receiver, before);
     FREE_STRING(value);
     update_length(receiver);
     return self(receiver);

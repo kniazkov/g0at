@@ -2339,7 +2339,8 @@ static bool execute_runtime_instruction(runtime_t *runtime, thread_t *thread, in
             !participant->blocked && !runtime->status
             && thread->initialization_depth == thread->gc_initialization_depth
             && os_mutex_depth(thread->process->execution_mutex) == 1 + runtime->gc_extra_lock_depth;
-        if (!participant->session->requested && !gc_session_request(participant->session))
+        if (thread->process->gc_force_boundaries && !participant->session->requested
+            && !gc_session_request(participant->session))
             abort();
         if (safe && !gc_participant_publish(participant))
             abort();
@@ -2634,13 +2635,13 @@ int run(process_t *proc, bytecode_t *code) {
         return 1;
     }
     struct vm_execution_t execution = {.entry_code = code};
-    bool force_gc = proc->gc_force_boundaries;
+    bool runtime_gc = proc->gc_force_boundaries || proc->gc_policy.enabled;
 #ifdef GOAT_TEST_GC_DISPATCH
     if (request)
-        force_gc = false; /* Legacy probe owns its independent run-scoped request. */
+        runtime_gc = false; /* Legacy probe owns its independent run-scoped request. */
 #endif
-    execution.gc_runtime = force_gc;
-    if (force_gc) {
+    execution.gc_runtime = runtime_gc;
+    if (runtime_gc) {
         if (!gc_session_begin(&execution.gc_session, proc, true)
             || !gc_participant_enter(&execution.gc_session, proc->main_thread, &execution.gc_main))
             abort();
@@ -2662,7 +2663,7 @@ int run(process_t *proc, bytecode_t *code) {
     proc->main_thread->native_diagnostic = NULL;
     runtime_t runtime = {.code = code,
                          .entry_code = code,
-                         .gc_participant = force_gc ? &execution.gc_main : NULL};
+                         .gc_participant = runtime_gc ? &execution.gc_main : NULL};
 #ifdef GOAT_TEST_GC_DISPATCH
     execution.gc_request = request;
     runtime.gc_test = request;
@@ -2731,7 +2732,9 @@ int run_module_file(process_t *proc, module_file_t *file) {
         return 1;
     }
     bytecode_t *code = module_file_bytecode(file);
-    struct vm_execution_t program = {.entry_code = code, .gc_runtime = proc->gc_force_boundaries};
+    struct vm_execution_t program = {.entry_code = code,
+                                     .gc_runtime =
+                                         proc->gc_force_boundaries || proc->gc_policy.enabled};
     if (program.gc_runtime) {
         if (!gc_session_begin(&program.gc_session, proc, true)
             || !gc_participant_enter(&program.gc_session, proc->main_thread, &program.gc_main))

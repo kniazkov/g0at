@@ -6,6 +6,9 @@
 
 #include "object_list.h"
 
+#include "process.h"
+#include "vm/gc_policy.h"
+
 #include <assert.h>
 
 void init_object_list(object_list_t *list) {
@@ -24,6 +27,8 @@ void add_object_to_list(object_list_t *list, object_t *obj) {
         list->head = list->tail = obj;
     }
     list->size++;
+    if (obj->process && list == &obj->process->objects)
+        gc_policy_note_allocation(obj->process, gc_policy_object_bytes(obj));
 }
 
 void remove_object_from_list(object_list_t *list, object_t *obj) {

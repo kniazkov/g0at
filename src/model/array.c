@@ -9,6 +9,7 @@
 #include "lib/memory/allocate.h"
 #include "object_state.h"
 #include "process.h"
+#include "vm/gc_policy.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -321,6 +322,7 @@ void reserve_array(array_object_t *array, size_t count) {
         memcpy(items, array->items, array->count * sizeof(*items));
     FREE(array->items);
     array->items = items;
+    gc_policy_note_allocation(array->base.process, (capacity - array->capacity) * sizeof(*items));
     array->capacity = capacity;
 }
 

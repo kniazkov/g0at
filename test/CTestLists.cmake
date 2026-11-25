@@ -1064,3 +1064,8 @@ foreach(suite IN LISTS gc_acceptance_tests)
     set_property(TEST ${suite} APPEND PROPERTY LABELS gc-acceptance)
   endif()
 endforeach()
+
+foreach(mode formula accounting deferred vm no-stats module native disabled)
+  goat_suite(core.gc_policy.${mode} "core;integration;gc-boundary;gc-acceptance" "$<TARGET_FILE:gc_policy_testing>" ${mode})
+  set_tests_properties(core.gc_policy.${mode} PROPERTIES TIMEOUT 30)
+endforeach()
