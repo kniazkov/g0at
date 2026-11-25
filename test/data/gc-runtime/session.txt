@@ -1,0 +1,6 @@
+var alive=[42];var read=func(){return alive[0];};
+{var i=0;while(i<10000){var a=[];a.push(a);i+=1;}}
+if(read()!=42)throw 1;
+throw 7;
+{var i=0;while(i<10000){var a=[];a.push(a);i+=1;}}
+if(read()!=42)throw 2;

@@ -29,6 +29,7 @@
 #include "resources/messages.h"
 #include "scanner/scanner.h"
 #include "vm/gc.h"
+#include "vm/gc_policy.h"
 #include "vm/vm.h"
 
 #include <stdio.h>
@@ -71,6 +72,12 @@ static void print_compilation_errors(compilation_error_t *error, unsigned int li
  */
 static int run_interactive(options_t *opt) {
     process_t *process = create_process();
+    /* The CLI exclusively owns this process, unlike arbitrary embedding hosts. */
+    process_execution_enter(process);
+    bool policy_ready = configure_gc_policy(process, GC_POLICY_DEFAULT_MIN_BYTES, true);
+    process_execution_leave(process);
+    if (!policy_ready)
+        abort();
     thread_t *thread = process->main_thread;
 
     /* Bytecode accumulates into a session-wide image because Goat function objects reference the

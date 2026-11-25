@@ -1,7 +1,10 @@
 # Allocation-driven GC policy (#638)
 
-The policy is opt-in and process-local. Normal CLI, REPL and embedding defaults
-remain unchanged; enabling the supported paths by default belongs to #639.
+The policy is process-local. Since #639, ordinary CLI source/archive/module runs
+(including supported native execution) and REPL sessions enable it with a 64 KiB
+minimum. Workers inherit the execution protocol. Compile-only paths do not run
+the program. Embedding remains opt-in: create_process/run do not assume that
+host C-local references are published. The CLI owns its process exclusively.
 `configure_gc_policy(process, minimum_bytes, exclusive_host)` requires an idle
 process under its model lock and exclusive host ownership for every subsequent
 run. Configuration during an execution/session, collection, release drain or
@@ -70,5 +73,23 @@ The cyclic workload checks bounded active objects/bytes at ten checkpoints per
 run and actual in-run collection progress. Counters and thresholds, not timings,
 are acceptance assertions. Tests also check pool/root cleanup and allocator
 balance. Platform-dependent byte sizes are observations, not portable constants.
-Default enablement, broader policy coverage, pressure/OOM and prolonged stress
-remain #639–#643; this change does not claim to complete those tasks.
+Pressure/OOM, prolonged stress and final acceptance remain #640–#643; this change does not claim to complete those tasks.
+
+## CLI acceptance (#639)
+
+The CLI configures the policy once, before execution, and the REPL retains it
+across lines and exception recovery. Configuration uses the existing locked API;
+there is no new CLI tuning flag. Hosts may choose another minimum or disable the
+policy while idle via configure_gc_policy. Admission restrictions, final GC and
+the fatal OOM contract are unchanged.
+
+core.gc_cli tests compile the actual launcher sources with observational run
+wrappers and the actual statistics implementation with a pass observer. They do
+not enable the policy, change its budget, publish roots or request GC. They assert
+the default 64 KiB configuration at entry, more than ten in-run collections,
+less than 1 MiB active payload before each pass and 256 KiB afterwards, and clean
+session teardown. Cases cover source, saved archive, native-required execution
+(with successful native calls), workers and a persistent REPL with an exception.
+The ordinary REPL output test independently checks that the surviving closure
+returns 42 before and after exception recovery. Measurements are owned managed
+payload, not RSS; synchronous pauses and excluded callbacks remain unbounded.

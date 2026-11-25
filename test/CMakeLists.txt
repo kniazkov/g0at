@@ -676,3 +676,10 @@ add_custom_target(gc_acceptance_runners DEPENDS
 add_executable(gc_policy_testing src/component/gc_policy_testing.c src/unit/analysis_test_support.c)
 target_link_libraries(gc_policy_testing PRIVATE goat_validation m)
 add_dependencies(gc_acceptance_runners gc_policy_testing)
+
+# Compile the real CLI sources with observational run wrappers; production stays unchanged.
+add_executable(gc_cli_testing src/component/gc_cli_testing.c
+  src/component/gc_cli_launcher.c src/component/gc_cli_module.c src/component/gc_cli_stats.c)
+target_link_libraries(gc_cli_testing PRIVATE goat_validation m)
+add_dependencies(gc_acceptance_runners gc_cli_testing)
+add_dependencies(gc_cli_testing goat)
