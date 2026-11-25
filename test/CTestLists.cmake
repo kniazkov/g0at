@@ -1069,3 +1069,28 @@ foreach(mode formula accounting deferred vm no-stats module native disabled)
   goat_suite(core.gc_policy.${mode} "core;integration;gc-boundary;gc-acceptance" "$<TARGET_FILE:gc_policy_testing>" ${mode})
   set_tests_properties(core.gc_policy.${mode} PROPERTIES TIMEOUT 30)
 endforeach()
+
+foreach(gc_cli_mode source repl)
+  if(gc_cli_mode STREQUAL "repl")
+    set(gc_cli_input "session.txt")
+  else()
+    set(gc_cli_input "cycles.goat")
+  endif()
+  add_test(NAME core.gc_cli.${gc_cli_mode} COMMAND gc_cli_testing ${gc_cli_mode}
+    "${PROJECT_SOURCE_DIR}/test/data/gc-runtime/${gc_cli_input}")
+  set_tests_properties(core.gc_cli.${gc_cli_mode} PROPERTIES
+    LABELS "core;integration;gc-acceptance" TIMEOUT 90)
+endforeach()
+
+add_test(NAME core.gc_cli.native COMMAND gc_cli_testing native
+  "${PROJECT_SOURCE_DIR}/test/data/gc-runtime/cycles.goat" "${CMAKE_C_COMPILER}")
+set_tests_properties(core.gc_cli.native PROPERTIES LABELS "core;integration;gc-acceptance" TIMEOUT 180)
+
+configure_file("${PROJECT_SOURCE_DIR}/test/data/gc-runtime/cycles.goat"
+  "${PROJECT_BINARY_DIR}/gc-cli-cycles.goat" COPYONLY)
+add_test(NAME core.gc_cli.compile COMMAND goat "${PROJECT_BINARY_DIR}/gc-cli-cycles.goat" --compile)
+set_tests_properties(core.gc_cli.compile PROPERTIES FIXTURES_SETUP gc_cli_archive
+  LABELS "core;integration;gc-acceptance" TIMEOUT 90)
+add_test(NAME core.gc_cli.archive COMMAND gc_cli_testing source "${PROJECT_BINARY_DIR}/gc-cli-cycles.gbin")
+set_tests_properties(core.gc_cli.archive PROPERTIES FIXTURES_REQUIRED gc_cli_archive
+  LABELS "core;integration;gc-acceptance" TIMEOUT 90)

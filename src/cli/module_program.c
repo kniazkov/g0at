@@ -19,6 +19,7 @@
 #include "parser/parser.h"
 #include "resources/messages.h"
 #include "scanner/scanner.h"
+#include "vm/gc_policy.h"
 #include "vm/module_graph_diagnostics.h"
 #include "vm/module_loading.h"
 #include "vm/vm.h"
@@ -191,6 +192,12 @@ static int execute_snapshot(const options_t *options,
         FREE_STRING(text);
     }
     process_t *process = module_snapshot_process(snapshot);
+    /* The CLI exclusively owns this process, unlike arbitrary embedding hosts. */
+    process_execution_enter(process);
+    bool policy_ready = configure_gc_policy(process, GC_POLICY_DEFAULT_MIN_BYTES, true);
+    process_execution_leave(process);
+    if (!policy_ready)
+        abort();
     int status = run_module_file(process, module_files_main(files));
     thread_t *thread = process->main_thread;
     do {

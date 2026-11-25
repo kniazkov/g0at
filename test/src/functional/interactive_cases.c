@@ -38,6 +38,14 @@ void interactive_cases(scenario_run_t *run, const char *exe) {
         const char *name, *input, *output, *errors[2];
         bool no_optimization;
     } cases[] = {
+        {"GC preserves closure across allocation pressure and exception recovery",
+         "var alive=[42];var read=func(){return alive[0];};\n"
+         "{var i=0;while(i<10000){var a=[];a.push(a);i+=1;}}\n"
+         "println(read());\nthrow 7;\n"
+         "{var i=0;while(i<10000){var a=[];a.push(a);i+=1;}}\nprintln(read());\n",
+         "42\n42",
+         {"Uncaught exception: 7", NULL},
+         false},
         {"previous-line updates and for loop",
          "var x=1;\nx++;\nprintln(x=3);\nfor(;x<5;x++) println(x);\nprintln(x);\n",
          "3\n3\n4\n5",

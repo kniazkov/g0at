@@ -4,7 +4,7 @@ The combined acceptance selection and mixed workload are described in [GC protoc
 
 This is the current integration contract after #633/#634. Earlier chronological
 sections in memory-management.md describe implementation stages, not additional
-permissions. Opt-in [allocation policy](gc-allocation-policy.md) is implemented in #638; default enablement remains #639.
+permissions. Opt-in [allocation policy](gc-allocation-policy.md) is implemented in #638; CLI/REPL enable it by default in #639; embedding remains opt-in.
 
 ## Admission and ownership
 
