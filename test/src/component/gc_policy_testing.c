@@ -322,7 +322,9 @@ static bytecode_t *compile(string_value_t source) {
     return code;
 }
 
-static bool enabled, pressure_runtime;
+static bool enabled, pressure_runtime, stress;
+static unsigned graph_size;
+static size_t stress_collections;
 static size_t observations, previous_collections;
 
 static operation_result_t monitor(object_t **args, uint16_t count, thread_t *thread) {
@@ -332,7 +334,27 @@ static operation_result_t monitor(object_t **args, uint16_t count, thread_t *thr
     if (enabled) {
         assert(p->gc_policy.collections > previous_collections);
         previous_collections = p->gc_policy.collections;
-        assert(p->objects.size < 512 && gc_measure_memory(p).active_bytes < 256 * 1024);
+        gc_memory_sample_t sample = gc_measure_memory(p);
+        assert(p->objects.size < (stress ? 8192 : 512));
+        assert(sample.active_bytes < (stress && graph_size ? 512 * 1024 : 256 * 1024));
+        if (stress) {
+            assert(sample.auxiliary_bytes < 64 * 1024);
+            assert(p->gc_policy.allocation_events / p->gc_policy.collections > 16);
+            printf("stress graph=%u pressure=%d phase=%zu active=%zu live=%zu pool=%zu aux=%zu "
+                   "collections=%zu threshold=%zu pause_max_ns=%llu\n",
+                   graph_size,
+                   pressure_runtime,
+                   observations,
+                   sample.active_bytes,
+                   p->gc_policy.live_bytes,
+                   sample.pooled_bytes,
+                   sample.auxiliary_bytes,
+                   p->gc_policy.collections,
+                   p->gc_policy.threshold_bytes,
+                   (unsigned long long)p->gc_statistics->max_pause_ns);
+            fflush(stdout);
+            p->gc_statistics->max_pause_ns = 0;
+        }
         assert(p->pooled_bytes <= GOAT_POOL_BYTE_LIMIT && p->gc_roots_size < 64);
         assert(!configure_gc_policy(p, 0, false));
     } else {
@@ -386,21 +408,34 @@ static void runtime(bool module, bool telemetry, bool enable, bool native) {
     static builtin_function_object_t storage;
     static object_static_string_t key;
     object_t *function = get_builtin_function_object(&storage, &descriptor);
-    const gchar_t program[] =
-        U"{var bridge=func(x){return x;};var worker=func(){var i=0;var alive=[42];while(i<1000){"
-        U"var a=[];a.push(a);var b=[];b.push(b);"
-        U"if(bridge(\"a\"+\"b\")!=\"ab\")throw 3;"
-        U"try{throw [42];}catch(e){if(e[0]!=alive[0])throw 1;}"
-        U"finally{var c=[];c.push(c);}"
-        U"i+=1;if(i%100==0){monitor();}}return alive;};"
-        U"var result=join(spawn(worker));if(result[0]!=42)throw 2;}";
-    bytecode_t *code =
-        compile((string_value_t){program, sizeof(program) / sizeof(*program) - 1, false});
+    unsigned iterations = stress ? 20000 : 1000;
+    unsigned checkpoints = stress ? 20 : 10;
+    char source_text[2048];
+    int length = snprintf(
+        source_text,
+        sizeof(source_text),
+        "{var bridge=func(x){return x;};var worker=func(){var i=0;var alive=[42];"
+        "var wide=[];var deep=alive;var j=0;while(j<%u){wide.push([alive]);deep=[deep];j+=1;}"
+        "while(i<%u){var a=[];a.push(a);a.push(alive);var b=[];b.push(b);"
+        "if(bridge(\"a\"+\"b\")!=\"ab\")throw 3;"
+        "try{throw [42];}catch(e){if(e[0]!=alive[0])throw 1;}"
+        "finally{var c=[];c.push(c);}"
+        "i+=1;if(i%%%u==0){monitor();}}"
+        "j=0;while(j<%u){if(wide[j][0][0]!=42)throw 4;deep=deep[0];j+=1;}"
+        "if(deep[0]!=42)throw 5;return alive;};"
+        "var result=join(spawn(worker));if(result[0]!=42)throw 2;}",
+        graph_size,
+        iterations,
+        iterations / checkpoints,
+        graph_size);
+    assert(length > 0 && (size_t)length < sizeof(source_text));
+    string_value_t program = decode_utf8(source_text);
+    bytecode_t *code = compile(program);
     module_compilation_t *compiled = NULL;
     module_file_t *file = NULL;
     object_t *scope = p->main_thread->context->data;
     if (module) {
-        char *source = encode_utf8(program);
+        char *source = encode_utf8(program.data);
         module_source_t input = {.path = "main.goat",
                                  .name = "main.goat",
                                  .source = source,
@@ -443,7 +478,8 @@ static void runtime(bool module, bool telemetry, bool enable, bool native) {
     if (telemetry)
         assert(configure_gc_statistics(p, &stats));
     process_execution_enter(p);
-    assert(configure_gc_policy(p, enable ? 8192 : 0, true));
+    assert(
+        configure_gc_policy(p, enable ? (stress ? GC_POLICY_DEFAULT_MIN_BYTES : 8192) : 0, true));
     process_execution_leave(p);
     unsigned runs = module ? 1 : 2;
     for (unsigned i = 0; i < runs; ++i) {
@@ -454,17 +490,19 @@ static void runtime(bool module, bool telemetry, bool enable, bool native) {
         size_t before = previous_collections;
         p->main_thread->instr_id = 0;
         assert((module ? run_module_file(p, file) : run(p, code)) == 0);
-        assert(observations == 10);
+        assert(observations == checkpoints);
         if (pressure_runtime) {
-            assert(p->gc_pressure.attempts == 10 && !p->gc_pressure.pending);
+            assert(p->gc_pressure.attempts == checkpoints && !p->gc_pressure.pending);
         }
         if (native)
-            assert(native_calls == 1000);
+            assert(native_calls == iterations);
         assert(!p->execution && !p->gc_session && !p->gc_roots_size && !p->active_threads);
         assert(!p->gc_policy.pending && !p->gc_policy.allocated_bytes);
         if (enable) {
             size_t passes = p->gc_policy.collections - before;
-            assert(passes > 10 && passes < 500); // not one collection per allocation/instruction
+            assert(passes > 10 && passes < (stress ? 10000 : 500));
+            if (stress)
+                stress_collections += passes; // not one collection per allocation/instruction
             printf("%s telemetry=%d run=%u collections=%zu budget=%zu live=%zu events=%zu\n",
                    module ? "module" : "vm",
                    telemetry,
@@ -474,11 +512,23 @@ static void runtime(bool module, bool telemetry, bool enable, bool native) {
                    p->gc_policy.live_bytes,
                    p->gc_policy.allocation_events);
         }
+        if (stress) {
+            gc_memory_sample_t retained = gc_measure_memory(p);
+            assert(retained.active_bytes < 64 * 1024);
+            assert(retained.pooled_bytes <= GOAT_POOL_BYTE_LIMIT);
+            assert(retained.auxiliary_bytes < 64 * 1024);
+            printf("retained run=%u active=%zu pool=%zu aux=%zu\n",
+                   i,
+                   retained.active_bytes,
+                   retained.pooled_bytes,
+                   retained.auxiliary_bytes);
+        }
         if (telemetry)
             assert(enable ? stats.explicit_collections > 10 : stats.explicit_collections == 0);
     }
     destroy_process(p);
     free_bytecode(code);
+    FREE_STRING(program);
     if (compiled)
         free_module_compilation(compiled);
 }
@@ -486,7 +536,21 @@ static void runtime(bool module, bool telemetry, bool enable, bool native) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     size_t before = get_allocated_memory_size();
-    if (!strcmp(argv[1], "pressure"))
+    if (!strcmp(argv[1], "stress-compare")) {
+        stress = true;
+        runtime(false, true, true, false);
+        size_t small = stress_collections;
+        stress_collections = 0;
+        graph_size = 1024;
+        runtime(false, true, true, false);
+        printf("comparison small=%zu large=%zu\n", small, stress_collections);
+        assert(stress_collections < small);
+    } else if (!strcmp(argv[1], "stress-native") || !strcmp(argv[1], "stress-pressure")) {
+        stress = true;
+        graph_size = 1024;
+        pressure_runtime = !strcmp(argv[1], "stress-pressure");
+        runtime(true, true, true, true);
+    } else if (!strcmp(argv[1], "pressure"))
         pressure();
     else if (!strcmp(argv[1], "pressure-vm")) {
         pressure_runtime = true;

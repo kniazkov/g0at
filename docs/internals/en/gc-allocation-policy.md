@@ -95,3 +95,19 @@ returns 42 before and after exception recovery. Measurements are owned managed
 payload, not RSS; synchronous pauses and excluded callbacks remain unbounded.
 
 [Explicit host memory pressure and pool trimming](gc-memory-pressure.md) (#640).
+
+## Sustained workload and memory budgets
+
+The [automatic-GC stress fixture](../../../test/data/gc-policy-stress/README.md)
+runs 120,000 deterministic iterations with dead cycles and live neighbours,
+small/large retained graphs, workers, exceptions, modules and scalar-v1 calls.
+Twenty checkpoints per run assert bounded active/pool/auxiliary payload and
+collection progress. Repeated runs check retained memory; destruction checks
+exact allocator balance. The small/large comparison also checks adaptive GC
+frequency. Host pressure is exercised separately from allocation-triggered GC.
+
+Run `ctest --test-dir build -L gc-stress -V` after building
+`gc_policy_testing` (or `gc_acceptance_runners`). The label is included in the
+existing Linux/Windows Debug/Release `gc-acceptance` CI. The fixture README
+records bounds, assumptions and sample measurements. Reported pause maxima
+are observations, not portable latency guarantees; payload is not RSS.

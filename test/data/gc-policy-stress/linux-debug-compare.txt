@@ -1,0 +1,89 @@
+stress graph=0 pressure=0 phase=0 active=7756 live=6536 pool=928 aux=344 collections=69 threshold=65536 pause_max_ns=37736
+stress graph=0 pressure=0 phase=1 active=9556 live=6740 pool=1048 aux=344 collections=139 threshold=65536 pause_max_ns=55943
+stress graph=0 pressure=0 phase=2 active=10996 live=5388 pool=1048 aux=344 collections=209 threshold=65536 pause_max_ns=9163
+stress graph=0 pressure=0 phase=3 active=7756 live=6740 pool=1048 aux=344 collections=280 threshold=65536 pause_max_ns=58437
+stress graph=0 pressure=0 phase=4 active=9556 live=6836 pool=1048 aux=344 collections=350 threshold=65536 pause_max_ns=28472
+stress graph=0 pressure=0 phase=5 active=10996 live=5388 pool=1048 aux=344 collections=420 threshold=65536 pause_max_ns=58597
+stress graph=0 pressure=0 phase=6 active=7756 live=6740 pool=1048 aux=344 collections=491 threshold=65536 pause_max_ns=16895
+stress graph=0 pressure=0 phase=7 active=9556 live=6836 pool=1048 aux=344 collections=561 threshold=65536 pause_max_ns=11097
+stress graph=0 pressure=0 phase=8 active=10996 live=5388 pool=1048 aux=344 collections=631 threshold=65536 pause_max_ns=42543
+stress graph=0 pressure=0 phase=9 active=7756 live=6740 pool=1048 aux=344 collections=702 threshold=65536 pause_max_ns=176713
+stress graph=0 pressure=0 phase=10 active=9556 live=6836 pool=1048 aux=344 collections=772 threshold=65536 pause_max_ns=7872
+stress graph=0 pressure=0 phase=11 active=10996 live=5388 pool=1048 aux=344 collections=842 threshold=65536 pause_max_ns=151014
+stress graph=0 pressure=0 phase=12 active=7756 live=6740 pool=1048 aux=344 collections=913 threshold=65536 pause_max_ns=32398
+stress graph=0 pressure=0 phase=13 active=9556 live=6836 pool=1048 aux=344 collections=983 threshold=65536 pause_max_ns=214919
+stress graph=0 pressure=0 phase=14 active=10996 live=5388 pool=1048 aux=344 collections=1053 threshold=65536 pause_max_ns=11597
+stress graph=0 pressure=0 phase=15 active=7756 live=6740 pool=1048 aux=344 collections=1124 threshold=65536 pause_max_ns=20070
+stress graph=0 pressure=0 phase=16 active=9556 live=6836 pool=1048 aux=344 collections=1194 threshold=65536 pause_max_ns=39118
+stress graph=0 pressure=0 phase=17 active=10996 live=5388 pool=1048 aux=344 collections=1264 threshold=65536 pause_max_ns=30485
+stress graph=0 pressure=0 phase=18 active=7756 live=6740 pool=1048 aux=344 collections=1335 threshold=65536 pause_max_ns=81360
+stress graph=0 pressure=0 phase=19 active=9556 live=6836 pool=1048 aux=344 collections=1405 threshold=65536 pause_max_ns=60279
+vm telemetry=1 run=0 collections=1406 budget=65536 live=520 events=517372
+retained run=0 active=520 pool=4432 aux=192
+stress graph=0 pressure=0 phase=0 active=9820 live=7064 pool=1016 aux=344 collections=1478 threshold=65536 pause_max_ns=28302
+stress graph=0 pressure=0 phase=1 active=9756 live=5860 pool=1144 aux=344 collections=1552 threshold=65536 pause_max_ns=12008
+stress graph=0 pressure=0 phase=2 active=8380 live=7204 pool=1080 aux=344 collections=1626 threshold=65536 pause_max_ns=29974
+stress graph=0 pressure=0 phase=3 active=8316 live=7248 pool=1144 aux=344 collections=1700 threshold=65536 pause_max_ns=12569
+stress graph=0 pressure=0 phase=4 active=6940 live=7396 pool=1080 aux=344 collections=1774 threshold=65536 pause_max_ns=469227
+stress graph=0 pressure=0 phase=5 active=6876 live=7184 pool=1144 aux=344 collections=1848 threshold=65536 pause_max_ns=47070
+stress graph=0 pressure=0 phase=6 active=10180 live=5924 pool=1080 aux=344 collections=1921 threshold=65536 pause_max_ns=41842
+stress graph=0 pressure=0 phase=7 active=10476 live=7300 pool=1144 aux=344 collections=1995 threshold=65536 pause_max_ns=32909
+stress graph=0 pressure=0 phase=8 active=9100 live=7300 pool=1080 aux=344 collections=2069 threshold=65536 pause_max_ns=15903
+stress graph=0 pressure=0 phase=9 active=9036 live=7184 pool=1144 aux=344 collections=2143 threshold=65536 pause_max_ns=121941
+stress graph=0 pressure=0 phase=10 active=7660 live=7748 pool=1080 aux=344 collections=2217 threshold=65536 pause_max_ns=53039
+stress graph=0 pressure=0 phase=11 active=7596 live=5860 pool=1144 aux=344 collections=2291 threshold=65536 pause_max_ns=38928
+stress graph=0 pressure=0 phase=12 active=11260 live=7300 pool=1080 aux=344 collections=2364 threshold=65536 pause_max_ns=11357
+stress graph=0 pressure=0 phase=13 active=11196 live=7184 pool=1144 aux=344 collections=2438 threshold=65536 pause_max_ns=10536
+stress graph=0 pressure=0 phase=14 active=9820 live=7748 pool=1080 aux=344 collections=2512 threshold=65536 pause_max_ns=49604
+stress graph=0 pressure=0 phase=15 active=9756 live=7280 pool=1144 aux=344 collections=2586 threshold=65536 pause_max_ns=158529
+stress graph=0 pressure=0 phase=16 active=8380 live=7204 pool=1080 aux=344 collections=2660 threshold=65536 pause_max_ns=74452
+stress graph=0 pressure=0 phase=17 active=8316 live=7248 pool=1144 aux=344 collections=2734 threshold=65536 pause_max_ns=3886997
+stress graph=0 pressure=0 phase=18 active=6940 live=7396 pool=1080 aux=344 collections=2808 threshold=65536 pause_max_ns=45779
+stress graph=0 pressure=0 phase=19 active=6876 live=7184 pool=1144 aux=344 collections=2882 threshold=65536 pause_max_ns=11568
+vm telemetry=1 run=1 collections=1477 budget=65536 live=616 events=1034744
+retained run=1 active=616 pool=4992 aux=192
+stress graph=1024 pressure=0 phase=0 active=211572 live=210940 pool=928 aux=344 collections=11 threshold=210940 pause_max_ns=549194
+stress graph=1024 pressure=0 phase=1 active=225612 live=209796 pool=1048 aux=344 collections=25 threshold=209796 pause_max_ns=406280
+stress graph=1024 pressure=0 phase=2 active=223812 live=211636 pool=1048 aux=344 collections=40 threshold=423272 pause_max_ns=478919
+stress graph=1024 pressure=0 phase=3 active=237852 live=210196 pool=1048 aux=344 collections=54 threshold=420392 pause_max_ns=482885
+stress graph=1024 pressure=0 phase=4 active=219852 live=211520 pool=1048 aux=344 collections=69 threshold=211520 pause_max_ns=1535777
+stress graph=1024 pressure=0 phase=5 active=217692 live=211520 pool=1048 aux=344 collections=84 threshold=423040 pause_max_ns=506100
+stress graph=1024 pressure=0 phase=6 active=232092 live=211520 pool=1048 aux=344 collections=98 threshold=423040 pause_max_ns=285179
+stress graph=1024 pressure=0 phase=7 active=214092 live=211732 pool=1048 aux=344 collections=113 threshold=211732 pause_max_ns=996516
+stress graph=1024 pressure=0 phase=8 active=211932 live=211636 pool=1048 aux=344 collections=128 threshold=423272 pause_max_ns=335403
+stress graph=1024 pressure=0 phase=9 active=226332 live=211636 pool=1048 aux=344 collections=142 threshold=423272 pause_max_ns=398509
+stress graph=1024 pressure=0 phase=10 active=240372 live=211520 pool=1048 aux=344 collections=156 threshold=423040 pause_max_ns=284668
+stress graph=1024 pressure=0 phase=11 active=221652 live=209796 pool=1048 aux=344 collections=171 threshold=209796 pause_max_ns=225158
+stress graph=1024 pressure=0 phase=12 active=219852 live=211636 pool=1048 aux=344 collections=186 threshold=423272 pause_max_ns=327452
+stress graph=1024 pressure=0 phase=13 active=233892 live=210196 pool=1048 aux=344 collections=200 threshold=420392 pause_max_ns=236546
+stress graph=1024 pressure=0 phase=14 active=215532 live=209796 pool=1048 aux=344 collections=215 threshold=209796 pause_max_ns=280050
+stress graph=1024 pressure=0 phase=15 active=213732 live=211540 pool=1048 aux=344 collections=230 threshold=423080 pause_max_ns=395383
+stress graph=1024 pressure=0 phase=16 active=228132 live=211520 pool=1048 aux=344 collections=244 threshold=423040 pause_max_ns=262665
+stress graph=1024 pressure=0 phase=17 active=242892 live=211636 pool=1048 aux=344 collections=258 threshold=423272 pause_max_ns=583697
+stress graph=1024 pressure=0 phase=18 active=223812 live=209796 pool=1048 aux=344 collections=273 threshold=209796 pause_max_ns=270646
+stress graph=1024 pressure=0 phase=19 active=222012 live=211636 pool=1048 aux=344 collections=288 threshold=423272 pause_max_ns=277908
+vm telemetry=1 run=0 collections=290 budget=262144 live=520 events=526218
+retained run=0 active=520 pool=4528 aux=192
+stress graph=1024 pressure=0 phase=0 active=236316 live=210636 pool=1016 aux=344 collections=300 threshold=421272 pause_max_ns=466000
+stress graph=1024 pressure=0 phase=1 active=220052 live=212292 pool=1144 aux=344 collections=316 threshold=424584 pause_max_ns=342244
+stress graph=1024 pressure=0 phase=2 active=217596 live=210724 pool=1080 aux=344 collections=331 threshold=210724 pause_max_ns=1873233
+stress graph=1024 pressure=0 phase=3 active=233012 live=212292 pool=1144 aux=344 collections=346 threshold=424584 pause_max_ns=489294
+stress graph=1024 pressure=0 phase=4 active=215436 live=212100 pool=1080 aux=344 collections=362 threshold=424200 pause_max_ns=192639
+stress graph=1024 pressure=0 phase=5 active=215012 live=212300 pool=1144 aux=344 collections=377 threshold=212300 pause_max_ns=195944
+stress graph=1024 pressure=0 phase=6 active=228756 live=212196 pool=1080 aux=344 collections=392 threshold=424392 pause_max_ns=207321
+stress graph=1024 pressure=0 phase=7 active=212852 live=212164 pool=1144 aux=344 collections=408 threshold=424328 pause_max_ns=241503
+stress graph=1024 pressure=0 phase=8 active=242436 live=212100 pool=1080 aux=344 collections=422 threshold=424200 pause_max_ns=215714
+stress graph=1024 pressure=0 phase=9 active=226172 live=212144 pool=1144 aux=344 collections=438 threshold=424288 pause_max_ns=194262
+stress graph=1024 pressure=0 phase=10 active=224076 live=210724 pool=1080 aux=344 collections=453 threshold=210724 pause_max_ns=236625
+stress graph=1024 pressure=0 phase=11 active=239492 live=212176 pool=1144 aux=344 collections=468 threshold=424352 pause_max_ns=368393
+stress graph=1024 pressure=0 phase=12 active=221916 live=212100 pool=1080 aux=344 collections=484 threshold=424200 pause_max_ns=255895
+stress graph=1024 pressure=0 phase=13 active=221492 live=212300 pool=1144 aux=344 collections=499 threshold=212300 pause_max_ns=430787
+stress graph=1024 pressure=0 phase=14 active=235236 live=212196 pool=1080 aux=344 collections=514 threshold=424392 pause_max_ns=672270
+stress graph=1024 pressure=0 phase=15 active=218972 live=212292 pool=1144 aux=344 collections=530 threshold=424584 pause_max_ns=622555
+stress graph=1024 pressure=0 phase=16 active=216876 live=210724 pool=1080 aux=344 collections=545 threshold=210724 pause_max_ns=341022
+stress graph=1024 pressure=0 phase=17 active=232292 live=212164 pool=1144 aux=344 collections=560 threshold=424328 pause_max_ns=444137
+stress graph=1024 pressure=0 phase=18 active=214716 live=212196 pool=1080 aux=344 collections=576 threshold=424392 pause_max_ns=617137
+stress graph=1024 pressure=0 phase=19 active=214292 live=212364 pool=1144 aux=344 collections=591 threshold=212364 pause_max_ns=393420
+vm telemetry=1 run=1 collections=304 budget=262144 live=616 events=1052436
+retained run=1 active=616 pool=5088 aux=192
+comparison small=2883 large=594
