@@ -93,3 +93,5 @@ session teardown. Cases cover source, saved archive, native-required execution
 The ordinary REPL output test independently checks that the surviving closure
 returns 42 before and after exception recovery. Measurements are owned managed
 payload, not RSS; synchronous pauses and excluded callbacks remain unbounded.
+
+[Explicit host memory pressure and pool trimming](gc-memory-pressure.md) (#640).

@@ -147,7 +147,8 @@ void collect_garbage(process_t *proc) {
         return;
     proc->gc_collecting = true;
     gc_stats_t *stats = proc->gc_statistics;
-    bool measure = stats || proc->gc_policy.enabled;
+    bool pressure = proc->gc_pressure.pending;
+    bool measure = stats || proc->gc_policy.enabled || pressure;
     gc_pass_sample_t sample;
     uint64_t started = 0;
     bool have_start = false;
@@ -162,6 +163,8 @@ void collect_garbage(process_t *proc) {
     for (object_t *obj = proc->objects.head; obj; obj = obj->next)
         reconcile_swept_edges(obj);
     sweep_unreachable_objects(proc);
+    if (pressure)
+        trim_process_object_pools(proc);
     if (measure) {
         sample.after = gc_measure_memory(proc);
         /* Collection leaves exactly the marked managed vertices in the active list. */
@@ -169,6 +172,11 @@ void collect_garbage(process_t *proc) {
         size_t before = sum_payload(sample.before.active_bytes, sample.before.pooled_bytes);
         size_t after = sum_payload(sample.after.active_bytes, sample.after.pooled_bytes);
         sample.freed_bytes = before >= after ? before - after : 0;
+        if (pressure) {
+            proc->gc_pressure.pending = false;
+            proc->gc_pressure.attempts = sum_payload(proc->gc_pressure.attempts, 1);
+            proc->gc_pressure.released_bytes = sample.freed_bytes;
+        }
         uint64_t finished;
         sample.clock_valid = have_start && gc_statistics_now(&finished) && finished >= started;
         if (sample.clock_valid)

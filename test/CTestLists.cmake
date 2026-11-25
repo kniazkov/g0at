@@ -1065,7 +1065,7 @@ foreach(suite IN LISTS gc_acceptance_tests)
   endif()
 endforeach()
 
-foreach(mode formula accounting deferred vm no-stats module native disabled)
+foreach(mode formula accounting deferred vm no-stats module native disabled pressure pressure-vm pressure-native pressure-no-stats)
   goat_suite(core.gc_policy.${mode} "core;integration;gc-boundary;gc-acceptance" "$<TARGET_FILE:gc_policy_testing>" ${mode})
   set_tests_properties(core.gc_policy.${mode} PROPERTIES TIMEOUT 30)
 endforeach()

@@ -221,6 +221,84 @@ static void deferred_request(void) {
     destroy_process(p);
 }
 
+static void pressure(void) {
+    process_t *p = create_process();
+    assert(!request_gc_pressure(NULL) && !request_gc_pressure(p));
+    process_execution_enter(p);
+    assert(!request_gc_pressure(p));
+    assert(configure_gc_policy(p, SIZE_MAX, true));
+    gc_stats_t stats;
+    assert(configure_gc_statistics(p, &stats));
+    object_t *value = create_integer_object(p, 123456);
+    object_t *live = create_array_object(p, (object_array_t){&value, 1});
+    DECREF(value);
+    object_t *cycle = create_array_object(p, (object_array_t){0});
+    operation_result_t insertion = insert_array_elements(cycle, 0, &cycle, 1);
+    assert(!insertion.is_exception);
+    DECREF(insertion.value);
+    DECREF(cycle);
+    gc_root_handle_t root = register_gc_root(p, live);
+    assert(root.serial);
+    object_t *values[600];
+    for (size_t i = 0; i < 600; ++i)
+        values[i] = create_integer_object(p, 100000 + i);
+    for (size_t i = 0; i < 600; ++i)
+        DECREF(values[i]);
+    assert(p->pooled_bytes > 10000);
+    size_t held = p->pooled_bytes;
+    assert(request_gc_pressure(p) && request_gc_pressure(p));
+    assert(!configure_gc_policy(p, 0, false));
+    gc_session_t session = {0};
+    gc_participant_t token = {0};
+    assert(gc_session_begin(&session, p, true));
+    assert(gc_participant_enter(&session, p->main_thread, &token));
+    assert(gc_participant_block(&token) && gc_participant_block(&token));
+    for (unsigned i = 0; i < 100; ++i)
+        assert(gc_session_poll(&session) == GC_DEFERRED);
+    assert(p->pooled_bytes == held && !p->gc_pressure.attempts && session.requests == 1);
+    assert(gc_participant_unblock(&token));
+    assert(gc_session_poll(&session) == GC_DEFERRED);
+    assert(gc_participant_unblock(&token) && gc_participant_leave(&token));
+    assert(gc_session_end(&session));
+    assert(p->gc_pressure.pending);
+    session = (gc_session_t){0};
+    assert(gc_session_begin(&session, p, true));
+    assert(gc_participant_enter(&session, p->main_thread, &token));
+    assert(gc_participant_publish(&token));
+    assert(gc_session_poll(&session) == GC_COLLECTED);
+    assert(!p->pooled_bytes && !p->gc_pressure.pending && p->gc_pressure.attempts == 1);
+    assert(p->gc_pressure.released_bytes > held);
+    assert(stats.trim_calls == 1 && stats.trimmed_bytes >= held);
+    assert(stats.last.freed_bytes == p->gc_pressure.released_bytes);
+    assert(get_array_elements(live).items[0] == value);
+    assert(value->vtbl->get_integer_value(value).value == 123456);
+    assert(request_gc_pressure(p));
+    assert(gc_session_poll(&session) == GC_COLLECTED);
+    assert(p->gc_pressure.attempts == 2 && !p->gc_pressure.released_bytes);
+    for (unsigned i = 0; i < 100; ++i)
+        assert(gc_session_poll(&session) == GC_IDLE);
+    assert(p->gc_pressure.attempts == 2);
+    p->gc_collecting = true;
+    assert(!request_gc_pressure(p));
+    p->gc_collecting = false;
+    p->draining_releases = true;
+    assert(!request_gc_pressure(p));
+    p->draining_releases = false;
+    p->gc_pressure.attempts = SIZE_MAX;
+    assert(request_gc_pressure(p));
+    assert(gc_session_poll(&session) == GC_COLLECTED);
+    assert(p->gc_pressure.attempts == SIZE_MAX);
+    assert(gc_participant_withdraw(&token) && gc_participant_leave(&token));
+    assert(gc_session_end(&session));
+    assert(request_gc_pressure(p));
+    collect_garbage(p); // final/explicit pass also discharges pressure
+    assert(!p->gc_pressure.pending);
+    unregister_gc_root(p, root);
+    DECREF(live);
+    process_execution_leave(p);
+    destroy_process(p);
+}
+
 static void deferred(node_t *node, code_builder_t *builder, data_builder_t *data) {
     if (node->vtbl->type == NODE_FUNCTION_OBJECT)
         generate_deferred_bytecode_from_node(node, builder, data);
@@ -244,7 +322,7 @@ static bytecode_t *compile(string_value_t source) {
     return code;
 }
 
-static bool enabled;
+static bool enabled, pressure_runtime;
 static size_t observations, previous_collections;
 
 static operation_result_t monitor(object_t **args, uint16_t count, thread_t *thread) {
@@ -259,6 +337,10 @@ static operation_result_t monitor(object_t **args, uint16_t count, thread_t *thr
         assert(!configure_gc_policy(p, 0, false));
     } else {
         assert(!p->gc_policy.collections && !p->gc_session);
+    }
+    if (pressure_runtime) {
+        assert(p->gc_pressure.attempts == observations);
+        assert(request_gc_pressure(p));
     }
     ++observations;
     return operation_success(get_null_object());
@@ -366,11 +448,16 @@ static void runtime(bool module, bool telemetry, bool enable, bool native) {
     unsigned runs = module ? 1 : 2;
     for (unsigned i = 0; i < runs; ++i) {
         observations = 0;
+        if (pressure_runtime)
+            p->gc_pressure.attempts = 0;
         previous_collections = p->gc_policy.collections;
         size_t before = previous_collections;
         p->main_thread->instr_id = 0;
         assert((module ? run_module_file(p, file) : run(p, code)) == 0);
         assert(observations == 10);
+        if (pressure_runtime) {
+            assert(p->gc_pressure.attempts == 10 && !p->gc_pressure.pending);
+        }
         if (native)
             assert(native_calls == 1000);
         assert(!p->execution && !p->gc_session && !p->gc_roots_size && !p->active_threads);
@@ -399,7 +486,18 @@ static void runtime(bool module, bool telemetry, bool enable, bool native) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     size_t before = get_allocated_memory_size();
-    if (!strcmp(argv[1], "formula"))
+    if (!strcmp(argv[1], "pressure"))
+        pressure();
+    else if (!strcmp(argv[1], "pressure-vm")) {
+        pressure_runtime = true;
+        runtime(false, true, true, false);
+    } else if (!strcmp(argv[1], "pressure-no-stats")) {
+        pressure_runtime = true;
+        runtime(false, false, true, false);
+    } else if (!strcmp(argv[1], "pressure-native")) {
+        pressure_runtime = true;
+        runtime(true, true, true, true);
+    } else if (!strcmp(argv[1], "formula"))
         formula();
     else if (!strcmp(argv[1], "accounting"))
         accounting();
