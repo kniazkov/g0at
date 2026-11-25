@@ -1124,3 +1124,9 @@ if(GOAT_TEST_ALLOC_FAILURE)
       LABELS "fault;gc-oom;module-memory-migration" TIMEOUT 20)
   endforeach()
 endif()
+
+foreach(stress_mode stress-compare stress-native stress-pressure)
+  add_test(NAME core.gc_policy.${stress_mode} COMMAND gc_policy_testing ${stress_mode})
+  set_tests_properties(core.gc_policy.${stress_mode} PROPERTIES
+    LABELS "core;integration;gc-acceptance;gc-stress" TIMEOUT 180)
+endforeach()

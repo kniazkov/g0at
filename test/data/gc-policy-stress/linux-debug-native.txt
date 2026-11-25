@@ -1,0 +1,22 @@
+stress graph=1024 pressure=0 phase=0 active=231080 live=210536 pool=888 aux=192 collections=14 threshold=421072 pause_max_ns=284867
+stress graph=1024 pressure=0 phase=1 active=231440 live=211196 pool=1024 aux=192 collections=26 threshold=422392 pause_max_ns=290176
+stress graph=1024 pressure=0 phase=2 active=242600 live=210624 pool=1104 aux=192 collections=38 threshold=421248 pause_max_ns=247972
+stress graph=1024 pressure=0 phase=3 active=216320 live=212160 pool=1104 aux=192 collections=51 threshold=212160 pause_max_ns=241062
+stress graph=1024 pressure=0 phase=4 active=227840 live=211520 pool=1104 aux=192 collections=63 threshold=211520 pause_max_ns=301011
+stress graph=1024 pressure=0 phase=5 active=220280 live=212064 pool=1104 aux=192 collections=76 threshold=424128 pause_max_ns=228301
+stress graph=1024 pressure=0 phase=6 active=231800 live=210624 pool=1104 aux=192 collections=88 threshold=421248 pause_max_ns=225767
+stress graph=1024 pressure=0 phase=7 active=243680 live=212064 pool=1104 aux=192 collections=100 threshold=424128 pause_max_ns=475971
+stress graph=1024 pressure=0 phase=8 active=216320 live=211520 pool=1104 aux=192 collections=113 threshold=211520 pause_max_ns=301320
+stress graph=1024 pressure=0 phase=9 active=227840 live=211520 pool=1104 aux=192 collections=125 threshold=211520 pause_max_ns=275352
+stress graph=1024 pressure=0 phase=10 active=220280 live=212064 pool=1104 aux=192 collections=138 threshold=424128 pause_max_ns=480940
+stress graph=1024 pressure=0 phase=11 active=231800 live=210624 pool=1104 aux=192 collections=150 threshold=421248 pause_max_ns=304435
+stress graph=1024 pressure=0 phase=12 active=243680 live=212064 pool=1104 aux=192 collections=162 threshold=424128 pause_max_ns=433678
+stress graph=1024 pressure=0 phase=13 active=216320 live=211520 pool=1104 aux=192 collections=175 threshold=211520 pause_max_ns=229854
+stress graph=1024 pressure=0 phase=14 active=227840 live=211520 pool=1104 aux=192 collections=187 threshold=211520 pause_max_ns=232348
+stress graph=1024 pressure=0 phase=15 active=220280 live=212064 pool=1104 aux=192 collections=200 threshold=424128 pause_max_ns=196333
+stress graph=1024 pressure=0 phase=16 active=231800 live=210624 pool=1104 aux=192 collections=212 threshold=421248 pause_max_ns=278306
+stress graph=1024 pressure=0 phase=17 active=243680 live=212064 pool=1104 aux=192 collections=224 threshold=424128 pause_max_ns=279167
+stress graph=1024 pressure=0 phase=18 active=216320 live=211520 pool=1104 aux=192 collections=237 threshold=211520 pause_max_ns=354190
+stress graph=1024 pressure=0 phase=19 active=227840 live=211520 pool=1104 aux=192 collections=249 threshold=211520 pause_max_ns=366838
+module telemetry=1 run=0 collections=252 budget=262144 live=2268 events=466219
+retained run=0 active=2268 pool=3576 aux=192
