@@ -171,7 +171,7 @@ bool process_exit_prepare(void) {
     return success;
 }
 
-_Noreturn void process_exit_request(unsigned code) {
+static void begin_exit(unsigned code) {
     /* Validation failures belong to the language layer. Defensively avoid an
        invalid status if a host violates this API's precondition. */
     if (code > 255)
@@ -205,6 +205,23 @@ _Noreturn void process_exit_request(unsigned code) {
     if (pthread_sigmask(SIG_BLOCK, &blocked, NULL))
         terminate_selected();
 #endif
+}
+
+_Noreturn void process_exit_fatal(unsigned code, const char *message, size_t size) {
+    begin_exit(code);
+#ifdef _WIN32
+    DWORD written;
+    if (size <= MAXDWORD)
+        WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, (DWORD)size, &written, NULL);
+#else
+    /* Best effort, no retry loop. A blocked sink is cut off by the watchdog. */
+    (void)write(STDERR_FILENO, message, size);
+#endif
+    terminate_selected();
+}
+
+_Noreturn void process_exit_request(unsigned code) {
+    begin_exit(code);
     /* Never fflush(NULL): unrelated streams and their handlers are not part of
        this operation. Both writes and stream-lock waits share this deadline. */
     fflush(stdout);

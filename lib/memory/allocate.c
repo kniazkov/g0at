@@ -8,6 +8,7 @@
 
 #include "lib/files/file_system.h"
 #include "lib/memory/alignment.h"
+#include "lib/process/process_exit.h"
 
 #include <stdatomic.h>
 #include <stdint.h>
@@ -90,11 +91,14 @@ void *_ALLOC(size_t size) {
         exit(EXIT_FAILURE);
     }
     size_t total_size = sizeof(memory_header_t) + size + EXTRA_DEBUG_BYTES + padding;
+    /* Prepare before attempting allocation, never from the failure diagnostic.
+       Repeated calls only observe the process-lifetime preparation state. */
+    (void)process_exit_prepare();
     void *allocation = malloc(total_size);
 
     if (!allocation) {
-        FPRINTF(stderr, "\nOut of memory.\n");
-        exit(EXIT_FAILURE);
+        static const char message[] = "\nOut of memory.\n";
+        process_exit_fatal(EXIT_FAILURE, message, sizeof(message) - 1);
     }
 
     /* The CRT heap may have weaker alignment than the compiler's memory_alignment_t. */

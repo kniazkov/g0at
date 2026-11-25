@@ -1094,3 +1094,33 @@ set_tests_properties(core.gc_cli.compile PROPERTIES FIXTURES_SETUP gc_cli_archiv
 add_test(NAME core.gc_cli.archive COMMAND gc_cli_testing source "${PROJECT_BINARY_DIR}/gc-cli-cycles.gbin")
 set_tests_properties(core.gc_cli.archive PROPERTIES FIXTURES_REQUIRED gc_cli_archive
   LABELS "core;integration;gc-acceptance" TIMEOUT 90)
+
+if(GOAT_TEST_ALLOC_FAILURE)
+  foreach(oom_case worklist roots array host-alloc host native locked-stderr calloc)
+    foreach(failure 0 1)
+      add_test(NAME fault.gc_oom.${oom_case}.${failure} COMMAND "${CMAKE_COMMAND}"
+        "-DHOST=$<TARGET_FILE:gc_oom_testing>" "-DCASE=${oom_case}" "-DFAIL=${failure}"
+        -P "${PROJECT_SOURCE_DIR}/test/support/gc_oom_check.cmake")
+      set_tests_properties(fault.gc_oom.${oom_case}.${failure} PROPERTIES
+        LABELS "fault;gc-oom;module-memory-migration" TIMEOUT 20)
+    endforeach()
+  endforeach()
+endif()
+
+if(GOAT_TEST_ALLOC_FAILURE AND UNIX)
+  add_test(NAME fault.gc_oom.full-stderr COMMAND "${CMAKE_COMMAND}"
+    "-DHOST=$<TARGET_FILE:gc_oom_testing>" -DCASE=full-stderr -DFAIL=1
+    -P "${PROJECT_SOURCE_DIR}/test/support/gc_oom_check.cmake")
+  set_tests_properties(fault.gc_oom.full-stderr PROPERTIES
+    LABELS "fault;gc-oom;module-memory-migration" TIMEOUT 20)
+endif()
+
+if(GOAT_TEST_ALLOC_FAILURE)
+  foreach(failure 0 1)
+    add_test(NAME fault.gc_oom.no-watchdog.${failure} COMMAND "${CMAKE_COMMAND}"
+      "-DHOST=$<TARGET_FILE:gc_oom_no_watchdog_testing>" -DCASE=host-alloc "-DFAIL=${failure}"
+      -DNO_DIAGNOSTIC=ON -P "${PROJECT_SOURCE_DIR}/test/support/gc_oom_check.cmake")
+    set_tests_properties(fault.gc_oom.no-watchdog.${failure} PROPERTIES
+      LABELS "fault;gc-oom;module-memory-migration" TIMEOUT 20)
+  endforeach()
+endif()

@@ -683,3 +683,18 @@ add_executable(gc_cli_testing src/component/gc_cli_testing.c
 target_link_libraries(gc_cli_testing PRIVATE goat_validation m)
 add_dependencies(gc_acceptance_runners gc_cli_testing)
 add_dependencies(gc_cli_testing goat)
+
+if(GOAT_TEST_ALLOC_FAILURE)
+  add_executable(gc_oom_testing src/component/gc_oom_testing.c)
+  target_link_libraries(gc_oom_testing PRIVATE goat_validation m)
+  # Existing explicit Linux/Windows fault-build target must build the new runner.
+  add_dependencies(module_memory_scenarios gc_oom_testing)
+endif()
+
+if(GOAT_TEST_ALLOC_FAILURE)
+  add_executable(gc_oom_no_watchdog_testing src/component/gc_oom_testing.c
+    "${PROJECT_SOURCE_DIR}/lib/process/process_exit.c")
+  target_compile_definitions(gc_oom_no_watchdog_testing PRIVATE GOAT_TEST_PROCESS_EXIT_FAILURE=1)
+  target_link_libraries(gc_oom_no_watchdog_testing PRIVATE goat_validation m)
+  add_dependencies(module_memory_scenarios gc_oom_no_watchdog_testing)
+endif()

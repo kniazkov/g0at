@@ -1,0 +1,17 @@
+# A timeout or signal is a failure, never an accepted OOM result.
+execute_process(COMMAND "${HOST}" "${CASE}" "${FAIL}" TIMEOUT 10
+  RESULT_VARIABLE status OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(FAIL STREQUAL "0" OR CASE STREQUAL "worklist")
+  if(NOT status STREQUAL "0" OR NOT out MATCHES "AFTER" OR NOT out MATCHES "ATEXIT")
+    message(FATAL_ERROR "OOM control failed: status=${status} out=${out} err=${err}")
+  endif()
+else()
+  if(NOT status STREQUAL "1" OR (NOT NO_DIAGNOSTIC AND NOT CASE STREQUAL "full-stderr" AND NOT err MATCHES "Out of memory\\.") OR out MATCHES "AFTER|ATEXIT|CATCH|FINALLY")
+    message(FATAL_ERROR "Fatal OOM contract failed: status=${status} out=${out} err=${err}")
+  endif()
+endif()
+string(REGEX MATCHALL "BEFORE" effects "${out}")
+list(LENGTH effects count)
+if(NOT count EQUAL 1)
+  message(FATAL_ERROR "Expected exactly one pre-failure effect: ${out}")
+endif()

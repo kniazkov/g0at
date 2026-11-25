@@ -19,7 +19,10 @@ void _FREE(void *ptr);
 
 /**
  * @brief Allocates fundamentally aligned storage; zero size reserves one byte.
- * Failure or size overflow terminates the process. MEMORY_DEBUG tracks allocation
+ * malloc failure terminates without unwinding/atexit or stdio flushing, with a
+ * best-effort fixed OS diagnostic under the prepared exit watchdog deadline.
+ * Watchdog preparation happens before malloc. Size overflow is separately fatal.
+ * MEMORY_DEBUG tracks allocation
  * sites and checks trailing guard bytes on FREE(). Accounting is synchronized
  * across threads, including the debug allocation list.
  */

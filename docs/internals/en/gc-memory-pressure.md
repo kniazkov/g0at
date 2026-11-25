@@ -58,3 +58,5 @@ GC acceptance suite remains enabled on Linux/Windows CI.
 Actual malloc failure still follows the fatal OOM contract. Fault injection and
 that contract's acceptance belong to #641; long pressure stress and final CI audit
 remain #642/#643. No catchable out-of-memory exception is introduced.
+
+[Fatal allocation failure and injection tests](gc-fatal-oom.md) (#641).
