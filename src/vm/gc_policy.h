@@ -37,3 +37,17 @@ size_t gc_policy_object_bytes(const object_t *object);
 void gc_policy_note_growth(object_t *object, size_t before);
 /** @brief Internal completed-pass feedback, including explicit and run-end collections. */
 void gc_policy_collected(process_t *process, size_t before_bytes, size_t live_bytes);
+
+/** @brief Explicit host pressure, serialized under the model lock. One pass per
+ * coalesced request; no OS/malloc hook and no automatic retry after no progress.
+ */
+typedef struct {
+    bool pending;
+    size_t attempts, released_bytes;
+} gc_pressure_t;
+
+/** @brief Latch pressure for an enabled policy, even outside a session. Never collects.
+ * False without the lock, during collection/drain/destruction, or with policy disabled.
+ * A blocked participant may request pressure but cannot force admission.
+ */
+bool request_gc_pressure(process_t *process);

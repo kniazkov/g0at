@@ -26,7 +26,7 @@ static void set_threshold(gc_policy_t *policy) {
 bool configure_gc_policy(process_t *process, size_t minimum, bool exclusive) {
     if (!process || !os_mutex_depth(process->execution_mutex) || process->execution
         || process->gc_session || process->destroying || process->gc_collecting
-        || process->draining_releases || (minimum && !exclusive))
+        || process->draining_releases || process->gc_pressure.pending || (minimum && !exclusive))
         return false;
     process->gc_policy = (gc_policy_t){0};
     if (minimum) {
@@ -82,4 +82,13 @@ void gc_policy_collected(process_t *process, size_t before, size_t live) {
     policy->allocated_bytes = 0;
     policy->pending = false;
     set_threshold(policy);
+}
+
+bool request_gc_pressure(process_t *process) {
+    if (!process || !os_mutex_depth(process->execution_mutex) || !process->gc_policy.enabled
+        || process->gc_collecting || process->draining_releases || process->destroying
+        || process->exit_requested || process->native_failed)
+        return false;
+    process->gc_pressure.pending = true;
+    return true;
 }
