@@ -5,6 +5,8 @@ interpreter="$(realpath "${1:?goat executable required}")"
 mkdir -p "${2:?output directory required}"
 output_dir="$(realpath "$2")"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+oom_thread_flags=()
+if [[ ${OS:-} != Windows_NT ]]; then oom_thread_flags=(-pthread); fi
 compiler="$(command -v "${CC:-gcc}")"
 ext=so
 shared=(-shared -fPIC)
@@ -42,7 +44,7 @@ compile "${shared[@]}" -DGOAT_NATIVE_BUILD -DNEED_DEPENDENCY "$provider" "$outpu
 mv "$output_dir/dependency.$ext" "$output_dir/dependency.hidden"
 compile -DMEMORY_DEBUG "$repo_root/test/src/functional/native_loader/driver.c" \
     "$repo_root/src/model/native_library.c" "$repo_root/src/model/native_library_linux.c" \
-    "$repo_root/src/model/native_library_windows.c" "$repo_root/lib/memory/allocate.c" \
+    "$repo_root/src/model/native_library_windows.c" "$repo_root/lib/memory/allocate.c" "$repo_root/lib/process/process_exit.c" "${oom_thread_flags[@]}" \
     "${file_sources[@]}" "${libs[@]}" -o "$output_dir/loader-host"
 ok
 current='ABI rejection, metadata snapshots, descriptor ownership and actual unload'

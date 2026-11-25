@@ -8,8 +8,8 @@
 #include "lib/process/process_exit.h"
 
 #include "lib/platform/windows_target.h"
-#include "lib/process/child_process.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _WIN32
@@ -22,6 +22,18 @@
 #    include <time.h>
 #    include <unistd.h>
 #endif
+
+/* Keep the shutdown service linkable without the child-process launcher. */
+static uint64_t exit_monotonic_ms(void) {
+#ifdef _WIN32
+    return GetTickCount64();
+#else
+    struct timespec value;
+    if (clock_gettime(CLOCK_MONOTONIC, &value))
+        abort();
+    return (uint64_t)value.tv_sec * 1000 + value.tv_nsec / 1000000;
+#endif
+}
 
 bool process_exit_select(process_exit_arbiter_t *arbiter, unsigned code) {
     if (!arbiter || code > 255)
@@ -92,7 +104,8 @@ static void *watchdog(void *unused) {
     pause_ms(0);
 #ifndef _WIN32
     uint64_t probe;
-    (void)read(wake_event, &probe, 0);  /* Nonblocking, invalid eventfd size; binds read. */
+    ssize_t probe_result = read(wake_event, &probe, 0); /* Invalid eventfd size; binds read. */
+    (void)probe_result;
     volatile int initial_errno = errno; /* Binds the thread-local errno accessor too. */
     (void)initial_errno;
 #endif
@@ -114,7 +127,7 @@ static void *watchdog(void *unused) {
     while (!atomic_load_explicit(&flush_started, memory_order_acquire))
         pause_ms(1);
     for (;;) {
-        uint64_t now = child_monotonic_ms();
+        uint64_t now = exit_monotonic_ms();
         if (now >= deadline)
             terminate_selected();
         pause_ms((unsigned)(deadline - now));
@@ -139,7 +152,7 @@ bool process_exit_prepare(void) {
     atomic_store_explicit(&preparation, 3, memory_order_release);
     return false;
 #endif
-    uint64_t ready_deadline = child_monotonic_ms() + 1000;
+    uint64_t ready_deadline = exit_monotonic_ms() + 1000;
 #ifdef _WIN32
     wake_event = CreateEventW(NULL, FALSE, FALSE, NULL);
     HANDLE thread = wake_event ? CreateThread(NULL, 0, watchdog, NULL, 0, NULL) : NULL;
@@ -161,7 +174,7 @@ bool process_exit_prepare(void) {
 #endif
     if (success) {
         while (!atomic_load_explicit(&watchdog_ready, memory_order_acquire)
-               && child_monotonic_ms() < ready_deadline)
+               && exit_monotonic_ms() < ready_deadline)
             pause_ms(1);
         success = atomic_load_explicit(&watchdog_ready, memory_order_acquire);
         /* A late thread retains its event and process-lifetime state. Never
@@ -171,7 +184,7 @@ bool process_exit_prepare(void) {
     return success;
 }
 
-_Noreturn void process_exit_request(unsigned code) {
+static void begin_exit(unsigned code) {
     /* Validation failures belong to the language layer. Defensively avoid an
        invalid status if a host violates this API's precondition. */
     if (code > 255)
@@ -184,7 +197,7 @@ _Noreturn void process_exit_request(unsigned code) {
     }
     if (atomic_load_explicit(&preparation, memory_order_acquire) != 2)
         terminate_selected();
-    deadline = child_monotonic_ms() + 1000;
+    deadline = exit_monotonic_ms() + 1000;
     atomic_store_explicit(&flush_started, true, memory_order_release);
 #ifdef _WIN32
     if (!SetEvent(wake_event))
@@ -205,6 +218,24 @@ _Noreturn void process_exit_request(unsigned code) {
     if (pthread_sigmask(SIG_BLOCK, &blocked, NULL))
         terminate_selected();
 #endif
+}
+
+_Noreturn void process_exit_fatal(unsigned code, const char *message, size_t size) {
+    begin_exit(code);
+#ifdef _WIN32
+    DWORD written;
+    if (size <= MAXDWORD)
+        WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, (DWORD)size, &written, NULL);
+#else
+    /* Best effort, no retry loop. A blocked sink is cut off by the watchdog. */
+    ssize_t written = write(STDERR_FILENO, message, size);
+    (void)written; /* Partial/error output cannot change the fatal status or trigger retry. */
+#endif
+    terminate_selected();
+}
+
+_Noreturn void process_exit_request(unsigned code) {
+    begin_exit(code);
     /* Never fflush(NULL): unrelated streams and their handlers are not part of
        this operation. Both writes and stream-lock waits share this deadline. */
     fflush(stdout);

@@ -6,6 +6,7 @@
 
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 /** @brief Zero-initialize before sharing. Zero is open; code+1 atomically publishes a winner. */
 typedef struct process_exit_arbiter_t {
@@ -32,3 +33,9 @@ bool process_exit_prepare(void);
  * Without successful preparation, terminates immediately instead of risking a wait.
  */
 _Noreturn void process_exit_request(unsigned code);
+
+/** @brief Fatal runtime failure: write a fixed diagnostic directly to OS stderr,
+ * under the prepared watchdog deadline, then terminate without flushing stdio or
+ * executing cleanup. No allocation. If preparation failed, skip output and exit.
+ */
+_Noreturn void process_exit_fatal(unsigned code, const char *message, size_t size);

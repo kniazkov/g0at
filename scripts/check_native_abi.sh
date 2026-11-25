@@ -5,6 +5,8 @@ runtime_include="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../include/goat" && 
 interpreter="${1:?goat executable required}"
 output_dir="${2:?output directory required}"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+oom_thread_flags=()
+if [[ ${OS:-} != Windows_NT ]]; then oom_thread_flags=(-pthread); fi
 compiler_flags=("${@:3}")
 mkdir -p "$output_dir"
 passed=0
@@ -74,7 +76,7 @@ ok
 current='lazy allocator lifetime, alignment and concurrent instances'
 thread_flags=()
 if [[ ${OS:-} != Windows_NT ]]; then thread_flags=(-pthread); fi
-host_sources=("$repo_root/src/model/native_services.c" "$repo_root/lib/strings/unicode.c" "$repo_root/lib/memory/allocate.c")
+host_sources=("$repo_root/src/model/native_services.c" "$repo_root/lib/strings/unicode.c" "$repo_root/lib/memory/allocate.c" "$repo_root/lib/process/process_exit.c" "${oom_thread_flags[@]}")
 compile -DMEMORY_DEBUG -I"$repo_root" -I"$repo_root/src" "${host_sources[@]}" "$repo_root/test/src/functional/native_allocator/driver.c" "${thread_flags[@]}" -o "$output_dir/allocator.exe"
 "$output_dir/allocator.exe"
 for mode in overflow corrupt; do

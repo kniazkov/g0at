@@ -5,6 +5,8 @@ runtime_include="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../include/goat" && 
 interpreter="$(realpath "${1:?goat executable required}")"
 output_dir="${2:?output directory required}"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+oom_thread_flags=()
+if [[ ${OS:-} != Windows_NT ]]; then oom_thread_flags=(-pthread); fi
 mkdir -p "$output_dir"
 output_dir="$(realpath "$output_dir")"
 compiler="$(command -v "${CC:-gcc}")"
@@ -41,7 +43,7 @@ cmp "$output_dir/printed.c" "$output_dir/program.c"
 "$output_dir/host.exe" "$output_dir/program.dll"
 ok
 current='literal metacharacters and executable paths with spaces'
-compile -I"$repo_root" -I"$repo_root/src" "$repo_root/test/src/functional/native_windows/compiler_fixture.c" "$repo_root/lib/process/windows_command_line.c" "$repo_root/lib/memory/allocate.c" -o "$output_dir/compiler & fixture.exe"
+compile -I"$repo_root" -I"$repo_root/src" "$repo_root/test/src/functional/native_windows/compiler_fixture.c" "$repo_root/lib/process/windows_command_line.c" "$repo_root/lib/memory/allocate.c" "$repo_root/lib/process/process_exit.c" "${oom_thread_flags[@]}" -o "$output_dir/compiler & fixture.exe"
 fixture="$(cygpath -am "$output_dir/compiler & fixture.exe")"
 strange='name & (literal) %PATH% ! space'
 mkdir -p "$output_dir/$strange"

@@ -434,6 +434,10 @@ static void program(scenario_run_t *r, config_t *c) {
                      language_join(r, c->root, "src/model/native_services.c"),
                      language_join(r, c->root, "lib/strings/unicode.c"),
                      language_join(r, c->root, "lib/memory/allocate.c"),
+                     language_join(r, c->root, "lib/process/process_exit.c"),
+#ifndef _WIN32
+                     "-pthread",
+#endif
                      language_join(r, work, "libgoat_native.a"),
                      "-lm",
                      "-o",
