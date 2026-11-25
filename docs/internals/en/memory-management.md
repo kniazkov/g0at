@@ -1,5 +1,11 @@
 # Runtime ownership and tracing (GC-01)
 
+**Current status:** automatic GC is enabled in CLI/REPL; embedding remains opt-in.
+See the [final audit](gc-final-audit.md) for supported boundaries, tests and blockers.
+The chronological integration notes below retain earlier stage restrictions as
+history; they do not override the current boundary matrix or allocation policy.
+
+
 [Current GC boundary and embedding matrix (#635)](gc-boundary-audit.md).
 
 ## Two separate contracts

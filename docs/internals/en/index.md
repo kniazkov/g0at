@@ -1,5 +1,8 @@
 # Reading the implementation
 
+[Final GC audit and CI gates](gc-final-audit.md).
+
+
 [Русский](../ru/index.md)
 
 These guides explain the current implementation to a C programmer who need not
