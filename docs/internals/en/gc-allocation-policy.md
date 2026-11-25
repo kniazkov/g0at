@@ -98,7 +98,7 @@ payload, not RSS; synchronous pauses and excluded callbacks remain unbounded.
 
 ## Sustained workload and memory budgets
 
-The [automatic-GC stress fixture](../../../test/data/gc-policy-stress/README.md)
+The [automatic-GC stress fixture](https://github.com/kniazkov/g0at/blob/c55dc87c16dc4c3c619a90ed8c4bb80b03323863/test/data/gc-policy-stress/README.md)
 runs 120,000 deterministic iterations with dead cycles and live neighbours,
 small/large retained graphs, workers, exceptions, modules and scalar-v1 calls.
 Twenty checkpoints per run assert bounded active/pool/auxiliary payload and
