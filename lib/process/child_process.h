@@ -38,6 +38,11 @@ typedef struct {
     int signal_number;
     unsigned long system_error;
     unsigned long cleanup_error;
+    /** @brief Linux control-channel failure (errno); zero if no transport failure. */
+    unsigned long control_error;
+    /** @brief Linux supervisor wait status, only meaningful when supervisor_reaped is true. */
+    int supervisor_status;
+    bool supervisor_reaped;
     child_output_t out, err, result;
 } child_result_t;
 

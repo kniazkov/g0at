@@ -1,0 +1,97 @@
+/** @file child_control_testing.c
+ * @copyright 2026 Ivan Kniazkov
+ * @brief Deterministic supervisor reply faults, after the child tree was cleaned.
+ */
+#include "lib/memory/allocate.h"
+#include "lib/process/child_process.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+static const char *mode;
+
+/* Linked only into the dedicated fixture, never enabled via production environment. */
+ssize_t test_control_send(int fd, const void *data, size_t size, int flags) {
+    static unsigned calls;
+    ++calls;
+    if (!strcmp(mode, "eintr") && calls == 1) {
+        errno = EINTR;
+        return -1;
+    }
+    if (!strcmp(mode, "send-error")) {
+        errno = EIO;
+        return -1;
+    }
+    if (!strcmp(mode, "eof"))
+        _exit(23);
+    if (!strcmp(mode, "signal")) {
+        kill(getpid(), SIGKILL);
+        _exit(24);
+    }
+    if (!strcmp(mode, "short"))
+        return send(fd, data, 1, flags);
+    return send(fd, data, size, flags);
+}
+
+ssize_t test_control_recv(int fd, void *data, size_t size, int flags) {
+    ssize_t received = recv(fd, data, size, flags);
+    if (received > 0 && !strcmp(mode, "receive-error")) {
+        errno = ECONNRESET;
+        return -1;
+    }
+    return received;
+}
+
+int main(int argc, char **argv) {
+    assert(argc == 2);
+    mode = argv[1];
+    size_t before = get_allocated_memory_size();
+    const char *args[] = {"/bin/true", NULL};
+    child_options_t options = {
+        .executable = !strcmp(mode, "launch-error") ? "/no-such-goat-test-program" : args[0],
+        .arguments = args,
+        .capture_output = true,
+        .deadline = child_deadline_after(5000)};
+    child_process_t *process = start_child_process(&options);
+    assert(process);
+    const child_result_t *result = wait_child_process(process);
+    printf("mode=%s status=%d control=%lu cleanup=%lu reaped=%d supervisor=%d\n",
+           mode,
+           result->status,
+           result->control_error,
+           result->cleanup_error,
+           result->supervisor_reaped,
+           result->supervisor_status);
+    if (!strcmp(mode, "ok") || !strcmp(mode, "eintr")) {
+        assert(result->status == CHILD_EXITED && result->exit_code == 0);
+        assert(!result->control_error && !result->cleanup_error);
+        assert(result->supervisor_reaped && WIFEXITED(result->supervisor_status));
+        assert(WEXITSTATUS(result->supervisor_status) == 0);
+    } else if (!strcmp(mode, "launch-error")) {
+        assert(result->status == CHILD_START_ERROR && result->system_error == ENOENT);
+        assert(!result->control_error && !result->cleanup_error);
+    } else {
+        assert(result->status == CHILD_IO_ERROR && result->cleanup_error == EIO);
+        unsigned long expected = !strcmp(mode, "short")           ? EPROTO
+                                 : !strcmp(mode, "receive-error") ? ECONNRESET
+                                                                  : EPIPE;
+        assert(result->control_error == expected);
+        // A nonblocking diagnostic sample may precede actual supervisor exit.
+        if (result->supervisor_reaped && !strcmp(mode, "signal"))
+            assert(WIFSIGNALED(result->supervisor_status)
+                   && WTERMSIG(result->supervisor_status) == SIGKILL);
+        if (result->supervisor_reaped && !strcmp(mode, "eof"))
+            assert(WIFEXITED(result->supervisor_status)
+                   && WEXITSTATUS(result->supervisor_status) == 23);
+    }
+    assert(wait_child_process(process) == result); // stable failure, no replay
+    destroy_child_process(process);
+    assert(get_allocated_memory_size() == before);
+    return 0;
+}

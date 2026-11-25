@@ -1147,3 +1147,11 @@ foreach(suite IN LISTS gc_final_tests)
     endif()
   endif()
 endforeach()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  foreach(control_case ok eintr eof signal short send-error receive-error launch-error)
+    add_test(NAME integration.child_control.${control_case} COMMAND child_control_testing ${control_case})
+    set_tests_properties(integration.child_control.${control_case} PROPERTIES
+      LABELS "integration;child-process-migration;child-control" TIMEOUT 15)
+  endforeach()
+endif()

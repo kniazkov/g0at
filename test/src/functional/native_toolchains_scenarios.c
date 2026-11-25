@@ -475,6 +475,9 @@ static void body(scenario_run_t *r, void *user) {
                              : !strcmp(k, "dependency-timeout") ? "compiler probe timed out"
                                                                 : "invalid dependency path";
         REQUIRE(strstr(out, reason));
+        if (!strcmp(k, "dependency-failure") || !strcmp(k, "dependency-timeout"))
+            REQUIRE(strstr(out, "control=0 supervisor_reaped=")
+                    && strstr(out, "supervisor_status="));
     } else if (!strcmp(k, "link-failure")) {
         out = RUN(NULL, NULL, NULL, NULL, NULL, ARGS("GOAT_TOOLCHAIN_MODE=link-fail"));
         REQUIRE(strstr(out, "available=0") && strstr(out, "controlled link failure"));

@@ -274,13 +274,18 @@ static char *run(native_toolchain_context_t *ctx,
         if (status == CLEANUP_OK)
             snprintf(details,
                      sizeof(details),
-                     " [status=%d exit=%" PRId64 " signal=%d system=%lu cleanup=%lu truncated=%d]",
+                     " [status=%d exit=%" PRId64
+                     " signal=%d system=%lu cleanup=%lu truncated=%d control=%lu "
+                     "supervisor_reaped=%d supervisor_status=%d]",
                      (int)result->status,
                      result->exit_code,
                      result->signal_number,
                      result->system_error,
                      result->cleanup_error,
-                     (int)result->out.truncated);
+                     (int)result->out.truncated,
+                     result->control_error,
+                     (int)result->supervisor_reaped,
+                     result->supervisor_status);
         else
             snprintf(details, sizeof(details), " [cleanup service status=%d]", (int)status);
         *diagnostic = ALLOC(strlen(reason) + strlen(details) + size + 3);

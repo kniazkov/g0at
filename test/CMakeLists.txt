@@ -698,3 +698,11 @@ if(GOAT_TEST_ALLOC_FAILURE)
   target_link_libraries(gc_oom_no_watchdog_testing PRIVATE goat_validation m)
   add_dependencies(module_memory_scenarios gc_oom_no_watchdog_testing)
 endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  add_executable(child_control_testing src/component/child_control_testing.c
+    "${PROJECT_SOURCE_DIR}/lib/process/child_process_linux.c")
+  target_compile_definitions(child_control_testing PRIVATE GOAT_TEST_CHILD_CONTROL)
+  target_link_libraries(child_control_testing PRIVATE core m)
+  add_dependencies(child_process_scenarios child_control_testing)
+endif()
