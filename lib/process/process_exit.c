@@ -104,7 +104,8 @@ static void *watchdog(void *unused) {
     pause_ms(0);
 #ifndef _WIN32
     uint64_t probe;
-    (void)read(wake_event, &probe, 0);  /* Nonblocking, invalid eventfd size; binds read. */
+    ssize_t probe_result = read(wake_event, &probe, 0); /* Invalid eventfd size; binds read. */
+    (void)probe_result;
     volatile int initial_errno = errno; /* Binds the thread-local errno accessor too. */
     (void)initial_errno;
 #endif
@@ -227,7 +228,8 @@ _Noreturn void process_exit_fatal(unsigned code, const char *message, size_t siz
         WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, (DWORD)size, &written, NULL);
 #else
     /* Best effort, no retry loop. A blocked sink is cut off by the watchdog. */
-    (void)write(STDERR_FILENO, message, size);
+    ssize_t written = write(STDERR_FILENO, message, size);
+    (void)written; /* Partial/error output cannot change the fatal status or trigger retry. */
 #endif
     terminate_selected();
 }
