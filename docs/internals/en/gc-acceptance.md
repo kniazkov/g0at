@@ -1,15 +1,15 @@
-# GC protocol acceptance (#637)
+# GC acceptance
 
-The current permission/ownership contract is in [the boundary audit](gc-boundary-audit.md).
-This campaign tests the production protocol with explicit forcing; it does not
-introduce allocation thresholds, pressure handling or OOM recovery. Enabling
-ordinary automatic collection remains #638/#639, after accepted CI for this stage.
+The [final audit and CI gates](gc-final-audit.md) describe the current automatic
+policy, mandatory coverage and remaining blockers. The mixed workload below was
+introduced in #637 and deliberately forces boundaries; the acceptance selection
+also includes automatic-policy, CLI and pressure stress added through #642.
 
 ## Reproducible selection
 
 ```sh
 cmake --build build --parallel 4 --target gc_acceptance_runners
-ctest --test-dir build --output-on-failure -L gc-acceptance --no-tests=error
+cmake -DBUILD_DIR=build -P scripts/check_gc_acceptance.cmake
 ```
 
 The label includes all `core.gc_*`, `core.thread_memory.*` and
@@ -97,11 +97,5 @@ in `FINALLY_END`; suppressing join publication fails the worker's admission chec
 Both production mutations are reverted before the acceptance run and are not
 part of the change.
 
-The historical status of #552 does not replace acceptance. Complete #618 and
-unblock automatic policy only after the full matrix and accepted PR, not solely
-because this document exists. #645 remains an independent
-unresolved intermittent ELF investigation; its diagnostic CI did not reproduce
-the original failure. This campaign does not declare that issue fixed. Long-term
-automatic-policy and pressure/OOM stress remains #640–#643, rather than this
-force-boundary test. Sanitizer runs with LSan disabled must be reported separately
-from allocator-balance evidence.
+Current acceptance and closure gates, including unresolved #645, are recorded
+in the [final audit](gc-final-audit.md).

@@ -1130,3 +1130,20 @@ foreach(stress_mode stress-compare stress-native stress-pressure)
   set_tests_properties(core.gc_policy.${stress_mode} PROPERTIES
     LABELS "core;integration;gc-acceptance;gc-stress" TIMEOUT 180)
 endforeach()
+
+goat_suite(core.gc_startup_roots "core;gc-acceptance;gc-roots" $<TARGET_FILE:unit_testing> --gc-startup-root-tests)
+
+# Disjoint bounded groups; the manifest independently guards against lost coverage.
+get_property(gc_final_tests DIRECTORY PROPERTY TESTS)
+foreach(suite IN LISTS gc_final_tests)
+  get_property(labels TEST ${suite} PROPERTY LABELS)
+  if("gc-acceptance" IN_LIST labels)
+    if(NOT "gc-stress" IN_LIST labels)
+      set_property(TEST ${suite} APPEND PROPERTY LABELS gc-regression)
+    endif()
+    get_property(timeout TEST ${suite} PROPERTY TIMEOUT)
+    if(NOT timeout OR timeout GREATER 180)
+      set_tests_properties(${suite} PROPERTIES TIMEOUT 180)
+    endif()
+  endif()
+endforeach()
