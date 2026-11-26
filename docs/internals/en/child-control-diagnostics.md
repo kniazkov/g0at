@@ -63,3 +63,24 @@ also not retroactively diagnosed. #645 stays open pending the diagnostic matrix
 and review of its evidence; successful reruns alone do not prove the original
 intermittent failure fixed. See the adjacent recorded workload report under
 `test/data/child-control/README.md`.
+
+## Cleanup-service transport regression
+
+The `service-*` variants repeat all eight faults through a real separate
+cleanup-service process, as used by compiler probes. They require `CLEANUP_OK`
+for successful delivery of the child result even when that result reports
+`CHILD_IO_ERROR`; final cleanup must report `CLEANUP_TREE_FAILED` in that case.
+Launch failure is distinct and does not claim tree cleanup failure. Repeated
+finish calls must preserve the recorded outcome. The test-only environment
+selects a fault in the fixture executable, never in production binaries, and
+leaves the service-launching supervisor healthy. This guards against losing
+transport diagnostics while serializing the internal child-result structure.
+
+PR #658's investigation passed all 12 configurations (600 native workloads).
+That did not reproduce the historical ELF incident. These service tests cover
+a previously untested route; they do not assign the old failure a proven cause.
+
+Local repeated ASan service testing exposed a startup failure before fault injection.
+The original failure is retained in `test/data/child-control/linux-asan-service-first-failure.txt`.
+A subsequent 400-run diagnostic pass succeeded; it does not explain the failure.
+Startup status and elapsed time are now printed. Follow-up blocker: [#659](https://github.com/kniazkov/g0at/issues/659).
