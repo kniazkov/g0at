@@ -51,6 +51,39 @@ uint64_t child_monotonic_ms(void) {
     return (uint64_t)t.tv_sec * 1000 + t.tv_nsec / 1000000;
 }
 
+#ifdef GOAT_TEST_CHILD_CONTROL
+extern ssize_t test_control_send(int fd, const void *data, size_t size, int flags);
+extern ssize_t test_control_recv(int fd, void *data, size_t size, int flags);
+#endif
+
+/* SOCK_SEQPACKET preserves the reply boundary. EINTR means no bytes were sent;
+ * retry only that syscall, never the compiler or child operation. */
+static void send_reply(int control, const child_reply_t *reply) {
+    ssize_t sent;
+    do {
+#ifdef GOAT_TEST_CHILD_CONTROL
+        sent = test_control_send(control, reply, sizeof(*reply), MSG_NOSIGNAL);
+#else
+        sent = send(control, reply, sizeof(*reply), MSG_NOSIGNAL);
+#endif
+    } while (sent < 0 && errno == EINTR);
+}
+
+static void reap_supervisor(child_process_t *p, int options) {
+    int status;
+    pid_t result;
+    do {
+        result = waitpid(p->supervisor, &status, options);
+    } while (result < 0 && errno == EINTR);
+    if (result > 0) {
+        p->result.supervisor_status = status;
+        p->result.supervisor_reaped = true;
+        p->supervisor = 0;
+    } else if (result < 0 && errno == ECHILD) {
+        p->supervisor = 0;
+    }
+}
+
 static void close_fd(int *fd) {
     if (*fd >= 0)
         close(*fd);
@@ -356,7 +389,7 @@ static void supervise(int control,
         reply.error = launch_error;
     reply.cleanup = cleanup_tree(root);
 finish:
-    (void)send(control, &reply, sizeof(reply), MSG_NOSIGNAL);
+    send_reply(control, &reply);
     _exit(0);
 }
 
@@ -514,7 +547,7 @@ child_process_t *start_child_process(const child_options_t *options) {
                     pid_t detached = fork();
                     if (detached < 0) {
                         child_reply_t failed = {.error = errno, .code = -1};
-                        (void)send(control[1], &failed, sizeof(failed), MSG_NOSIGNAL);
+                        send_reply(control[1], &failed);
                         _exit(1);
                     }
                     if (detached > 0)
@@ -658,7 +691,11 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
         if (p->callback_failed && !p->stopped)
             continue;
         child_reply_t reply;
+#ifdef GOAT_TEST_CHILD_CONTROL
+        ssize_t n = test_control_recv(p->control, &reply, sizeof(reply), MSG_DONTWAIT);
+#else
         ssize_t n = recv(p->control, &reply, sizeof(reply), MSG_DONTWAIT);
+#endif
         if (n == sizeof(reply)) {
             p->result.exit_code = reply.code;
             p->result.signal_number = reply.signal;
@@ -679,15 +716,19 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
             } else {
                 drain(p);
             }
-            int status;
-            while (p->supervisor > 0 && waitpid(p->supervisor, &status, 0) < 0 && errno == EINTR) {
-            }
-            p->supervisor = 0;
+            if (p->supervisor > 0)
+                reap_supervisor(p, 0);
             break;
         }
-        if (!n || (n < 0 && errno != EAGAIN && errno != EINTR)
+        int receive_error = n < 0 ? errno : n == 0 ? EPIPE : EPROTO;
+        if (n >= 0 || (receive_error != EAGAIN && receive_error != EINTR)
             || (cleanup_deadline && child_monotonic_ms() >= cleanup_deadline)) {
+            p->result.control_error = n < 0 && (receive_error == EAGAIN || receive_error == EINTR)
+                                          ? ETIMEDOUT
+                                          : receive_error;
             p->result.cleanup_error = EIO;
+            if (p->supervisor > 0)
+                reap_supervisor(p, WNOHANG);
             if (!p->stopped)
                 p->result.status = CHILD_IO_ERROR;
             break;

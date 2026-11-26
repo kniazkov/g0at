@@ -1,0 +1,8 @@
+mode=ok status=1 control=0 cleanup=0 reaped=1 supervisor=0
+mode=eintr status=1 control=0 cleanup=0 reaped=1 supervisor=0
+mode=eof status=6 control=32 cleanup=5 reaped=1 supervisor=5888
+mode=signal status=6 control=32 cleanup=5 reaped=1 supervisor=9
+mode=short status=6 control=71 cleanup=5 reaped=0 supervisor=0
+mode=send-error status=6 control=32 cleanup=5 reaped=1 supervisor=0
+mode=receive-error status=6 control=104 cleanup=5 reaped=0 supervisor=0
+mode=launch-error status=5 control=0 cleanup=0 reaped=1 supervisor=0

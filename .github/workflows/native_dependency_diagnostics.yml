@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - '.github/workflows/native_dependency_diagnostics.yml'
+      - 'lib/process/child_process_linux.c'
+      - 'lib/process/child_process.h'
+      - 'src/codegen/native_toolchain.c'
+      - 'test/src/component/child_control_testing.c'
 permissions:
   contents: read
 jobs:
@@ -31,7 +35,9 @@ jobs:
           else
             cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
           fi
-          cmake --build build --parallel 2 --target goat
+          cmake --build build --parallel 2 --target goat child_control_testing
+      - name: Verify supervisor transport faults repeatedly
+        run: ctest --test-dir build -L child-control --no-tests=error --output-on-failure --repeat until-fail:25
       - name: Repeat isolated and concurrent native-required executions
         shell: bash
         run: |

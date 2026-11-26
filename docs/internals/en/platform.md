@@ -81,3 +81,6 @@ children list; it does not weaken the requirement to confirm tree cleanup.
 Linux CI also builds a forced-fallback fixture, covering success/failure/crash,
 timeout, owner death/isolation and 20 launch-death cases with the independent
 OS observer. Windows retains its existing job-object implementation.
+
+
+[Linux supervisor reply diagnostics](child-control-diagnostics.md).
