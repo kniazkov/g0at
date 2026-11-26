@@ -2,6 +2,9 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Deterministic supervisor reply faults, after the child tree was cleaned.
  */
+#ifdef NDEBUG
+#    undef NDEBUG /* Fixture operations and checks must execute in Release too. */
+#endif
 #include "lib/memory/allocate.h"
 #include "lib/process/child_process.h"
 #include "lib/process/cleanup_service.h"
