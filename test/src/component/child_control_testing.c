@@ -8,6 +8,7 @@
 #include "lib/memory/allocate.h"
 #include "lib/process/child_process.h"
 #include "lib/process/cleanup_service.h"
+#include "lib/process/process_channel.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -53,15 +54,108 @@ ssize_t test_control_recv(int fd, void *data, size_t size, int flags) {
     return received;
 }
 
+static void print_startup(cleanup_service_t *service) {
+    cleanup_start_diagnostic_t d;
+    assert(cleanup_service_startup_diagnostic(service, &d));
+    fprintf(stderr,
+            "startup status=%d stage=%d transport=%d elapsed_ms=%llu type=%u size=%zu\n",
+            d.status,
+            d.stage,
+            d.transport,
+            (unsigned long long)d.elapsed_ms,
+            d.reply_type,
+            d.reply_size);
+}
+
+static int startup_child(const char *fault, char **argv) {
+    uintptr_t channel = (uintptr_t)strtoull(argv[3], NULL, 10);
+    child_deadline_t deadline = strtoull(argv[4], NULL, 10);
+    if (!strcmp(fault, "timeout")) {
+        /* Keep the channel open until owner death; exiting at the deadline races EOF
+         * against timeout and would not deterministically test CHANNEL_TIMEOUT. */
+        uintptr_t watch = (uintptr_t)strtoull(argv[2], NULL, 10);
+        assert(child_wait_parent(watch, 0));
+        return 0;
+    }
+    if (!strcmp(fault, "exit"))
+        return 19;
+    uint32_t frame[] = {0x47544331u, 1, 6};
+    const char *body = "/test";
+    if (!strcmp(fault, "magic"))
+        frame[0] = 0;
+    else if (!strcmp(fault, "type"))
+        frame[1] = 99;
+    else if (!strcmp(fault, "path"))
+        body = "/a\0bc";
+    else
+        assert(!strcmp(fault, "body"));
+    assert(write_process_channel(channel, frame, sizeof(frame), deadline) == CHANNEL_OK);
+    if (strcmp(fault, "body") && strcmp(fault, "magic"))
+        assert(write_process_channel(channel, body, 6, deadline) == CHANNEL_OK);
+    close_process_channel(channel);
+    return 0;
+}
+
+static int startup_test(const char *fault) {
+    size_t before = get_allocated_memory_size();
+    assert(!setenv("GOAT_FIXTURE_STARTUP", fault, 1));
+    cleanup_service_t *service =
+        create_cleanup_service(!strcmp(fault, "missing") ? "/no-such-goat-test-program" : NULL);
+    assert(service);
+    cleanup_start_diagnostic_t d = {0}, again = {0};
+    assert(!cleanup_service_startup_diagnostic(service, &d));
+    cleanup_status_t status = ensure_cleanup_service(service);
+    assert(!unsetenv("GOAT_FIXTURE_STARTUP"));
+    print_startup(service);
+    assert(cleanup_service_startup_diagnostic(service, &d));
+    assert(d.status == status);
+    if (!strcmp(fault, "ok")) {
+        assert(status == CLEANUP_OK && d.stage == CLEANUP_START_READY);
+        assert(d.transport == CHANNEL_OK);
+        assert(finish_cleanup_service(service).status == CLEANUP_OK);
+    } else {
+        assert(status == (!strcmp(fault, "timeout") ? CLEANUP_TIMEOUT : CLEANUP_START_FAILED));
+        cleanup_start_stage_t stage = !strcmp(fault, "body") ? CLEANUP_START_BODY
+                                      : (!strcmp(fault, "type") || !strcmp(fault, "path"))
+                                          ? CLEANUP_START_VALIDATE
+                                          : CLEANUP_START_HEADER;
+        int transport = !strcmp(fault, "timeout")         ? CHANNEL_TIMEOUT
+                        : !strcmp(fault, "magic")         ? CHANNEL_ERROR
+                        : stage == CLEANUP_START_VALIDATE ? CHANNEL_OK
+                                                          : CHANNEL_CLOSED;
+        assert(d.stage == stage && d.transport == transport);
+        if (stage == CLEANUP_START_BODY || stage == CLEANUP_START_VALIDATE)
+            assert(d.reply_size == 6 && d.reply_type == (!strcmp(fault, "type") ? 99u : 1u));
+        assert(ensure_cleanup_service(service) == status);
+    }
+    assert(cleanup_service_startup_diagnostic(service, &again));
+    assert(d.status == again.status && d.stage == again.stage && d.transport == again.transport
+           && d.elapsed_ms == again.elapsed_ms && d.reply_type == again.reply_type
+           && d.reply_size == again.reply_size);
+    destroy_cleanup_service(service);
+    assert(get_allocated_memory_size() == before);
+    return 0;
+}
+
 int main(int argc, char **argv) {
     mode = "ok";
     if (argc > 1 && !strcmp(argv[1], CLEANUP_SERVICE_ARGUMENT)) {
+        const char *startup = getenv("GOAT_FIXTURE_STARTUP");
+        if (startup && strcmp(startup, "ok"))
+            return startup_child(startup, argv);
+        if (startup) {
+            int code;
+            assert(cleanup_service_main(argc, argv, &code));
+            return code;
+        }
         mode = getenv("GOAT_FIXTURE_CONTROL_MODE");
         assert(mode);
         int code;
         assert(cleanup_service_main(argc, argv, &code));
         return code;
     }
+    if (argc == 3 && !strcmp(argv[2], "startup"))
+        return startup_test(argv[1]);
     assert(argc == 2 || (argc == 3 && !strcmp(argv[2], "service")));
     bool through_service = argc == 3;
     mode = argv[1];
@@ -89,6 +183,8 @@ int main(int argc, char **argv) {
                     argv[1],
                     (int)startup,
                     (unsigned long long)(child_monotonic_ms() - started));
+        if (startup != CLEANUP_OK)
+            print_startup(service);
         assert(startup == CLEANUP_OK);
         assert(!unsetenv("GOAT_FIXTURE_CONTROL_MODE"));
         options.capture_output = false; // Service captures output by contract.

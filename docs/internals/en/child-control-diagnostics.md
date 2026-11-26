@@ -84,3 +84,38 @@ Local repeated ASan service testing exposed a startup failure before fault injec
 The original failure is retained in `test/data/child-control/linux-asan-service-first-failure.txt`.
 A subsequent 400-run diagnostic pass succeeded; it does not explain the failure.
 Startup status and elapsed time are now printed. Follow-up blocker: [#659](https://github.com/kniazkov/g0at/issues/659).
+
+## Startup handshake evidence (#659)
+
+A single immutable `cleanup_start_diagnostic_t` is recorded by the existing
+one-attempt startup. `cleanup_service_startup_diagnostic` copies it under the
+service lock; before any attempt it returns false. Observation never polls or
+waits for the child and does not extend the 1000 ms startup deadline. Repeated
+ensure/finish calls do not overwrite the evidence. Compiler probe, native
+preparation and module loading failures include the bounded formatted evidence.
+No executable path, environment, output or READY directory is printed.
+
+| Field | Meaning |
+|---|---|
+| `status` | Existing `cleanup_status_t`, unchanged |
+| `stage` | Last step reached: 0 channel creation, 1 process object creation, 2 READY header, 3 READY body, 4 READY validation, 5 ACK, 6 ready |
+| `transport` | -1 before any transport operation; otherwise 0 OK, 1 timeout, 2 closed, 3 error (`channel_status_t`) |
+| `elapsed_ms` | Duration of the original attempt, not the observation |
+| `type`, `size` | Header values after accepted magic/size bounds; zero until then |
+
+`transport=0 stage=4` with failure means a complete frame failed READY validation.
+`stage=2 transport=3` can mean invalid framing or an I/O error; no OS errno is
+claimed. `stage=2 transport=2` cannot distinguish an executable launch failure
+from early service exit: the process API launches asynchronously. We deliberately
+do not poll it here because final tree cleanup may block, violating the startup
+budget. Process exit details remain a separate investigation step. These fields
+do not establish the cause of the historical #645 or #659 failure.
+
+Eight `startup-*` cases exercise normal startup, missing executable, early exit,
+no READY, invalid magic/type/path and a truncated body through real processes.
+They verify cached evidence and no second launch. Existing cross-platform service
+tests also inspect the snapshot after concurrent ensure calls; native failure
+scenarios check that diagnostics reach the caller. Fault injection exists only
+in the test executable. The 12-job investigation runs these cases 25 times and
+uploads CTest's last-test/failure logs even when the test step fails. A timeout
+or failed attempt is never retried to make the build green.

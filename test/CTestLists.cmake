@@ -1164,3 +1164,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
       LABELS "integration;child-process-migration;child-control" TIMEOUT 15)
   endforeach()
 endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  foreach(startup_case ok missing exit timeout magic type path body)
+    add_test(NAME integration.child_control.startup-${startup_case}
+      COMMAND child_control_testing ${startup_case} startup)
+    set_tests_properties(integration.child_control.startup-${startup_case} PROPERTIES
+      LABELS "integration;child-process-migration;child-control" TIMEOUT 15)
+  endforeach()
+endif()

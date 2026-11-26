@@ -35,6 +35,34 @@ typedef struct {
     unsigned long native_code;
 } cleanup_result_t;
 
+/** @brief Last startup step reached; failure does not imply a known child exit cause. */
+typedef enum {
+    CLEANUP_START_CHANNEL,
+    CLEANUP_START_PROCESS,
+    CLEANUP_START_HEADER,
+    CLEANUP_START_BODY,
+    CLEANUP_START_VALIDATE,
+    CLEANUP_START_ACK,
+    CLEANUP_START_READY
+} cleanup_start_stage_t;
+
+/** @brief Immutable evidence from the one startup attempt, without polling/stopping the child. */
+typedef struct {
+    cleanup_status_t status;
+    cleanup_start_stage_t stage;
+    /** @brief process_channel.h status, or -1 when no transport operation was attempted. */
+    int transport;
+    uint64_t elapsed_ms;
+    unsigned reply_type;
+    size_t reply_size;
+} cleanup_start_diagnostic_t;
+
+/** @brief Copy a completed attempt under the service lock; false before ensure or on invalid input.
+ * Does not start, poll, wait for or stop a process. No concurrent destroy is allowed.
+ */
+bool cleanup_service_startup_diagnostic(cleanup_service_t *service,
+                                        cleanup_start_diagnostic_t *diagnostic);
+
 /** @brief Allocation only. Create one context per owner run, share it between native consumers.
  * executable is the host implementing cleanup_service_main, NULL means this executable.
  * Copies executable; no service process or temporary directory yet. NULL on sync init failure.
@@ -74,3 +102,8 @@ bool cleanup_service_main(int argc, char **argv, int *exit_code);
 
 /** @brief Observe a completed startup attempt without starting a service. */
 bool cleanup_service_startup_result(cleanup_service_t *service, cleanup_status_t *status);
+
+/** @brief Write bounded startup evidence (no paths/output/environment), or an explicit unavailable
+ * marker. Same locking/lifetime rules as startup_diagnostic. Buffer must have nonzero capacity.
+ */
+void cleanup_service_format_startup(cleanup_service_t *service, char *buffer, size_t capacity);
