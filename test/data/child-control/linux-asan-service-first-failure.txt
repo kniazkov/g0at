@@ -1,0 +1,26 @@
+Linux x86-64 GCC 14.2 Debug ASan/UBSan, LSan off, baseline 1dfae5f7 + service fixtures.
+ctest -L child-control --repeat until-fail:25 --output-on-failure
+Original failure excerpt; subsequent diagnostic runs do not replace this result.
+
+    Test #2723: integration.child_control.service-launch-error ....   Passed    0.06 sec
+      Start 2723: integration.child_control.service-launch-error
+    Test #2723: integration.child_control.service-launch-error ....   Passed    0.07 sec
+      Start 2723: integration.child_control.service-launch-error
+    Test #2723: integration.child_control.service-launch-error ....   Passed    0.10 sec
+      Start 2723: integration.child_control.service-launch-error
+    Test #2723: integration.child_control.service-launch-error ....Subprocess aborted***Exception:   1.13 sec
+child_control_testing: /workspace/scratch/92b97d5d7773/g0at/test/src/component/child_control_testing.c:80: main: Assertion `service && ensure_cleanup_service(service) == CLEANUP_OK' failed.
+
+
+94% tests passed, 1 tests failed out of 16
+
+Label Time Summary:
+child-control              =   1.65 sec*proc (16 tests)
+child-process-migration    =   1.65 sec*proc (16 tests)
+integration                =   1.65 sec*proc (16 tests)
+
+Total Test time (real) =  14.22 sec
+
+The following tests FAILED:
+	2723 - integration.child_control.service-launch-error (Subprocess aborted) child-control child-process-migration integration
+Errors while running CTest

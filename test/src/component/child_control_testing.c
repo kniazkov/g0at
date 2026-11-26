@@ -4,11 +4,13 @@
  */
 #include "lib/memory/allocate.h"
 #include "lib/process/child_process.h"
+#include "lib/process/cleanup_service.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
@@ -49,7 +51,16 @@ ssize_t test_control_recv(int fd, void *data, size_t size, int flags) {
 }
 
 int main(int argc, char **argv) {
-    assert(argc == 2);
+    mode = "ok";
+    if (argc > 1 && !strcmp(argv[1], CLEANUP_SERVICE_ARGUMENT)) {
+        mode = getenv("GOAT_FIXTURE_CONTROL_MODE");
+        assert(mode);
+        int code;
+        assert(cleanup_service_main(argc, argv, &code));
+        return code;
+    }
+    assert(argc == 2 || (argc == 3 && !strcmp(argv[2], "service")));
+    bool through_service = argc == 3;
     mode = argv[1];
     size_t before = get_allocated_memory_size();
     const char *args[] = {"/bin/true", NULL};
@@ -58,9 +69,34 @@ int main(int argc, char **argv) {
         .arguments = args,
         .capture_output = true,
         .deadline = child_deadline_after(5000)};
-    child_process_t *process = start_child_process(&options);
-    assert(process);
-    const child_result_t *result = wait_child_process(process);
+    child_process_t *process = NULL;
+    cleanup_service_t *service = NULL;
+    child_result_t service_result;
+    const child_result_t *result;
+    if (through_service) {
+        assert(!setenv("GOAT_FIXTURE_CONTROL_MODE", mode, 1));
+        mode = "ok"; // The supervisor launching the service itself must remain healthy.
+        service = create_cleanup_service(NULL);
+        assert(service);
+        uint64_t started = child_monotonic_ms();
+        cleanup_status_t startup = ensure_cleanup_service(service);
+        if (startup != CLEANUP_OK)
+            fprintf(stderr,
+                    "cleanup startup failed: mode=%s status=%d elapsed_ms=%llu\n",
+                    argv[1],
+                    (int)startup,
+                    (unsigned long long)(child_monotonic_ms() - started));
+        assert(startup == CLEANUP_OK);
+        assert(!unsetenv("GOAT_FIXTURE_CONTROL_MODE"));
+        options.capture_output = false; // Service captures output by contract.
+        assert(run_cleanup_process(service, &options, &service_result) == CLEANUP_OK);
+        result = &service_result;
+        mode = argv[1];
+    } else {
+        process = start_child_process(&options);
+        assert(process);
+        result = wait_child_process(process);
+    }
     printf("mode=%s status=%d control=%lu cleanup=%lu reaped=%d supervisor=%d\n",
            mode,
            result->status,
@@ -90,8 +126,16 @@ int main(int argc, char **argv) {
             assert(WIFEXITED(result->supervisor_status)
                    && WEXITSTATUS(result->supervisor_status) == 23);
     }
-    assert(wait_child_process(process) == result); // stable failure, no replay
-    destroy_child_process(process);
+    if (through_service) {
+        mode = "ok";
+        cleanup_result_t finished = finish_cleanup_service(service);
+        assert(finished.status == (result->cleanup_error ? CLEANUP_TREE_FAILED : CLEANUP_OK));
+        assert(finish_cleanup_service(service).status == finished.status);
+        destroy_cleanup_service(service);
+    } else {
+        assert(wait_child_process(process) == result); // stable failure, no replay
+        destroy_child_process(process);
+    }
     assert(get_allocated_memory_size() == before);
     return 0;
 }
