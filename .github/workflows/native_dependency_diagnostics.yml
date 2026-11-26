@@ -37,7 +37,7 @@ jobs:
           else
             cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
           fi
-          cmake --build build --parallel 2 --target goat child_control_testing
+          cmake --build build --parallel 2 --target goat child_control_testing cleanup_service_testing
       - name: Verify supervisor transport faults repeatedly
         run: ctest --test-dir build -L child-control --no-tests=error --output-on-failure --repeat until-fail:25
       - name: Repeat isolated and concurrent native-required executions

@@ -77,3 +77,49 @@ returncode: -6
 Restore the assignment and rebuild: the same test passes with
 `status=1 stage=3 transport=2 type=1 size=6`. This proves the test detects loss of
 stage evidence; it does not prove the cause of either historical incident.
+
+## Non-consuming observation follow-up, 26 November 2026
+
+Base: master `6fc5ff1a32dfdff034a5564958e5e0e4b9959096` (PR #661 merged).
+The new observation is deliberately separate from poll: it does not enforce
+an expired command deadline or wait for tree cleanup. It preserves the later
+wait result and output, including callbacks. Linux fault tests observe twice
+before wait; cross-platform tests cover running/missing/exited children.
+
+Negative control: remove `MSG_PEEK` from the Linux observation and rebuild the
+Debug fixture. `cleanup_service_testing observe exited` exits 1:
+
+```
+check failed: repeated.status == sample.status && repeated.exit_code == sample.exit_code && repeated.system_error == sample.system_error
+```
+
+Restoring MSG_PEEK and rebuilding makes the same test pass. This checks the
+non-consuming contract, not the cause of the historical intermittent failure.
+
+Initial Release and sanitizer repeats failed the new live-child test at
+`sample.status == CHILD_RUNNING && sample.exit_code == -1`. That fixture used
+a 1 ms **launch** deadline, which can expire in start_child_process before it
+launches anything. The corrected fixture allows 1000 ms for launch, checks the
+initial observation, then waits past that same deadline before observing again.
+This changes the test only; production deadlines and behavior are unchanged.
+The initial failed repeats are excluded from final success counts.
+
+Example startup observations on this machine:
+
+```
+missing: [status=1 stage=2 transport=2 elapsed_ms=1 type=0 size=0] [process=0 exit=-1 signal=0 system=0 control=0]
+exit:    [status=1 stage=2 transport=2 elapsed_ms=1 type=0 size=0] [process=0 exit=-1 signal=0 system=0 control=0]
+timeout: [status=2 stage=2 transport=1 elapsed_ms=1002 type=0 size=0] [process=0 exit=-1 signal=0 system=0 control=0]
+```
+
+These intentionally preserve unavailable evidence: the supervisor's terminal
+packet had not arrived at the one startup sample. Dedicated observation tests
+wait for a packet under their own test budget and then require exact exit/error
+classification and unchanged subsequent wait. Production does not add that wait.
+
+Final local validation (Linux x86-64 GCC 14.2): 28 cases × 25 repeats ×
+Debug/Release/ASan+UBSan = 2100 passed (LSan off, local sanitizer non-PIE).
+The 40 service/native-failure scenarios had 38 passes and the two existing
+Windows-only busy-file skips. Full StringBuilder modes passed with a new work
+directory. clang-format 18.1.8, Doxygen 1.9.8 and diff checks passed. Windows
+behavior awaits CI; successful local repeats do not close #645 or #659.

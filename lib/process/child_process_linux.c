@@ -749,6 +749,34 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
     return &p->result;
 }
 
+child_observation_t observe_child_process(const child_process_t *p) {
+    child_observation_t result = {.status = CHILD_RUNNING, .exit_code = -1};
+    if (!p)
+        return result;
+    if (p->done) {
+        result.status = p->result.status;
+        result.exit_code = p->result.exit_code;
+        result.signal_number = p->result.signal_number;
+        result.system_error = p->result.system_error;
+        result.control_error = p->result.control_error;
+        return result;
+    }
+    child_reply_t reply;
+    ssize_t size = recv(p->control, &reply, sizeof(reply), MSG_PEEK | MSG_DONTWAIT | MSG_TRUNC);
+    if (size == sizeof(reply)) {
+        result.status = reply.error    ? CHILD_START_ERROR
+                        : reply.signal ? CHILD_SIGNALED
+                                       : CHILD_EXITED;
+        result.exit_code = reply.code;
+        result.signal_number = reply.signal;
+        result.system_error = reply.error;
+    } else if (size >= 0 || (errno != EAGAIN && errno != EINTR)) {
+        result.status = CHILD_IO_ERROR;
+        result.control_error = size < 0 ? errno : size == 0 ? EPIPE : EPROTO;
+    }
+    return result;
+}
+
 const child_result_t *wait_child_process(child_process_t *p) {
     return wait_process(p, false, false);
 }

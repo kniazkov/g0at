@@ -55,6 +55,8 @@ typedef struct {
     uint64_t elapsed_ms;
     unsigned reply_type;
     size_t reply_size;
+    /** @brief One nonblocking sample on failure; CHILD_RUNNING means unavailable evidence. */
+    child_observation_t process;
 } cleanup_start_diagnostic_t;
 
 /** @brief Copy a completed attempt under the service lock; false before ensure or on invalid input.

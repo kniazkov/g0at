@@ -108,7 +108,7 @@ No executable path, environment, output or READY directory is printed.
 claimed. `stage=2 transport=2` cannot distinguish an executable launch failure
 from early service exit: the process API launches asynchronously. We deliberately
 do not poll it here because final tree cleanup may block, violating the startup
-budget. Process exit details remain a separate investigation step. These fields
+budget. A separate non-consuming observation is described below. These handshake fields
 do not establish the cause of the historical #645 or #659 failure.
 
 Eight `startup-*` cases exercise normal startup, missing executable, early exit,
@@ -119,3 +119,41 @@ scenarios check that diagnostics reach the caller. Fault injection exists only
 in the test executable. The 12-job investigation runs these cases 25 times and
 uploads CTest's last-test/failure logs even when the test step fails. A timeout
 or failed attempt is never retried to make the build green.
+
+## Non-consuming process observation
+
+`observe_child_process` performs one nonblocking observation, without invoking
+callbacks, collecting output, enforcing a deadline, terminating a process,
+reaping a supervisor or retrying a syscall. It does not change the result of a
+later wait/poll. An already finalized object returns its recorded scalar result.
+
+On Linux, `recv(MSG_PEEK | MSG_DONTWAIT | MSG_TRUNC)` inspects a supervisor packet
+without consuming it. A complete packet distinguishes launch error, normal exit
+and signal exit; EOF, malformed packets and receive errors have a separate
+`control_error`. An interrupted receive or an absent packet leaves the observation
+unavailable. On Windows, a zero-time process-handle check and GetExitCodeProcess
+observe root exit only; no job termination or job-empty wait occurs. Exit code
+259 is handled as an exit when the process handle is signaled.
+
+This is **not** a tree-cleanup API. Linux supervisor replies normally follow tree
+cleanup, whereas Windows root exit does not establish descendant cleanup. The
+observation intentionally exposes no cleanup-success field. Existing wait/stop
+remain responsible for cleanup and final output delivery.
+
+Failed startup samples this evidence once and caches it with the handshake
+snapshot. The additional bounded suffix is
+`[process=<child_status> exit=<code> signal=<number> system=<native error> control=<errno>]`.
+`process=0 exit=-1` means no terminal evidence was available at the sampling time;
+it is neither proof that the service is alive nor proof it started successfully.
+Successful startup does not sample the process. There is no added waiting budget.
+A reply may arrive just after channel closure, so an individual failure can still
+have unavailable process evidence. The historical failures remain unexplained.
+
+Cross-platform observation tests cover a live child with an expired deadline,
+missing executable, and exit with captured output. They require observations to
+leave callbacks untouched, preserve repeated observations and preserve the later
+wait result and output. Linux supervisor fault tests now observe twice before
+waiting, including a child terminated by SIGTERM, supervisor death, a short reply
+and launch failure. The receive-error injection remains specific to consuming
+recv; observation sees its intact reply. All observation tests run in the normal
+integration suite and in the repeated Linux investigation.

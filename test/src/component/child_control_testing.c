@@ -55,16 +55,9 @@ ssize_t test_control_recv(int fd, void *data, size_t size, int flags) {
 }
 
 static void print_startup(cleanup_service_t *service) {
-    cleanup_start_diagnostic_t d;
-    assert(cleanup_service_startup_diagnostic(service, &d));
-    fprintf(stderr,
-            "startup status=%d stage=%d transport=%d elapsed_ms=%llu type=%u size=%zu\n",
-            d.status,
-            d.stage,
-            d.transport,
-            (unsigned long long)d.elapsed_ms,
-            d.reply_type,
-            d.reply_size);
+    char evidence[384];
+    cleanup_service_format_startup(service, evidence, sizeof(evidence));
+    fprintf(stderr, "startup %s\n", evidence);
 }
 
 static int startup_child(const char *fault, char **argv) {
@@ -109,6 +102,12 @@ static int startup_test(const char *fault) {
     print_startup(service);
     assert(cleanup_service_startup_diagnostic(service, &d));
     assert(d.status == status);
+    if (!strcmp(fault, "timeout") || !strcmp(fault, "ok"))
+        assert(d.process.status == CHILD_RUNNING && d.process.exit_code == -1);
+    if (!strcmp(fault, "missing") && d.process.status != CHILD_RUNNING)
+        assert(d.process.status == CHILD_START_ERROR && d.process.system_error == ENOENT);
+    if (!strcmp(fault, "exit") && d.process.status != CHILD_RUNNING)
+        assert(d.process.status == CHILD_EXITED && d.process.exit_code == 19);
     if (!strcmp(fault, "ok")) {
         assert(status == CLEANUP_OK && d.stage == CLEANUP_START_READY);
         assert(d.transport == CHANNEL_OK);
@@ -132,6 +131,11 @@ static int startup_test(const char *fault) {
     assert(d.status == again.status && d.stage == again.stage && d.transport == again.transport
            && d.elapsed_ms == again.elapsed_ms && d.reply_type == again.reply_type
            && d.reply_size == again.reply_size);
+    assert(d.process.status == again.process.status
+           && d.process.exit_code == again.process.exit_code
+           && d.process.signal_number == again.process.signal_number
+           && d.process.system_error == again.process.system_error
+           && d.process.control_error == again.process.control_error);
     destroy_cleanup_service(service);
     assert(get_allocated_memory_size() == before);
     return 0;
@@ -139,6 +143,10 @@ static int startup_test(const char *fault) {
 
 int main(int argc, char **argv) {
     mode = "ok";
+    if (argc == 2 && !strcmp(argv[1], "fixture-signal")) {
+        raise(SIGTERM);
+        return 99;
+    }
     if (argc > 1 && !strcmp(argv[1], CLEANUP_SERVICE_ARGUMENT)) {
         const char *startup = getenv("GOAT_FIXTURE_STARTUP");
         if (startup && strcmp(startup, "ok"))
@@ -160,12 +168,15 @@ int main(int argc, char **argv) {
     bool through_service = argc == 3;
     mode = argv[1];
     size_t before = get_allocated_memory_size();
-    const char *args[] = {"/bin/true", NULL};
-    child_options_t options = {
-        .executable = !strcmp(mode, "launch-error") ? "/no-such-goat-test-program" : args[0],
-        .arguments = args,
-        .capture_output = true,
-        .deadline = child_deadline_after(5000)};
+    bool child_signal = !strcmp(mode, "child-signal");
+    const char *args[] = {"/bin/true", child_signal ? "fixture-signal" : NULL, NULL};
+    child_options_t options = {.executable = child_signal ? NULL
+                                             : !strcmp(mode, "launch-error")
+                                                 ? "/no-such-goat-test-program"
+                                                 : args[0],
+                               .arguments = args,
+                               .capture_output = true,
+                               .deadline = child_deadline_after(5000)};
     child_process_t *process = NULL;
     cleanup_service_t *service = NULL;
     child_result_t service_result;
@@ -194,7 +205,30 @@ int main(int argc, char **argv) {
     } else {
         process = start_child_process(&options);
         assert(process);
+        child_observation_t observed;
+        child_deadline_t end = child_deadline_after(5000);
+        do {
+            observed = observe_child_process(process);
+            if (observed.status != CHILD_RUNNING)
+                break;
+            process_pause(1);
+        } while (child_monotonic_ms() < end);
+        assert(observed.status != CHILD_RUNNING);
+        child_observation_t repeated = observe_child_process(process);
+        assert(repeated.status == observed.status && repeated.exit_code == observed.exit_code
+               && repeated.signal_number == observed.signal_number
+               && repeated.system_error == observed.system_error
+               && repeated.control_error == observed.control_error);
         result = wait_child_process(process);
+        if (!strcmp(mode, "receive-error")) {
+            // The receive-error hook affects consuming recv only; peek sees the intact reply.
+            assert(observed.status == CHILD_EXITED && observed.exit_code == 0);
+        } else {
+            assert(result->status == observed.status && result->exit_code == observed.exit_code
+                   && result->signal_number == observed.signal_number
+                   && result->system_error == observed.system_error
+                   && result->control_error == observed.control_error);
+        }
     }
     printf("mode=%s status=%d control=%lu cleanup=%lu reaped=%d supervisor=%d\n",
            mode,
@@ -208,6 +242,9 @@ int main(int argc, char **argv) {
         assert(!result->control_error && !result->cleanup_error);
         assert(result->supervisor_reaped && WIFEXITED(result->supervisor_status));
         assert(WEXITSTATUS(result->supervisor_status) == 0);
+    } else if (child_signal) {
+        assert(result->status == CHILD_SIGNALED && result->signal_number == SIGTERM);
+        assert(!result->cleanup_error && !result->control_error);
     } else if (!strcmp(mode, "launch-error")) {
         assert(result->status == CHILD_START_ERROR && result->system_error == ENOENT);
         assert(!result->control_error && !result->cleanup_error);
