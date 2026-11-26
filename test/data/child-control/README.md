@@ -123,3 +123,14 @@ The 40 service/native-failure scenarios had 38 passes and the two existing
 Windows-only busy-file skips. Full StringBuilder modes passed with a new work
 directory. clang-format 18.1.8, Doxygen 1.9.8 and diff checks passed. Windows
 behavior awaits CI; successful local repeats do not close #645 or #659.
+
+### Windows text-mode fixture correction in PR #662
+
+CI run 45815922620 failed only the `child_observation.exited` byte-count check
+on MINGW64, UCRT64 and MINGW32 (jobs 139895506912, 139895506940, 139895507066).
+The fixture wrote `observation\n` with fwrite to text-mode stdout; Windows
+expands LF to CRLF, while the assertion expected 12 bytes and callback bytes.
+The fixture now uses a shared newline-free payload and sizeof-based lengths.
+Exact byte comparison and callback accounting remain required. No production
+process or cleanup behavior changed. All 12 Linux investigation jobs succeeded
+in run 45815922588; this Windows failure does not explain #645/#659.

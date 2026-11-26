@@ -251,6 +251,8 @@ static int owner(const char *mode, const char *executable) {
     return 0;
 }
 
+// No newline: Windows text-mode stdout expands LF to CRLF before pipe capture.
+static const char observation_payload[] = "observation!";
 static unsigned observed_output;
 
 static bool observe_output(void *context, const unsigned char *data, size_t size) {
@@ -306,8 +308,9 @@ static int observation_test(const char *kind) {
               && result->system_error == sample.system_error);
         CHECK(!result->cleanup_error && !result->control_error);
         if (!missing)
-            CHECK(result->out.size == 12 && !memcmp(result->out.data, "observation\n", 12)
-                  && observed_output == 12);
+            CHECK(result->out.size == sizeof(observation_payload) - 1
+                  && !memcmp(result->out.data, observation_payload, sizeof(observation_payload) - 1)
+                  && observed_output == sizeof(observation_payload) - 1);
     }
     const child_result_t *result = wait_child_process(process);
     sample = observe_child_process(process);
@@ -321,7 +324,7 @@ static int fixture_main(int argc, char **argv) {
     if (argc == 3 && !strcmp(argv[1], "observe"))
         return observation_test(argv[2]);
     if (argc == 3 && !strcmp(argv[1], "observe-exit")) {
-        FWRITE("observation\n", 1, 12, stdout);
+        FWRITE(observation_payload, 1, sizeof(observation_payload) - 1, stdout);
         return 19;
     }
     if (argc == 3 && !strcmp(argv[1], "observe-live")) {
