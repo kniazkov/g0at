@@ -123,8 +123,16 @@ static native_prepare_result_t prepare(const node_t *root,
     }
     if (!context || ensure_cleanup_service(native_build_cleanup(context)) != CLEANUP_OK) {
         result.status = NATIVE_PREPARE_CLEANUP_ERROR;
-        result.diagnostic = copy_native_library_diagnostic(
-            "Temporary native cleanup service did not become ready; compiler was not started");
+        char evidence[192], message[320];
+        cleanup_service_format_startup(context ? native_build_cleanup(context) : NULL,
+                                       evidence,
+                                       sizeof(evidence));
+        snprintf(
+            message,
+            sizeof(message),
+            "Temporary native cleanup service did not become ready; compiler was not started %s",
+            evidence);
+        result.diagnostic = copy_native_library_diagnostic(message);
         goto done;
     }
     if (probe_timeout) {

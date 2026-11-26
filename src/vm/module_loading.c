@@ -124,9 +124,13 @@ static void load_selected(loading_module_t *module) {
     }
     if (ensure_cleanup_service(run->cleanup) != CLEANUP_OK) {
         run->cleaner_failed = true;
-        fail_module(module,
-                    "cleanup service did not become ready; native disabled for this run",
-                    false);
+        char evidence[192], message[320];
+        cleanup_service_format_startup(run->cleanup, evidence, sizeof(evidence));
+        snprintf(message,
+                 sizeof(message),
+                 "cleanup service did not become ready; native disabled for this run %s",
+                 evidence);
+        fail_module(module, message, false);
         return;
     }
     const char *directory = cleanup_service_directory(run->cleanup);

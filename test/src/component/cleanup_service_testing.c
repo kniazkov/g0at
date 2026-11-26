@@ -144,6 +144,8 @@ static int owner(const char *mode, const char *executable) {
     cleanup_service_t *service =
         create_cleanup_service(!strcmp(mode, "missing") ? "/missing/goat-cleaner" : executable);
     CHECK(service && cleanup_service_directory(service) == NULL);
+    cleanup_start_diagnostic_t diagnostic;
+    CHECK(!cleanup_service_startup_diagnostic(service, &diagnostic));
     if (!strcmp(mode, "lazy")) {
         CHECK(finish_cleanup_service(service).status == CLEANUP_OK);
         destroy_cleanup_service(service);
@@ -164,6 +166,10 @@ static int owner(const char *mode, const char *executable) {
             status = current;
         CHECK(current == status);
     }
+    CHECK(cleanup_service_startup_diagnostic(service, &diagnostic));
+    CHECK(diagnostic.status == status);
+    if (status == CLEANUP_OK)
+        CHECK(diagnostic.stage == CLEANUP_START_READY && diagnostic.transport == CHANNEL_OK);
     if (!strcmp(mode, "missing") || !strcmp(mode, "failure")) {
         CHECK(status == CLEANUP_START_FAILED || status == CLEANUP_TIMEOUT);
         CHECK(ensure_cleanup_service(service) == status);

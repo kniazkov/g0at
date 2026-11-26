@@ -28,6 +28,7 @@ struct cleanup_service_t {
     uintptr_t channel;
     bool attempted, ready, broken, finishing;
     cleanup_status_t startup;
+    cleanup_start_diagnostic_t diagnostic;
     cleanup_result_t final;
     atomic_uint_fast64_t finish_deadline;
     atomic_bool finish_timeout;
@@ -56,11 +57,12 @@ static channel_status_t send_frame(uintptr_t channel,
     return status;
 }
 
-static channel_status_t receive_frame(uintptr_t channel,
-                                      unsigned *type,
-                                      void **data,
-                                      size_t *size,
-                                      child_deadline_t deadline) {
+static channel_status_t receive_frame_traced(uintptr_t channel,
+                                             unsigned *type,
+                                             void **data,
+                                             size_t *size,
+                                             child_deadline_t deadline,
+                                             cleanup_start_stage_t *stage) {
     *data = NULL;
     frame_t frame;
     channel_status_t status = read_process_channel(channel, &frame, sizeof(frame), deadline);
@@ -70,6 +72,8 @@ static channel_status_t receive_frame(uintptr_t channel,
         return CHANNEL_ERROR;
     *size = frame.size;
     *type = frame.type;
+    if (stage)
+        *stage = CLEANUP_START_BODY;
     *data = ALLOC(frame.size + 1);
     status = read_process_channel(channel, *data, frame.size, deadline);
     if (status != CHANNEL_OK) {
@@ -77,6 +81,14 @@ static channel_status_t receive_frame(uintptr_t channel,
         *data = NULL;
     }
     return status;
+}
+
+static channel_status_t receive_frame(uintptr_t channel,
+                                      unsigned *type,
+                                      void **data,
+                                      size_t *size,
+                                      child_deadline_t deadline) {
+    return receive_frame_traced(channel, type, data, size, deadline, NULL);
 }
 
 static cleanup_status_t transport_status(channel_status_t status) {
@@ -100,10 +112,13 @@ static cleanup_status_t ensure_locked(cleanup_service_t *s) {
         return s->startup;
     s->attempted = true;
     s->startup = CLEANUP_START_FAILED;
+    uint64_t started = child_monotonic_ms();
+    s->diagnostic.stage = CLEANUP_START_CHANNEL;
+    s->diagnostic.transport = -1;
     child_deadline_t deadline = child_deadline_after(CLEANUP_START_MS);
     uintptr_t pair[2];
     if (!create_process_channel(pair))
-        return s->startup;
+        goto recorded;
     s->channel = pair[0];
     char time[32];
     snprintf(time, sizeof(time), "%llu", (unsigned long long)deadline);
@@ -120,22 +135,37 @@ static cleanup_status_t ensure_locked(cleanup_service_t *s) {
                                .parent_watch = true,
                                .survive_parent = true,
                                .service_channel = pair[1]};
+    s->diagnostic.stage = CLEANUP_START_PROCESS;
     s->process = start_child_process(&options);
     close_process_channel(pair[1]);
+    if (!s->process) {
+        close_process_channel(s->channel);
+        s->channel = 0;
+        goto recorded;
+    }
+    s->diagnostic.stage = CLEANUP_START_HEADER;
     unsigned type = 0;
     void *data = NULL;
     size_t size = 0;
-    channel_status_t status = receive_frame(s->channel, &type, &data, &size, deadline);
+    channel_status_t status =
+        receive_frame_traced(s->channel, &type, &data, &size, deadline, &s->diagnostic.stage);
+    s->diagnostic.reply_type = type;
+    s->diagnostic.reply_size = size;
+    if (status == CHANNEL_OK)
+        s->diagnostic.stage = CLEANUP_START_VALIDATE;
     if (status == CHANNEL_OK && type == MESSAGE_READY && size > 1 && ((char *)data)[size - 1] == 0
         && !memchr(data, 0, size - 1) && validate_fs_path(data, size - 1, NULL)) {
         s->directory = data;
         data = NULL;
+        s->diagnostic.stage = CLEANUP_START_ACK;
         status = send_frame(s->channel, MESSAGE_ACK, NULL, 0, deadline);
         if (status == CHANNEL_OK && child_monotonic_ms() < deadline) {
+            s->diagnostic.stage = CLEANUP_START_READY;
             s->ready = true;
             s->startup = CLEANUP_OK;
         }
     }
+    s->diagnostic.transport = status;
     FREE(data);
     if (!s->ready) {
         close_process_channel(s->channel);
@@ -145,6 +175,9 @@ static cleanup_status_t ensure_locked(cleanup_service_t *s) {
                          ? CLEANUP_TIMEOUT
                          : CLEANUP_START_FAILED;
     }
+recorded:
+    s->diagnostic.status = s->startup;
+    s->diagnostic.elapsed_ms = child_monotonic_ms() - started;
     return s->startup;
 }
 
@@ -557,4 +590,34 @@ bool cleanup_service_startup_result(cleanup_service_t *s, cleanup_status_t *stat
         *status = s->startup;
     unlock_os_mutex(s->mutex);
     return attempted;
+}
+
+bool cleanup_service_startup_diagnostic(cleanup_service_t *s,
+                                        cleanup_start_diagnostic_t *diagnostic) {
+    if (!s || !diagnostic || lock_os_mutex(s->mutex) != OS_THREAD_OK)
+        return false;
+    bool attempted = s->attempted;
+    if (attempted)
+        *diagnostic = s->diagnostic;
+    unlock_os_mutex(s->mutex);
+    return attempted;
+}
+
+void cleanup_service_format_startup(cleanup_service_t *s, char *buffer, size_t capacity) {
+    if (!buffer || !capacity)
+        return;
+    cleanup_start_diagnostic_t d;
+    if (!cleanup_service_startup_diagnostic(s, &d)) {
+        snprintf(buffer, capacity, "[no startup evidence]");
+        return;
+    }
+    snprintf(buffer,
+             capacity,
+             "[status=%d stage=%d transport=%d elapsed_ms=%llu type=%u size=%zu]",
+             d.status,
+             d.stage,
+             d.transport,
+             (unsigned long long)d.elapsed_ms,
+             d.reply_type,
+             d.reply_size);
 }

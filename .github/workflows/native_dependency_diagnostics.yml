@@ -6,6 +6,8 @@ on:
       - '.github/workflows/native_dependency_diagnostics.yml'
       - 'lib/process/child_process_linux.c'
       - 'lib/process/child_process.h'
+      - 'lib/process/cleanup_service.c'
+      - 'lib/process/cleanup_service.h'
       - 'src/codegen/native_toolchain.c'
       - 'test/src/component/child_control_testing.c'
 permissions:
@@ -89,4 +91,6 @@ jobs:
             investigation/*.json
             investigation/environment.txt
             build/CMakeCache.txt
+            build/Testing/Temporary/LastTest.log
+            build/Testing/Temporary/LastTestsFailed.log
           retention-days: 14
