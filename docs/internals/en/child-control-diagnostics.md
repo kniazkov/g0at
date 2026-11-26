@@ -157,3 +157,7 @@ waiting, including a child terminated by SIGTERM, supervisor death, a short repl
 and launch failure. The receive-error injection remains specific to consuming
 recv; observation sees its intact reply. All observation tests run in the normal
 integration suite and in the repeated Linux investigation.
+
+The investigation workflow now runs only via `workflow_dispatch`. Its 12 repeated
+jobs are not started automatically for pull requests. Permanent regression tests
+remain in the ordinary integration suites.
