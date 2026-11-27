@@ -215,3 +215,6 @@ node_t *create_false_node(arena_t *arena);
 
 /** @brief Returns the emitted FUNC position, or BAD_INSTR_INDEX for an unemitted function. */
 instr_index_t get_function_bytecode_instruction(const node_t *node);
+
+/** @brief Copy raw bytes into an arena-owned literal expression. */
+node_t *create_byte_array_node(arena_t *arena, const uint8_t *bytes, size_t length);

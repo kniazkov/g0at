@@ -51,6 +51,8 @@ typedef struct {
     const gchar_t const *invalid_escape_sequence;
     const gchar_t const *empty_character_literal;
     const gchar_t const *invalid_character_literal;
+    const gchar_t const *invalid_byte_literal; /**< Malformed hex bytes. */
+    const gchar_t const *byte_literal_backend; /**< Temporary BA-07 gate. */
     const gchar_t const *unclosed_opening_bracket;
     const gchar_t const *missing_opening_bracket;
     const gchar_t const *brackets_do_not_match;

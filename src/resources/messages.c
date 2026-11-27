@@ -88,6 +88,8 @@ static messages_t english = {
     .unclosed_quotation_mark = U"Unmatched quote found in string literal; expected closing quote",
     .invalid_escape_sequence = U"Invalid escape sequence '\\%c' in string literal",
     .empty_character_literal = U"Empty character literal: expected a single character in quotes",
+    .invalid_byte_literal = U"Invalid byte literal: expected an even number of hexadecimal digits",
+    .byte_literal_backend = U"ByteArray literal execution is not available until BA-07",
     .invalid_character_literal =
         U"Invalid character literal: expected a single character in quotes",
     .unclosed_opening_bracket =
@@ -224,6 +226,9 @@ static messages_t russian = {
     .invalid_escape_sequence =
         U"Неправильная управляющая последовательность '\\%c' в строковом литерале",
     .empty_character_literal = U"Пустой символьный литерал: в кавычках должен быть один символ",
+    .invalid_byte_literal =
+        U"Неверный байтовый литерал: ожидается чётное число шестнадцатеричных цифр",
+    .byte_literal_backend = U"Исполнение литералов ByteArray недоступно до BA-07",
     .invalid_character_literal =
         U"Неправильный символьный литерал: в кавычках должен быть один символ",
     .unclosed_opening_bracket = U"Нет закрывающей скобки, соответствующей '%c'",

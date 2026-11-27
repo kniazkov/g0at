@@ -268,3 +268,24 @@ ranges, wrong types/arity and oversized counts. Model tests additionally inspect
 the direct slice prototype, independent allocation and liveness across GC.
 
 The slice factory uses the caller module and file access context, so its public length remains accessible in source and loaded programs.
+
+## Byte literal frontend (BA-06)
+
+The scanner/parser and graph accept `#` followed by an even number of ASCII hex
+digits (including zero). Examples: `#`, `#00`, `#aAbB`. Canonical graph output is
+uppercase, two digits per byte. Storage is an arena-owned raw byte block.
+Like other literals, the token uses TOKEN_EXPRESSION; NODE_BYTE_ARRAY supplies
+its distinct identity, with no lookup of the identifier ByteArray.
+
+Whitespace, operators and `{ } ( ) [ ] , : ;` delimit the token; comments follow
+the scanner's normal whitespace preprocessing. Any other contiguous suffix,
+including identifiers, non-ASCII letters, underscore or another hash, makes the
+whole candidate invalid. Odd hex length is also invalid. No whitespace is allowed
+inside one literal. Source ranges include the hash and full invalid candidate.
+
+Execution is intentionally disabled until #565. analyze rejects the node before
+optimization (also in unreachable code), with a localized BA-07 diagnostic;
+source, saved compilation and module compilation cannot produce a fake value.
+Calling its bytecode generator without analysis is an internal invariant failure.
+#565 must remove this gate only together with validated raw wire storage and
+fresh mutable runtime instances. The frontend roundtrip test is core.byte_literal.

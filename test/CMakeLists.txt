@@ -728,3 +728,9 @@ add_test(NAME native.byte_array COMMAND "${CMAKE_COMMAND}"
   -DWORK=${CMAKE_CURRENT_BINARY_DIR}/byte-array-modes
   -P "${CMAKE_CURRENT_SOURCE_DIR}/byte_array_modes.cmake")
 set_tests_properties(native.byte_array PROPERTIES LABELS "native;byte-array" TIMEOUT 180)
+
+add_executable(byte_literal_testing src/component/byte_literal_testing.c src/unit/analysis_test_support.c)
+target_link_libraries(byte_literal_testing PRIVATE core)
+add_dependencies(unit_testing byte_literal_testing)
+add_test(NAME core.byte_literal COMMAND byte_literal_testing)
+set_tests_properties(core.byte_literal PROPERTIES LABELS "core;byte-array" TIMEOUT 30)

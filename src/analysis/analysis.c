@@ -516,11 +516,30 @@ static void bind_variables_in_functions(queue_t *functions,
     }
 }
 
+/** @brief Gate before simplification, including literals in unreachable branches. */
+static const node_t *find_byte_literal(const node_t *node) {
+    if (node->vtbl->type == NODE_BYTE_ARRAY)
+        return node;
+    for (size_t i = 0; i < node->vtbl->get_child_count(node); ++i) {
+        const node_t *child = node->vtbl->get_child(node, i);
+        const node_t *found = child ? find_byte_literal(child) : NULL;
+        if (found)
+            return found;
+    }
+    return NULL;
+}
+
 compilation_error_t *analyze(node_t *root_node,
                              parser_memory_t *memory,
                              options_t *options,
                              analysis_collector_t *collector) {
     restore_graph(root_node);
+    const node_t *unsupported = find_byte_literal(root_node);
+    if (unsupported)
+        return create_error_from_node(memory->errors,
+                                      unsupported,
+                                      ERROR,
+                                      get_messages()->byte_literal_backend);
     scope_t *root_scope = create_scope_from_root_context(memory->graph);
     if (options->session_object) {
         add_session_symbols_to_scope(memory->graph, root_scope, options->session_object);
