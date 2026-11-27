@@ -653,3 +653,4 @@ string_builder_basic
 string_builder_self_unicode
 string_builder_inheritance
 string_builder_errors
+byte_array_model

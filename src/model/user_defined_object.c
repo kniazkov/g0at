@@ -5,6 +5,7 @@
  */
 
 #include "access.h"
+#include "byte_array.h"
 #include "common_methods.h"
 #include "context.h"
 #include "gc_refcount.h"
@@ -33,6 +34,7 @@ typedef struct {
     /** @brief The state of the object (e.g., unmarked, marked, or zombie). */
     object_state_t state;
     object_t *gc_next;                /**< Transient link for marking or last-owner release. */
+    byte_buffer_t *byte_array;        /**< Exclusively owned byte storage. */
     string_builder_t *string_builder; /**< Optional owned native builder storage. */
 
     /** @brief A vector storing the prototypes of the object. */
@@ -95,6 +97,11 @@ static void clear_fields(object_user_defined_t *uobj, bool deep) {
         FREE(cell);
     }
     clear_vector(uobj->fields);
+    if (uobj->byte_array) {
+        byte_buffer_destroy(uobj->byte_array);
+        FREE(uobj->byte_array);
+        uobj->byte_array = NULL;
+    }
     if (uobj->string_builder) {
         FREE(uobj->string_builder->data);
         FREE(uobj->string_builder);
@@ -263,6 +270,7 @@ static object_t *clone_in_module(process_t *process,
         module);
     copy->file_id = file_id;
     copy_string_builder_storage(&copy->base, obj);
+    copy_byte_array_storage(&copy->base, obj);
     copy->shadow_inherited = uobj->shadow_inherited;
     copy->inheritance_count = uobj->inheritance_count;
     transfer_t *transfer = relocate ? create_transfer(process) : NULL;
@@ -394,6 +402,7 @@ flat_object_with_access(process_t *process, object_t *source, const function_acc
         if (contains_storage(ancestors, topology.items[i]))
             flatten_storage(transfer, target, topology.items[i]);
     copy_string_builder_storage(target, source);
+    copy_byte_array_storage(target, source);
     finish_transfer(transfer);
     destroy_transfer(transfer);
     destroy_vector(ancestors);
@@ -796,7 +805,7 @@ static operation_result_t power(process_t *process, object_t *obj1, object_t *ob
 
 static bool get_boolean_value(const object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    return uobj->properties->root != NULL;
+    return uobj->byte_array ? uobj->byte_array->length != 0 : uobj->properties->root != NULL;
 }
 
 /** @brief Virtual table defining the behavior of the user-defined object. */
@@ -806,7 +815,10 @@ static size_t gc_owned_payload(const object_t *obj) {
     const string_builder_t *builder = user->string_builder;
     return pooled_user_bytes(user) + user->fields->size * sizeof(field_cell_t)
            + user->keys->size * sizeof(avl_node_t)
-           + (builder ? sizeof(*builder) + allocation_payload_size(builder->data) : 0);
+           + (builder ? sizeof(*builder) + allocation_payload_size(builder->data) : 0)
+           + (user->byte_array
+                  ? sizeof(*user->byte_array) + byte_buffer_owned_bytes(user->byte_array)
+                  : 0);
 }
 
 static object_vtbl_t vtbl = {.type = TYPE_USER_DEFINED_OBJECT,
@@ -831,8 +843,8 @@ static object_vtbl_t vtbl = {.type = TYPE_USER_DEFINED_OBJECT,
                              .get_property = get_property,
                              .create_property = create_property,
                              .set_property = set_property,
-                             .get_index = common_get_index,
-                             .set_index = common_set_index,
+                             .get_index = byte_array_get_index,
+                             .set_index = byte_array_set_index,
                              .bitwise_not = stub_unary_operation,
                              .bitwise_and = stub_bitwise,
                              .bitwise_or = stub_bitwise,
@@ -1217,6 +1229,33 @@ void copy_string_builder_storage(object_t *target, const object_t *source) {
         string_builder_t *copy = initialize_string_builder_storage(target);
         size_t before = gc_policy_object_bytes(target);
         append_substring(copy, original->data, original->length);
+        gc_policy_note_growth(target, before);
+    }
+}
+
+byte_buffer_t *get_byte_array_storage(const object_t *obj) {
+    return obj->vtbl->type == TYPE_USER_DEFINED_OBJECT ? ((object_user_defined_t *)obj)->byte_array
+                                                       : NULL;
+}
+
+byte_buffer_t *initialize_byte_array_storage(object_t *obj) {
+    if (obj->vtbl->type != TYPE_USER_DEFINED_OBJECT)
+        return NULL;
+    object_user_defined_t *user = (object_user_defined_t *)obj;
+    if (!user->byte_array) {
+        size_t before = gc_policy_object_bytes(obj);
+        user->byte_array = CALLOC(sizeof(*user->byte_array));
+        gc_policy_note_growth(obj, before);
+    }
+    return user->byte_array;
+}
+
+void copy_byte_array_storage(object_t *target, const object_t *source) {
+    byte_buffer_t *original = get_byte_array_storage(source);
+    if (original) {
+        byte_buffer_t *copy = initialize_byte_array_storage(target);
+        size_t before = gc_policy_object_bytes(target);
+        byte_buffer_copy(copy, original);
         gc_policy_note_growth(target, before);
     }
 }

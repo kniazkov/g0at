@@ -174,3 +174,38 @@ invokes GC. All views expire on storage replacement and require external locking
 CTest `core.byte_buffer` covers lifecycle/accounting, zero and maximum sizes,
 copy independence, overlap, self-append with/without replacement and repeated
 geometric growth. Run it in Debug, Release and ASan/UBSan builds.
+
+## Object integration (BA-03)
+
+ByteArray is now a root builtin. `ByteArray -> {}` creates an own empty payload
+and readonly length; descendants are empty, repeated init preserves storage,
+and clone/flat copy the source's own bytes. Mixed StringBuilder construction
+fails on the own length conflict. Byte payloads are freed before shell pooling;
+GC accounts for storage and byte capacity. Empty truthiness is already supported.
+
+This step exposes construction and strict indexed access only. Populating a
+buffer in the model test is a C fixture, not a language constructor. Append,
+resize, byte literals, byte equality and canonical notation remain later tasks.
+A plain ByteArray therefore cannot yet be populated from Goat code.
+
+The ordinary user-object vtable delegates byte indexing to the payload handlers.
+The shared property-index predicate keeps module waiting, access checks and
+own-this writes for non-byte user objects; it excludes byte payloads, whose
+indices are strict Integer positions. Explicit user operator lookup still runs
+first. Tests must preserve private/property semantics on ordinary objects.
+
+Initial admission for #663 uses existing conservative mechanisms: lattice_truth
+returns ABSTRACT_EITHER for user objects; index_access invalidates mutable facts
+and its native C expression path supports only scalar argument slots. Builtin
+init has bindings effects and TOP result. module_native convert_argument rejects
+user objects before ABI invocation; no ByteArray tag is added. The existing
+invoke-once error protocol is unchanged. Native mode tests include a scalar seed
+with proven native entry and ByteArray operations via the supported fallback.
+The literal/opcode portion of #663 remains a gate for #565, not completed here.
+
+`core.byte_array` covers populated C fixtures, invalid indices/bytes, clone/flat,
+GC roots, cycle disposal and pool reuse. `native.byte_array` compares source and
+saved programs under optimization none/all and native off/auto/required, verifies
+actual scalar native entry and hashes the saved image before and after execution.
+The functional fixture covers diamonds, readonly fields, mixed init conflicts,
+escaped receivers after constructor failure and ordinary property indexing.

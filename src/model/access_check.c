@@ -6,6 +6,7 @@
 #include "array.h"
 #include "builtins/registry.h"
 #include "common_methods.h"
+#include "model/byte_array.h"
 #include "module_files.h"
 
 operation_result_t add_objects_with_access(process_t *process,
@@ -388,8 +389,8 @@ operation_result_t access_index(process_t *process,
                                 object_t *object,
                                 object_array_t indices,
                                 object_t *value) {
-    if (value ? object->vtbl->set_index != common_set_index
-              : object->vtbl->get_index != common_get_index)
+    if (value ? !byte_array_property_index(object, true)
+              : !byte_array_property_index(object, false))
         return value ? object->vtbl->set_index(process, object, indices, value)
                      : object->vtbl->get_index(process, object, indices);
     if (indices.size != 1)

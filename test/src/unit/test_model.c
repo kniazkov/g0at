@@ -11,6 +11,7 @@
 #include "lib/numbers/split64.h"
 #include "lib/threads/os_thread.h"
 #include "model/builtin_function.h"
+#include "model/byte_array.h"
 #include "model/context.h"
 #include "model/gc_refcount.h"
 #include "model/native_continuation_descriptor.h"
@@ -274,6 +275,7 @@ bool test_instance_of_function() {
     } types[] = {
         {U"Array", get_array_proto},
         {U"Boolean", get_boolean_proto},
+        {U"ByteArray", get_byte_array_proto},
         {U"Character", get_character_proto},
         {U"Function", get_function_proto},
         {U"Integer", get_integer_proto},
