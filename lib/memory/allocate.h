@@ -60,3 +60,6 @@ void print_list_of_memory_blocks(void);
 size_t allocation_size_add(size_t left, size_t right);
 /** @brief Checked array byte count, including a zero count or element size. */
 size_t allocation_size_multiply(size_t count, size_t size);
+
+/** @brief Largest representable payload, excluding internal allocator overhead. */
+size_t allocation_max_payload_size(void);

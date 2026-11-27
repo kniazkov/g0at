@@ -152,3 +152,25 @@ malformed inputs, immutable images and fresh literals in saved modules.
 #663/#568/#570 test mutation invalidation and invoke-once fallback.
 #571 links every contract clause to passing tests. New failures require issues
 and checklist updates; architecture acceptance is not implementation completion.
+
+## Byte storage API (BA-02)
+
+`lib/bytes/byte_buffer.h` implements storage only, independently of VM objects.
+Initialize with `{0}`; exclusive ownership forbids shallow copies. Copy into an
+initialized destination with byte_buffer_copy. Destroy resets all fields and is
+repeatable. Resize fills only new bytes; clear retains capacity; shrink frees an
+empty buffer. Reserve grows geometrically. Append accepts a buffer plus offsets,
+so self-append reacquires storage after growth. Copy-range uses memmove and does
+not resize. Distinct owning buffers must never share allocations.
+
+False means an invalid size/range with no mutation; ALLOC failure is still fatal.
+C callers supply uint8_t fill: Goat argument validation belongs to BA-03/BA-04.
+The limit includes Integer and allocator-header constraints. Capacity arithmetic
+can be tested without allocation. owned_bytes reports only the dynamic data;
+the future object GC callback must also account for separately allocated storage
+and call the existing growth notification. This layer neither roots objects nor
+invokes GC. All views expire on storage replacement and require external locking.
+
+CTest `core.byte_buffer` covers lifecycle/accounting, zero and maximum sizes,
+copy independence, overlap, self-append with/without replacement and repeated
+geometric growth. Run it in Debug, Release and ASan/UBSan builds.

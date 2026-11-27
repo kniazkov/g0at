@@ -709,3 +709,10 @@ endif()
 
 # Observation fixtures are part of the child-control acceptance label.
 add_dependencies(child_process_scenarios cleanup_service_testing)
+
+# Compact storage is independent of the VM object model.
+add_executable(byte_buffer_testing src/component/byte_buffer_testing.c)
+target_link_libraries(byte_buffer_testing PRIVATE goat_common)
+add_test(NAME core.byte_buffer COMMAND byte_buffer_testing)
+set_tests_properties(core.byte_buffer PROPERTIES LABELS "core" TIMEOUT 30)
+add_dependencies(unit_testing byte_buffer_testing)
