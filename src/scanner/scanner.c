@@ -281,6 +281,42 @@ cleanup:
  * Parses a single-quoted literal that must contain exactly one character (possibly an escape
  * sequence). `scan`: The scanner instance used for lexical analysis.
  */
+static int hex_digit(gchar_t c) {
+    if (c >= U'0' && c <= U'9')
+        return c - U'0';
+    if (c >= U'A' && c <= U'F')
+        return c - U'A' + 10;
+    if (c >= U'a' && c <= U'f')
+        return c - U'a' + 10;
+    return -1;
+}
+
+/** @brief Consume one entire non-delimited hex candidate, including invalid suffixes. */
+static void parse_bytes(scanner_t *scan, token_t *token) {
+    next_char(scan);
+    const gchar_t *begin = scan->position.code;
+    gchar_t c = get_char(scan);
+    bool valid = true;
+    while (c != END_OF_SOURCE && !ISSPACE(c) && !is_operator(c) && !STRCHR(U"{}()[],:;", c)) {
+        if (hex_digit(c) < 0)
+            valid = false;
+        c = next_char(scan);
+    }
+    size_t digits = scan->position.code - begin;
+    if (!valid || digits % 2) {
+        token->type = TOKEN_ERROR;
+        token->text.data = get_messages()->invalid_byte_literal;
+        return;
+    }
+    size_t length = digits / 2;
+    uint8_t *bytes = length ? ALLOC(length) : NULL;
+    for (size_t i = 0; i < length; ++i)
+        bytes[i] = (hex_digit(begin[2 * i]) << 4) | hex_digit(begin[2 * i + 1]);
+    token->type = TOKEN_EXPRESSION;
+    token->node = create_byte_array_node(scan->memory->graph, bytes, length);
+    FREE(bytes);
+}
+
 static void parse_character(scanner_t *scan, token_t *token) {
     assert(get_char(scan) == U'\'');
     token->type = TOKEN_EXPRESSION;
@@ -523,6 +559,8 @@ token_t *get_token(scanner_t *scan) {
         parse_string(scan, token);
     } else if (ch == U'\'') {
         parse_character(scan, token);
+    } else if (ch == U'#') {
+        parse_bytes(scan, token);
     } else if (ISDIGIT(ch)) {
         parse_number(scan, token);
     } else if (ch == U',') {

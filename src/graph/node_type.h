@@ -68,6 +68,7 @@ typedef enum {
 
     /** @brief Character literal node type. */
     NODE_CHARACTER,
+    NODE_BYTE_ARRAY, /**< Compact byte literal. */
 
     /** @brief Variable node type. */
     NODE_VARIABLE,
