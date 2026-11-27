@@ -33,7 +33,7 @@ typedef struct {
     uint32_t offset, size, kind, count;
 } data_descriptor_t;
 
-enum { DATA_STRING = 1, DATA_PARAMETERS = 2, DATA_DECLARATION = 3 };
+enum { DATA_STRING = 1, DATA_PARAMETERS = 2, DATA_DECLARATION = 3, DATA_BYTES = 4 };
 
 typedef struct {
     uint8_t signature[8];

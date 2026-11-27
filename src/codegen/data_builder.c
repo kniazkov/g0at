@@ -80,8 +80,8 @@ data_builder_t *create_data_builder(void) {
     return builder;
 }
 
-uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t size) {
-    if (size % 4 || size > UINT32_MAX - 7 || builder->data_size > UINT32_MAX - size - 7
+static uint32_t add_payload(data_builder_t *builder, const void *data, size_t size) {
+    if (size > UINT32_MAX - 7 || builder->data_size > UINT32_MAX - size - 7
         || builder->descriptors_count >= UINT32_MAX / sizeof(data_descriptor_t))
         abort();
     size_t offset = (builder->data_size + 7) & ~(size_t)7;
@@ -119,6 +119,19 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
                                     .kind = DATA_PARAMETERS,
                                     .count = (uint32_t)(size / 4)};
     builder->descriptors[index] = descriptor;
+    return index;
+}
+
+uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t size) {
+    if (size % 4)
+        abort();
+    return add_payload(builder, data, size);
+}
+
+uint32_t add_bytes_to_data_segment(data_builder_t *builder, const uint8_t *bytes, size_t size) {
+    uint32_t index = add_payload(builder, bytes, size);
+    builder->descriptors[index].kind = DATA_BYTES;
+    builder->descriptors[index].count = (uint32_t)size;
     return index;
 }
 

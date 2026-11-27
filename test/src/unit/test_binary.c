@@ -79,7 +79,54 @@ bool test_sha256(void) {
     return true;
 }
 
+static bool byte_payload_roundtrip(void) {
+    const uint8_t bytes[] = {0, 255, 128, 1, 2, 3, 4, 5, 6};
+    const size_t lengths[] = {0, 1, 2, 3, 5, 8, 9};
+    code_builder_t *builder = create_code_builder();
+    data_builder_t *data = create_data_builder();
+    for (size_t i = 0; i < 7; ++i)
+        add_bytes_to_data_segment(data, lengths[i] ? bytes : NULL, lengths[i]);
+    add_instruction(builder, (instruction_t){.opcode = END});
+    bytecode_t *code = link_code_and_data(builder, data);
+    destroy_code_builder(builder);
+    destroy_data_builder(data);
+    ASSERT(code && validate_bytecode_image(code));
+    bytecode_t *loaded = decode_bytecode_image(code->buffer, code->buffer_size);
+    ASSERT(loaded);
+    size_t offset = 0;
+    for (size_t i = 0; i < 7; ++i) {
+        offset = (offset + 7) & ~(size_t)7;
+        data_descriptor_t *d = (data_descriptor_t *)loaded->data_descriptors + i;
+        ASSERT(d->kind == DATA_BYTES && d->count == lengths[i]);
+        ASSERT(d->size == lengths[i] && d->offset == offset);
+        ASSERT(!memcmp(loaded->data + offset, bytes, lengths[i]));
+        d->count++;
+        ASSERT(!validate_bytecode_image(loaded));
+        d->count--;
+        offset += lengths[i];
+    }
+    ASSERT(validate_bytecode_image(loaded));
+    uint8_t *payload = (uint8_t *)loaded->data;
+    payload[1] = 1; /* Padding after the one-byte descriptor. */
+    ASSERT(!validate_bytecode_image(loaded));
+    payload[1] = 0;
+    data_descriptor_t *last = (data_descriptor_t *)loaded->data_descriptors + 6;
+    last->size = last->count = UINT32_MAX;
+    ASSERT(!validate_bytecode_image(loaded));
+    last->size = last->count = 9;
+    last->kind = 99;
+    ASSERT(!validate_bytecode_image(loaded));
+    last->kind = DATA_BYTES;
+    ASSERT(validate_bytecode_image(loaded));
+    ((instruction_t *)loaded->instructions)[0] = (instruction_t){.opcode = SLOAD, .arg1 = 0};
+    ASSERT(!validate_bytecode_image(loaded));
+    free_bytecode(loaded);
+    free_bytecode(code);
+    return true;
+}
+
 bool test_binary_roundtrip(void) {
+    ASSERT(byte_payload_roundtrip());
     bytecode_t *code = sample();
     ASSERT(write_binary_file(filename, code->buffer, code->buffer_size));
     bytecode_t *loaded = read_image(filename);
