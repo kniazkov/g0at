@@ -1,0 +1,116 @@
+const twice = func(n) { return n * 2; };
+if (twice(21) != 42) throw "native seed";
+const check = func(ok) { if (!ok) throw "range check failed"; };
+var a = ByteArray -> {};
+a << 0 << 17 << 34 << 51;
+var target = ByteArray -> {};
+target.resize(4, 255);
+const invalid = func(f) {
+    const beforeA = a.slice(0);
+    const beforeT = target.slice(0);
+    var caught = false;
+    try { f(); } catch(e) { caught = true; check(str(e) == "INVALID_ARGUMENT"); }
+    check(caught && a.length == beforeA.length && target.length == beforeT.length);
+    for (var i = 0; i < a.length; i++) check(a[i] == beforeA[i]);
+    for (var i = 0; i < target.length; i++) check(target[i] == beforeT[i]);
+};
+var s = a.slice(1, 2);
+check(s.length == 2 && s[0] == 17 && s[1] == 34);
+s[0] = 99;
+check(a[1] == 17);
+check(a.slice(4).length == 0 && a.slice(4, 0).length == 0);
+var inherited = a -> { var custom = 123; };
+inherited << 8 << 9;
+s = inherited.slice(0);
+check(s.length == 2 && s[0] == 8 && s.custom == null);
+var alias = a.copyTo(target, 1, 0, 3);
+alias[0] = 7;
+check(target[0] == 7 && target[1] == 34 && target[2] == 51 && target[3] == 255);
+a.copyTo(a, 0, 1, 3);
+check(a[0] == 0 && a[1] == 0 && a[2] == 17 && a[3] == 34);
+a.copyTo(a, 1, 0, 3);
+check(a[0] == 0 && a[1] == 17 && a[2] == 34 && a[3] == 34);
+a.copyTo(a, 0, 0, 4);
+a.copyTo(target, 4, 4, 0);
+invalid(func() { a.slice(); });
+invalid(func() { a.slice(0, 1, 2); });
+invalid(func() { a.slice(-1); });
+invalid(func() { a.slice(5, 0); });
+invalid(func() { a.slice(3, 2); });
+invalid(func() { a.slice(0.0); });
+invalid(func() { a.slice(0, true); });
+invalid(func() { a.slice(0, 9223372036854775807); });
+invalid(func() { a.copyTo(target, 0, 0); });
+invalid(func() { a.copyTo(target, 0, 0, 1, 0); });
+invalid(func() { a.copyTo(null, 0, 0, 0); });
+invalid(func() { a.copyTo(target, 5, 0, 0); });
+invalid(func() { a.copyTo(target, 0, 5, 0); });
+invalid(func() { a.copyTo(target, 0, 3, 2); });
+invalid(func() { a.copyTo(target, -1, 0, 1); });
+invalid(func() { a.copyTo(target, 0, -1, 1); });
+invalid(func() { a.copyTo(target, 0, 0, -1); });
+invalid(func() { a.copyTo(target, 0.0, 0, 1); });
+invalid(func() { a.copyTo(target, 0, false, 1); });
+invalid(func() { a.copyTo(target, 0, 0, 1.0); });
+invalid(func() { a.fill(); });
+invalid(func() { a.fill(256); });
+invalid(func() { a.fill(-1); });
+invalid(func() { a.fill(0.0); });
+invalid(func() { a.fill(0, 5, 0); });
+invalid(func() { a.fill(0, 3, 2); });
+invalid(func() { a.fill(0, -1); });
+invalid(func() { a.fill(0, 0, -1); });
+invalid(func() { a.fill(0, 0, 1, 2); });
+invalid(func() { a.indexOf(); });
+invalid(func() { a.indexOf(0, 0, 1); });
+invalid(func() { a.indexOf(256); });
+invalid(func() { a.indexOf("0"); });
+invalid(func() { a.indexOf(0.0); });
+invalid(func() { a.indexOf(0, -1); });
+invalid(func() { a.indexOf(0, 5); });
+invalid(func() { a.indexOf(0, true); });
+check(a.indexOf(34) == 2 && a.indexOf(34, 3) == 3);
+check(a.indexOf(255) == -1 && a.indexOf(34, 4) == -1);
+var empty = ByteArray -> {};
+check(a.indexOf(empty, 4) == 4 && empty.indexOf(empty) == 0);
+check(empty.indexOf(0) == -1 && a.indexOf(a) == 0);
+check(a.indexOf(a, 1) == -1);
+var pattern = ByteArray -> {};
+pattern << 34 << 34;
+check(a.indexOf(pattern) == 2);
+pattern.append(34);
+check(a.indexOf(pattern) == -1);
+alias = a.fill(8, 1, 2);
+alias[0] = 9;
+check(a[0] == 9 && a[1] == 8 && a[2] == 8 && a[3] == 34);
+a.fill(7, 2);
+check(a[1] == 8 && a[2] == 7 && a[3] == 7);
+a.fill(5);
+check(a[0] == 5 && a[3] == 5 && a.length == 4);
+a.fill(0, 4, 0);
+empty.fill(0).copyTo(empty, 0, 0, 0);
+check(empty.slice(0).length == 0);
+var caught = false;
+try { ByteArray.fill(0); } catch(e) { caught = str(e) == "IMMUTABLE_OBJECT"; }
+check(caught);
+caught = false;
+try { a.copyTo(ByteArray, 0, 0, 0); } catch(e) { caught = str(e) == "IMMUTABLE_OBJECT"; }
+check(caught);
+// Independent snapshot oracle for every overlapping range of a short buffer.
+for (var from = 0; from <= 6; from++) {
+    for (var to = 0; to <= 6; to++) {
+        for (var count = 0; count <= 6; count++) {
+            if (from + count <= 6 && to + count <= 6) {
+                var bytes = ByteArray -> {};
+                bytes << 0 << 1 << 2 << 3 << 4 << 5;
+                bytes.copyTo(bytes, from, to, count);
+                for (var i = 0; i < 6; i++) {
+                    var expected = i;
+                    if (i >= to && i < to + count) expected = from + i - to;
+                    check(bytes[i] == expected);
+                }
+            }
+        }
+    }
+}
+println("byte-array ranges ok");

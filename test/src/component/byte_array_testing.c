@@ -93,10 +93,42 @@ static void mutations(process_t *p) {
     DECREF(a);
 }
 
+/** @brief Slice returns a plain independently owned ByteArray, including empty ranges. */
+static void slices(process_t *p) {
+    object_t *parent = make(p, get_byte_array_proto());
+    object_t *child = make(p, parent);
+    gc_root_handle_t root = register_gc_root(p, child);
+    populate(child);
+    object_t *key = create_string_object(p, STATIC_STRING(U"slice"));
+    const builtin_function_t *method =
+        ((builtin_function_object_t *)get_object_property(get_byte_array_proto(), key))->descriptor;
+    DECREF(key);
+    object_t *start = create_integer_object(p, 0);
+    operation_result_t r = method->execute_method(child, &start, 1, p->main_thread);
+    assert(!r.is_exception);
+    object_t *copy = r.value;
+    gc_root_handle_t copy_root = register_gc_root(p, copy);
+    object_array_t protos = get_inheritance_prototypes(copy);
+    assert(protos.size == 1 && protos.items[0] == get_byte_array_proto());
+    assert(get_byte_array_storage(copy)->length == 3);
+    assert(get_byte_array_storage(copy)->data != get_byte_array_storage(child)->data);
+    get_byte_array_storage(copy)->data[0] = 0;
+    assert(get_byte_array_storage(child)->data[0] == 255);
+    DECREF(start);
+    collect_garbage(p);
+    assert(get_byte_array_storage(copy)->data[0] == 0);
+    unregister_gc_root(p, copy_root);
+    DECREF(copy);
+    unregister_gc_root(p, root);
+    DECREF(child);
+    DECREF(parent);
+}
+
 int main(void) {
     size_t baseline = get_allocated_memory_size();
     process_t *p = create_process();
     mutations(p);
+    slices(p);
     object_t *a = make(p, get_byte_array_proto());
     gc_root_handle_t root = register_gc_root(p, a);
     assert(!get_object_boolean_value(a));

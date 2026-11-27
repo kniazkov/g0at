@@ -237,3 +237,34 @@ The mutation fixture checks chained alias returns, errors without data loss,
 inheritance, clone/flat, immutable prototype and absence of +/+= support in the
 source/GBIN and VM/native matrix. C tests additionally assert capacities, exact
 receiver identity and self-append with and without storage replacement.
+
+## Byte ranges (BA-05)
+
+| Method | Result and bounds |
+|---|---|
+| slice(start, count = remainder) | New plain ByteArray, independent copied bytes; no descendant fields/prototype |
+| copyTo(target, sourceStart, targetStart, count) | All four arguments required; returns target, never resizes it |
+| fill(byte, start = 0, count = remainder) | Returns receiver, fills existing bytes only |
+| indexOf(byteOrArray, start = 0) | First match at/after start, or -1 |
+
+Indices/counts are strict nonnegative Integer values. All ranges are validated
+using subtraction before writes. Zero count allows start == length, but never
+start > length. Invalid arguments raise INVALID_ARGUMENT without changing either
+buffer. Mutating the builtin prototype, including using it as copyTo target,
+raises IMMUTABLE_OBJECT. copyTo supports self/alias overlap with memmove semantics.
+An empty search pattern matches at start (including length); a nonempty pattern
+at length is not found. Byte values are strictly 0..255, without conversion.
+The initial subsequence search is a straightforward bounded byte comparison.
+
+copyTo/indexOf observe the other object before obtaining borrowed buffers, because
+observation can suspend. slice uses the internal builtin factory and copies raw
+bytes, never user fields or init overrides. Its new allocation is accounted by
+the normal GC growth mechanism. All methods retain conservative builtin effects.
+
+The ranges fixture runs in the source/GBIN and VM/native matrix and checks every
+valid overlap of a six-byte buffer against an independent positional oracle.
+Error tests compare both source and destination with snapshots, including empty
+ranges, wrong types/arity and oversized counts. Model tests additionally inspect
+the direct slice prototype, independent allocation and liveness across GC.
+
+The slice factory uses the caller module and file access context, so its public length remains accessible in source and loaded programs.
