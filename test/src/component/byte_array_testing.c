@@ -7,6 +7,7 @@
 #endif
 #include "lib/memory/allocate.h"
 #include "model/access.h"
+#include "model/builtin_function.h"
 #include "model/byte_array.h"
 #include "model/context.h"
 #include "model/process.h"
@@ -45,9 +46,57 @@ static void populate(object_t *o) {
     cell->object = create_integer_object(o->process, 3);
 }
 
+/** @brief Invoke a builtin under a rooted receiver, checking return identity. */
+static void mutate(object_t *receiver, const gchar_t *name, object_t **args, uint16_t count) {
+    object_t *key =
+        create_string_object(receiver->process, (string_value_t){name, STRLEN(name), false});
+    const builtin_function_t *method =
+        ((builtin_function_object_t *)get_object_property(get_byte_array_proto(), key))->descriptor;
+    DECREF(key);
+    operation_result_t r =
+        method->execute_method(receiver, args, count, receiver->process->main_thread);
+    assert(!r.is_exception && r.value == receiver);
+    DECREF(r.value);
+}
+
+/** @brief Exercise storage retention and both self-append allocation paths. */
+static void mutations(process_t *p) {
+    object_t *a = make(p, get_byte_array_proto());
+    gc_root_handle_t root = register_gc_root(p, a);
+    object_t *byte = create_integer_object(p, 42);
+    mutate(a, U"append", &byte, 1);
+    byte_buffer_t *buffer = get_byte_array_storage(a);
+    mutate(a, U"shrinkToFit", NULL, 0);
+    assert(buffer->capacity == 1);
+    mutate(a, U"append", &a, 1);
+    assert(buffer->length == 2 && buffer->data[1] == 42);
+    /* Reserve via resize then shrink logical length only, retaining spare capacity. */
+    object_t *size = create_integer_object(p, 32);
+    mutate(a, U"resize", &size, 1);
+    DECREF(size);
+    size = create_integer_object(p, 2);
+    mutate(a, U"resize", &size, 1);
+    DECREF(size);
+    uint8_t *data = buffer->data;
+    mutate(a, U"append", &a, 1);
+    assert(buffer->data == data && buffer->length == 4 && buffer->data[3] == 42);
+    size_t capacity = buffer->capacity;
+    mutate(a, U"clear", NULL, 0);
+    assert(buffer->capacity == capacity && buffer->length == 0);
+    mutate(a, U"shrinkToFit", NULL, 0);
+    assert(!buffer->data && !buffer->capacity);
+    mutate(a, U"append", &byte, 1);
+    DECREF(byte);
+    collect_garbage(p);
+    assert(buffer->data[0] == 42);
+    unregister_gc_root(p, root);
+    DECREF(a);
+}
+
 int main(void) {
     size_t baseline = get_allocated_memory_size();
     process_t *p = create_process();
+    mutations(p);
     object_t *a = make(p, get_byte_array_proto());
     gc_root_handle_t root = register_gc_root(p, a);
     assert(!get_object_boolean_value(a));
