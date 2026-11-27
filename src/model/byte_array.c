@@ -9,6 +9,8 @@
 #include "builtin_function.h"
 #include "common_methods.h"
 #include "thread.h"
+#include "vm/gc_policy.h"
+#include "vm/gc_protocol.h"
 
 operation_result_t initialize_byte_array(object_t *receiver) {
     if (receiver == get_byte_array_proto())
@@ -83,37 +85,180 @@ initialize(object_t *receiver, object_t **args, uint16_t count, thread_t *thread
     return initialize_byte_array(receiver);
 }
 
+/** @brief A missing payload is never inherited from a prototype. */
+static operation_result_t invalid_receiver(object_t *receiver) {
+    return operation_exception(receiver == get_byte_array_proto()
+                                   ? get_exception_immutable_object()
+                                   : get_exception_invalid_operation());
+}
+
+/** @brief Strict nonnegative Integer, bounded before conversion to size_t. */
+static bool size_argument(object_t *arg, size_t *value) {
+    if (!is_integer_object(arg))
+        return false;
+    int64_t n = get_object_integer_value(arg).value;
+    if (n < 0 || (uint64_t)n > byte_buffer_limit())
+        return false;
+    *value = (size_t)n;
+    return true;
+}
+
+/** @brief Strict byte argument; no numeric coercion. */
+static bool byte_argument(object_t *arg, uint8_t *value) {
+    size_t n;
+    if (!size_argument(arg, &n) || n > 255)
+        return false;
+    *value = (uint8_t)n;
+    return true;
+}
+
+/** @brief Update the immutable public length after a successful mutation. */
+static operation_result_t finish_mutation(object_t *receiver, size_t before) {
+    gc_policy_note_growth(receiver, before);
+    field_cell_t *cell = get_own_field_cell(receiver, get_string_length());
+    object_t *length =
+        create_integer_object(receiver->process, (int64_t)get_byte_array_storage(receiver)->length);
+    DECREF(cell->object);
+    cell->object = length;
+    INCREF(receiver);
+    return operation_success(receiver);
+}
+
+static operation_result_t
+append(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    if (!get_byte_array_storage(receiver))
+        return invalid_receiver(receiver);
+    if (count < 1 || count > 3)
+        return operation_exception(get_exception_invalid_argument());
+    exception_t failure = gc_observe_object(thread, args[0]);
+    if (failure.value) {
+        INCREF(failure.value);
+        return (operation_result_t){failure.value, true, failure.trace};
+    }
+    /* Observation can suspend. Reacquire buffers and validate ranges afterwards. */
+    byte_buffer_t *buffer = get_byte_array_storage(receiver);
+    byte_buffer_t *source = get_byte_array_storage(args[0]);
+    size_t before = gc_policy_object_bytes(receiver);
+    if (source) {
+        size_t start = 0, length;
+        if (count >= 2 && !size_argument(args[1], &start))
+            return operation_exception(get_exception_invalid_argument());
+        if (start > source->length)
+            return operation_exception(get_exception_invalid_argument());
+        length = source->length - start;
+        if (count == 3 && !size_argument(args[2], &length))
+            return operation_exception(get_exception_invalid_argument());
+        if (!byte_buffer_append(buffer, source, start, length))
+            return operation_exception(get_exception_invalid_argument());
+    } else {
+        uint8_t byte;
+        if (count != 1 || !byte_argument(args[0], &byte) || buffer->length == byte_buffer_limit())
+            return operation_exception(get_exception_invalid_argument());
+        byte_buffer_resize(buffer, buffer->length + 1, byte);
+    }
+    return finish_mutation(receiver, before);
+}
+
+static operation_result_t
+resize(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    byte_buffer_t *buffer = get_byte_array_storage(receiver);
+    if (!buffer)
+        return invalid_receiver(receiver);
+    size_t length;
+    uint8_t fill = 0;
+    if (count < 1 || count > 2 || !size_argument(args[0], &length)
+        || (count == 2 && !byte_argument(args[1], &fill)))
+        return operation_exception(get_exception_invalid_argument());
+    size_t before = gc_policy_object_bytes(receiver);
+    if (!byte_buffer_resize(buffer, length, fill))
+        return operation_exception(get_exception_invalid_argument());
+    return finish_mutation(receiver, before);
+}
+
+static operation_result_t
+clear(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    byte_buffer_t *buffer = get_byte_array_storage(receiver);
+    if (!buffer)
+        return invalid_receiver(receiver);
+    if (count)
+        return operation_exception(get_exception_invalid_argument());
+    size_t before = gc_policy_object_bytes(receiver);
+    byte_buffer_clear(buffer);
+    return finish_mutation(receiver, before);
+}
+
+static operation_result_t
+shrink(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    byte_buffer_t *buffer = get_byte_array_storage(receiver);
+    if (!buffer)
+        return invalid_receiver(receiver);
+    if (count)
+        return operation_exception(get_exception_invalid_argument());
+    size_t before = gc_policy_object_bytes(receiver);
+    byte_buffer_shrink(buffer);
+    return finish_mutation(receiver, before);
+}
+
+static operation_result_t immutable_shift(process_t *process, object_t *left, object_t *right) {
+    return operation_exception(get_exception_immutable_object());
+}
+
 static const lattice_element_t *
 unknown(abstract_state_t *state, const lattice_element_t *const *args, size_t count) {
     return make_top_element();
 }
 
-static object_t *get_init(void);
-static const builtin_function_t init = {.name = U"ByteArray.init",
-                                        .min_args = 0,
-                                        .effects = BUILTIN_EFFECT_BINDINGS,
-                                        .execute = invalid_call,
-                                        .execute_method = initialize,
-                                        .interpret = unknown,
-                                        .get_object = get_init};
-
-static object_t *get_init(void) {
-    static builtin_function_object_t storage;
-    return get_builtin_function_object(&storage, &init);
-}
+#define METHOD(id, label, executor)                                                                \
+    static object_t *get_##id(void);                                                               \
+    static const builtin_function_t id = {.name = U##label,                                        \
+                                          .min_args = 0,                                           \
+                                          .effects = BUILTIN_EFFECT_BINDINGS,                      \
+                                          .execute = invalid_call,                                 \
+                                          .execute_method = executor,                              \
+                                          .interpret = unknown,                                    \
+                                          .get_object = get_##id};                                 \
+    static object_t *get_##id(void) {                                                              \
+        static builtin_function_object_t storage;                                                  \
+        return get_builtin_function_object(&storage, &id);                                         \
+    }
+METHOD(init_method, "ByteArray.init", initialize)
+METHOD(append_method, "ByteArray.append", append)
+METHOD(resize_method, "ByteArray.resize", resize)
+METHOD(clear_method, "ByteArray.clear", clear)
+METHOD(shrink_method, "ByteArray.shrinkToFit", shrink)
+#undef METHOD
+static const gchar_t *names[] = {U"init", U"append", U"<<", U"resize", U"clear", U"shrinkToFit"};
 
 static object_array_t get_keys(const object_t *obj) {
-    static object_static_string_t storage;
-    static object_t *keys[1];
-    keys[0] = get_static_string_object(&storage, U"init");
-    return (object_array_t){keys, 1};
+    static object_static_string_t storage[6];
+    static object_t *keys[6];
+    for (size_t i = 0; i < 6; ++i)
+        keys[i] = get_static_string_object(&storage[i], names[i]);
+    return (object_array_t){keys, 6};
 }
 
 static object_t *get_property(const object_t *obj, const object_t *key) {
-    return key->vtbl->type == TYPE_STRING
-                   && !compare_objects_using_vtbl(key, get_keys(obj).items[0])
-               ? get_init()
-               : NULL;
+    if (key->vtbl->type != TYPE_STRING)
+        return NULL;
+    object_array_t keys = get_keys(obj);
+    for (size_t i = 0; i < keys.size; ++i) {
+        if (!compare_objects_using_vtbl(key, keys.items[i])) {
+            switch (i) {
+                case 0:
+                    return get_init_method();
+                case 1:
+                case 2:
+                    return get_append_method();
+                case 3:
+                    return get_resize_method();
+                case 4:
+                    return get_clear_method();
+                default:
+                    return get_shrink_method();
+            }
+        }
+    }
+    return NULL;
 }
 
 static object_vtbl_t byte_proto_vtbl = {.type = TYPE_OTHER,
@@ -137,7 +282,7 @@ static object_vtbl_t byte_proto_vtbl = {.type = TYPE_OTHER,
                                         .bitwise_and = stub_bitwise,
                                         .bitwise_or = stub_bitwise,
                                         .bitwise_xor = stub_bitwise,
-                                        .shift_left = stub_bitwise,
+                                        .shift_left = immutable_shift,
                                         .shift_right = stub_bitwise,
                                         .unary_plus = stub_unary_operation,
                                         .unary_minus = stub_unary_operation,

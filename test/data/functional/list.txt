@@ -654,3 +654,4 @@ string_builder_self_unicode
 string_builder_inheritance
 string_builder_errors
 byte_array_model
+byte_array_mutation

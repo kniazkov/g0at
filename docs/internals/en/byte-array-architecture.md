@@ -209,3 +209,31 @@ saved programs under optimization none/all and native off/auto/required, verifie
 actual scalar native entry and hashes the saved image before and after execution.
 The functional fixture covers diamonds, readonly fields, mixed init conflicts,
 escaped receivers after constructor failure and ordinary property indexing.
+
+## Mutation API (BA-04)
+
+The BA-03 population restriction above is historical: the following methods now
+populate ByteArray from Goat. Every successful operation returns the receiver.
+
+| Operation | Contract |
+|---|---|
+| append(byte) | Strict Integer 0..255 |
+| append(other, start = 0, count = remainder) | Copy ByteArray range; range arguments require ByteArray |
+| receiver << value | append(byte/ByteArray), chainable |
+| resize(length, fill = 0) | Strict nonnegative Integer length; validate fill even on shrink/no-op |
+| clear() | Zero length, retain capacity |
+| shrinkToFit() | Capacity becomes length; empty releases data |
+
+All argument/range/overflow checks precede mutation and return INVALID_ARGUMENT
+on failure. Builtin prototype mutation raises IMMUTABLE_OBJECT, including no-op.
+There is no new + or += support. Shrink discards bytes; regrowth fills them anew.
+Append to self uses offsets and reacquires the source after storage replacement.
+Observation of the source happens before acquiring buffers/range validation,
+since module observation can suspend. Length is refreshed after success and
+owned-byte growth is reported to the existing GC policy. Effects remain
+conservative bindings/TOP; no mutable byte contents are folded into constants.
+
+The mutation fixture checks chained alias returns, errors without data loss,
+inheritance, clone/flat, immutable prototype and absence of +/+= support in the
+source/GBIN and VM/native matrix. C tests additionally assert capacities, exact
+receiver identity and self-append with and without storage replacement.
