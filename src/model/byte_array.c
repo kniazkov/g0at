@@ -8,9 +8,12 @@
 #include "analysis/lattice.h"
 #include "builtin_function.h"
 #include "common_methods.h"
+#include "context.h"
 #include "thread.h"
 #include "vm/gc_policy.h"
 #include "vm/gc_protocol.h"
+
+#include <string.h>
 
 operation_result_t initialize_byte_array(object_t *receiver) {
     if (receiver == get_byte_array_proto())
@@ -199,6 +202,123 @@ shrink(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
     return finish_mutation(receiver, before);
 }
 
+/** @brief Validate a range by subtraction, including the empty end range. */
+static bool range_arguments(const byte_buffer_t *buffer,
+                            object_t **args,
+                            uint16_t count,
+                            size_t *start,
+                            size_t *length) {
+    *start = 0;
+    if (count && !size_argument(args[0], start))
+        return false;
+    if (*start > buffer->length)
+        return false;
+    *length = buffer->length - *start;
+    return count < 2 || (size_argument(args[1], length) && *length <= buffer->length - *start);
+}
+
+static operation_result_t
+slice(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    byte_buffer_t *buffer = get_byte_array_storage(receiver);
+    if (!buffer)
+        return operation_exception(get_exception_invalid_operation());
+    size_t start, length;
+    if (count < 1 || count > 2 || !range_arguments(buffer, args, count, &start, &length))
+        return operation_exception(get_exception_invalid_argument());
+    object_t *proto = get_byte_array_proto();
+    object_t *result = create_user_defined_object_in_file(thread->process,
+                                                          (object_array_t){&proto, 1},
+                                                          thread->context->access.module,
+                                                          thread->context->access.file_id);
+    operation_result_t initialized = initialize_byte_array(result);
+    if (initialized.is_exception) {
+        DECREF(result);
+        return initialized;
+    }
+    DECREF(initialized.value);
+    size_t before = gc_policy_object_bytes(result);
+    byte_buffer_append(get_byte_array_storage(result), buffer, start, length);
+    operation_result_t value = finish_mutation(result, before);
+    DECREF(result);
+    return value;
+}
+
+static operation_result_t
+copy_to(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    if (!get_byte_array_storage(receiver))
+        return operation_exception(get_exception_invalid_operation());
+    if (count != 4)
+        return operation_exception(get_exception_invalid_argument());
+    if (args[0] == get_byte_array_proto())
+        return operation_exception(get_exception_immutable_object());
+    if (!get_byte_array_storage(args[0]))
+        return operation_exception(get_exception_invalid_argument());
+    exception_t failure = gc_observe_object(thread, args[0]);
+    if (failure.value) {
+        INCREF(failure.value);
+        return (operation_result_t){failure.value, true, failure.trace};
+    }
+    byte_buffer_t *source = get_byte_array_storage(receiver),
+                  *target = get_byte_array_storage(args[0]);
+    size_t from, to, length;
+    if (!size_argument(args[1], &from) || !size_argument(args[2], &to)
+        || !size_argument(args[3], &length)
+        || !byte_buffer_copy_range(target, to, source, from, length))
+        return operation_exception(get_exception_invalid_argument());
+    INCREF(args[0]);
+    return operation_success(args[0]);
+}
+
+static operation_result_t
+fill(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    byte_buffer_t *buffer = get_byte_array_storage(receiver);
+    if (!buffer)
+        return invalid_receiver(receiver);
+    uint8_t byte;
+    size_t start, length;
+    if (count < 1 || count > 3 || !byte_argument(args[0], &byte)
+        || !range_arguments(buffer, args + 1, count - 1, &start, &length))
+        return operation_exception(get_exception_invalid_argument());
+    if (length)
+        memset(buffer->data + start, byte, length);
+    INCREF(receiver);
+    return operation_success(receiver);
+}
+
+static operation_result_t
+index_of(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    if (!get_byte_array_storage(receiver))
+        return operation_exception(get_exception_invalid_operation());
+    if (count < 1 || count > 2)
+        return operation_exception(get_exception_invalid_argument());
+    exception_t failure = gc_observe_object(thread, args[0]);
+    if (failure.value) {
+        INCREF(failure.value);
+        return (operation_result_t){failure.value, true, failure.trace};
+    }
+    byte_buffer_t *buffer = get_byte_array_storage(receiver),
+                  *pattern = get_byte_array_storage(args[0]);
+    size_t start = 0, length = pattern ? pattern->length : 1;
+    uint8_t byte;
+    if ((count == 2 && !size_argument(args[1], &start)) || start > buffer->length
+        || (!pattern && !byte_argument(args[0], &byte)))
+        return operation_exception(get_exception_invalid_argument());
+    int64_t found = -1;
+    if (!length)
+        found = (int64_t)start;
+    else if (length <= buffer->length - start) {
+        const uint8_t *needle = pattern ? pattern->data : &byte;
+        size_t last = buffer->length - length;
+        for (size_t i = start; i <= last; ++i) {
+            if (!memcmp(buffer->data + i, needle, length)) {
+                found = (int64_t)i;
+                break;
+            }
+        }
+    }
+    return operation_success(create_integer_object(thread->process, found));
+}
+
 static operation_result_t immutable_shift(process_t *process, object_t *left, object_t *right) {
     return operation_exception(get_exception_immutable_object());
 }
@@ -226,15 +346,28 @@ METHOD(append_method, "ByteArray.append", append)
 METHOD(resize_method, "ByteArray.resize", resize)
 METHOD(clear_method, "ByteArray.clear", clear)
 METHOD(shrink_method, "ByteArray.shrinkToFit", shrink)
+METHOD(slice_method, "ByteArray.slice", slice)
+METHOD(copy_method, "ByteArray.copyTo", copy_to)
+METHOD(fill_method, "ByteArray.fill", fill)
+METHOD(index_method, "ByteArray.indexOf", index_of)
 #undef METHOD
-static const gchar_t *names[] = {U"init", U"append", U"<<", U"resize", U"clear", U"shrinkToFit"};
+static const gchar_t *names[] = {U"init",
+                                 U"append",
+                                 U"<<",
+                                 U"resize",
+                                 U"clear",
+                                 U"shrinkToFit",
+                                 U"slice",
+                                 U"copyTo",
+                                 U"fill",
+                                 U"indexOf"};
 
 static object_array_t get_keys(const object_t *obj) {
-    static object_static_string_t storage[6];
-    static object_t *keys[6];
-    for (size_t i = 0; i < 6; ++i)
+    static object_static_string_t storage[10];
+    static object_t *keys[10];
+    for (size_t i = 0; i < 10; ++i)
         keys[i] = get_static_string_object(&storage[i], names[i]);
-    return (object_array_t){keys, 6};
+    return (object_array_t){keys, 10};
 }
 
 static object_t *get_property(const object_t *obj, const object_t *key) {
@@ -253,8 +386,16 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
                     return get_resize_method();
                 case 4:
                     return get_clear_method();
-                default:
+                case 5:
                     return get_shrink_method();
+                case 6:
+                    return get_slice_method();
+                case 7:
+                    return get_copy_method();
+                case 8:
+                    return get_fill_method();
+                default:
+                    return get_index_method();
             }
         }
     }

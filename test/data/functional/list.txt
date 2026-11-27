@@ -655,3 +655,4 @@ string_builder_inheritance
 string_builder_errors
 byte_array_model
 byte_array_mutation
+byte_array_ranges
