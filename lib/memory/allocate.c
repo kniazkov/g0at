@@ -77,6 +77,11 @@ size_t allocation_size_multiply(size_t count, size_t size) {
     return count * size;
 }
 
+size_t allocation_max_payload_size(void) {
+    return SIZE_MAX - sizeof(memory_header_t) - EXTRA_DEBUG_BYTES
+           - (_Alignof(memory_alignment_t) - 1);
+}
+
 #ifdef MEMORY_DEBUG
 void *_ALLOC(size_t size, const char *file_name, int line) {
 #else
@@ -86,7 +91,7 @@ void *_ALLOC(size_t size) {
         size = 1;
     }
     const size_t padding = _Alignof(memory_alignment_t) - 1;
-    if (size > SIZE_MAX - sizeof(memory_header_t) - EXTRA_DEBUG_BYTES - padding) {
+    if (size > allocation_max_payload_size()) {
         FPRINTF(stderr, "\nAllocation size overflow.\n");
         exit(EXIT_FAILURE);
     }
