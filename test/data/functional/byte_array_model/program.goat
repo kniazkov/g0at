@@ -1,0 +1,34 @@
+const twice = func(n) { return n * 2; };
+if (twice(21) != 42) throw "native seed";
+var a = ByteArray -> {};
+println(a.length);
+println(!a);
+a.init();
+try { a.init(1); } catch(e) { println(e); }
+var alias = a;
+println(alias.length);
+var child = a -> {};
+println(child.length);
+var diamond = [a, child, ByteArray] -> {};
+println(diamond.length);
+println(a.clone().length);
+println(a.flat().length);
+try { a.length = 1; } catch(e) { println(e); }
+try { a[0]; } catch(e) { println(e); }
+try { a[0] = 255; } catch(e) { println(e); }
+try { a["length"]; } catch(e) { println(e); }
+try { ByteArray[0] = 1; } catch(e) { println(e); }
+try { ByteArray.init(); } catch(e) { println(e); }
+try { [ByteArray, StringBuilder] -> {}; } catch(e) { println(e); }
+try { [StringBuilder, ByteArray] -> {}; } catch(e) { println(e); }
+try { ByteArray -> { var length = 1; }; } catch(e) { println(e); }
+var escaped = { var value = null; };
+const parent = ByteArray -> {
+    const init = func() { escaped.value = this; throw "init failure"; };
+};
+try { parent -> {}; } catch(e) { println(e); }
+println(escaped.value.length);
+var ordinary = { var x = 42; };
+println(ordinary["x"]);
+ordinary["x"] = 43;
+println(ordinary.x);

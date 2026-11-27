@@ -5,6 +5,7 @@
  */
 
 #include "builtins/registry.h"
+#include "byte_array.h"
 #include "common_methods.h"
 #include "context.h"
 #include "lib/collections/pair.h"
@@ -16,6 +17,7 @@
 static pair_t type_properties[] = {
     {U"Array", get_array_proto},
     {U"Boolean", get_boolean_proto},
+    {U"ByteArray", get_byte_array_proto},
     {U"Character", get_character_proto},
     {U"Function", get_function_proto},
     {U"Integer", get_integer_proto},

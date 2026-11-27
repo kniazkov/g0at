@@ -10,6 +10,7 @@
 #include "builtins/registry.h"
 #include "gc.h"
 #include "gc_protocol.h"
+#include "model/byte_array.h"
 #ifdef GOAT_TEST_GC_DISPATCH
 #    include "gc_admission.h"
 #    include "gc_admission_testing.h"
@@ -675,13 +676,13 @@ static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thr
     /* A property fallback may itself wait on a module. Rebuild the borrowed
      * stack view only after the wait; operands and RHS remain stack roots. */
     if (count == 1
-        && (store ? receiver->vtbl->set_index == common_set_index
-                  : receiver->vtbl->get_index == common_get_index))
+        && (store ? byte_array_property_index(receiver, true)
+                  : byte_array_property_index(receiver, false)))
         await_vm_scope(runtime, thread, receiver, stack->objects[receiver_index + 1]);
     object_array_t indices = {stack->objects + receiver_index + 1, count};
     operation_result_t result =
         store && count == 1 && is_current_this(thread, receiver)
-                && receiver->vtbl->set_index == common_set_index
+                && byte_array_property_index(receiver, true)
             ? write_accessible_own_property_result(&thread->context->access,
                                                    receiver,
                                                    indices.items[0],
