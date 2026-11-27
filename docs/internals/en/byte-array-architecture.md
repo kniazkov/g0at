@@ -53,7 +53,7 @@ Explicit user operator overrides still obey the existing language rules.
 
 Keep address-based internal object comparison/key identity. Mutable content must
 not reorder AVL keys; value equality is separate from that comparator.
-str/toString/notation use uppercase #HEX, including # for empty. Preserve module
+str/toString/notation use uppercase `#HEX`, including # for empty. Preserve module
 observation/access errors; do not bypass them through a payload fast path.
 
 Errors: invalid byte/range/type/arity is INVALID_ARGUMENT; a method with an
