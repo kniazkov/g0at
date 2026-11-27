@@ -251,7 +251,87 @@ static int owner(const char *mode, const char *executable) {
     return 0;
 }
 
+// No newline: Windows text-mode stdout expands LF to CRLF before pipe capture.
+static const char observation_payload[] = "observation!";
+static unsigned observed_output;
+
+static bool observe_output(void *context, const unsigned char *data, size_t size) {
+    (void)context;
+    (void)data;
+    observed_output += (unsigned)size;
+    return true;
+}
+
+static int observation_test(const char *kind) {
+    size_t baseline = get_allocated_memory_size();
+    bool running = !strcmp(kind, "running"), missing = !strcmp(kind, "missing");
+    const char *args[] = {"fixture",
+                          running ? "observe-live" : "observe-exit",
+                          CHILD_PARENT_ARGUMENT,
+                          NULL};
+    child_options_t options = {.executable = missing ? "/missing/goat-observation" : NULL,
+                               .arguments = args,
+                               .parent_watch = true,
+                               .capture_output = true,
+                               .stdout_callback = observe_output,
+                               .deadline = child_deadline_after(running ? 1000 : 5000)};
+    child_process_t *process = start_child_process(&options);
+    CHECK(process);
+    child_observation_t sample;
+    if (running) {
+        // Allow startup its normal budget, then observe after the configured deadline.
+        // A 1 ms launch budget can expire inside start_child_process itself.
+        sample = observe_child_process(process);
+        CHECK(sample.status == CHILD_RUNNING);
+        while (child_monotonic_ms() <= options.deadline)
+            process_pause(1);
+        sample = observe_child_process(process);
+        CHECK(sample.status == CHILD_RUNNING && sample.exit_code == -1);
+        CHECK(!observed_output);
+        CHECK(stop_child_process(process)->status == CHILD_STOPPED);
+    } else {
+        child_deadline_t end = child_deadline_after(5000);
+        do {
+            sample = observe_child_process(process);
+            if (sample.status != CHILD_RUNNING)
+                break;
+            process_pause(1);
+        } while (child_monotonic_ms() < end);
+        CHECK(sample.status == (missing ? CHILD_START_ERROR : CHILD_EXITED));
+        CHECK(missing ? sample.system_error != 0 : sample.exit_code == 19);
+        CHECK(!observed_output); // Observation must not call the output sink.
+        child_observation_t repeated = observe_child_process(process);
+        CHECK(repeated.status == sample.status && repeated.exit_code == sample.exit_code
+              && repeated.system_error == sample.system_error);
+        const child_result_t *result = wait_child_process(process);
+        CHECK(result->status == sample.status && result->exit_code == sample.exit_code
+              && result->system_error == sample.system_error);
+        CHECK(!result->cleanup_error && !result->control_error);
+        if (!missing)
+            CHECK(result->out.size == sizeof(observation_payload) - 1
+                  && !memcmp(result->out.data, observation_payload, sizeof(observation_payload) - 1)
+                  && observed_output == sizeof(observation_payload) - 1);
+    }
+    const child_result_t *result = wait_child_process(process);
+    sample = observe_child_process(process);
+    CHECK(sample.status == result->status && sample.exit_code == result->exit_code);
+    destroy_child_process(process);
+    CHECK(get_allocated_memory_size() == baseline);
+    return 0;
+}
+
 static int fixture_main(int argc, char **argv) {
+    if (argc == 3 && !strcmp(argv[1], "observe"))
+        return observation_test(argv[2]);
+    if (argc == 3 && !strcmp(argv[1], "observe-exit")) {
+        FWRITE(observation_payload, 1, sizeof(observation_payload) - 1, stdout);
+        return 19;
+    }
+    if (argc == 3 && !strcmp(argv[1], "observe-live")) {
+        uintptr_t watch = (uintptr_t)strtoull(argv[2], NULL, 10);
+        CHECK(child_wait_parent(watch, 0));
+        return 0;
+    }
     if (argc == 5 && !strcmp(argv[1], CLEANUP_SERVICE_ARGUMENT)) {
         char *pid_path = fs_environment("GOAT_TEST_CLEANER_PID", NULL);
         if (pid_path)

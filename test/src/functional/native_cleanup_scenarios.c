@@ -607,6 +607,8 @@ static void body(scenario_run_t *r, void *user) {
         REQUIRE(count(err, "stage=2 transport=") == 1);
         REQUIRE(count(err, "elapsed_ms=") == 1);
         REQUIRE(count(err, "type=0 size=0]") == 1);
+        REQUIRE(count(err, "[process=") == 1);
+        REQUIRE(count(err, "control=") == 1);
         REQUIRE(!exists(r, language_join(r, o->root, "compiler.query")) && !roots(o, NULL));
     } else if (!strncmp(k, "cleaner-death-", 14) || !strncmp(k, "normal-", 7)) {
         bool death = !strncmp(k, "cleaner-death-", 14);

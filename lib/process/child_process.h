@@ -46,6 +46,24 @@ typedef struct {
     child_output_t out, err, result;
 } child_result_t;
 
+/** @brief Non-consuming process evidence; not a tree-cleanup result.
+ * CHILD_RUNNING means no terminal evidence is available yet, not proof of liveness.
+ * On Linux, terminal evidence comes from the supervisor reply after tree cleanup.
+ * On Windows, it describes only the root process. No output is collected.
+ */
+typedef struct {
+    child_status_t status;
+    int64_t exit_code;
+    int signal_number;
+    unsigned long system_error, control_error;
+} child_observation_t;
+
+/** @brief One nonblocking observation; no callbacks, deadline enforcement, stop, reap or retry.
+ * Does not consume a supervisor reply or change a later wait/poll result.
+ * Same lifetime/serialization rules as wait. NULL returns unavailable (CHILD_RUNNING).
+ */
+child_observation_t observe_child_process(const child_process_t *child);
+
 /** @brief Input producer result. WAIT retries on a later pump; DATA must supply 1..capacity
  * bytes; EOF and WAIT must supply zero bytes. ERROR terminates the owned tree. */
 typedef enum {

@@ -515,7 +515,7 @@ probe(native_toolchain_context_t *ctx, const char *compiler, const char *target,
     native_toolchain_target(target, &candidate->requirements);
     candidate->flags = target_flags(&candidate->requirements);
     if (ensure_cleanup_service(ctx->cleanup) != CLEANUP_OK) {
-        char evidence[192], message[256];
+        char evidence[384], message[512];
         cleanup_service_format_startup(ctx->cleanup, evidence, sizeof(evidence));
         snprintf(message, sizeof(message), "cleanup service did not become ready %s", evidence);
         candidate->diagnostic = copy_text(message);

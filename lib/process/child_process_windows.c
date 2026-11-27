@@ -603,6 +603,35 @@ static const child_result_t *wait_process(child_process_t *p, bool stop, bool po
     return &p->result;
 }
 
+child_observation_t observe_child_process(const child_process_t *p) {
+    child_observation_t result = {.status = CHILD_RUNNING, .exit_code = -1};
+    if (!p)
+        return result;
+    if (p->done) {
+        result.status = p->result.status;
+        result.exit_code = p->result.exit_code;
+        result.signal_number = p->result.signal_number;
+        result.system_error = p->result.system_error;
+        result.control_error = p->result.control_error;
+        return result;
+    }
+    DWORD state = WaitForSingleObject(p->process, 0);
+    if (state == WAIT_OBJECT_0) {
+        DWORD code;
+        if (GetExitCodeProcess(p->process, &code)) {
+            result.status = CHILD_EXITED;
+            result.exit_code = code;
+        } else {
+            result.status = CHILD_IO_ERROR;
+            result.system_error = GetLastError();
+        }
+    } else if (state == WAIT_FAILED) {
+        result.status = CHILD_IO_ERROR;
+        result.system_error = GetLastError();
+    }
+    return result;
+}
+
 const child_result_t *wait_child_process(child_process_t *p) {
     return wait_process(p, false, false);
 }

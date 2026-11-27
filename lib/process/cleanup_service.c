@@ -176,6 +176,9 @@ static cleanup_status_t ensure_locked(cleanup_service_t *s) {
                          : CLEANUP_START_FAILED;
     }
 recorded:
+    s->diagnostic.process.exit_code = -1;
+    if (!s->ready)
+        s->diagnostic.process = observe_child_process(s->process);
     s->diagnostic.status = s->startup;
     s->diagnostic.elapsed_ms = child_monotonic_ms() - started;
     return s->startup;
@@ -613,11 +616,17 @@ void cleanup_service_format_startup(cleanup_service_t *s, char *buffer, size_t c
     }
     snprintf(buffer,
              capacity,
-             "[status=%d stage=%d transport=%d elapsed_ms=%llu type=%u size=%zu]",
+             "[status=%d stage=%d transport=%d elapsed_ms=%llu type=%u size=%zu] "
+             "[process=%d exit=%lld signal=%d system=%lu control=%lu]",
              d.status,
              d.stage,
              d.transport,
              (unsigned long long)d.elapsed_ms,
              d.reply_type,
-             d.reply_size);
+             d.reply_size,
+             d.process.status,
+             (long long)d.process.exit_code,
+             d.process.signal_number,
+             d.process.system_error,
+             d.process.control_error);
 }

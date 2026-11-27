@@ -124,7 +124,7 @@ static void load_selected(loading_module_t *module) {
     }
     if (ensure_cleanup_service(run->cleanup) != CLEANUP_OK) {
         run->cleaner_failed = true;
-        char evidence[192], message[320];
+        char evidence[384], message[512];
         cleanup_service_format_startup(run->cleanup, evidence, sizeof(evidence));
         snprintf(message,
                  sizeof(message),

@@ -123,7 +123,7 @@ static native_prepare_result_t prepare(const node_t *root,
     }
     if (!context || ensure_cleanup_service(native_build_cleanup(context)) != CLEANUP_OK) {
         result.status = NATIVE_PREPARE_CLEANUP_ERROR;
-        char evidence[192], message[320];
+        char evidence[384], message[512];
         cleanup_service_format_startup(context ? native_build_cleanup(context) : NULL,
                                        evidence,
                                        sizeof(evidence));

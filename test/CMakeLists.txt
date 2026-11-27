@@ -706,3 +706,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   target_link_libraries(child_control_testing PRIVATE core m)
   add_dependencies(child_process_scenarios child_control_testing)
 endif()
+
+# Observation fixtures are part of the child-control acceptance label.
+add_dependencies(child_process_scenarios cleanup_service_testing)
