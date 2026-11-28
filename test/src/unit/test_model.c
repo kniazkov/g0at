@@ -187,14 +187,15 @@ bool test_string_topology() {
     process_t *process = create_process();
     object_t *obj = create_string_object(process, STATIC_STRING(U"test"));
     object_array_t topology = get_object_topology(obj);
-    ASSERT(topology.size = 2);
+    ASSERT(topology.size == 2);
     const gchar_t *expected = U"{\"length\"=0;\"trim\"=trim;\"charAt\"=charAt;"
                               U"\"substring\"=substring;\"contains\"=contains;"
                               U"\"indexOf\"=indexOf;\"lastIndexOf\"=lastIndexOf;"
                               U"\"startsWith\"=startsWith;\"endsWith\"=endsWith;"
                               U"\"isEmpty\"=isEmpty;\"isBlank\"=isBlank;"
                               U"\"toUpperCase\"=toUpperCase;\"toLowerCase\"=toLowerCase;"
-                              U"\"replace\"=replace;\"repeat\"=repeat;\"format\"=format}";
+                              U"\"replace\"=replace;\"repeat\"=repeat;\"format\"=format;"
+                              U"\"toUtf8\"=String.toUtf8;\"fromUtf8\"=String.fromUtf8}";
     string_value_t str = convert_object_to_string(topology.items[0]);
     ASSERT(0 == STRCMP(str.data, expected));
     FREE_STRING(str);
