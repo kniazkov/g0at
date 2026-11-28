@@ -1,0 +1,48 @@
+const twice = func(n) { return n * 2; };
+if (twice(21) != 42) throw "native seed";
+const check = func(ok) { if (!ok) throw "admission failed"; };
+var effects = { var calls = 0; };
+const fresh = func() { effects.calls++; return #00FF; };
+const change = func(value) { value.resize(3, 17); value[0] = 42; };
+const observe = func(value) { return value.length; };
+const truth = func(value) { return !value; };
+var bytes = fresh();
+var alias = bytes;
+check(observe(bytes) == 2 && bytes[0] == 0);
+change(alias);
+check(observe(bytes) == 3 && bytes[0] == 42 && bytes[2] == 17);
+check(!truth(bytes));
+alias.clear();
+check(truth(bytes) && observe(bytes) == 0);
+alias << 0;
+check(!truth(bytes) && bytes[0] == 0);
+const throwing = func(value) {
+    effects.calls++;
+    value[0] = 99;
+    throw "expected";
+};
+try { throwing(bytes); throw "not thrown"; }
+catch(e) { check(e == "expected"); }
+check(effects.calls == 2 && bytes[0] == 99);
+const invalid = func(value) { effects.calls++; value[0] = 256; };
+try { invalid(bytes); throw "not thrown"; }
+catch(e) { check(e == "INVALID_ARGUMENT"); }
+check(effects.calls == 3 && bytes[0] == 99);
+for (var i = 0; i < 10; i++) {
+    var other = fresh();
+    other[0] = i;
+    check(bytes[0] == 99);
+}
+check(effects.calls == 13);
+var ordinary = { var x = 1; };
+const field = func(value) { return value["x"]; };
+check(field(ordinary) == 1);
+ordinary["x"] = 7;
+check(field(ordinary) == 7);
+var array = [0];
+array[0] = 42;
+check(array[0] == 42);
+var builder = StringBuilder -> {};
+builder << "ok";
+check(str(builder) == "ok");
+println("admission OK");
