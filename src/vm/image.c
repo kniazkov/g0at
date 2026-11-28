@@ -180,6 +180,7 @@ static bool validate_operand_stack(const bytecode_t *c, const uint32_t *region) 
             case ILOAD32:
             case ILOAD64:
             case RLOAD:
+            case BYTELOAD:
             case SLOAD:
             case CLOAD:
             case VLOAD:
@@ -514,7 +515,7 @@ bool validate_bytecode_image(bytecode_t *c) {
         bool arg0 = in.opcode == FUNC || in.opcode == CALL || in.opcode == CALLM
                     || in.opcode == INHERIT || in.opcode == BOOL;
         bool arg1 = false;
-        if (in.opcode > CHECKBOUND || in.flags || (!arg0 && in.arg0)) {
+        if (in.opcode > BYTELOAD || in.flags || (!arg0 && in.arg0)) {
             valid = false;
             break;
         }
@@ -590,6 +591,11 @@ bool validate_bytecode_image(bytecode_t *c) {
                     else
                         valid = valid && !in.arg1;
                 }
+                break;
+            case BYTELOAD:
+                arg1 = true;
+                valid = in.arg1 < c->data_descriptor_count
+                        && c->data_descriptors[in.arg1].kind == DATA_BYTES;
                 break;
             case SLOAD:
             case VLOAD:

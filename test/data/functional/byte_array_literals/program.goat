@@ -1,0 +1,20 @@
+const twice = func(n) { return n * 2; };
+if (twice(21) != 42) throw "native seed";
+const check = func(ok) { if (!ok) throw "literal failed"; };
+var ByteArray = 1;
+const fresh = func() { return #00ff; };
+var first = fresh();
+first[0] = 17;
+for (var i = 0; i < 20; i++) {
+    var next = fresh();
+    check(next.length == 2 && next[0] == 0 && next[1] == 255);
+    next[1] = 42;
+    check(first[0] == 17 && first[1] == 255);
+}
+check(#.length == 0);
+check(#00.length == 1);
+check(#010203.length == 3);
+check(#0102030405.length == 5);
+check(#0102030405060708.length == 8);
+check(#010203040506070809.length == 9);
+println("literals OK");

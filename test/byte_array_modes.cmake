@@ -1,7 +1,7 @@
 # Copyright 2026 Ivan Kniazkov
 # Exact output parity across source/saved programs and VM/native execution.
 file(MAKE_DIRECTORY "${WORK}")
-foreach(case model mutation ranges)
+foreach(case model mutation ranges literals)
   set(source "${DATA}/byte_array_${case}/program.goat")
   file(READ "${DATA}/byte_array_${case}/expected_output.txt" expected)
   foreach(optimization none all)

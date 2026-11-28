@@ -86,6 +86,10 @@ static bool byte_payload_roundtrip(void) {
     data_builder_t *data = create_data_builder();
     for (size_t i = 0; i < 7; ++i)
         add_bytes_to_data_segment(data, lengths[i] ? bytes : NULL, lengths[i]);
+    for (size_t i = 0; i < 7; ++i) {
+        add_instruction(builder, (instruction_t){.opcode = BYTELOAD, .arg1 = (uint32_t)i});
+        add_instruction(builder, (instruction_t){.opcode = POP});
+    }
     add_instruction(builder, (instruction_t){.opcode = END});
     bytecode_t *code = link_code_and_data(builder, data);
     destroy_code_builder(builder);
@@ -93,6 +97,21 @@ static bool byte_payload_roundtrip(void) {
     ASSERT(code && validate_bytecode_image(code));
     bytecode_t *loaded = decode_bytecode_image(code->buffer, code->buffer_size);
     ASSERT(loaded);
+    const uint8_t instruction_bytes[] = {81, 0, 0, 0, 0, 0, 0, 0};
+    ASSERT(!memcmp(loaded->instructions, instruction_bytes, sizeof(instruction_bytes)));
+    instruction_t *load = (instruction_t *)loaded->instructions;
+    load->arg1 = UINT32_MAX;
+    ASSERT(!validate_bytecode_image(loaded));
+    load->arg1 = 0;
+    load->arg0 = 1;
+    ASSERT(!validate_bytecode_image(loaded));
+    load->arg0 = 0;
+    for (unsigned execution = 0; execution < 2; ++execution) {
+        process_t *process = create_process();
+        ASSERT(!run(process, loaded));
+        destroy_process(process);
+        ASSERT(!memcmp(code->buffer, loaded->buffer, code->buffer_size));
+    }
     size_t offset = 0;
     for (size_t i = 0; i < 7; ++i) {
         offset = (offset + 7) & ~(size_t)7;

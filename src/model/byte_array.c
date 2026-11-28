@@ -127,6 +127,31 @@ static operation_result_t finish_mutation(object_t *receiver, size_t before) {
     return operation_success(receiver);
 }
 
+operation_result_t create_byte_array_literal(thread_t *thread, const uint8_t *bytes, size_t size) {
+    object_t *proto = get_byte_array_proto();
+    object_t *result = create_user_defined_object_in_file(thread->process,
+                                                          (object_array_t){&proto, 1},
+                                                          thread->context->access.module,
+                                                          thread->context->access.file_id);
+    operation_result_t initialized = initialize_byte_array(result);
+    if (initialized.is_exception) {
+        DECREF(result);
+        return initialized;
+    }
+    DECREF(initialized.value);
+    size_t before = gc_policy_object_bytes(result);
+    byte_buffer_t *buffer = get_byte_array_storage(result);
+    if (!byte_buffer_resize(buffer, size, 0)) {
+        DECREF(result);
+        return operation_exception(get_exception_invalid_argument());
+    }
+    if (size)
+        memcpy(buffer->data, bytes, size);
+    operation_result_t value = finish_mutation(result, before);
+    DECREF(result);
+    return value;
+}
+
 static operation_result_t
 append(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
     if (!get_byte_array_storage(receiver))
