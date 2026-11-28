@@ -116,8 +116,8 @@ bytecode_t *link_module_code_and_data(code_builder_t *cb,
         write_le32(bytes + od + i * 16 + 4, d.size);
         write_le32(bytes + od + i * 16 + 8, d.kind);
         write_le32(bytes + od + i * 16 + 12, d.count);
-        /* Strings already contain explicit LE scalars; other blocks contain u32 words. */
-        if (d.kind == DATA_STRING)
+        /* Strings and byte blocks are already wire bytes; other blocks contain u32 words. */
+        if (d.kind == DATA_STRING || d.kind == DATA_BYTES)
             memcpy(bytes + payload + d.offset, db->data + d.offset, d.size);
         else
             for (size_t j = 0; j < d.size; j += 4) {

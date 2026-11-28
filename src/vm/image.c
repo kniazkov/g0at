@@ -455,6 +455,10 @@ bool validate_bytecode_image(bytecode_t *c) {
                     if (!goat_is_scalar(read_le32(p + j * 4)))
                         return false;
                 break;
+            case DATA_BYTES:
+                if (d.size != d.count)
+                    return false;
+                break;
             case DATA_PARAMETERS:
                 if ((uint64_t)d.size != (uint64_t)d.count * 4)
                     return false;

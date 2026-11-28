@@ -72,3 +72,6 @@ void destroy_data_builder(data_builder_t *builder);
 struct declarator_t;
 /** @brief Returns a stable data-table identity for this declaration in this compilation. */
 uint32_t add_declaration_to_data_segment(data_builder_t *builder, const struct declarator_t *decl);
+
+/** @brief Copies raw bytes without a terminator; zero length accepts NULL. */
+uint32_t add_bytes_to_data_segment(data_builder_t *builder, const uint8_t *bytes, size_t size);

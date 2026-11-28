@@ -289,3 +289,13 @@ source, saved compilation and module compilation cannot produce a fake value.
 Calling its bytecode generator without analysis is an internal invariant failure.
 #565 must remove this gate only together with validated raw wire storage and
 fresh mutable runtime instances. The frontend roundtrip test is core.byte_literal.
+
+## BA-07: raw payload
+
+Raw byte descriptors use kind 4 (DATA_BYTES), with size == count in bytes,
+no terminator or endian conversion. Offsets retain eight-byte alignment and
+inter-descriptor padding must be zero. Empty payloads are legal. This is a
+reject-on-unknown extension of wire v1: existing descriptor/opcode numbers and
+old images remain unchanged; old readers reject kind 4. Container and ABI
+versions are unchanged. No frontend emission or execution is enabled in this
+first BA-07 step; opcode, fresh instances and native admission remain pending.
