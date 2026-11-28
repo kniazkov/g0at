@@ -10,6 +10,7 @@
 #include "graph/node.h"
 #include "lib/memory/allocate.h"
 #include "lib/memory/arena.h"
+#include "lib/strings/string_ext.h"
 #include "model/byte_array.h"
 #include "model/process.h"
 #include "scanner/scanner.h"
@@ -19,6 +20,12 @@
 
 int main(void) {
     size_t before = get_allocated_memory_size();
+    const gchar_t invalid_scalars[] = {0xD800, 0xDFFF, 0x110000};
+    for (size_t i = 0; i < 3; ++i) {
+        size_t bytes = 99;
+        assert(!encode_utf8_view((string_view_t){invalid_scalars + i, 1}, &bytes));
+        assert(bytes == 0);
+    }
     arena_t *arena = create_arena(256);
     parser_memory_t memory = {arena, arena, arena, arena};
     process_t *process = create_process();

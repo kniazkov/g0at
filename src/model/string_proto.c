@@ -3,10 +3,88 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief The built-in String prototype and its method/property lookup.
  */
+#include "analysis/lattice.h"
+#include "builtin_function.h"
 #include "builtins/registry.h"
+#include "byte_array.h"
 #include "common_methods.h"
 #include "goat/unicode.h"
+#include "lib/memory/allocate.h"
 #include "object.h"
+#include "thread.h"
+#include "vm/gc_protocol.h"
+
+static operation_result_t utf8_detached(object_t **args, uint16_t count, thread_t *thread) {
+    return operation_exception(get_exception_invalid_operation());
+}
+
+static operation_result_t
+to_utf8(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    if (receiver->vtbl->type != TYPE_STRING)
+        return operation_exception(get_exception_invalid_operation());
+    if (count)
+        return operation_exception(get_exception_invalid_argument());
+    string_value_t value = convert_object_to_string(receiver);
+    size_t size;
+    char *bytes = encode_utf8_view(VALUE_TO_VIEW(value), &size);
+    FREE_STRING(value);
+    if (!bytes)
+        return operation_exception(get_exception_invalid_argument());
+    operation_result_t result = create_byte_array_literal(thread, (const uint8_t *)bytes, size);
+    FREE(bytes);
+    return result;
+}
+
+static operation_result_t
+from_utf8(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    if (receiver != get_string_proto())
+        return operation_exception(get_exception_invalid_operation());
+    if (count != 1 || !get_byte_array_storage(args[0]))
+        return operation_exception(get_exception_invalid_argument());
+    exception_t failure = gc_observe_object(thread, args[0]);
+    if (failure.value) {
+        INCREF(failure.value);
+        return (operation_result_t){failure.value, true, failure.trace};
+    }
+    const byte_buffer_t *bytes = get_byte_array_storage(args[0]);
+    string_value_t value =
+        decode_utf8_n(bytes->length ? (const char *)bytes->data : "", bytes->length);
+    if (!value.data)
+        return operation_exception(get_exception_invalid_argument());
+    return operation_success(create_string_object(thread->process, value));
+}
+
+static const lattice_element_t *
+utf8_unknown(abstract_state_t *state, const lattice_element_t *const *args, size_t count) {
+    return make_top_element();
+}
+
+#define UTF8_METHOD(id, label, executor)                                                           \
+    static object_t *get_##id(void);                                                               \
+    static const builtin_function_t id = {.name = U##label,                                        \
+                                          .min_args = 0,                                           \
+                                          .effects = BUILTIN_EFFECT_BINDINGS,                      \
+                                          .execute = utf8_detached,                                \
+                                          .execute_method = executor,                              \
+                                          .interpret = utf8_unknown,                               \
+                                          .get_object = get_##id};                                 \
+    static object_t *get_##id(void) {                                                              \
+        static builtin_function_object_t storage;                                                  \
+        return get_builtin_function_object(&storage, &id);                                         \
+    }
+UTF8_METHOD(to_utf8_method, "String.toUtf8", to_utf8)
+UTF8_METHOD(from_utf8_method, "String.fromUtf8", from_utf8)
+#undef UTF8_METHOD
+
+static object_t *get_to_utf8_key(void) {
+    static object_static_string_t key;
+    return get_static_string_object(&key, U"toUtf8");
+}
+
+static object_t *get_from_utf8_key(void) {
+    static object_static_string_t key;
+    return get_static_string_object(&key, U"fromUtf8");
+}
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_char_at(void) {
@@ -94,7 +172,7 @@ static object_t *get_string_format(void) {
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[16] = {NULL,
+    static object_t *keys[18] = {NULL,
                                  NULL,
                                  NULL,
                                  NULL,
@@ -127,6 +205,8 @@ static object_array_t get_keys(const object_t *obj) {
         keys[13] = get_string_replace();
         keys[14] = get_string_repeat();
         keys[15] = get_string_format();
+        keys[16] = get_to_utf8_key();
+        keys[17] = get_from_utf8_key();
     }
     return (object_array_t){keys, sizeof(keys) / sizeof(object_t *)};
 }
@@ -135,6 +215,10 @@ static object_array_t get_keys(const object_t *obj) {
 static object_t *proto_get_property(const object_t *obj, const object_t *key) {
     object_t *value = NULL;
     if (key->vtbl->type == TYPE_STRING) {
+        if (!compare_objects_using_vtbl(key, get_to_utf8_key()))
+            return get_to_utf8_method();
+        if (!compare_objects_using_vtbl(key, get_from_utf8_key()))
+            return get_from_utf8_method();
         string_value_t key_str = convert_object_to_string(key);
         if (string_view_equals(VALUE_TO_VIEW(key_str), VALUE_TO_VIEW(STATIC_STRING(U"length")))) {
             value = get_integer_zero();

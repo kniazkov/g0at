@@ -1,0 +1,38 @@
+const twice = func(n) { return n * 2; };
+if (twice(21) != 42) throw "native seed";
+const check = func(ok) { if (!ok) throw "UTF8 failed"; };
+const text = ["", "ASCII", "Привет", "😀", "A\0B", "﻿"];
+const bytes = [#, #4153434949, #D09FD180D0B8D0B2D0B5D182, #F09F9880, #410042, #EFBBBF];
+for (var i = 0; i < text.length; i++) {
+    var encoded = text[i].toUtf8();
+    check(encoded == bytes[i]);
+    var decoded = String.fromUtf8(encoded);
+    check(decoded == text[i]);
+    encoded << 1;
+    check(text[i].toUtf8() == bytes[i] && decoded == text[i]);
+}
+check(String.fromUtf8(#410042).length == 3);
+check(String.fromUtf8(#EFBBBF).length == 1);
+const invalid = func(f) {
+    var caught = false;
+    try { f(); } catch(e) { caught = e == "INVALID_ARGUMENT"; }
+    check(caught);
+};
+const bad = [#80, #C080, #E08080, #F0808080, #EDA080, #F4908080, #FF, #C2, #E282, #F09F98, #C241];
+for (var i = 0; i < bad.length; i++) {
+    const before = str(bad[i]);
+    invalid(func() { String.fromUtf8(bad[i]); });
+    check(str(bad[i]) == before);
+}
+invalid(func() { String.fromUtf8(); });
+invalid(func() { String.fromUtf8(#, #); });
+invalid(func() { String.fromUtf8("abc"); });
+invalid(func() { String.fromUtf8([65]); });
+invalid(func() { "abc".toUtf8(1); });
+var caught = false;
+try { String.toUtf8(); } catch(e) { caught = e == "INVALID_OPERATION"; }
+check(caught);
+caught = false;
+try { "abc".fromUtf8(#); } catch(e) { caught = e == "INVALID_OPERATION"; }
+check(caught);
+println("UTF8 OK");
