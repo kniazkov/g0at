@@ -83,6 +83,9 @@ typedef enum {
 
     /** @brief Impossible, contradictory, or unreachable value. */
     LATTICE_BOTTOM,
+
+    /** @brief Mutable byte payload; subtype of user-defined object, no value facts. */
+    LATTICE_BYTE_ARRAY,
 } lattice_type_t;
 
 /** @brief Base lattice element. */
@@ -266,7 +269,7 @@ static inline bool is_array_lattice_element(const lattice_element_t *element) {
  * @return true if the type belongs to the user-defined object domain.
  */
 static inline bool is_user_defined_object_lattice_type(lattice_type_t type) {
-    return type == LATTICE_USER_DEFINED_OBJECT;
+    return type == LATTICE_USER_DEFINED_OBJECT || type == LATTICE_BYTE_ARRAY;
 }
 
 /**
@@ -280,7 +283,7 @@ static inline bool is_user_defined_object_lattice_element(const lattice_element_
 /** @brief Only user receivers can dispatch; unknown domains include such receivers. */
 static inline bool lattice_may_dispatch_operator(const lattice_element_t *value) {
     return !value || value->type == LATTICE_TOP || value->type == LATTICE_NOT_NULL
-           || value->type == LATTICE_USER_DEFINED_OBJECT;
+           || is_user_defined_object_lattice_type(value->type);
 }
 
 /**
@@ -437,3 +440,6 @@ const lattice_element_t *make_known_function_element(arena_t *arena,
 /** @brief Creates a known callable for a native descriptor. */
 const lattice_element_t *make_builtin_function_element(arena_t *arena,
                                                        const struct builtin_function_t *builtin);
+
+/** @brief Byte payload domain, without length, content, identity or freshness facts. */
+const lattice_element_t *make_byte_array_element(void);

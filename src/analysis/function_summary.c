@@ -229,6 +229,7 @@ const lattice_element_t *function_summary_type(const lattice_element_t *value) {
             return make_numeric_element();
         case LATTICE_NOT_NULL:
             return make_not_null_element();
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_user_defined_object_element();
         default:

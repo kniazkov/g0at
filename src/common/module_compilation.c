@@ -368,6 +368,7 @@ static void write_value_facts(yyjson_mut_doc *doc,
         case LATTICE_TYPED_ARRAY:
             type = "array";
             break;
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             type = "object";
             break;
