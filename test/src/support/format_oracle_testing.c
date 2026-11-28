@@ -265,7 +265,7 @@ reference_artifacts(scenario_run_t *run, const test_options *options, yyjson_mut
         "DIFF FUNC CALL CALLM RET ENTER LEAVE RESTORE TRY THROW GETINDEX SETINDEX ARRAY "
         "INHERIT LOOP_ENTER LOOP_JUMP DUPN ROTATE SNAPSHOT ITER_NEXT FINALLY_ENTER "
         "FINALLY_LEAVE FINALLY_END DVAR DCONST BLOAD BSTORE INCLUDE IMPORT MAIN DIR "
-        "CHECKPROP CHECKINDEX CHECKVAR CHECKBOUND";
+        "CHECKPROP CHECKINDEX CHECKVAR CHECKBOUND BYTELOAD";
     const char *slash = strrchr(options->schema, '/');
     size_t prefix = slash ? (size_t)(slash - options->schema) : 0;
     char path[4096];
