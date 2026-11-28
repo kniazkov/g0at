@@ -26,3 +26,9 @@ bool byte_array_property_index(const object_t *obj, bool store);
 
 /** @brief Fresh literal instance, owned by caller, with copied bytes. */
 operation_result_t create_byte_array_literal(thread_t *thread, const uint8_t *bytes, size_t size);
+
+/** @brief Canonical uppercase hex snapshot with checked allocation size. */
+string_value_t byte_array_snapshot(const object_t *obj);
+
+/** @brief Checked allocation size for hex text including its terminator. */
+bool byte_array_hex_size(size_t count, size_t *bytes);

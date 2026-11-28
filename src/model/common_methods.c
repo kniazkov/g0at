@@ -6,11 +6,13 @@
 
 #include "common_methods.h"
 
+#include "byte_array.h"
 #include "lib/collections/comparison.h"
 #include "lib/memory/allocate.h"
 #include "lib/strings/string_ext.h"
 
 #include <math.h>
+#include <string.h>
 
 void stub_memory_function(object_t *obj) {
     return;
@@ -143,6 +145,12 @@ int compare_numeric_keys(const object_t *left, const object_t *right) {
 
 static operation_result_t compare_values(object_t *left, object_t *right, comparison_kind_t kind) {
     bool equality = kind == COMPARE_EQUAL || kind == COMPARE_NOT_EQUAL;
+    const byte_buffer_t *a = get_byte_array_storage(left), *b = get_byte_array_storage(right);
+    if (equality && (a || b)) {
+        bool equal = a && b && a->length == b->length
+                     && (!a->length || !memcmp(a->data, b->data, a->length));
+        return operation_success(get_boolean_object(kind == COMPARE_EQUAL ? equal : !equal));
+    }
     object_type_t lt = left->vtbl->type, rt = right->vtbl->type;
     bool ordered =
         lt == TYPE_NUMBER || lt == TYPE_STRING || lt == TYPE_BOOLEAN || lt == TYPE_CHARACTER;
