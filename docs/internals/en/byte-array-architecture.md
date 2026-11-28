@@ -303,3 +303,7 @@ first BA-07 step; opcode, fresh instances and native admission remain pending.
 ## BA-07: BYTELOAD
 
 BYTELOAD (81) requires flags=arg0=0 and arg1 referencing DATA_BYTES. It pushes a fresh mutable ByteArray with copied bytes and caller module/file ownership. Existing opcode numbers stay unchanged; older readers reject 81. Disassembly prints the descriptor index. Frontend execution is now enabled. Literal nodes are not pure and cannot generate native C directly; native code may coexist with VM literal execution. Tests cover source/GBIN and optimization/native modes. Remaining BA-07 acceptance includes independent golden vectors and image-lifetime stress.
+
+## BA-07: image ownership acceptance
+
+core.byte_image uses a hand-authored 147-byte wire image (BYTELOAD 0; THROW; END) and checks linker output byte-for-byte. Two borrowed wrappers execute in distinct processes, and result mutation cannot change the shared image or the other result. The wrappers and owning image are then released before inspecting and growing the result buffers. THROW is only the host test transport, retaining the result in the thread exception slot. Every truncated prefix and corrupt opcode, flags, operands, descriptor offset/size/kind/count is rejected. The final allocation balance must match the baseline.
