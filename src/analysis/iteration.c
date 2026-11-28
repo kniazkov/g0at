@@ -56,7 +56,7 @@ void validate_iteration_sources(node_t *root,
             invalid = state->control_flow == FLOW_NORMAL && value->type != LATTICE_TOP
                       && value->type != LATTICE_NOT_NULL && value->type != LATTICE_BOTTOM
                       && value->type != LATTICE_ARRAY && value->type != LATTICE_TYPED_ARRAY
-                      && value->type != LATTICE_USER_DEFINED_OBJECT;
+                      && !is_user_defined_object_lattice_type(value->type);
         }
         destroy_abstract_state(state);
         if (invalid) {

@@ -199,7 +199,7 @@ const lattice_element_t *make_array_element() {
 }
 
 const lattice_element_t *make_typed_array_element(arena_t *arena, lattice_type_t element_type) {
-    assert(element_type >= LATTICE_TOP && element_type <= LATTICE_BOTTOM);
+    assert(element_type >= LATTICE_TOP && element_type <= LATTICE_BYTE_ARRAY);
     assert(element_type != LATTICE_INTEGER_RANGE && element_type != LATTICE_INTEGER_CONSTANT
            && element_type != LATTICE_REAL_CONSTANT && element_type != LATTICE_STRING_CONSTANT
            && element_type != LATTICE_CHAR_CONSTANT && element_type != LATTICE_TYPED_ARRAY
@@ -211,6 +211,12 @@ const lattice_element_t *make_typed_array_element(arena_t *arena, lattice_type_t
     element->base.type = LATTICE_TYPED_ARRAY;
     element->element_type = element_type;
     return &element->base;
+}
+
+static const lattice_element_t byte_array_element = {.type = LATTICE_BYTE_ARRAY};
+
+const lattice_element_t *make_byte_array_element(void) {
+    return &byte_array_element;
 }
 
 const lattice_element_t *make_user_defined_object_element() {
@@ -265,6 +271,7 @@ static const lattice_element_t *lattice_join_numeric(const lattice_element_t *ri
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -302,6 +309,7 @@ static const lattice_element_t *lattice_join_integer(const lattice_element_t *ri
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -375,6 +383,7 @@ static const lattice_element_t *lattice_join_integer_range(arena_t *arena,
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -446,6 +455,7 @@ static const lattice_element_t *lattice_join_integer_constant(arena_t *arena,
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -483,6 +493,7 @@ static const lattice_element_t *lattice_join_real(const lattice_element_t *right
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -542,6 +553,7 @@ static const lattice_element_t *lattice_join_real_constant(const lattice_element
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -577,6 +589,7 @@ static const lattice_element_t *lattice_join_string(const lattice_element_t *rig
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -631,6 +644,7 @@ static const lattice_element_t *lattice_join_string_constant(const lattice_eleme
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -666,6 +680,7 @@ static const lattice_element_t *lattice_join_char(const lattice_element_t *right
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -715,6 +730,7 @@ static const lattice_element_t *lattice_join_char_constant(const lattice_element
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -750,6 +766,7 @@ static const lattice_element_t *lattice_join_boolean(const lattice_element_t *ri
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -787,6 +804,7 @@ static const lattice_element_t *lattice_join_true(const lattice_element_t *right
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -824,6 +842,7 @@ static const lattice_element_t *lattice_join_false(const lattice_element_t *righ
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -859,6 +878,7 @@ static const lattice_element_t *lattice_join_function(const lattice_element_t *r
         case LATTICE_FALSE:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -894,6 +914,7 @@ static const lattice_element_t *lattice_join_array(const lattice_element_t *righ
         case LATTICE_FALSE:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -947,6 +968,7 @@ static const lattice_element_t *lattice_join_typed_array(arena_t *arena,
         case LATTICE_FALSE:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_not_null_element();
     }
@@ -958,6 +980,7 @@ static const lattice_element_t *lattice_join_typed_array(arena_t *arena,
 static const lattice_element_t *lattice_join_user_defined_object(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_user_defined_object_element();
 
@@ -991,6 +1014,12 @@ static const lattice_element_t *lattice_join_user_defined_object(const lattice_e
 
 const lattice_element_t *
 lattice_join(arena_t *arena, const lattice_element_t *left, const lattice_element_t *right) {
+    if (left->type == LATTICE_BYTE_ARRAY || right->type == LATTICE_BYTE_ARRAY) {
+        const lattice_element_t *other = left->type == LATTICE_BYTE_ARRAY ? right : left;
+        if (other->type == LATTICE_BYTE_ARRAY || other->type == LATTICE_BOTTOM)
+            return make_byte_array_element();
+        return lattice_join(arena, make_user_defined_object_element(), other);
+    }
     if (left == right || right->type == LATTICE_BOTTOM)
         return left;
     if (left->type == LATTICE_KNOWN_FUNCTION && right->type == LATTICE_KNOWN_FUNCTION
@@ -1056,6 +1085,7 @@ lattice_join(arena_t *arena, const lattice_element_t *left, const lattice_elemen
         case LATTICE_TYPED_ARRAY:
             return lattice_join_typed_array(arena, left, right);
 
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return lattice_join_user_defined_object(right);
 
@@ -1112,6 +1142,7 @@ static const lattice_element_t *lattice_meet_numeric(const lattice_element_t *ri
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1147,6 +1178,7 @@ static const lattice_element_t *lattice_meet_integer(const lattice_element_t *ri
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1220,6 +1252,7 @@ static const lattice_element_t *lattice_meet_integer_range(arena_t *arena,
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1276,6 +1309,7 @@ static const lattice_element_t *lattice_meet_integer_constant(const lattice_elem
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1311,6 +1345,7 @@ static const lattice_element_t *lattice_meet_real(const lattice_element_t *right
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1356,6 +1391,7 @@ static const lattice_element_t *lattice_meet_real_constant(const lattice_element
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1391,6 +1427,7 @@ static const lattice_element_t *lattice_meet_string(const lattice_element_t *rig
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1441,6 +1478,7 @@ static const lattice_element_t *lattice_meet_string_constant(const lattice_eleme
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1476,6 +1514,7 @@ static const lattice_element_t *lattice_meet_char(const lattice_element_t *right
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1521,6 +1560,7 @@ static const lattice_element_t *lattice_meet_char_constant(const lattice_element
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1556,6 +1596,7 @@ static const lattice_element_t *lattice_meet_boolean(const lattice_element_t *ri
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1589,6 +1630,7 @@ static const lattice_element_t *lattice_meet_true(const lattice_element_t *right
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1622,6 +1664,7 @@ static const lattice_element_t *lattice_meet_false(const lattice_element_t *righ
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1655,6 +1698,7 @@ static const lattice_element_t *lattice_meet_function(const lattice_element_t *r
         case LATTICE_FALSE:
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1690,6 +1734,7 @@ static const lattice_element_t *lattice_meet_array(const lattice_element_t *righ
         case LATTICE_FALSE:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1739,6 +1784,7 @@ static const lattice_element_t *lattice_meet_typed_array(arena_t *arena,
         case LATTICE_FALSE:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
         case LATTICE_BOTTOM:
             return make_bottom_element();
@@ -1752,6 +1798,7 @@ static const lattice_element_t *lattice_meet_user_defined_object(const lattice_e
     switch (right->type) {
         case LATTICE_TOP:
         case LATTICE_NOT_NULL:
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_user_defined_object_element();
 
@@ -1782,6 +1829,14 @@ static const lattice_element_t *lattice_meet_user_defined_object(const lattice_e
 
 const lattice_element_t *
 lattice_meet(arena_t *arena, const lattice_element_t *left, const lattice_element_t *right) {
+    if (left->type == LATTICE_BYTE_ARRAY || right->type == LATTICE_BYTE_ARRAY) {
+        const lattice_element_t *other = left->type == LATTICE_BYTE_ARRAY ? right : left;
+        return other->type == LATTICE_TOP || other->type == LATTICE_NOT_NULL
+                       || other->type == LATTICE_USER_DEFINED_OBJECT
+                       || other->type == LATTICE_BYTE_ARRAY
+                   ? make_byte_array_element()
+                   : make_bottom_element();
+    }
     if (left->type == LATTICE_KNOWN_FUNCTION) {
         if (right->type == LATTICE_TOP || right->type == LATTICE_NOT_NULL
             || right->type == LATTICE_FUNCTION)
@@ -1853,6 +1908,7 @@ lattice_meet(arena_t *arena, const lattice_element_t *left, const lattice_elemen
         case LATTICE_TYPED_ARRAY:
             return lattice_meet_typed_array(arena, left, right);
 
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return lattice_meet_user_defined_object(right);
 
@@ -1927,6 +1983,8 @@ static const gchar_t *lattice_type_to_string(lattice_type_t type) {
         case LATTICE_TYPED_ARRAY:
             return U"array<>";
 
+        case LATTICE_BYTE_ARRAY:
+            return U"ByteArray";
         case LATTICE_USER_DEFINED_OBJECT:
             return U"object";
     }
@@ -2010,6 +2068,8 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
             return format_string(U"array<%s>", lattice_type_to_string(array->element_type));
         }
 
+        case LATTICE_BYTE_ARRAY:
+            return STATIC_STRING(U"ByteArray");
         case LATTICE_USER_DEFINED_OBJECT:
             return STATIC_STRING(U"object");
     }

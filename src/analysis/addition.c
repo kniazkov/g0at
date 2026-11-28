@@ -327,6 +327,7 @@ lattice_add(arena_t *arena, const lattice_element_t *left, const lattice_element
             /* Array models are not implemented yet. */
             return make_top_element();
 
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return make_bottom_element();
     }

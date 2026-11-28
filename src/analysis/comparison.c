@@ -23,6 +23,7 @@ static int group(lattice_type_t type) {
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
             return 5;
+        case LATTICE_BYTE_ARRAY:
         case LATTICE_USER_DEFINED_OBJECT:
             return 6;
         default:
