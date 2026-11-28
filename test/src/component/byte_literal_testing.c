@@ -10,6 +10,8 @@
 #include "graph/node.h"
 #include "lib/memory/allocate.h"
 #include "lib/memory/arena.h"
+#include "model/byte_array.h"
+#include "model/process.h"
 #include "scanner/scanner.h"
 #include "unit/analysis_test_support.h"
 
@@ -19,6 +21,24 @@ int main(void) {
     size_t before = get_allocated_memory_size();
     arena_t *arena = create_arena(256);
     parser_memory_t memory = {arena, arena, arena, arena};
+    process_t *process = create_process();
+    uint8_t bytes[256];
+    for (size_t i = 0; i < 256; ++i)
+        bytes[i] = (uint8_t)i;
+    operation_result_t value =
+        create_byte_array_literal(process->main_thread, bytes, sizeof(bytes));
+    assert(!value.is_exception);
+    string_value_t snapshot = byte_array_snapshot(value.value);
+    token_groups_t round_groups;
+    scanner_t *snapshot_scanner = create_scanner("snapshot.goat", snapshot, &memory, &round_groups);
+    token_t *snapshot_token = get_token(snapshot_scanner);
+    assert(snapshot_token->type == TOKEN_EXPRESSION);
+    string_value_t rendered = snapshot_token->node->vtbl->generate_goat_code(snapshot_token->node);
+    assert(snapshot.length == 513 && !STRCMP(snapshot.data, rendered.data));
+    FREE_STRING(rendered);
+    FREE_STRING(snapshot);
+    DECREF(value.value);
+    destroy_process(process);
     const gchar_t *valid[] = {U"#", U"#00", U"#aAbB00fF", U"#AA;", U"#AA[0]", U"#AA/* comment */;"};
     const gchar_t *expected[] = {U"#", U"#00", U"#AABB00FF", U"#AA", U"#AA", U"#AA"};
     for (size_t i = 0; i < 6; ++i) {

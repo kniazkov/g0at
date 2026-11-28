@@ -1,0 +1,39 @@
+const twice = func(n) { return n * 2; };
+if (twice(21) != 42) throw "native seed";
+const check = func(ok) { if (!ok) throw "value failed"; };
+var a = #00aaFF;
+check(str(a) == "#00AAFF" && a.toString() == "#00AAFF");
+check(str(#) == "#" && str([#, #00, a]) == "[#,#00,#00AAFF]");
+check(str([[#00]]) == "[[#00]]");
+check(str({ const x = #FF; }) == "{\"x\":#FF}");
+var snapshot = str(a);
+var b = #00aaff;
+check(a == b && !(a != b));
+b[1] = 0;
+check(a != b && !(a == b) && snapshot == str(a));
+a[0] = 255;
+check(snapshot == "#00AAFF" && str(a) == "#FFAAFF");
+check(# == # && #00 != # && #00 != #0000);
+const foreign = [null, 0, true, "#00", [0], {}, ByteArray];
+for (var i = 0; i < foreign.length; i++) {
+    check(!(#00 == foreign[i]) && !(foreign[i] == #00));
+    check(#00 != foreign[i] && foreign[i] != #00);
+}
+check(!# && !!#00);
+var child = ByteArray -> {};
+child << 255;
+check(child == #FF && #FF == child && child.toString() == "#FF");
+var overrides = {};
+overrides["=="] = func(other) { return true; };
+overrides["!="] = func(other) { return false; };
+child = [ByteArray, overrides] -> {};
+check(child == 42);
+
+check(!(child != 42));
+var caught = false;
+try { #00 < #01; } catch(e) { caught = true; }
+check(caught);
+caught = false;
+try { a.toString(1); } catch(e) { caught = e == "INVALID_ARGUMENT"; }
+check(caught);
+println("values OK");

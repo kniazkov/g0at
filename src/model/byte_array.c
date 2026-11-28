@@ -9,11 +9,45 @@
 #include "builtin_function.h"
 #include "common_methods.h"
 #include "context.h"
+#include "lib/memory/allocate.h"
 #include "thread.h"
 #include "vm/gc_policy.h"
 #include "vm/gc_protocol.h"
 
+#include <stdlib.h>
 #include <string.h>
+
+bool byte_array_hex_size(size_t count, size_t *bytes) {
+    if (count > (SIZE_MAX / sizeof(gchar_t) - 2) / 2)
+        return false;
+    *bytes = (count * 2 + 2) * sizeof(gchar_t);
+    return true;
+}
+
+string_value_t byte_array_snapshot(const object_t *obj) {
+    const byte_buffer_t *buffer = get_byte_array_storage(obj);
+    size_t bytes;
+    if (!byte_array_hex_size(buffer->length, &bytes))
+        abort();
+    size_t length = buffer->length * 2 + 1;
+    gchar_t *text = ALLOC(bytes);
+    text[0] = U'#';
+    for (size_t i = 0; i < buffer->length; ++i) {
+        text[1 + 2 * i] = U"0123456789ABCDEF"[buffer->data[i] >> 4];
+        text[2 + 2 * i] = U"0123456789ABCDEF"[buffer->data[i] & 15];
+    }
+    text[length] = 0;
+    return (string_value_t){text, length, true};
+}
+
+static operation_result_t
+to_string(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
+    if (!get_byte_array_storage(receiver))
+        return operation_exception(get_exception_invalid_operation());
+    if (count)
+        return operation_exception(get_exception_invalid_argument());
+    return operation_success(create_string_object(thread->process, byte_array_snapshot(receiver)));
+}
 
 operation_result_t initialize_byte_array(object_t *receiver) {
     if (receiver == get_byte_array_proto())
@@ -375,6 +409,7 @@ METHOD(slice_method, "ByteArray.slice", slice)
 METHOD(copy_method, "ByteArray.copyTo", copy_to)
 METHOD(fill_method, "ByteArray.fill", fill)
 METHOD(index_method, "ByteArray.indexOf", index_of)
+METHOD(string_method, "ByteArray.toString", to_string)
 #undef METHOD
 static const gchar_t *names[] = {U"init",
                                  U"append",
@@ -385,14 +420,15 @@ static const gchar_t *names[] = {U"init",
                                  U"slice",
                                  U"copyTo",
                                  U"fill",
-                                 U"indexOf"};
+                                 U"indexOf",
+                                 U"toString"};
 
 static object_array_t get_keys(const object_t *obj) {
-    static object_static_string_t storage[10];
-    static object_t *keys[10];
-    for (size_t i = 0; i < 10; ++i)
+    static object_static_string_t storage[11];
+    static object_t *keys[11];
+    for (size_t i = 0; i < 11; ++i)
         keys[i] = get_static_string_object(&storage[i], names[i]);
-    return (object_array_t){keys, 10};
+    return (object_array_t){keys, 11};
 }
 
 static object_t *get_property(const object_t *obj, const object_t *key) {
@@ -419,8 +455,10 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
                     return get_copy_method();
                 case 8:
                     return get_fill_method();
-                default:
+                case 9:
                     return get_index_method();
+                default:
+                    return get_string_method();
             }
         }
     }

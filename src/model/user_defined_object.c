@@ -576,7 +576,11 @@ static string_value_t render_array_notation(notation_renderer_t *renderer, const
 
 /** @brief Appends a value's Goat notation, recursing into containers. */
 static void render_object_value_notation(notation_renderer_t *renderer, object_t *value) {
-    if (get_string_builder_storage(value)) {
+    if (get_byte_array_storage(value)) {
+        string_value_t text = byte_array_snapshot(value);
+        append_string_value(renderer->builder, text);
+        FREE_STRING(text);
+    } else if (get_string_builder_storage(value)) {
         string_value_t text = string_builder_snapshot(value);
         append_string_value(renderer->builder, text);
         FREE_STRING(text);
@@ -656,6 +660,8 @@ static string_value_t render_array_notation(notation_renderer_t *renderer, const
 }
 
 string_value_t object_to_string_with_access(const object_t *obj, const function_access_t *access) {
+    if (get_byte_array_storage(obj))
+        return byte_array_snapshot(obj);
     if (get_string_builder_storage(obj))
         return string_builder_snapshot(obj);
     if (obj->vtbl->type != TYPE_USER_DEFINED_OBJECT && obj->vtbl->type != TYPE_ARRAY)

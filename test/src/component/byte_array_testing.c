@@ -125,6 +125,13 @@ static void slices(process_t *p) {
 }
 
 int main(void) {
+    size_t bytes = 17;
+    size_t limit = (SIZE_MAX / sizeof(gchar_t) - 2) / 2;
+    assert(byte_array_hex_size(0, &bytes) && bytes == 2 * sizeof(gchar_t));
+    assert(byte_array_hex_size(limit, &bytes));
+    size_t unchanged = bytes;
+    assert(!byte_array_hex_size(limit + 1, &bytes) && bytes == unchanged);
+    assert(!byte_array_hex_size(SIZE_MAX, &bytes));
     size_t baseline = get_allocated_memory_size();
     process_t *p = create_process();
     mutations(p);
@@ -140,6 +147,7 @@ int main(void) {
     assert(get_byte_array_storage(child)->length == 0);
     assert(get_byte_array_storage(child) != get_byte_array_storage(a));
     object_t *copy = clone_object(p, a);
+    assert(compare_objects_using_vtbl(a, copy) != 0);
     object_t *flat = flat_object_with_access(p, a, &p->main_thread->context->access);
     assert(get_byte_array_storage(copy)->data != get_byte_array_storage(a)->data);
     assert(get_byte_array_storage(flat)->data != get_byte_array_storage(a)->data);
