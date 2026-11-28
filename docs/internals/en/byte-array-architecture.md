@@ -299,3 +299,7 @@ reject-on-unknown extension of wire v1: existing descriptor/opcode numbers and
 old images remain unchanged; old readers reject kind 4. Container and ABI
 versions are unchanged. No frontend emission or execution is enabled in this
 first BA-07 step; opcode, fresh instances and native admission remain pending.
+
+## BA-07: BYTELOAD
+
+BYTELOAD (81) requires flags=arg0=0 and arg1 referencing DATA_BYTES. It pushes a fresh mutable ByteArray with copied bytes and caller module/file ownership. Existing opcode numbers stay unchanged; older readers reject 81. Disassembly prints the descriptor index. Frontend execution is now enabled. Literal nodes are not pure and cannot generate native C directly; native code may coexist with VM literal execution. Tests cover source/GBIN and optimization/native modes. Remaining BA-07 acceptance includes independent golden vectors and image-lifetime stress.

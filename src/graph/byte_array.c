@@ -1,8 +1,10 @@
 /** @file byte_array.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Compact byte literal frontend; execution is gated until BA-07.
+ * @brief Compact byte literal frontend; fresh runtime allocation.
  */
 #include "analysis/lattice.h"
+#include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "expression.h"
@@ -45,15 +47,17 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
     append_formatted_source(builder, generate_goat_code(node));
 }
 
-/** @brief Defensive internal invariant; analyze reports a localized error first. */
+/** @brief Emit an immutable raw constant and a fresh-allocation instruction. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
-    abort();
+    const byte_literal_t *literal = (const byte_literal_t *)node;
+    uint32_t id = add_bytes_to_data_segment(data, literal->bytes, literal->length);
+    return add_instruction(code, (instruction_t){.opcode = BYTELOAD, .arg1 = id});
 }
 
 static node_vtbl_t byte_array_vtbl = {
     .type = NODE_BYTE_ARRAY,
     .analyze_reachability = reachability_literal,
-    .is_pure = children_are_pure,
+    .is_pure = not_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = U"byte_array",

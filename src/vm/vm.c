@@ -257,6 +257,18 @@ static bool exec_SLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
+/** @brief Executes a validated byte literal without borrowing image storage. */
+static bool exec_BYTELOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    const data_descriptor_t *d = runtime->code->data_descriptors + instr.arg1;
+    operation_result_t result =
+        create_byte_array_literal(thread, runtime->code->data + d->offset, d->size);
+    if (result.is_exception)
+        return false;
+    push_object_onto_stack(thread->data_stack, result.value);
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Executes @ref CLOAD. */
 static bool exec_CLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     push_object_onto_stack(thread->data_stack,
@@ -2027,7 +2039,7 @@ static instr_executor_t executors[] = {
     exec_FINALLY_END, exec_declaration,    exec_declaration,   exec_binding,
     exec_binding,     exec_MODULE_INCLUDE, exec_MODULE_IMPORT, exec_reserved,
     exec_reserved,    exec_write_check,    exec_CHECKINDEX,    exec_write_check,
-    exec_binding
+    exec_binding,     exec_BYTELOAD
     // Additional opcodes can be added here in the future...
 };
 

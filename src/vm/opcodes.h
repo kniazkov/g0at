@@ -89,5 +89,6 @@ typedef enum {
     CHECKPROP = 77,     /**< Checks named write on top receiver, retaining stack operands. */
     CHECKINDEX = 78,    /**< Checks write on receiver plus arg1 indices, retaining operands. */
     CHECKVAR = 79,      /**< Checks a named lexical write without changing the stack. */
-    CHECKBOUND = 80     /**< Checks a declaration-bound write without changing the stack. */
+    CHECKBOUND = 80,    /**< Checks a declaration-bound write without changing the stack. */
+    BYTELOAD = 81       /**< Copies a raw byte constant into a fresh ByteArray. */
 } opcode_t;

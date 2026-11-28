@@ -58,9 +58,9 @@ int main(void) {
     assert(root);
     options_t options = {0};
     compilation_error_t *error = analyze(root, &memory, &options, NULL);
-    assert(error && error->severity == ERROR && error->position);
+    assert(!error);
     root = parse_analysis_test_program(&memory, STATIC_STRING(U"if (false) { var x = #; }"));
-    assert(root && analyze(root, &memory, &options, NULL));
+    assert(root && !analyze(root, &memory, &options, NULL));
     destroy_arena(arena);
     assert(get_allocated_memory_size() == before);
     return 0;

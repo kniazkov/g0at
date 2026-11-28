@@ -23,3 +23,6 @@ byte_array_set_index(process_t *process, object_t *obj, object_array_t indices, 
 
 /** @brief Whether indexed access uses ordinary property/access/module semantics. */
 bool byte_array_property_index(const object_t *obj, bool store);
+
+/** @brief Fresh literal instance, owned by caller, with copied bytes. */
+operation_result_t create_byte_array_literal(thread_t *thread, const uint8_t *bytes, size_t size);
